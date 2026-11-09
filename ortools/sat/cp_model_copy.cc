@@ -38,6 +38,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/protobuf_util.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -647,13 +648,16 @@ bool ModelCopy::FinishCopy(const CpModelProto& in_model) {
 
 bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
   temp_enforcement_literals_.clear();
+  temp_enforcement_literals_set_.clear();
   for (const int lit : ct.enforcement_literal()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) continue;
       helper_.UpdateRuleStats("enforcement: always false");
       return false;
     }
-    temp_enforcement_literals_.push_back(MapLiteral(lit));
+    const int mapped_lit = MapLiteral(lit);
+    temp_enforcement_literals_.push_back(mapped_lit);
+    temp_enforcement_literals_set_.insert(mapped_lit);
   }
   return true;  // Continue processing.
 }
@@ -1163,7 +1167,8 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
       if (new_ct == nullptr) {
         new_ct = working_model_->add_constraints();
       }
-      CopyLinearExpression(expr, new_ct->mutable_lin_max()->add_exprs());
+      CopyLinearExpression(expr, new_ct->mutable_lin_max()->add_exprs(),
+                           &temp_enforcement_literals_set_);
     }
   }
 
@@ -1213,8 +1218,13 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   // Finish by copying the target.
   if (new_ct == nullptr) return false;  // No expr == unsat.
   CopyLinearExpression(ct.lin_max().target(),
-                       new_ct->mutable_lin_max()->mutable_target());
+                       new_ct->mutable_lin_max()->mutable_target(),
+                       &temp_enforcement_literals_set_);
+  absl::c_sort(*new_ct->mutable_lin_max()->mutable_exprs(),
+               LinearExpressionProtoLessThan);
   FinishEnforcementCopy(new_ct);
+  gtl::STLSortAndRemoveDuplicates(new_ct->mutable_enforcement_literal());
+  DCHECK(LinMaxIsCanonical(*new_ct));
   return true;
 }
 
@@ -2002,7 +2012,7 @@ bool CopyModel(const CpModelProto& in_proto, const bool clear_internal_fields,
 bool CopyModelAdvanced(const CpModelProto& in_proto,
                        const bool clear_internal_fields,
                        absl::Span<const Domain> domains,
-                       std::function<bool(int)> active_constraints,
+                       const std::function<bool(int)>& active_constraints,
                        std::vector<int>* interval_mapping,
                        CpModelProto* out_proto, Model* model) {
   out_proto->Clear();

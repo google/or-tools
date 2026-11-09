@@ -830,11 +830,20 @@ class IntegerTrail final : public SatPropagator {
   ABSL_MUST_USE_RESULT bool EnqueueWithLazyReason(
       IntegerLiteral i_lit, int id, IntegerValue propagation_slack,
       LazyReasonInterface* explainer) {
+    if (i_lit.bound <= var_lbs_[i_lit.var]) return true;
     const int trail_index = integer_trail_.size();
     lazy_reasons_.push_back(
         LazyReasonEntry{explainer, propagation_slack, i_lit, id, trail_index});
+    if (integer_search_levels_.empty()) {
+      const bool result = EnqueueInternal(i_lit, true, {}, {});
+      lazy_reasons_.pop_back();
+      return result;
+    }
+    CHECK_LT(lazy_reasons_.size(), kint32max);
     return EnqueueInternal(i_lit, true, {}, {});
   }
+
+  int NumLazyReasons() const { return lazy_reasons_.size(); }
 
   // These temporary vectors can be used by the lazy reason explainer to fill
   // the IntegerReason spans. Note that we clear them on each call.
@@ -998,6 +1007,9 @@ class IntegerTrail final : public SatPropagator {
   // a good variable to branch on (taking the middle value) to get out of it.
   bool InPropagationLoop() const;
   void NotifyThatPropagationWasAborted();
+  void ResetLevelZeroPropagationLoopCounter() {
+    num_level_zero_enqueues_at_last_sync_ = num_level_zero_enqueues_;
+  }
   IntegerVariable NextVariableToBranchOnInPropagationLoop() const;
 
   // If we had an incomplete propagation, it is important to fix all the
@@ -1276,6 +1288,7 @@ class IntegerTrail final : public SatPropagator {
   int64_t num_enqueues_ = 0;
   int64_t num_untrails_ = 0;
   int64_t num_level_zero_enqueues_ = 0;
+  int64_t num_level_zero_enqueues_at_last_sync_ = 0;
   mutable int64_t num_decisions_to_break_loop_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;

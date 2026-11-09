@@ -173,14 +173,28 @@ class CpConstraintPresolver {
 
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
-  // can be equivalent to a constraint on expr_X only.
+  // can be equivalent to a constraint on expr_X only, or decouple into an
+  // equality on expr_X and a big-M-free constraint on expr_Y (for example when
+  // opposing big-M terms cancel out in an equality or narrow ranged
+  // constraint).
   //
   // For instance "10'001 X + 9'999 Y <= 105'000, with X, Y in [0, 100]" can
-  // be rewritten as X + Y <= 10 ! This can easily happen after scaling to
-  // integer coefficients in a floating-point constraint.
+  // be rewritten as X + Y <= 10 ! And "x + y + 100 b1 - 100 b2 == 1" on
+  // Booleans decouples into "b1 - b2 == 0" and "x + y == 1".
   void TryToReduceCoefficientsOfLinearConstraint(
       int c, ConstraintProto* ct,
       const PresolveContext::MergedCanonicalLinearConstraint& canonical);
+
+  // Splits linear constraint `ct` (at index `c`, preserving enforcement
+  // literals) when all terms with `|coeff| >= magnitude` (whose coefficients
+  // have GCD `big_gcd`) are forced by `canonical` bounds to take the single
+  // shifted value `forced_big`, leaving `max_error` as the total variation of
+  // the remaining smaller-magnitude terms.
+  void DecoupleForcedBigMSuffix(
+      int c, ConstraintProto* ct,
+      const PresolveContext::MergedCanonicalLinearConstraint& canonical,
+      int64_t magnitude, int64_t big_gcd, int64_t forced_big,
+      int64_t max_error);
 
   // Detects if the given linear constraint is equivalent to sum vars \in
   // domain. This is a bit costly: O(n log n); but it does trigger often enough
@@ -216,7 +230,11 @@ class CpConstraintPresolver {
       absl::Span<const Rectangle> fixed_boxes,
       absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
 
-  void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
+  // Extracts enforcement literals from one-sided linear constraints, or
+  // strengthens oversized coefficients when extraction does not apply. Returns
+  // true if any enforcement literal was extracted or coefficient was
+  // strengthened and the constraint remains an active linear constraint.
+  bool ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);
   void LowerThanCoeffStrengthening(bool from_lower_bound, int64_t min_magnitude,
                                    int64_t rhs, ConstraintProto* ct);

@@ -338,6 +338,59 @@ TEST(IntegerTrailTest, LazyReason) {
   EXPECT_TRUE(mock.called);
 }
 
+TEST(IntegerTrailTest, LazyReasonAtLevelZeroDoesNotLeak) {
+  Model model;
+  IntegerTrail* p = model.GetOrCreate<IntegerTrail>();
+  IntegerVariable a = p->AddIntegerVariable(IntegerValue(1), IntegerValue(100));
+  Trail* trail = model.GetOrCreate<Trail>();
+  trail->Resize(10);
+
+  LazyReasonForTest mock;
+
+  // Redundant bound at level zero does not allocate a lazy reason.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(1)), 0, 0, &mock));
+  EXPECT_EQ(p->NumLazyReasons(), 0);
+  EXPECT_FALSE(mock.called);
+
+  // Tightening bounds at level zero does not retain lazy reasons.
+  for (int bound = 2; bound <= 50; ++bound) {
+    EXPECT_TRUE(p->EnqueueWithLazyReason(
+        IntegerLiteral::GreaterOrEqual(a, IntegerValue(bound)), 0, 0, &mock));
+  }
+  EXPECT_EQ(p->LowerBound(a), IntegerValue(50));
+  EXPECT_EQ(p->NumLazyReasons(), 0);
+  EXPECT_FALSE(mock.called);
+
+  // Level-1 decision + lazy reason + redundant lazy reason + backtrack to 0.
+  trail->EnqueueSearchDecision(Literal(+1));
+  EXPECT_TRUE(p->Propagate(trail));
+  EXPECT_TRUE(p->EnqueueWithLazyReason(
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(60)), 0, 0, &mock));
+  EXPECT_EQ(p->NumLazyReasons(), 1);
+  EXPECT_TRUE(p->EnqueueWithLazyReason(
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(55)), 0, 0, &mock));
+  EXPECT_EQ(p->NumLazyReasons(), 1);
+
+  trail->PrepareBacktrack(0);
+  p->Untrail(*trail, 0);
+  trail->Untrail(0);
+  EXPECT_EQ(p->NumLazyReasons(), 0);
+  EXPECT_EQ(p->LowerBound(a), IntegerValue(50));
+}
+
+TEST(IntegerTrailTest, LazyReasonConflictAtLevelZeroCallsExplainer) {
+  Model model;
+  IntegerTrail* p = model.GetOrCreate<IntegerTrail>();
+  IntegerVariable a = p->AddIntegerVariable(IntegerValue(1), IntegerValue(10));
+
+  LazyReasonForTest mock;
+  EXPECT_FALSE(p->EnqueueWithLazyReason(
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(11)), 0, 0, &mock));
+  EXPECT_TRUE(mock.called);
+  EXPECT_EQ(p->NumLazyReasons(), 0);
+}
+
 TEST(IntegerTrailTest, LiteralAndBoundReason) {
   Model model;
   IntegerTrail* p = model.GetOrCreate<IntegerTrail>();

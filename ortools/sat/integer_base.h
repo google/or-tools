@@ -123,8 +123,19 @@ inline IntegerValue CapAddI(IntegerValue a, IntegerValue b) {
   return IntegerValue(CapAdd(a.value(), b.value()));
 }
 
+using ::operations_research::MulIntoOverflow;
+
+// Computes *result = a * b, and returns true iff there is an overflow or if
+// the result is kint64min.
+inline bool MulIntoOverflow(IntegerValue a, IntegerValue b,
+                            IntegerValue* result) {
+  return MulIntoOverflow(a.value(), b.value(), result->mutable_value());
+}
+
+// Returns true iff t * value overflows or is kint64min.
 inline bool ProdOverflow(IntegerValue t, IntegerValue value) {
-  return AtMinOrMaxInt64(CapProd(t.value(), value.value()));
+  IntegerValue prod;
+  return MulIntoOverflow(t, value, &prod);
 }
 
 inline bool AtMinOrMaxInt64I(IntegerValue t) {
@@ -144,25 +155,28 @@ inline IntegerValue PositiveRemainder(IntegerValue dividend,
   return m < 0 ? m + positive_divisor : m;
 }
 
+// Computes *result += a, and returns false iff there is an overflow or if the
+// result is kint64min.
 inline bool AddTo(IntegerValue a, IntegerValue* result) {
-  if (AtMinOrMaxInt64I(a)) return false;
-  const IntegerValue add = CapAddI(a, *result);
-  if (AtMinOrMaxInt64I(add)) return false;
-  *result = add;
+  int64_t add = result->value();
+  if (AddIntoOverflow(a.value(), &add) ||
+      add == std::numeric_limits<int64_t>::min()) {
+    return false;
+  }
+  *result = IntegerValue(add);
   return true;
 }
 
-// Computes result += a * b, and return false iff there is an overflow.
+// Computes *result += a * b, and returns false iff a * b or the final result
+// overflows int64_t or equals kint64min.
 inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
-  const IntegerValue prod = CapProdI(a, b);
-  if (AtMinOrMaxInt64I(prod)) return false;
-  const IntegerValue add = CapAddI(prod, *result);
-  if (AtMinOrMaxInt64I(add)) return false;
-  *result = add;
-  return true;
+  IntegerValue prod;
+  if (MulIntoOverflow(a, b, &prod)) return false;
+  return AddTo(prod, result);
 }
 
-// Computes result += a * a, and return false iff there is an overflow.
+// Computes *result += a * a, and returns false iff a * a or the final result
+// overflows int64_t or equals kint64min.
 inline bool AddSquareTo(IntegerValue a, IntegerValue* result) {
   return AddProductTo(a, a, result);
 }

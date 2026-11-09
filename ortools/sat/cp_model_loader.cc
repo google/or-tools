@@ -1068,12 +1068,36 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
+
+  const int num_enforcements = ct.enforcement_literal().size();
+  const int num_literals = ct.bool_and().literals().size();
+  const int64_t expanded_literals =
+      static_cast<int64_t>(num_enforcements + 1) * num_literals;
+  const int64_t encoded_literals =
+      (num_enforcements + 1) + 2 * (num_enforcements + num_literals);
+  if (expanded_literals - encoded_literals > 100) {
+    const Literal implied(m->Add(NewBooleanVariable()), true);
+    for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
+      sat_solver->AddProblemClause({implied.Negated(), literal});
+    }
+    std::vector<Literal> clause;
+    clause.reserve(num_enforcements + 1);
+    for (const int ref : ct.enforcement_literal()) {
+      const Literal e_lit = mapping->Literal(ref);
+      clause.push_back(e_lit.Negated());
+      sat_solver->AddProblemClause({e_lit, implied.Negated()});
+    }
+    clause.push_back(implied);
+    sat_solver->AddProblemClause(clause);
+    return;
+  }
+
   std::vector<Literal> literals;
-  literals.reserve(ct.enforcement_literal().size() + 1);
+  literals.reserve(num_enforcements + 1);
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
     sat_solver->AddProblemClause(literals);

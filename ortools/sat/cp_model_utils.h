@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -68,6 +69,18 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 }
 
 struct AffineExpr {
+  static constexpr AffineExpr Const(int64_t cst) {
+    return {.var = -1, .coeff = 0, .offset = cst};
+  }
+  static constexpr AffineExpr Var(int var) {
+    return {.var = var, .coeff = 1, .offset = 0};
+  }
+  constexpr bool is_constant() const { return var < 0 || coeff == 0; }
+  int64_t constant_value() const {
+    DCHECK(is_constant());
+    return offset;
+  }
+
   // The variable in the CpModelProto (-1 if constant).
   int var = -1;
   // Coefficient of the variable.
@@ -356,6 +369,40 @@ inline bool LinearExpressionProtosAreExactlyEqual(
          absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
          a.offset() == b.offset();
 }
+
+// Compares two LinearExpressionProtos lexicographically by (vars, coeffs,
+// offset).
+inline bool LinearExpressionProtoLessThan(const LinearExpressionProto& a,
+                                          const LinearExpressionProto& b) {
+  if (absl::MakeSpan(a.vars()) != absl::MakeSpan(b.vars())) {
+    return absl::MakeSpan(a.vars()) < absl::MakeSpan(b.vars());
+  }
+  if (absl::MakeSpan(a.coeffs()) != absl::MakeSpan(b.coeffs())) {
+    return absl::MakeSpan(a.coeffs()) < absl::MakeSpan(b.coeffs());
+  }
+  return a.offset() < b.offset();
+}
+
+// Returns true if the expression has unique positive variables sorted by vars,
+// non-zero coefficients, and no variable in enforcements.
+bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
+                                 const LinearExpressionProto& expr);
+bool LinearExpressionIsCanonical(const LinearExpressionProto& expr);
+
+// Returns true if the lin_max constraint is canonical: its enforcement
+// literals are sorted and unique (with distinct variables) and do not appear
+// in target or exprs, and its lin_max argument is canonical.
+bool LinMaxIsCanonical(const ConstraintProto& ct);
+
+// Sorts terms by variable, merges duplicate variables, removes zero
+// coefficients, and replaces any variable in enforcements with its value.
+void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
+                                  LinearExpressionProto* expr);
+void CanonicalizeLinearExpression(LinearExpressionProto* expr);
+
+// Canonicalizes the enforcement literals, target, and expressions of a
+// lin_max constraint, and sorts exprs by (vars, coeffs, offset).
+void CanonicalizeLinMax(ConstraintProto* ct);
 
 // Returns true if there is exactly one variable appearing in all the
 // expressions.

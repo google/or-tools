@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
@@ -31,6 +33,427 @@
 
 namespace operations_research {
 namespace sat {
+
+// A scheduling resource representing either a unary machine (no_overlap) or a
+// renewable cumulative resource.
+class SchedulingResource {
+ public:
+  enum Type { kNoOverlap, kCumulative };
+
+  static SchedulingResource NoOverlap(
+      int constraint_index,
+      std::optional<int> barrier_interval = std::nullopt) {
+    SchedulingResource r;
+    r.type_ = kNoOverlap;
+    r.constraint_index_ = constraint_index;
+    r.capacity_ = AffineExpr::Const(1);
+    r.barrier_interval_ = barrier_interval;
+    return r;
+  }
+
+  static SchedulingResource Cumulative(
+      int constraint_index, AffineExpr capacity,
+      std::optional<int> barrier_interval = std::nullopt,
+      bool is_redundant = false) {
+    SchedulingResource r;
+    r.type_ = kCumulative;
+    r.constraint_index_ = constraint_index;
+    r.capacity_ = capacity;
+    r.is_redundant_ = is_redundant;
+    r.barrier_interval_ = barrier_interval;
+    return r;
+  }
+
+  static SchedulingResource Cumulative(
+      int constraint_index, int64_t capacity,
+      std::optional<int> barrier_interval = std::nullopt,
+      bool is_redundant = false) {
+    return Cumulative(constraint_index, AffineExpr::Const(capacity),
+                      barrier_interval, is_redundant);
+  }
+
+  Type type() const { return type_; }
+  bool is_no_overlap() const { return type_ == kNoOverlap; }
+  bool is_cumulative() const { return type_ == kCumulative; }
+  int constraint_index() const { return constraint_index_; }
+  AffineExpr capacity() const { return capacity_; }
+
+  // Whether this resource is redundant (e.g. cumulative clique relaxation
+  // inferred from mutually exclusive tasks).
+  bool is_redundant() const { return is_redundant_; }
+
+  // An optional interval that acts as a barrier enforcing a horizon or makespan
+  // boundary on the resource. When present, all other intervals on this
+  // resource must complete before this barrier interval starts (or start after
+  // it ends).
+  std::optional<int> barrier_interval() const { return barrier_interval_; }
+
+  bool operator==(const SchedulingResource& other) const {
+    return type_ == other.type_ &&
+           constraint_index_ == other.constraint_index_ &&
+           capacity_ == other.capacity_ &&
+           is_redundant_ == other.is_redundant_ &&
+           barrier_interval_ == other.barrier_interval_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const SchedulingResource& r) {
+    absl::Format(&sink,
+                 "SchedulingResource(type: %s, constraint: %d, capacity: %v, "
+                 "redundant: %v, barrier_interval: %s)",
+                 r.type_ == kNoOverlap ? "no_overlap" : "cumulative",
+                 r.constraint_index_, r.capacity_, r.is_redundant_,
+                 r.barrier_interval_.has_value()
+                     ? absl::StrCat(*r.barrier_interval_)
+                     : "none");
+  }
+
+ private:
+  // Type of the resource (no_overlap or cumulative).
+  Type type_ = kNoOverlap;
+
+  // Index of the constraint in the CpModelProto defining this resource.
+  int constraint_index_ = -1;
+
+  // Capacity of the resource (1 for no_overlap, or affine expression for
+  // cumulative).
+  AffineExpr capacity_ = AffineExpr::Const(1);
+
+  // Whether this resource constraint is redundant (e.g. cumulative clique
+  // relaxation).
+  bool is_redundant_ = false;
+
+  // Optional barrier interval enforcing horizon / makespan boundary.
+  std::optional<int> barrier_interval_;
+};
+
+// Represents a resource demand required by a task recipe.
+class ResourceDemand {
+ public:
+  ResourceDemand() = default;
+  ResourceDemand(int resource_index, AffineExpr demand)
+      : resource_index_(resource_index), demand_(demand) {}
+  ResourceDemand(int resource_index, int64_t constant_demand)
+      : resource_index_(resource_index),
+        demand_(AffineExpr::Const(constant_demand)) {}
+
+  int resource_index() const { return resource_index_; }
+  AffineExpr demand() const { return demand_; }
+
+  bool operator==(const ResourceDemand& other) const {
+    return resource_index_ == other.resource_index_ && demand_ == other.demand_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const ResourceDemand& rd) {
+    absl::Format(&sink, "ResourceDemand(resource: %d, demand: %v)",
+                 rd.resource_index_, rd.demand_);
+  }
+
+ private:
+  // Index of the resource in the scheduling problem.
+  int resource_index_ = -1;
+
+  // Demand expression (1 for no_overlap, or affine expression for cumulative).
+  AffineExpr demand_ = AffineExpr::Const(1);
+};
+
+// An alternative execution recipe for a task.
+class TaskRecipe {
+ public:
+  TaskRecipe() = default;
+  TaskRecipe(int interval_index, std::optional<int> literal, int64_t duration,
+             std::vector<ResourceDemand> resources,
+             bool literal_is_presence_literal = false)
+      : interval_index_(interval_index),
+        literal_(literal),
+        duration_(duration),
+        resources_(std::move(resources)),
+        literal_is_presence_literal_(literal_is_presence_literal) {}
+
+  int interval_index() const { return interval_index_; }
+  std::optional<int> literal() const { return literal_; }
+  int64_t duration() const { return duration_; }
+  absl::Span<const ResourceDemand> resources() const { return resources_; }
+
+  bool literal_is_presence_literal() const {
+    return literal_is_presence_literal_;
+  }
+
+  bool operator==(const TaskRecipe& other) const {
+    return interval_index_ == other.interval_index_ &&
+           literal_ == other.literal_ && duration_ == other.duration_ &&
+           resources_ == other.resources_ &&
+           literal_is_presence_literal_ == other.literal_is_presence_literal_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const TaskRecipe& r) {
+    absl::Format(
+        &sink,
+        "TaskRecipe(interval: %d, literal: %s, duration: %d, resources: [%s], "
+        "presence_literal: %v)",
+        r.interval_index_,
+        r.literal_.has_value() ? absl::StrCat(*r.literal_) : "none",
+        r.duration_, absl::StrJoin(r.resources_, ", "),
+        r.literal_is_presence_literal_);
+  }
+
+ private:
+  // Interval constraint index in the model.
+  int interval_index_ = -1;
+
+  // Optional controlling literal (choice or presence).
+  std::optional<int> literal_;
+
+  // Fixed duration of the task under this recipe.
+  int64_t duration_ = 0;
+
+  // List of resource demands for this recipe.
+  std::vector<ResourceDemand> resources_;
+
+  // Whether the literal acts as the interval's presence literal.
+  bool literal_is_presence_literal_ = false;
+};
+
+// Represents a unit of execution in a scheduling problem.
+class SchedulingTask {
+ public:
+  SchedulingTask() = default;
+  SchedulingTask(AffineExpr start_expr, AffineExpr end_expr,
+                 std::vector<TaskRecipe> recipes = {},
+                 std::optional<int> representative_interval = std::nullopt)
+      : start_expr_(start_expr),
+        end_expr_(end_expr),
+        representative_interval_(representative_interval),
+        recipes_(std::move(recipes)),
+        multiple_recipes_(recipes_.size() > 1),
+        recipes_contains_parallel_intervals_(absl::c_any_of(
+            recipes_,
+            [](const TaskRecipe& r) { return r.resources().size() > 1; })),
+        all_literals_are_presence_literals_(
+            !recipes_.empty() &&
+            absl::c_all_of(recipes_, [](const TaskRecipe& r) {
+              return r.literal_is_presence_literal();
+            })) {}
+
+  AffineExpr start_expr() const { return start_expr_; }
+  AffineExpr end_expr() const { return end_expr_; }
+
+  // The index of the representative interval constraint in the model if
+  // one was identified (e.g. an un-enforced interval matching the task's
+  // start and end expressions).
+  std::optional<int> representative_interval() const {
+    return representative_interval_;
+  }
+
+  absl::Span<const TaskRecipe> recipes() const { return recipes_; }
+
+  bool multiple_recipes() const { return multiple_recipes_; }
+  bool recipes_contains_parallel_intervals() const {
+    return recipes_contains_parallel_intervals_;
+  }
+  bool all_literals_are_presence_literals() const {
+    return all_literals_are_presence_literals_;
+  }
+
+  bool operator==(const SchedulingTask& other) const {
+    return start_expr_ == other.start_expr_ && end_expr_ == other.end_expr_ &&
+           representative_interval_ == other.representative_interval_ &&
+           recipes_ == other.recipes_ &&
+           multiple_recipes_ == other.multiple_recipes_ &&
+           recipes_contains_parallel_intervals_ ==
+               other.recipes_contains_parallel_intervals_ &&
+           all_literals_are_presence_literals_ ==
+               other.all_literals_are_presence_literals_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const SchedulingTask& t) {
+    absl::Format(&sink,
+                 "SchedulingTask(start: %v, end: %v, rep_interval: %s, "
+                 "recipes: [%s], multiple_recipes: %v, parallel: %v, "
+                 "all_presence: %v)",
+                 t.start_expr_, t.end_expr_,
+                 t.representative_interval_.has_value()
+                     ? absl::StrCat(*t.representative_interval_)
+                     : "none",
+                 absl::StrJoin(t.recipes_, ", "), t.multiple_recipes_,
+                 t.recipes_contains_parallel_intervals_,
+                 t.all_literals_are_presence_literals_);
+  }
+
+ private:
+  // Start affine expression of the task.
+  AffineExpr start_expr_;
+
+  // End affine expression of the task.
+  AffineExpr end_expr_;
+
+  // Optional representative interval constraint index.
+  std::optional<int> representative_interval_;
+
+  // Alternative recipe options for executing this task.
+  std::vector<TaskRecipe> recipes_;
+
+  // True if the task has more than one recipe option.
+  bool multiple_recipes_ = false;
+
+  // True if any recipe uses multiple resources simultaneously.
+  bool recipes_contains_parallel_intervals_ = false;
+
+  // True if all recipe literals act as presence literals for intervals.
+  bool all_literals_are_presence_literals_ = false;
+};
+
+// Represents an ordered sequence of tasks (job).
+class SchedulingJob {
+ public:
+  SchedulingJob() = default;
+  explicit SchedulingJob(std::vector<int> task_indices)
+      : task_indices_(std::move(task_indices)) {}
+
+  absl::Span<const int> task_indices() const { return task_indices_; }
+
+  bool operator==(const SchedulingJob& other) const {
+    return task_indices_ == other.task_indices_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const SchedulingJob& j) {
+    absl::Format(&sink, "SchedulingJob(tasks: [%s])",
+                 absl::StrJoin(j.task_indices_, ", "));
+  }
+
+ private:
+  // Ordered sequence of task indices comprising the job chain.
+  std::vector<int> task_indices_;
+};
+
+// Generalized precedence relationship between two endpoints.
+class SchedulingPrecedence {
+ public:
+  enum EndpointType { kTaskStart, kTaskEnd, kModelExpression };
+
+  struct Endpoint {
+    // Type of the endpoint (task start, task end, or model expression).
+    EndpointType type = kTaskStart;
+
+    // Task index in the problem, or -1 if type is kModelExpression.
+    int task_index = -1;
+
+    // Affine expression representing the endpoint in the model.
+    AffineExpr expr;
+
+    static Endpoint TaskStart(int task_index, AffineExpr expr) {
+      Endpoint ep;
+      ep.type = kTaskStart;
+      ep.task_index = task_index;
+      ep.expr = expr;
+      return ep;
+    }
+
+    static Endpoint TaskEnd(int task_index, AffineExpr expr) {
+      Endpoint ep;
+      ep.type = kTaskEnd;
+      ep.task_index = task_index;
+      ep.expr = expr;
+      return ep;
+    }
+
+    static Endpoint ModelExpression(AffineExpr expr) {
+      Endpoint ep;
+      ep.type = kModelExpression;
+      ep.task_index = -1;
+      ep.expr = expr;
+      return ep;
+    }
+
+    bool operator==(const Endpoint& other) const {
+      return type == other.type && task_index == other.task_index &&
+             expr == other.expr;
+    }
+
+    template <typename Sink>
+    friend void AbslStringify(Sink& sink, const Endpoint& ep) {
+      const char* type_str = "start";
+      if (ep.type == kTaskEnd) type_str = "end";
+      if (ep.type == kModelExpression) type_str = "expr";
+      absl::Format(&sink, "Endpoint(%s, task: %d, expr: %v)", type_str,
+                   ep.task_index, ep.expr);
+    }
+  };
+
+  SchedulingPrecedence() = default;
+  SchedulingPrecedence(Endpoint before, Endpoint after, int64_t delay,
+                       std::vector<int> enforcement_literals = {})
+      : before_(before),
+        after_(after),
+        delay_(delay),
+        enforcement_literals_(std::move(enforcement_literals)) {}
+
+  const Endpoint& before() const { return before_; }
+  const Endpoint& after() const { return after_; }
+  int64_t delay() const { return delay_; }
+  bool is_min_delay() const { return delay_ >= 0; }
+  bool is_max_delay() const { return delay_ < 0; }
+  int64_t min_delay() const { return delay_; }
+  int64_t max_delay() const { return delay_; }
+
+  absl::Span<const int> enforcement_literals() const {
+    return enforcement_literals_;
+  }
+  bool is_unconditional() const { return enforcement_literals_.empty(); }
+
+  bool is_end_to_start() const {
+    return before_.type == EndpointType::kTaskEnd &&
+           after_.type == EndpointType::kTaskStart;
+  }
+  bool is_start_to_start() const {
+    return before_.type == EndpointType::kTaskStart &&
+           after_.type == EndpointType::kTaskStart;
+  }
+  bool is_end_to_end() const {
+    return before_.type == EndpointType::kTaskEnd &&
+           after_.type == EndpointType::kTaskEnd;
+  }
+  bool is_start_to_end() const {
+    return before_.type == EndpointType::kTaskStart &&
+           after_.type == EndpointType::kTaskEnd;
+  }
+  bool is_to_model_expression() const {
+    return after_.type == EndpointType::kModelExpression;
+  }
+
+  int before_task() const { return before_.task_index; }
+  int after_task() const { return after_.task_index; }
+
+  bool operator==(const SchedulingPrecedence& other) const {
+    return before_ == other.before_ && after_ == other.after_ &&
+           delay_ == other.delay_ &&
+           enforcement_literals_ == other.enforcement_literals_;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const SchedulingPrecedence& p) {
+    absl::Format(&sink, "SchedulingPrecedence(%v -> %v + %d, literals: [%s])",
+                 p.before_, p.after_, p.delay_,
+                 absl::StrJoin(p.enforcement_literals_, ", "));
+  }
+
+ private:
+  // Before endpoint.
+  Endpoint before_;
+
+  // After endpoint.
+  Endpoint after_;
+
+  // Delay value (>= 0 is min_delay, < 0 is max_delay).
+  int64_t delay_ = 0;
+
+  // Optional enforcement literals under which this precedence holds.
+  std::vector<int> enforcement_literals_;
+};
 
 // A generic representation of a scheduling problem. It is described as a set of
 // tasks. Each task must be executed on a single machine. During the duration of

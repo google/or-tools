@@ -330,6 +330,10 @@ bool LinearPropagator::Propagate() {
     // that when the constraint propagates, and the context might have changed
     // since we computed it above.
     if (!PropagateOneConstraint(next_id)) return false;
+    if (num_terms_for_dtime_update_ > 100000) {
+      timer.Advance(num_terms_for_dtime_update_);
+      num_terms_for_dtime_update_ = 0;
+    }
 
     // TODO(user): This does not seem always good, especially since we pushed
     // Boolean with a really small explanation, maybe we want to push more of

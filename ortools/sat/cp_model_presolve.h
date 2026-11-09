@@ -133,6 +133,7 @@ class CpModelPresolver {
   // Remove duplicate constraints. This also merges domains of linear
   // constraints with duplicate linear expressions.
   void DetectDuplicateConstraints();
+  void DetectComplementaryLinMaxConstraints();
   void DetectDuplicateConstraintsWithDifferentEnforcements(
       const CpModelMapping* mapping = nullptr,
       BinaryImplicationGraph* implication_graph = nullptr,
@@ -153,6 +154,22 @@ class CpModelPresolver {
   // Detects if a linear constraint is "included" in another one, and does
   // related presolve.
   void DetectDominatedLinearConstraints();
+
+  // Detects linear constraints that are redundant once the activity bounds are
+  // computed using one other "knapsack" linear constraint in addition to the
+  // variable domains.
+  //
+  // For a constraint C: lb <= sum a_j x_j <= ub, and a constraint D with one
+  // side reading sum b_i x_i <= K, the maximum of the activity of C subject to
+  // D and the variable domains is bounded by the optimum of the continuous
+  // single-constraint knapsack relaxation, computed greedily. If, with such
+  // bounds, the activity of C is always in [lb, ub], then C is redundant and
+  // is removed.
+  //
+  // The typical case is a dense constraint sum w_j x_j <= W over non-negative
+  // variables together with a cardinality constraint sum x_j <= K where
+  // K * max(w_j) <= W.
+  void DetectLinearRedundantUnderKnapsack();
 
   // Detects encodings of the form:
   //   b1 => x \in Domain1
@@ -239,6 +256,11 @@ class CpModelPresolver {
   // mainly useful for a core-based approach where having more terms in the
   // objective (but with a same trivial lower bound) should help.
   void ExpandObjective();
+
+  // Transforms unenforced `lin_max` constraints whose target variable only
+  // appears in the objective (with matching optimization direction) into a
+  // series of linear inequalities (`target >= expr_i`).
+  void ExpandLinMaxInObjective();
 
   // This makes a big difference on the flatzinc mznc2017_aes_opt* problems.
   // Where, with this, the core-based approach can find small cores and close

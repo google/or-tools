@@ -49,7 +49,12 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::testing::AllOf;
+using ::testing::Each;
 using ::testing::EqualsProto;
+using ::testing::Ge;
+using ::testing::IsEmpty;
+using ::testing::Le;
 
 MATCHER_P(ModelEqualsIgnoringConstraintsOrder, expected, "") {
   CpModelProto arg_no_ct = arg;
@@ -104,7 +109,7 @@ CpModelProto RandomTrivialSatProblem(int num_variables,
 }
 
 CpModelProto PresolveForTest(
-    CpModelProto initial_model, SatParameters extra_params = SatParameters(),
+    const CpModelProto& initial_model, const SatParameters& extra_params,
     CpSolverStatus expected_status = CpSolverStatus::UNKNOWN) {
   CpModelProto presolved_model = initial_model;
   CpModelProto mapping_model;
@@ -124,8 +129,8 @@ CpModelProto PresolveForTest(
 }
 
 // This expects the presolve to remove everything and return the mapping model.
-CpModelProto GetMappingModel(CpModelProto initial_model,
-                             SatParameters extra_params = SatParameters()) {
+CpModelProto GetMappingModel(const CpModelProto& initial_model,
+                             const SatParameters& extra_params) {
   CpModelProto presolved_model = initial_model;
   CpModelProto mapping_model;
   std::vector<int> mapping;
@@ -143,7 +148,7 @@ CpModelProto GetMappingModel(CpModelProto initial_model,
 }
 
 // Return a proto with reduced domain after presolve.
-CpModelProto GetReducedDomains(CpModelProto initial_model) {
+CpModelProto GetReducedDomains(const CpModelProto& initial_model) {
   const int num_vars = initial_model.variables().size();
   CpModelProto presolved_model = initial_model;
   CpModelProto mapping_model;
@@ -165,7 +170,7 @@ CpModelProto GetReducedDomains(CpModelProto initial_model) {
   return mapping_model;
 }
 
-void ExpectInfeasibleDuringPresolve(CpModelProto initial_model) {
+void ExpectInfeasibleDuringPresolve(const CpModelProto& initial_model) {
   PresolveForTest(initial_model, SatParameters(), CpSolverStatus::INFEASIBLE);
 }
 
@@ -381,7 +386,8 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
                                     MPModelProtoWrapper(std::move(mp_model)),
                                     /*num_clamped=*/0, &initial_model, &logger);
 
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
 
   // By default we clear the names.
   EXPECT_EQ(mapping_model.variables(1).name(), "");
@@ -678,7 +684,8 @@ TEST(PresolveCpModelTest, BasicLinMaxPresolve) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -713,7 +720,8 @@ TEST(PresolveCpModelTest, MoreAdvancedPresolve) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -747,7 +755,8 @@ TEST(PresolveCpModelTest, ConvertToEquality) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -783,7 +792,8 @@ TEST(PresolveCpModelTest, ConvertToEqualityDoNotWork) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -830,12 +840,13 @@ TEST(PresolveCpModelTest, BasicLinAbsPresolveVarToAbs) {
     constraints {
       lin_max {
         target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
         exprs { vars: 0 coeffs: -1 }
+        exprs { vars: 0 coeffs: 1 }
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -864,12 +875,13 @@ TEST(PresolveCpModelTest, BasicLinAbsPresolveAbsToVar) {
     constraints {
       lin_max {
         target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
         exprs { vars: 0 coeffs: -1 }
+        exprs { vars: 0 coeffs: 1 }
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -943,7 +955,8 @@ TEST(PresolveCpModelTest, RemoveAbsFromUnaryLinear) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -1438,7 +1451,8 @@ TEST(PresolveCpModelTest, CumulativeWithNoInterval) {
     }
   )pb");
 
-  CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_EQ(presolved_model.constraints_size(), 0);
 }
 
@@ -1488,7 +1502,8 @@ TEST(PresolveCpModelTest, CumulativeWithUnperformedIntervals) {
     }
   )pb");
 
-  CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_EQ(presolved_model.constraints_size(), 0);
 }
 
@@ -2278,7 +2293,8 @@ TEST(PresolveCpModelTest, NoOverlap2DSplitBoxes) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -2339,7 +2355,8 @@ TEST(PresolveCpModelTest, NoOverlap2DSplitSingletonBoxes) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -2760,7 +2777,8 @@ TEST(PresolveCpModelTest, IntProdWithXEqualTwoX) {
     }
   )pb");
 
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
     variables { domain: [ 2, 2 ] }
@@ -2782,7 +2800,8 @@ TEST(PresolveCpModelTest, IntProdWithConstantProduct) {
     }
   )pb");
 
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: [ 10, 10 ] }
     variables { domain: [ 2, 2 ] }
@@ -2830,7 +2849,8 @@ TEST(PresolveCpModelTest, EnforcedAlwaysFalseIntProd) {
     }
   )pb");
   const CpModelProto expected_presolved_model;
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -2927,7 +2947,8 @@ TEST(PresolveCpModelTest, IntProdWithIdentity) {
       }
     }
   )pb");
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 0 }
     variables { domain: 1 domain: 1 }
@@ -2957,7 +2978,8 @@ TEST(PresolveCpModelTest, IntProdWithAffineRelation) {
   // The variable 2 is detected to be of the form 3 * new_var1. Subsequently,
   // the product target is detected to be a multiple of 3, so its target is
   // replaced by new_var2. The domain are computed accordingly.
-  CpModelProto presolved_model = PresolveForTest(initial_model);
+  CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   presolved_model.clear_objective();
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 6 ] }  # This is old_var_0 / 3.
@@ -3005,7 +3027,8 @@ TEST(PresolveCpModelTest, IntProdGlobalGcd) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -3028,7 +3051,8 @@ TEST(PresolveCpModelTest, NullProduct) {
     variables { domain: [ 0, 0 ] }
     variables { domain: [ 0, 5 ] }  # Many possible values here.
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -3054,7 +3078,8 @@ TEST(PresolveCpModelTest, EnforcedNullProduct) {
     variables { domain: [ 0, 5 ] }  # Many possible values here.
     variables { domain: [ 0, 0 ] }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -3464,7 +3489,8 @@ TEST(PresolveCpModelTest, IntModFixesTargetToZero) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -3693,7 +3719,8 @@ TEST(PresolveCpModelTest, BasicIntervalPresolve) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -3736,7 +3763,8 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjective) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_model));
 }
 
@@ -3779,7 +3807,8 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjectiveWithOppositeCoeff) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_model));
 }
 
@@ -3904,7 +3933,8 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjectiveWithLimitingLinearEquation) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_model));
 }
 
@@ -4031,7 +4061,8 @@ TEST(PresolveCpModelTest, CircuitConstraint) {
   )pb");
 
   // There is just one possible solution, detected by the presolve.
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
     variables { domain: [ 0, 0 ] }
@@ -4109,7 +4140,8 @@ TEST(PresolveCpModelTest, CircuitConstraintWithDuplicateLiteral) {
   // There is just one possible solution, detected by the presolve.
   SatParameters params;
   params.set_max_presolve_iterations(1);
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
     variables { domain: [ 0, 0 ] }
@@ -4136,7 +4168,8 @@ TEST(PresolveCpModelTest, RouteConstraint) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
     constraints {
@@ -4210,7 +4243,8 @@ TEST(PresolveCpModelTest, CircuitConstraintWithDegree2) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
 
@@ -4303,7 +4337,8 @@ TEST(PresolveCpModelTest, AllDifferentWithExpressionsSharingVariable) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
 
@@ -4397,7 +4432,7 @@ TEST(PresolveCpModelTest, DetectDifferentVariablesAndAddNoOverlap) {
       break;
     }
   }
-  EXPECT_TRUE(has_no_overlap_constraint);
+  EXPECT_FALSE(has_no_overlap_constraint);
   EXPECT_TRUE(SolutionIsFeasible(cp_model, cp_model.solution_hint().values()));
   EXPECT_EQ(Solve(cp_model).status(), CpSolverStatus::OPTIMAL);
 }
@@ -4451,7 +4486,8 @@ TEST(PresolveCpModelTest, CircuitCornerCase1) {
     }
   )pb");
 
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_EQ(0, presolved_model.constraints_size());
 }
 
@@ -4536,7 +4572,8 @@ TEST(PresolveCpModelTest, MipSimplificationExample) {
       }
     }
   )pb");
-  const CpModelProto mapping_model = GetMappingModel(initial_model);
+  const CpModelProto mapping_model =
+      GetMappingModel(initial_model, SatParameters());
   const CpModelProto expected_mapping_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
     variables { domain: [ 0, 0 ] }
@@ -4606,7 +4643,8 @@ TEST(PresolveCpModelTest, ZeroDemandCumulative) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 9 ] }  # start
     variables { domain: [ 0, 9 ] }  # start
@@ -5743,6 +5781,211 @@ TEST(PresolveCpModelTest, SetPPCDominatedConstraint) {
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
 
+TEST(PresolveCpModelTest, LinearRedundantUnderKnapsack) {
+  // With sum(x) <= 3, the max activity of the second constraint is 3 * 13 = 39
+  // which is below its rhs, so it is redundant. This cannot be detected by
+  // looking at the variable domains only (max activity 3 * 46 = 138).
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 10, 11, 12, 13 ]
+        domain: [ 0, 40 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
+}
+
+TEST(PresolveCpModelTest, LinearNotRedundantUnderKnapsack) {
+  // Same as above, but with a smaller rhs. Note that the domain of x3 will be
+  // reduced to [0, 2] first, and the max activity under sum(x) <= 3 is then
+  // 13 * 2 + 12 = 38 > 37.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 10, 11, 12, 13 ]
+        domain: [ 0, 37 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(presolved_model.constraints_size(), 2);
+}
+
+TEST(PresolveCpModelTest, LinearWithHoleInRhsNotRedundantUnderKnapsack) {
+  // Eliminating singleton variable y (var 4) with domain [0, 10] U [40, 50]
+  // leaves a linear constraint with a hole (10, 40) in its rhs. Under
+  // sum(x) <= 3, the activity is in [0, 39], which fits inside [rhs.Min(),
+  // rhs.Max()] = [0, 50] but spans the hole (10, 40), so the constraint is NOT
+  // redundant (deleting it makes postsolve fail when activity is e.g. 39).
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 10, 40, 50 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 10, 11, 12, 13, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2, 3 ]
+      coeffs: [ -10, -11, -12, -13 ]
+    }
+  )pb");
+  const CpSolverResponse response = Solve(initial_model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.objective_value(), -10.0);
+  EXPECT_EQ(response.solution(4), 10);
+  EXPECT_TRUE(SolutionIsFeasible(
+      initial_model, std::vector<int64_t>(response.solution().begin(),
+                                          response.solution().end())));
+}
+
+TEST(PresolveCpModelTest, LinearWithHoleInRhsRedundantUnderKnapsack) {
+  // Even though min_activity == rhs.Min() == 0 and max_activity == rhs.Max() ==
+  // 138, rhs has a hole (40, 60). Under sum(x) <= 3, the activity is in
+  // [0, 39], which lies completely inside the first interval [0, 40] of rhs, so
+  // the second constraint is redundant.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 10, 11, 12, 13 ]
+        domain: [ 0, 40, 60, 138 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, LinearWithMiddleIntervalInRhsUnderKnapsack) {
+  // Under 2 <= sum(x) <= 3, the activity of 10*x0 + 11*x1 + 12*x2 + 13*x3 is
+  // bounded in [20, 39]. It is redundant when [20, 39] lies inside a middle
+  // interval of rhs, and not redundant when 20 falls in a hole.
+  const CpModelProto redundant_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 2, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 10, 11, 12, 13 ]
+        domain: [ 0, 5, 20, 39, 60, 138 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 2, 3 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveForTest(redundant_model, params),
+              EqualsProto(expected_presolved_model));
+
+  CpModelProto non_redundant_model = redundant_model;
+  non_redundant_model.mutable_constraints(1)->mutable_linear()->set_domain(2,
+                                                                           21);
+  EXPECT_GT(PresolveForTest(non_redundant_model, params).constraints_size(), 1);
+}
+
 TEST(PresolveCpModelTest, SetPPCFixVariables) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -5900,7 +6143,8 @@ TEST(PresolveCpModelTest, IdempotentElement) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
   )pb");
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
@@ -6136,7 +6380,8 @@ TEST(PresolveCpModelTest, LinMaxCannotBeRemoved) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
 
@@ -6167,7 +6412,8 @@ TEST(PresolveCpModelTest, LinMaxCannotBeRemovedWithHoles) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
 
@@ -6681,7 +6927,8 @@ TEST(PresolveCpModelTest, DualEquality) {
     }
   )pb");
 
-  CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
 }
 
@@ -6692,7 +6939,8 @@ TEST(PresolveCpModelTest, EmptyProduct) {
     constraints { int_prod { target: { vars: 0 coeffs: 1 } } }
     constraints { dummy_constraint { vars: [ 0 ] } }
   )pb");
-  CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
   )pb");
@@ -6906,7 +7154,8 @@ TEST(PresolveCpModelTest, RemoveUnusedEncoding) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -7012,7 +7261,8 @@ TEST(PresolveCpModelTest, RemovableEnforcementLiteral) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 7 ] }
     variables { domain: [ 0, 10 ] }
@@ -7132,9 +7382,8 @@ TEST(PresolveCpModelTest, LinMaxWithBoolean) {
       parameters.set_cp_model_presolve(false);
       parameters.set_log_search_progress(true);
       model.Add(NewSatParameters(parameters));
-      model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
-        num_solutions_without_presolve++;
-      }));
+      model.Add(NewFeasibleSolutionObserver(
+          [&](const CpSolverResponse&) { num_solutions_without_presolve++; }));
       SolveCpModel(cp_model, &model);
     }
 
@@ -7147,7 +7396,7 @@ TEST(PresolveCpModelTest, LinMaxWithBoolean) {
       parameters.set_log_search_progress(true);
       model.Add(NewSatParameters(parameters));
       model.Add(NewFeasibleSolutionObserver(
-          [&](const CpSolverResponse& r) { num_solutions_with_presolve++; }));
+          [&](const CpSolverResponse&) { num_solutions_with_presolve++; }));
       SolveCpModel(cp_model, &model);
     }
 
@@ -7398,6 +7647,135 @@ TEST(PresolveCpModelTest, AtMostOneAndLinear) {
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
   CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_model));
+}
+
+TEST(PresolveCpModelTest,
+     AtMostOneAndLinearExtractsAndKeepsMultiEnforcedIntsGrouped) {
+  // With AMO(x0..x7), setting any x_i = 1 makes 2*b0 + 3*b1 + 2*y0 + 3*y1 +
+  // 4*y2 + 5*y3 - 33*sum(x_i) <= 0 trivially satisfied (max positive activity
+  // is 5 + 2*(2 + 3 + 4 + 5) = 33). ProcessAtMostOneAndLinear extracts
+  // [~x0..~x7] as enforcement literals, and PropagateDomainsInLinear keeps all
+  // 6 remaining variables grouped in a single normalized linear equality
+  // instead of splitting across 8 enforcement literals.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
+        coeffs: [ -33, -33, -33, -33, -33, -33, -33, -33, 2, 3, 2, 3, 4, 5 ]
+        domain: [ -264, 0 ]
+      }
+    }
+    constraints { at_most_one { literals: [ 0, 1, 2, 3, 4, 5, 6, 7 ] } }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+
+  int num_grouped_int_linears = 0;
+  int num_linear1 = 0;
+  int num_bool_and = 0;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kBoolAnd) ++num_bool_and;
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().vars_size() == 1) ++num_linear1;
+    if (ct.linear().vars_size() == 6) {
+      ++num_grouped_int_linears;
+      EXPECT_EQ(ct.enforcement_literal_size(), 8);
+      EXPECT_THAT(ct.linear().coeffs(), testing::ElementsAre(1, 1, 1, 1, 1, 1));
+      EXPECT_THAT(ct.linear().domain(), testing::ElementsAre(0, 0));
+    }
+  }
+  EXPECT_EQ(num_bool_and, 0);
+  EXPECT_EQ(num_linear1, 0);
+  EXPECT_EQ(num_grouped_int_linears, 1);
+
+  int num_solutions_without_presolve = 0;
+  {
+    Model model;
+    SatParameters solve_params = params;
+    solve_params.set_enumerate_all_solutions(true);
+    solve_params.set_cp_model_presolve(false);
+    model.Add(NewSatParameters(solve_params));
+    model.Add(NewFeasibleSolutionObserver(
+        [&](const CpSolverResponse&) { ++num_solutions_without_presolve; }));
+    SolveCpModel(initial_model, &model);
+  }
+  int num_solutions_with_presolve = 0;
+  {
+    Model model;
+    SatParameters solve_params = params;
+    solve_params.set_enumerate_all_solutions(true);
+    model.Add(NewSatParameters(solve_params));
+    model.Add(NewFeasibleSolutionObserver(
+        [&](const CpSolverResponse&) { ++num_solutions_with_presolve; }));
+    SolveCpModel(initial_model, &model);
+  }
+  EXPECT_EQ(num_solutions_without_presolve, 2593);
+  EXPECT_EQ(num_solutions_with_presolve, num_solutions_without_presolve);
+}
+
+TEST(PresolveCpModelTest, AtMostOneAndLinearExtractsWhenCollapsingToClause) {
+  // 3*x0 + 3*x1 + y0 + y1 + y2 - z0 - z1 - z2 >= 2 with AMO(y0, y1, y2) and
+  // AMO(z0, z1, z2): without the AMOs neither extraction nor infeasibility is
+  // visible, whereas with the AMOs x0 = 1 or x1 = 1 makes min activity >= 2
+  // (trivial) and x0 = x1 = 0 makes max activity <= 1 < 2 (infeasible), so the
+  // linear constraint collapses to the single clause x0 OR x1.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+        coeffs: [ 3, 3, 1, 1, 1, -1, -1, -1 ]
+        domain: [ 2, 9 ]
+      }
+    }
+    constraints { at_most_one { literals: [ 2, 3, 4 ] } }
+    constraints { at_most_one { literals: [ 5, 6, 7 ] } }
+  )pb");
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { at_most_one { literals: [ 2, 3, 4 ] } }
+    constraints { at_most_one { literals: [ 5, 6, 7 ] } }
+    constraints {
+      enforcement_literal: -2
+      bool_and { literals: [ 0 ] }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_model));
 }
 
@@ -8129,6 +8507,727 @@ TEST(PresolveCpModelTest, FindBigVerticalLinearOverlapWithRareColumns) {
       if (ct.linear().vars_size() == kNumGroups + kNumRare) ++num_dense;
     }
     EXPECT_EQ(num_dense, kNumConstraints) << "seed=" << seed;
+  }
+}
+
+TEST(PresolveTest, MaxAndMinPairReplacedWithLinearEquality) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      lin_max {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+      }
+    }
+    constraints {
+      lin_max {
+        target { vars: 3 coeffs: -1 }
+        exprs { vars: 0 coeffs: -1 }
+        exprs { vars: 1 coeffs: -1 }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 1, 2, 3 ] } }
+  )pb");
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
+  int num_lin_max = 0;
+  int num_linear = 0;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kLinMax) ++num_lin_max;
+    if (ct.constraint_case() == ConstraintProto::kLinear) ++num_linear;
+  }
+  EXPECT_EQ(num_lin_max, 1);
+  EXPECT_EQ(num_linear, 1);
+}
+
+CpModelProto MakeModelWithSizeFourAtMostOnes(int num_groups) {
+  constexpr int kGroupSize = 4;
+  CpModelProto model;
+  for (int v = 0; v < num_groups * kGroupSize; ++v) {
+    IntegerVariableProto* var = model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+  for (int g = 0; g < num_groups; ++g) {
+    ConstraintProto* amo = model.add_constraints();
+    for (int i = 0; i < kGroupSize; ++i) {
+      amo->mutable_at_most_one()->add_literals(g * kGroupSize + i);
+    }
+  }
+  return model;
+}
+
+TEST(PresolveCpModelTest, DoNotAggregateHeterogeneousGubInLinearOverlap) {
+  constexpr int kNumGroups = 12;
+  constexpr int kGroupSize = 4;
+  constexpr int kNumConstraints = 14;
+  CpModelProto initial_model = MakeModelWithSizeFourAtMostOnes(kNumGroups);
+
+  // Each size-4 at_most_one has heterogeneous weights {1, 2, 3, 4}, repeated
+  // identically across half of the constraints (horizontal overlap) and
+  // proportionally across the rest (vertical overlap).
+  for (int c = 0; c < kNumConstraints; ++c) {
+    LinearConstraintProto* linear =
+        initial_model.add_constraints()->mutable_linear();
+    const int64_t row_mult = c < kNumConstraints / 2 ? 1 : (c + 1);
+    int64_t max_activity = 0;
+    for (int g = 0; g < kNumGroups; ++g) {
+      for (int i = 0; i < kGroupSize; ++i) {
+        linear->add_vars(g * kGroupSize + i);
+        linear->add_coeffs(row_mult * (i + 1));
+      }
+      max_activity += row_mult * kGroupSize;
+    }
+    linear->add_domain(0);
+    linear->add_domain(max_activity / 2 + 1);
+  }
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+
+  for (const IntegerVariableProto& var : presolved_model.variables()) {
+    ASSERT_EQ(var.domain_size(), 2);
+    EXPECT_GE(var.domain(0), 0);
+    EXPECT_LE(var.domain(1), 1);
+  }
+}
+
+TEST(PresolveCpModelTest, DoNotAggregateSplitGubInLinearOverlap) {
+  constexpr int kNumGroups = 12;
+  constexpr int kGroupSize = 4;
+  constexpr int kNumConstraints = 14;
+  CpModelProto initial_model = MakeModelWithSizeFourAtMostOnes(kNumGroups);
+
+  // One variable per size-4 at_most_one has unit weight 1 across all
+  // constraints, while the remaining 3 variables of each at_most_one appear in
+  // the same constraints with non-proportional weights (splitting every GUB).
+  for (int c = 0; c < kNumConstraints; ++c) {
+    LinearConstraintProto* linear =
+        initial_model.add_constraints()->mutable_linear();
+    int64_t max_activity = 0;
+    for (int g = 0; g < kNumGroups; ++g) {
+      int64_t max_group_coeff = 1;
+      linear->add_vars(g * kGroupSize);
+      linear->add_coeffs(1);
+      for (int i = 1; i < kGroupSize; ++i) {
+        const int64_t coeff = 2 + ((c * 3 + g + i) % 7);
+        linear->add_vars(g * kGroupSize + i);
+        linear->add_coeffs(coeff);
+        max_group_coeff = std::max(max_group_coeff, coeff);
+      }
+      max_activity += max_group_coeff;
+    }
+    linear->add_domain(0);
+    linear->add_domain(max_activity / 2 + 1);
+  }
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+
+  for (const IntegerVariableProto& var : presolved_model.variables()) {
+    ASSERT_EQ(var.domain_size(), 2);
+    EXPECT_GE(var.domain(0), 0);
+    EXPECT_LE(var.domain(1), 1);
+  }
+}
+
+TEST(PresolveCpModelTest, DetectDuplicateLinMaxWithPermutedExprs) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      lin_max {
+        target { vars: 2 coeffs: 1 }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ -1, 1 ]
+        }
+      }
+    }
+    constraints {
+      lin_max {
+        target { vars: 3 coeffs: 1 }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ -1, 1 ]
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+        }
+      }
+    }
+    objective {
+      vars: [ 2, 3 ]
+      coeffs: [ 1, 1 ]
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  int num_lin_max = 0;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kLinMax) {
+      ++num_lin_max;
+      EXPECT_TRUE(LinMaxIsCanonical(ct));
+    }
+  }
+  EXPECT_EQ(num_lin_max, 1);
+}
+
+TEST(PresolveCpModelTest, LinMaxCanonicalAfterDegreeTwoSubstitution) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ -1, 1, 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      lin_max {
+        target { vars: 3 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ -1, 1 ]
+        }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 1, 3 ] } }
+  )pb");
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kLinMax) {
+      EXPECT_TRUE(LinMaxIsCanonical(ct));
+    }
+  }
+}
+
+TEST(PresolveCpModelTest, LinMaxWithLiteralAndNegationInInitialProto) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      enforcement_literal: [ 0, -1 ]
+      lin_max {
+        target {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 1, 2 ] } }
+  )pb");
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    EXPECT_NE(ct.constraint_case(), ConstraintProto::kLinMax);
+  }
+}
+
+TEST(PresolveCpModelTest, LinMaxWithLiteralAndNegationAfterSubstitution) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      lin_max {
+        target {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 1, 2, 3 ] } }
+  )pb");
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    EXPECT_NE(ct.constraint_case(), ConstraintProto::kLinMax);
+  }
+}
+
+TEST(PresolveTest, LinMaxAbsoluteValueNonNegative) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ -10, 10 ] }
+    constraints {
+      lin_max {
+        target { vars: 1 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 0 coeffs: -1 }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 1 ] } }
+  )pb");
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
+  EXPECT_EQ(presolved_model.variables(1).domain(0), 0);
+  EXPECT_EQ(presolved_model.variables(1).domain(1), 10);
+}
+
+TEST(PresolveTest, ExpandLinMaxInObjectiveSimple) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 10, 10 ]
+      }
+    }
+    constraints {
+      lin_max {
+        target { vars: 3 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints { dummy_constraint { vars: [ 0, 2 ] } }
+    objective {
+      vars: [ 3 ]
+      coeffs: [ 1 ]
+    }
+  )pb");
+  const CpModelProto presolved_model =
+      PresolveForTest(initial_model, SatParameters());
+  int num_lin_max = 0;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kLinMax) ++num_lin_max;
+  }
+  EXPECT_EQ(num_lin_max, 0);
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMEndToEnd) {
+  // x + y + z + 101*b1 - 101*b2 == 1 on Booleans: 101 is coprime to 2, 3, 5,
+  // overall gcd is 1, and 3 variables share the smallest coefficient 1, so
+  // neither modulo presolve nor Diophantine presolve simplifies it without
+  // big-M decoupling. After decoupling, b1 == b2 is extracted as an affine
+  // equivalence (eliminating a variable) and x + y + z == 1 becomes
+  // exactly_one, leaving no big-M in the presolved model.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 101, -101 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+
+  EXPECT_LT(presolved_model.variables_size(), initial_model.variables_size());
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kLinear) {
+      EXPECT_THAT(ct.linear().coeffs(), Each(AllOf(Ge(-1), Le(1))));
+    }
+  }
+
+  int num_solutions_with_presolve = 0;
+  {
+    Model model;
+    SatParameters enumerate_params;
+    enumerate_params.set_enumerate_all_solutions(true);
+    enumerate_params.set_keep_all_feasible_solutions_in_presolve(true);
+    model.Add(NewSatParameters(enumerate_params));
+    model.Add(NewFeasibleSolutionObserver(
+        [&](const CpSolverResponse&) { ++num_solutions_with_presolve; }));
+    SolveCpModel(initial_model, &model);
+  }
+  // 3 choices for (x, y, z) summing to 1, times 2 choices for b1 == b2.
+  EXPECT_EQ(num_solutions_with_presolve, 6);
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMRandomEquivalence) {
+  absl::BitGen random;
+  for (int iter = 0; iter < 100; ++iter) {
+    CpModelProto cp_model;
+    for (int v = 0; v < 4; ++v) {
+      const int64_t lb = absl::Uniform<int64_t>(random, -1, 2);
+      const int64_t ub = lb + absl::Uniform<int64_t>(random, 1, 4);
+      FillDomainInProto(Domain(lb, ub), cp_model.add_variables());
+    }
+    // Variable 4 is an optional enforcement literal in [0, 1].
+    FillDomainInProto(Domain(0, 1), cp_model.add_variables());
+
+    ConstraintProto* ct = cp_model.add_constraints();
+    if (absl::Bernoulli(random, 0.4)) {
+      ct->add_enforcement_literal(absl::Bernoulli(random, 0.5) ? 4 : -5);
+    }
+    LinearConstraintProto* lin = ct->mutable_linear();
+
+    const int64_t g = absl::Uniform<int64_t>(random, 2, 40);
+    std::vector<int64_t> coeffs(4);
+    coeffs[0] = absl::Uniform<int64_t>(random, 1, 4) *
+                (absl::Bernoulli(random, 0.5) ? 1 : -1);
+    coeffs[1] = absl::Uniform<int64_t>(random, 1, 4) *
+                (absl::Bernoulli(random, 0.5) ? 1 : -1);
+    if (absl::Bernoulli(random, 0.8)) {
+      // Multiples of g with opposing signs.
+      coeffs[2] = g * absl::Uniform<int64_t>(random, 1, 4);
+      coeffs[3] = -g * absl::Uniform<int64_t>(random, 1, 4);
+    } else {
+      // Coprime big-Ms (tests subset-sum gap when gcd == 1).
+      coeffs[2] = g * 3;
+      coeffs[3] = -(g * 3 + absl::Uniform<int64_t>(random, 1, 6));
+    }
+    for (int v = 0; v < 4; ++v) {
+      lin->add_vars(v);
+      lin->add_coeffs(coeffs[v]);
+    }
+
+    int64_t sample_rhs = absl::Uniform<int64_t>(random, -5, 6);
+    for (int v = 0; v < 4; ++v) {
+      const Domain d = ReadDomainFromProto(cp_model.variables(v));
+      sample_rhs += coeffs[v] * ((d.Min() + d.Max()) / 2);
+    }
+    const int64_t width = absl::Uniform<int64_t>(random, 0, 5);
+    FillDomainInProto(Domain(sample_rhs, sample_rhs + width), lin);
+
+    const auto count_solutions = [&](bool presolve) {
+      Model model;
+      SatParameters parameters;
+      parameters.set_enumerate_all_solutions(true);
+      parameters.set_keep_all_feasible_solutions_in_presolve(true);
+      parameters.set_cp_model_presolve(presolve);
+      model.Add(NewSatParameters(parameters));
+      int count = 0;
+      model.Add(NewFeasibleSolutionObserver(
+          [&](const CpSolverResponse&) { ++count; }));
+      SolveCpModel(cp_model, &model);
+      return count;
+    };
+
+    ASSERT_EQ(count_solutions(/*presolve=*/true),
+              count_solutions(/*presolve=*/false))
+        << ProtobufDebugString(cp_model);
+  }
+}
+
+TEST(PresolveCpModelTest,
+     DecoupleOpposingBigMEnforcedSmallGcdInfeasibleFullPresolve) {
+  // Regression test for maintaining ConstraintVariableUsageIsConsistent() when
+  // peeling off the forced big-M term exposes GCD infeasibility in the
+  // remaining small terms of an enforced constraint.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ -3, 3 ] }
+    variables { domain: [ 0, 9 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ -1024, -1024, 5769 ]
+        domain: [ -2773, -2767 ]
+      }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved = PresolveForTest(initial_model, params);
+  EXPECT_THAT(presolved.constraints(), IsEmpty());
+
+  Model model;
+  const CpSolverResponse response = SolveCpModel(initial_model, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(3), 0);
+}
+
+CpModelProto ModelWithKeepAliveBools(int num_vars) {
+  CpModelProto model;
+  LinearConstraintProto* keep_alive = model.add_constraints()->mutable_linear();
+  int64_t total_coeff = 0;
+  for (int v = 0; v < num_vars; ++v) {
+    FillDomainInProto(Domain(0, 1), model.add_variables());
+    const int64_t coeff = v + 2;
+    keep_alive->add_vars(v);
+    keep_alive->add_coeffs(coeff);
+    total_coeff += coeff;
+  }
+  FillDomainInProto(Domain(total_coeff / 3, (2 * total_coeff) / 3), keep_alive);
+  return model;
+}
+
+TEST(PresolveCpModelTest,
+     LargeMultiEnforcedBoolAndStrengthensAndFoldsBackWithoutExtraVariables) {
+  constexpr int kNumEnforcements = 20;
+  constexpr int kNumRhs = 500;
+  CpModelProto initial_model =
+      ModelWithKeepAliveBools(kNumEnforcements + kNumRhs);
+
+  ConstraintProto* bool_and = initial_model.add_constraints();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    bool_and->add_enforcement_literal(i);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    bool_and->mutable_bool_and()->add_literals(kNumEnforcements + j);
+  }
+
+  // (x_0 /\ x_1) => x_2 makes enforcement literal x_2 redundant in bool_and
+  // via self-subsuming resolution in PresolvePureSatPart.
+  ConstraintProto* ternary = initial_model.add_constraints();
+  ternary->mutable_bool_or()->add_literals(NegatedRef(0));
+  ternary->mutable_bool_or()->add_literals(NegatedRef(1));
+  ternary->mutable_bool_or()->add_literals(2);
+
+  SatParameters params;
+  const CpModelProto presolved = PresolveForTest(initial_model, params);
+  EXPECT_EQ(presolved.variables_size(), initial_model.variables_size());
+
+  std::vector<const ConstraintProto*> bool_ands;
+  for (const ConstraintProto& ct : presolved.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      bool_ands.push_back(&ct);
+    }
+  }
+  ASSERT_EQ(bool_ands.size(), 1);
+  std::vector<int> expected_enforcements;
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    if (i == 2) continue;
+    expected_enforcements.push_back(i);
+  }
+  EXPECT_THAT(bool_ands[0]->enforcement_literal(),
+              testing::UnorderedElementsAreArray(expected_enforcements));
+  EXPECT_EQ(bool_ands[0]->bool_and().literals_size(), kNumRhs);
+
+  Model model;
+  const CpSolverResponse response = SolveCpModel(initial_model, &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+}
+
+TEST(PresolveCpModelTest,
+     LargeMultiEnforcedBoolAndContradictionCollapsesToClause) {
+  constexpr int kNumEnforcements = 20;
+  constexpr int kNumRhs = 500;
+  CpModelProto initial_model =
+      ModelWithKeepAliveBools(kNumEnforcements + kNumRhs);
+
+  // Two unconstrained helper Booleans eliminated by BVE in PresolvePureSatPart.
+  const int helper_h = initial_model.variables_size();
+  FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+  const int helper_a = initial_model.variables_size();
+  FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+
+  ConstraintProto* bool_and = initial_model.add_constraints();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    bool_and->add_enforcement_literal(i);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    bool_and->mutable_bool_and()->add_literals(kNumEnforcements + j);
+  }
+  bool_and->mutable_bool_and()->add_literals(helper_h);
+
+  // Eliminating helper_a yields (~helper_h \/ ~r_0), and eliminating helper_h
+  // then yields (~temp_var \/ ~r_0), which resolves with (~temp_var \/ r_0)
+  // to fix temp_var = false and collapse bool_and to (~e_0 \/ ... \/ ~e_19).
+  const int r0 = kNumEnforcements;
+  ConstraintProto* c1 = initial_model.add_constraints();
+  c1->mutable_bool_or()->add_literals(NegatedRef(helper_h));
+  c1->mutable_bool_or()->add_literals(NegatedRef(r0));
+  c1->mutable_bool_or()->add_literals(helper_a);
+
+  ConstraintProto* c2 = initial_model.add_constraints();
+  c2->mutable_bool_or()->add_literals(NegatedRef(helper_h));
+  c2->mutable_bool_or()->add_literals(NegatedRef(r0));
+  c2->mutable_bool_or()->add_literals(NegatedRef(helper_a));
+
+  SatParameters params;
+  const CpModelProto presolved = PresolveForTest(initial_model, params);
+  // Both helper_h and helper_a are eliminated, and no auxiliary temp_var is
+  // materialized into the presolved model.
+  EXPECT_EQ(presolved.variables_size(), kNumEnforcements + kNumRhs);
+  std::vector<const ConstraintProto*> bool_ands;
+  std::vector<const ConstraintProto*> bool_ors;
+  for (const ConstraintProto& ct : presolved.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      bool_ands.push_back(&ct);
+    } else if (ct.constraint_case() == ConstraintProto::kBoolOr) {
+      bool_ors.push_back(&ct);
+    }
+  }
+  EXPECT_THAT(bool_ands, IsEmpty());
+  ASSERT_EQ(bool_ors.size(), 1);
+  std::vector<int> expected_clause;
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    expected_clause.push_back(NegatedRef(i));
+  }
+  EXPECT_THAT(bool_ors[0]->bool_or().literals(),
+              testing::UnorderedElementsAreArray(expected_clause));
+
+  Model model;
+  const CpSolverResponse response = SolveCpModel(initial_model, &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+}
+
+TEST(PresolveCpModelTest,
+     ManyMediumMultiEnforcedBoolAndsExceedingExpansionBudgetStillPresolve) {
+  constexpr int kNumConstraints = 2500;
+  constexpr int kSharedEnforcements = 4;
+  constexpr int kRhsSize = 18;
+  const int rhs_start = kSharedEnforcements + kNumConstraints;
+  CpModelProto initial_model =
+      ModelWithKeepAliveBools(rhs_start + kNumConstraints + kRhsSize);
+
+  // Each constraint has 5 enforcements and 18 RHS literals:
+  // encoded = 42 < expanded = 108, so every constraint is encoded linearly via
+  // a temporary Boolean without needing any expansion literal cap.
+  for (int k = 0; k < kNumConstraints; ++k) {
+    ConstraintProto* ct = initial_model.add_constraints();
+    for (int i = 0; i < kSharedEnforcements; ++i) {
+      ct->add_enforcement_literal(i);
+    }
+    ct->add_enforcement_literal(kSharedEnforcements + k);
+    for (int j = 0; j < kRhsSize; ++j) {
+      ct->mutable_bool_and()->add_literals(rhs_start + k + j);
+    }
+  }
+
+  // (x_0 /\ x_1) => x_2 strengthens every bool_and, including the last one.
+  ConstraintProto* ternary = initial_model.add_constraints();
+  ternary->mutable_bool_or()->add_literals(NegatedRef(0));
+  ternary->mutable_bool_or()->add_literals(NegatedRef(1));
+  ternary->mutable_bool_or()->add_literals(2);
+
+  SatParameters params;
+  const CpModelProto presolved = PresolveForTest(initial_model, params);
+  EXPECT_EQ(presolved.variables_size(), initial_model.variables_size());
+
+  const int last_unique_enf = kSharedEnforcements + kNumConstraints - 1;
+  bool found_last = false;
+  for (const ConstraintProto& ct : presolved.constraints()) {
+    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
+    if (std::find(ct.enforcement_literal().begin(),
+                  ct.enforcement_literal().end(),
+                  last_unique_enf) != ct.enforcement_literal().end()) {
+      found_last = true;
+      EXPECT_THAT(ct.enforcement_literal(),
+                  testing::UnorderedElementsAre(0, 1, 3, last_unique_enf));
+    }
+  }
+  EXPECT_TRUE(found_last);
+}
+
+TEST(PresolveCpModelTest,
+     LargeMultiEnforcedBoolAndMaterializesFallbackAndPreservesHint) {
+  constexpr int kNumEnforcements = 8;
+  constexpr int kNumRhs = 20;
+  CpModelProto initial_model;
+  auto* objective = initial_model.mutable_objective();
+  auto* hint = initial_model.mutable_solution_hint();
+
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+    objective->add_vars(i);
+    objective->add_coeffs(-1000);
+    hint->add_vars(i);
+    hint->add_values(1);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    const int var = kNumEnforcements + j;
+    FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+    objective->add_vars(var);
+    objective->add_coeffs(j + 1);
+    hint->add_vars(var);
+    hint->add_values(1);
+  }
+  const int var_p = initial_model.variables_size();
+  FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+  objective->add_vars(var_p);
+  objective->add_coeffs(50);
+  hint->add_vars(var_p);
+  hint->add_values(1);
+
+  const int var_q = initial_model.variables_size();
+  FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+  objective->add_vars(var_q);
+  objective->add_coeffs(60);
+  hint->add_vars(var_q);
+  hint->add_values(0);
+
+  // Removable variable eliminated by BVE against (~temp_var \/ helper_h) and
+  // (~helper_h \/ var_p \/ var_q), producing ternary (~temp_var \/ var_p \/
+  // var_q) and recording temp_var in sat_postsolver.
+  const int helper_h = initial_model.variables_size();
+  FillDomainInProto(Domain(0, 1), initial_model.add_variables());
+  hint->add_vars(helper_h);
+  hint->add_values(1);
+
+  ConstraintProto* bool_and = initial_model.add_constraints();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    bool_and->add_enforcement_literal(i);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    bool_and->mutable_bool_and()->add_literals(kNumEnforcements + j);
+  }
+  bool_and->mutable_bool_and()->add_literals(helper_h);
+
+  ConstraintProto* ternary = initial_model.add_constraints();
+  ternary->mutable_bool_or()->add_literals(NegatedRef(helper_h));
+  ternary->mutable_bool_or()->add_literals(var_p);
+  ternary->mutable_bool_or()->add_literals(var_q);
+
+  for (const bool full_solver_postsolve : {false, true}) {
+    Model model;
+    SatParameters params;
+    params.set_debug_crash_if_presolve_breaks_hint(true);
+    params.set_debug_postsolve_with_full_solver(full_solver_postsolve);
+    model.Add(NewSatParameters(params));
+    const CpSolverResponse response = SolveCpModel(initial_model, &model);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    EXPECT_DOUBLE_EQ(response.objective_value(), -7740.0);
+    EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
   }
 }
 

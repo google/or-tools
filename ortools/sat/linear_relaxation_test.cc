@@ -13,6 +13,7 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -307,12 +308,11 @@ TEST(TryToLinearizeConstraint, BoolAndMultipleEnforcement) {
   TryToLinearizeConstraint(initial_model, initial_model.constraints(0),
                            /*linearization_level=*/2, &model, &relaxation);
 
-  // I0 & I3 => I2 ==1 & not(I1) == 1;
-  EXPECT_EQ(relaxation.linear_constraints.size(), 2);
+  // I0 & I3 => I2 == 1 & not(I1) == 1:
+  // I1 + (1 - I2) <= 2 * ((1 - I0) + (1 - I3)).
+  ASSERT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1*I0 1*I1 1*I3 <= 2");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "1*I0 -1*I2 1*I3 <= 1");
+            "2*I0 1*I1 -1*I2 2*I3 <= 3");
 }
 
 TEST(TryToLinearizeConstraint, BoolAndNoEnforcement) {
@@ -1264,6 +1264,297 @@ TEST(AppendLinearConstraintRelaxation, BoundsNotTight) {
                                    &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
+}
+
+TEST(ComputeLinearRelaxationTest, InfersShiftedNoOverlapCutGenerators) {
+  // Four tasks with release-date shifts r = {0, 12, 25, 40} and processing
+  // times p = {10, 15, 14, 12}, modeled with shifted non-negative start
+  // variables y_i = t_i - r_i in [0, 100]. Five of the six pairs allow
+  // y_i - y_j == 0 (interior exclusion holes) while pair (1, 2) excludes 0.
+  const int64_t r[4] = {0, 12, 25, 40};
+  const int64_t p[4] = {10, 15, 14, 12};
+
+  CpModelProto cp_model;
+  for (int i = 0; i < 4; ++i) {
+    IntegerVariableProto* var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(100);
+  }
+  for (int i = 0; i < 4; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      const int lit = cp_model.variables_size();
+      IntegerVariableProto* b = cp_model.add_variables();
+      b->add_domain(0);
+      b->add_domain(1);
+
+      // lit => y_i - y_j <= r_j - r_i - p_i.
+      ConstraintProto* ct1 = cp_model.add_constraints();
+      ct1->add_enforcement_literal(lit);
+      ct1->mutable_linear()->add_vars(i);
+      ct1->mutable_linear()->add_vars(j);
+      ct1->mutable_linear()->add_coeffs(1);
+      ct1->mutable_linear()->add_coeffs(-1);
+      ct1->mutable_linear()->add_domain(-100);
+      ct1->mutable_linear()->add_domain(r[j] - r[i] - p[i]);
+
+      // ~lit => y_i - y_j >= r_j - r_i + p_j.
+      ConstraintProto* ct2 = cp_model.add_constraints();
+      ct2->add_enforcement_literal(-lit - 1);
+      ct2->mutable_linear()->add_vars(i);
+      ct2->mutable_linear()->add_vars(j);
+      ct2->mutable_linear()->add_coeffs(1);
+      ct2->mutable_linear()->add_coeffs(-1);
+      ct2->mutable_linear()->add_domain(r[j] - r[i] + p[j]);
+      ct2->mutable_linear()->add_domain(100);
+    }
+  }
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  EXPECT_EQ(relaxation.cut_generators.size(), 2);
+
+  auto* repository = model.GetOrCreate<IntervalsRepository>();
+  ASSERT_EQ(repository->NumIntervals(), 4);
+  for (int i = 0; i < 4; ++i) {
+    const IntervalVariable iv(i);
+    EXPECT_EQ(repository->Start(iv).constant, IntegerValue(r[i]));
+    EXPECT_EQ(repository->Size(iv).constant, IntegerValue(p[i]));
+    EXPECT_EQ(repository->End(iv).constant, IntegerValue(r[i] + p[i]));
+  }
+}
+
+TEST(ComputeLinearRelaxationTest, InfersNoOverlapFromIncompatibleLinears) {
+  const CpModelProto cp_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 91, 905 ] }
+    variables { domain: [ 638, 937 ] }
+    variables { domain: [ 0, 69 ] }
+    variables { domain: [ 575, 930 ] }
+    constraints {
+      linear {
+        vars: [ 3, 4 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -863, -506 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 569, 909 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -846, -32 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 3 ]
+        coeffs: [ -1, 1 ]
+        domain: [ -868, -22 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: [ 1, 4 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -839, -300 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: [ 1, 4 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 310, 330 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: [ 2, 4 ]
+        coeffs: [ -1, 1 ]
+        domain: [ 275, 292 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: [ 2, 4 ]
+        coeffs: [ -1, 1 ]
+        domain: [ -362, -123 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  EXPECT_EQ(relaxation.cut_generators.size(), 2);
+  auto* repository = model.GetOrCreate<IntervalsRepository>();
+  EXPECT_EQ(repository->NumIntervals(), 4);
+}
+
+TEST(ComputeLinearRelaxationTest, InfersShiftedAllDiffCutGenerator) {
+  // Four variables y_i in [0, 6] with pairwise (y_i + r_i) != (y_j + r_j)
+  // for shifts r = {0, 2, 4, 5}. Every pair allows y_i - y_j == 0 and has its
+  // forbidden difference strictly inside [-6, 6].
+  const int64_t r[4] = {0, 2, 4, 5};
+  CpModelProto cp_model;
+  for (int i = 0; i < 4; ++i) {
+    IntegerVariableProto* var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(6);
+  }
+  for (int i = 0; i < 4; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      const int64_t forbidden = r[j] - r[i];
+      ConstraintProto* ct = cp_model.add_constraints();
+      ct->mutable_linear()->add_vars(i);
+      ct->mutable_linear()->add_vars(j);
+      ct->mutable_linear()->add_coeffs(1);
+      ct->mutable_linear()->add_coeffs(-1);
+      ct->mutable_linear()->add_domain(-6);
+      ct->mutable_linear()->add_domain(forbidden - 1);
+      ct->mutable_linear()->add_domain(forbidden + 1);
+      ct->mutable_linear()->add_domain(6);
+    }
+  }
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  EXPECT_EQ(relaxation.cut_generators.size(), 1);
+
+  // Cyclic exclusions x_0 - x_1 != 1, x_1 - x_2 != 1, x_2 - x_0 != 1 do not
+  // correspond to any shifted all_diff; ComputeLinearRelaxation must not infer
+  // a cut generator.
+  CpModelProto cycle_model;
+  for (int i = 0; i < 3; ++i) {
+    IntegerVariableProto* var = cycle_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(3);
+  }
+  for (int i = 0; i < 3; ++i) {
+    ConstraintProto* ct = cycle_model.add_constraints();
+    ct->mutable_linear()->add_vars(i);
+    ct->mutable_linear()->add_vars((i + 1) % 3);
+    ct->mutable_linear()->add_coeffs(1);
+    ct->mutable_linear()->add_coeffs(-1);
+    ct->mutable_linear()->add_domain(-3);
+    ct->mutable_linear()->add_domain(0);
+    ct->mutable_linear()->add_domain(2);
+    ct->mutable_linear()->add_domain(3);
+  }
+  Model cycle_local_model;
+  cycle_local_model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cycle_model, true, &cycle_local_model);
+  const LinearRelaxation cycle_relaxation =
+      ComputeLinearRelaxation(cycle_model, &cycle_local_model);
+  EXPECT_TRUE(cycle_relaxation.cut_generators.empty());
+}
+
+TEST(ComputeLinearRelaxationTest,
+     MultiEnforcedBoolAndSingleConstraintWithSingleAmo) {
+  const CpModelProto cp_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { at_most_one { literals: [ 3, 4, 5 ] } }
+    constraints {
+      enforcement_literal: [ 0, 1, 2 ]
+      bool_and { literals: [ -4, -5, -6 ] }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+  for (const ConstraintProto& ct : cp_model.constraints()) {
+    LoadConstraint(ct, &model);
+  }
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  ASSERT_EQ(relaxation.linear_constraints.size(), 2);
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
+            "1*I0 1*I1 1*I2 1*I3 1*I4 1*I5 <= 3");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
+            "1*I3 1*I4 1*I5 <= 1");
+}
+
+TEST(ComputeLinearRelaxationTest,
+     MultiEnforcedBoolAndSingleConstraintAcrossMultipleAmos) {
+  const CpModelProto cp_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { at_most_one { literals: [ 3, 4 ] } }
+    constraints { at_most_one { literals: [ 5, 6 ] } }
+    constraints {
+      enforcement_literal: [ 0, 1, 2 ]
+      bool_and { literals: [ -4, -5, -6, -7 ] }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+  for (const ConstraintProto& ct : cp_model.constraints()) {
+    LoadConstraint(ct, &model);
+  }
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  ASSERT_EQ(relaxation.linear_constraints.size(), 3);
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
+            "2*I0 2*I1 2*I2 1*I3 1*I4 1*I5 1*I6 <= 6");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*I3 1*I4 <= 1");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "1*I5 1*I6 <= 1");
+}
+
+TEST(ComputeLinearRelaxationTest, MultiEnforcedBoolAndDeduplicatesLiterals) {
+  const CpModelProto cp_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { at_most_one { literals: [ 2, 3 ] } }
+    constraints {
+      enforcement_literal: [ 0, 1, 0 ]
+      bool_and { literals: [ -3, -3 ] }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(cp_model, true, &model);
+  for (const ConstraintProto& ct : cp_model.constraints()) {
+    LoadConstraint(ct, &model);
+  }
+
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(cp_model, &model);
+  ASSERT_EQ(relaxation.linear_constraints.size(), 2);
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
+            "1*I0 1*I1 1*I2 <= 2");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*I2 1*I3 <= 1");
 }
 
 }  // namespace

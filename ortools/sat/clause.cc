@@ -305,7 +305,7 @@ SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
 
   // Tricky: In some corner cases, that clause was subsumed, so we don't want
   // to check it nor use it.
-  if (result->size() == 0) return nullptr;
+  if (result->empty()) return nullptr;
   DCHECK_EQ(trail_->Reason(var), result->PropagationReason());
   return result;
 }
@@ -3273,6 +3273,42 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
     result.push_back(absl::MakeSpan(literals->data() + span_start,
                                     num_processed - span_start));
   }
+
+  // Also look for cliques using full reachability in the binary implication
+  // graph (for instance from small at_most_ones that were expanded into binary
+  // clauses and transitively reduced, or from order encodings).
+  const int64_t old_work = work_done_in_mark_descendants_;
+  constexpr int64_t kMaxWork = 1e8;
+  const util_intops::StrongVector<LiteralIndex, double> empty_weights;
+  for (int i = num_processed;
+       i < literals->size() &&
+       work_done_in_mark_descendants_ - old_work < kMaxWork;
+       i = std::max(i + 1, num_processed)) {
+    const Literal root = (*literals)[i];
+    if (!to_consider[root]) continue;
+
+    const std::vector<Literal> clique =
+        ExpandAtMostOneWithWeight</*use_weight=*/false>({root}, to_consider,
+                                                        empty_weights);
+    if (clique.size() <= 1) {
+      to_consider[root] = false;
+      continue;
+    }
+
+    is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
+    for (const Literal l : clique) {
+      to_consider[l] = false;
+      is_marked_.Set(l);
+    }
+    const int span_start = num_processed;
+    for (int j = span_start; j < literals->size(); ++j) {
+      if (!is_marked_[(*literals)[j]]) continue;
+      std::swap((*literals)[num_processed], (*literals)[j]);
+      ++num_processed;
+    }
+    result.push_back(absl::MakeSpan(literals->data() + span_start,
+                                    num_processed - span_start));
+  }
   return result;
 }
 
@@ -3430,9 +3466,9 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
   return direct_implications_;
 }
 
-absl::Span<const Literal> BinaryImplicationGraph::AtMostOne(int start) const {
-  const int size = at_most_one_buffer_[start].Index().value();
-  return absl::MakeSpan(&at_most_one_buffer_[start + 1], size);
+absl::Span<const Literal> BinaryImplicationGraph::AtMostOne(int index) const {
+  const int size = at_most_one_buffer_[index].Index().value();
+  return absl::MakeSpan(&at_most_one_buffer_[index + 1], size);
 }
 
 LiteralIndex BinaryImplicationGraph::RandomImpliedLiteral(Literal lhs) {

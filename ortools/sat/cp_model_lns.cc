@@ -1514,6 +1514,20 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
       ++num_not_fully_solved_in_batch;
     }
 
+    if (data.presolve_limit_reached) {
+      const double bumped =
+          std::max(presolve_deterministic_limit_,
+                   std::max(1e-4, 2.0 * data.presolve_deterministic_limit));
+      presolve_deterministic_limit_ =
+          std::min(max_presolve_deterministic_limit_, bumped);
+    } else if (data.presolve_deterministic_time <
+               0.25 * presolve_deterministic_limit_) {
+      presolve_deterministic_limit_ =
+          std::max({initial_presolve_deterministic_limit_,
+                    2.0 * data.presolve_deterministic_time,
+                    presolve_deterministic_limit_ * 0.95});
+    }
+
     // It seems to make more sense to compare the new objective to the base
     // solution objective, not the best one. However this causes issues in the
     // logic below because on some problems the neighborhood can always lead
@@ -3137,10 +3151,13 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 
 bool NeighborhoodGenerator::SolveData::operator<(const SolveData& o) const {
   return std::tie(status, difficulty, deterministic_limit, deterministic_time,
-                  initial_best_objective, base_objective, new_objective) <
+                  presolve_deterministic_limit, presolve_deterministic_time,
+                  presolve_limit_reached, initial_best_objective,
+                  base_objective, new_objective) <
          std::tie(o.status, o.difficulty, o.deterministic_limit,
-                  o.deterministic_time, o.initial_best_objective,
-                  o.base_objective, o.new_objective);
+                  o.deterministic_time, o.presolve_deterministic_limit,
+                  o.presolve_deterministic_time, o.presolve_limit_reached,
+                  o.initial_best_objective, o.base_objective, o.new_objective);
 }
 
 }  // namespace sat

@@ -840,6 +840,77 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
+TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 4, -4, 4 ]
+      lin_max {
+        target {
+          vars: [ 2, 1, 2, 4 ]
+          coeffs: [ 1, 2, 1, 5 ]
+        }
+        exprs {
+          vars: [ 1, 0, 3 ]
+          coeffs: [ 2, 1, 7 ]
+          offset: 3
+        }
+        exprs {
+          vars: [ 0, 1, 4 ]
+          coeffs: [ 1, -1, 4 ]
+          offset: 1
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+          offset: 1
+        }
+      }
+    }
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ -4, 4 ]
+      lin_max {
+        target {
+          vars: [ 1, 2 ]
+          coeffs: [ 2, 2 ]
+          offset: 5
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+          offset: 1
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+          offset: 5
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, 2 ]
+          offset: 3
+        }
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  EXPECT_TRUE(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                        &new_cp_model, &model));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research
