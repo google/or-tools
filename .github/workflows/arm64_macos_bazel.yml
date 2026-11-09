@@ -17,15 +17,12 @@ jobs:
   arm64-MacOS-Bazel-Python:
     strategy:
       matrix:
-        python: [
-          #{version: '3.10'},
-          #{version: '3.11'},
-          {version: '3.12'},
-          #{version: '3.13'},
-          #{version: '3.14'},
-        ]
+        include:
+          - {runner: macos-latest, python: '3.12'}
+          - {runner: xcode-27, python: '3.12'}
       fail-fast: false
-    runs-on: macos-latest # macos arm64 based runner
+    name: ${{matrix.runner}}•Bazel•Py${{matrix.python}}
+    runs-on: ${{matrix.runner}} # macos arm64 based runner
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/remote_cache
@@ -42,7 +39,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7
         with:
-          python-version: ${{matrix.python.version}}
+          python-version: ${{matrix.python}}
       - name: Check Python
         run: python --version
       - uses: bazel-contrib/setup-bazel@0.19.1
@@ -50,16 +47,24 @@ jobs:
         run: bazel version
       - name: Change Python in .bazelrc
         run: |
-          sed -i '' -e 's/\(python_version=\)3.[0-9]*/\1${{matrix.python.version}}/g' .bazelrc
+          sed -i '' -e 's/\(python_version=\)3.[0-9]*/\1${{matrix.python}}/g' .bazelrc
           cat .bazelrc
       - name: Change Python in MODULE.bazel
         run: |
-          sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
+          sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python}}"/g' MODULE.bazel
           cat MODULE.bazel
       - name: Build
-        run: bazel build --config=ci //...
+        run: >
+          bazel build
+          --config=ci
+          --@rules_python//python/config_settings:python_version=${{matrix.python}}
+          //...
       - name: Test
-        run: bazel test  --config=ci //ortools/...
+        run: >
+          bazel test
+          --config=ci
+          --@rules_python//python/config_settings:python_version=${{matrix.python}}
+          //ortools/...
 
   arm64_macos_bazel:
     runs-on: ubuntu-latest
