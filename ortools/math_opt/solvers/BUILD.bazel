@@ -898,3 +898,13 @@ or_cc_test(
         "@abseil-cpp//absl/log",
     ],
 )
+
+or_cc_test(
+    name = "gurobi_proto_test",
+    srcs = ["gurobi_proto_test.cc"],
+    deps = [
+        ":gurobi_cc_proto",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
