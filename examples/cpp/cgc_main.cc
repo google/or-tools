@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
       LOG(INFO) << "The maximum value found is: " << cgc.MaximumValue();
     }
   } else {
-    absl::PrintF("There was no solution found in %v.\n", time_limit);
+    absl::PrintF("There was no solution found in %v ms.\n", time_limit);
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;

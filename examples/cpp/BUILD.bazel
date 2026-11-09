@@ -89,6 +89,21 @@ or_cc_binary(
     ],
 )
 
+or_cc_test(
+    name = "cgc_test",
+    size = "small",
+    srcs = ["cgc_test.cc"],
+    deps = [
+        ":cgc",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:temp_file",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
 bintest(
     name = "cgc_test_solution",
     size = "small",
@@ -111,6 +126,7 @@ or_cc_binary(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
+        "//ortools/port:sysinfo",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
