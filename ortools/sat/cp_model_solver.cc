@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -1450,6 +1451,8 @@ class LnsSolver : public SubSolver {
       data.task_id = task_id;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
+      data.presolve_deterministic_limit =
+          generator_->presolve_deterministic_limit();
       data.initial_best_objective =
           shared_->response->GetBestSolutionObjective();
 
@@ -1474,6 +1477,7 @@ class LnsSolver : public SubSolver {
         // works.
         data.base_objective = data.initial_best_objective;
       }
+      data.new_objective = data.base_objective;
 
       Neighborhood neighborhood =
           generator_->Generate(base_response, data, random);
@@ -1495,7 +1499,8 @@ class LnsSolver : public SubSolver {
       }
       const std::string_view search_info =
           absl::StripPrefix(absl::string_view(local_params.name()), "lns_");
-      local_params.set_max_deterministic_time(data.deterministic_limit);
+      local_params.set_max_deterministic_time(
+          std::numeric_limits<double>::infinity());
 
       std::string source_info =
           neighborhood.source_info.empty() ? name() : neighborhood.source_info;
@@ -1513,6 +1518,10 @@ class LnsSolver : public SubSolver {
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
       local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
+      const double global_dtime_limit =
+          local_time_limit->GetDeterministicLimit();
+      local_time_limit->ChangeDeterministicLimit(
+          std::min(global_dtime_limit, data.presolve_deterministic_limit));
       // Don't let our LNS model stop the main solve.
       local_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
 
@@ -1661,7 +1670,24 @@ class LnsSolver : public SubSolver {
 
       // It is important to stop here to avoid using a model for which the
       // presolve was interrupted in the middle.
-      if (local_time_limit->LimitReached()) return;
+      if (local_time_limit->LimitReached()) {
+        data.status = CpSolverStatus::UNKNOWN;
+        data.presolve_deterministic_time =
+            local_time_limit->GetElapsedDeterministicTime();
+        data.deterministic_time += data.presolve_deterministic_time;
+        data.presolve_limit_reached = true;
+        generator_->AddSolveData(data);
+        return;
+      }
+
+      data.presolve_deterministic_time =
+          local_time_limit->GetElapsedDeterministicTime();
+      local_time_limit->ResetHistory();
+      local_time_limit->ChangeDeterministicLimit(std::min(
+          global_dtime_limit,
+          data.presolve_deterministic_time + data.deterministic_limit));
+      local_params.set_max_deterministic_time(data.deterministic_limit);
+      *(local_model.GetOrCreate<SatParameters>()) = local_params;
 
       // Release the context.
       context.reset(nullptr);
@@ -1688,7 +1714,13 @@ class LnsSolver : public SubSolver {
       if (presolve_status == CpSolverStatus::UNKNOWN) {
         // Sometimes when presolve is aborted in the middle, we don't want to
         // load the model as it might fail some DCHECK.
-        if (local_time_limit->LimitReached()) return;
+        if (local_time_limit->LimitReached()) {
+          data.status = CpSolverStatus::UNKNOWN;
+          data.deterministic_time +=
+              local_time_limit->GetElapsedDeterministicTime();
+          generator_->AddSolveData(data);
+          return;
+        }
 
         LoadCpModel(lns_fragment, &local_model);
         QuickSolveWithHint(lns_fragment, &local_model);
@@ -1838,7 +1870,6 @@ class LnsSolver : public SubSolver {
         }
 
         // Finish filling the SolveData now that the local solve is done.
-        data.new_objective = data.base_objective;
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
           data.new_objective = IntegerValue(ComputeInnerObjective(

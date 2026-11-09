@@ -2922,12 +2922,20 @@ void ExpandCpModel(PresolveContext* context) {
           ExpandPositiveTable(context->MutableConstraint(c), context);
         }
         break;
-      case ConstraintProto::kLinMax:
+      case ConstraintProto::kLinMax: {
+        bool changed = false;
+        if (!context->params().cp_model_presolve() ||
+            context->time_limit()->LimitReached()) {
+          changed = context->CanonicalizeLinMax(context->MutableConstraint(c));
+        }
         if (ct.lin_max().exprs().size() <=
             context->params().max_lin_max_size_for_expansion()) {
           ExpandLinMax(context->MutableConstraint(c), context);
+        } else if (changed) {
+          context->UpdateConstraintVariableUsage(c);
         }
         break;
+      }
       default:
         skip = true;
         break;

@@ -601,6 +601,8 @@ class TopNCuts {
   // Empty the local pool and add all its contents to the manager.
   void TransferToManager(LinearConstraintManager* manager);
 
+  void Clear() { cuts_.Clear(); }
+
  private:
   struct CutCandidate {
     std::string name;

@@ -911,6 +911,15 @@ class BinaryImplicationGraph : public SatPropagator {
     return implications_and_amos_[lit].offsets();
   }
 
+  // Returns false if no at_most_one was ever added, in which case
+  // AtMostOneIndices() is empty for all literals.
+  bool HasAtMostOnes() const { return !at_most_one_buffer_.empty(); }
+
+  // Returns the at most one at the given index (which must be obtained via
+  // AtMostOneIndices()).
+  // Important: this is only valid until a new at_most_one is added.
+  absl::Span<const Literal> AtMostOne(int index) const;
+
   // Simple wrapper to not forget to output newly fixed variables to the DRAT
   // or LRAT proof (with `proof` as proof) if needed. This will propagate right
   // away the implications.
@@ -988,10 +997,6 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // To be used in DCHECKs().
   bool InvariantsAreOk();
-
-  // Return the at most one encoded at the given start.
-  // Important: this is only valid until a new at_most one is added.
-  absl::Span<const Literal> AtMostOne(int start) const;
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;

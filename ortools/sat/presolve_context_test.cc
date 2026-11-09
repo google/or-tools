@@ -899,6 +899,82 @@ TEST(PresolveContextTest, AddAffineRelationWithOffset) {
   EXPECT_EQ(context.GetAffineRelation(2).offset, 10);
 }
 
+TEST(PresolveContextTest, AddAffineRelationCommonRepresentativeWithOffsets) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 34, 11, 17, 3 ]
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.LoadAndClampSolutionHint();
+
+  ASSERT_TRUE(context.StoreAffineRelation(0, 1, 3, 1));  // x0 = 3 * x1 + 1
+  ASSERT_TRUE(context.StoreAffineRelation(2, 3, 5, 2));  // x2 = 5 * x3 + 2
+  // 3 * x1 + 1 = 2 * (5 * x3 + 2) -> 3 * x1 - 10 * x3 = 3.
+  ASSERT_TRUE(context.StoreAffineRelation(0, 2, 2, 0));
+
+  EXPECT_EQ(context.DomainOf(4), Domain(0, 33));
+  EXPECT_EQ(context.GetAffineRelation(1),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/10,
+                                      /*offset=*/1}));
+  EXPECT_EQ(context.GetAffineRelation(0),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/30,
+                                      /*offset=*/4}));
+  EXPECT_EQ(context.GetAffineRelation(3),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/3,
+                                      /*offset=*/0}));
+  EXPECT_EQ(context.GetAffineRelation(2),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/15,
+                                      /*offset=*/2}));
+  EXPECT_THAT(context.solution_crush().GetVarValues(),
+              testing::ElementsAre(34, 11, 17, 3, 1));
+}
+
+TEST(PresolveContextTest, AddAffineRelationCommonRepresentativeWithGcd) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 42, 7, 40, 4 ]
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.LoadAndClampSolutionHint();
+
+  ASSERT_TRUE(context.StoreAffineRelation(0, 1, 6, 0));   // x0 = 6 * x1
+  ASSERT_TRUE(context.StoreAffineRelation(2, 3, 10, 0));  // x2 = 10 * x3
+  // 6 * x1 = 10 * x3 + 2 -> 3 * x1 - 5 * x3 = 1 after dividing by gcd(6, 10).
+  ASSERT_TRUE(context.StoreAffineRelation(0, 2, 1, 2));
+
+  EXPECT_EQ(context.DomainOf(4), Domain(0, 32));
+  EXPECT_EQ(context.GetAffineRelation(1),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/5,
+                                      /*offset=*/2}));
+  EXPECT_EQ(context.GetAffineRelation(0),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/30,
+                                      /*offset=*/12}));
+  EXPECT_EQ(context.GetAffineRelation(3),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/3,
+                                      /*offset=*/1}));
+  EXPECT_EQ(context.GetAffineRelation(2),
+            (AffineRelation::Relation{/*representative=*/4, /*coeff=*/30,
+                                      /*offset=*/10}));
+  EXPECT_THAT(context.solution_crush().GetVarValues(),
+              testing::ElementsAre(42, 7, 40, 4, 1));
+}
+
 TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
@@ -1325,6 +1401,64 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_reach) {
   expr2.add_vars(1);
   expr2.add_coeffs(7);
   EXPECT_TRUE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
+}
+
+TEST(PresolveContextTest, CanonicalizeLinMaxLiteralAndNegationInInitialProto) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      enforcement_literal: [ 0, -1 ]
+      lin_max {
+        target {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  ConstraintProto* ct = context.MutableConstraint(0);
+  EXPECT_TRUE(context.CanonicalizeLinMax(ct));
+  EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeLinMaxLiteralAndNegationAfterSubstitution) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      lin_max {
+        target {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  // Substitute literal 1 with not(0) (-1).
+  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -2));
+  ConstraintProto* ct = context.MutableConstraint(0);
+  EXPECT_TRUE(context.CanonicalizeLinMax(ct));
+  EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
 }
 
 }  // namespace

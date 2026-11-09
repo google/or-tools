@@ -14,17 +14,22 @@
 #include "ortools/sat/cp_constraint_presolve.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <vector>
 
+#include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -32,6 +37,10 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
+using ::testing::ElementsAre;
+using ::testing::EqualsProto;
+using ::testing::IsEmpty;
 
 CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
                                    const int constraint_index) {
@@ -949,6 +958,1122 @@ TEST(PresolveCpModelTest, DetectApproximateGCDWithMultipleDistinctMergedTerms) {
                 coeffs: [ 1, 2, 3, 3 ]
                 domain: [ 0, 14 ]
               )pb"));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMInEquality) {
+  // x + y + 100*b1 - 100*b2 == 1 with x, y, b1, b2 in [0, 1].
+  // Any non-zero value of 100*(b1 - b2) pushes the LHS outside [1, 1], so the
+  // constraint decouples into b1 - b2 == 0 and x + y == 1.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 100, -100 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMInNarrowRange) {
+  // 1 <= x + y + z + 150*b1 - 100*b2 <= 2 with x, y, z in [0, 1],
+  // b1 in {0, 2}, b2 in {0, 3}. Here gcd(150, 100) = 50 > max(2 - 0, 3 - 1),
+  // so this decouples into 3*b1 - 2*b2 == 0 and 1 <= x + y + z <= 2.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 2, 2 ] }
+    variables { domain: [ 0, 0, 3, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 150, -100 ]
+        domain: [ 1, 2 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 2, 2 ] }
+    variables { domain: [ 0, 0, 3, 3 ] }
+    constraints {
+      linear {
+        vars: [ 3, 4 ]
+        coeffs: [ 3, -2 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMWithNonZeroForcedMultiple) {
+  // x + y + 100*y1 - 100*y2 == 101 with x, y in [0, 1] and y1, y2 in [1, 3].
+  // Domain propagation tightens y1 to [2, 3] and y2 to [1, 2], and big-M
+  // decoupling splits the constraint into y1 - y2 == 1 and x + y == 1.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 3 ] }
+    variables { domain: [ 1, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 100, -100 ]
+        domain: [ 101, 101 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 2, 3 ] }
+    variables { domain: [ 1, 2 ] }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMWithEnforcement) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 100, -100 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 3, 4 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMInfeasibleGap) {
+  // With 10 variables, PropagateDomainsInLinear uses fast interval bounds
+  // [-100, 108] which contain 50, and overall gcd is 1, so only the big-M
+  // suffix check detects that 100*(b1 - b2) has no multiple in [42, 50].
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 10
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 100, -100 ]
+        domain: [ 50, 50 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  EXPECT_THAT(presolved.constraints(), IsEmpty());
+  EXPECT_THAT(presolved.variables(10), EqualsProto(R"pb(domain: [ 0, 0 ])pb"));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMDoesNotTriggerAtBoundary) {
+  // x + y + z + 2*b1 - 2*b2 == 2 with x, y, z, b1, b2 in [0, 1].
+  // Here big_gcd = 2 == max(ub - min(R), max(R) - lb) = max(2 - 0, 3 - 2) = 2:
+  // both (b1 == b2, x + y + z == 2) and (b1 = 1, b2 = 0, x = y = z = 0) are
+  // feasible, so the constraint must NOT decouple.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 2, -2 ]
+        domain: [ 2, 2 ]
+      }
+    }
+  )pb");
+
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(initial_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMStopsOnFirstSplit) {
+  // x + y + 100*b1 - 100*b2 + 200*c1 - 200*c2 == 1 on Booleans: stopping on the
+  // first valid suffix split (big_gcd = 200 > 102) immediately peels off
+  // c1 - c2 == 0 rather than mixing tiers into b1 - b2 + 2*c1 - 2*c2 == 0.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5 ]
+        coeffs: [ 1, 1, 100, -100, 200, -200 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 4, 5 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 100, -100 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMDividesSmallPartByGcd) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 2, 2, 2, 105, -105 ]
+        domain: [ 2, 4 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 3, 4 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 5
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMInfeasibleAfterSmallGcd) {
+  // Peeling forced 5769*v2 == 0 leaves -1024*v0 - 1024*v1 in [-2773, -2767],
+  // whose domain becomes empty after dividing by small_gcd = 1024.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ -3, 3 ] }
+    variables { domain: [ 0, 9 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ -1024, -1024, 5769 ]
+        domain: [ -2773, -2767 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  EXPECT_THAT(presolved.constraints(), IsEmpty());
+  EXPECT_THAT(presolved.variables(3), EqualsProto(R"pb(domain: [ 0, 0 ])pb"));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMOneSidedBounds) {
+  const CpModelProto upper_only_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 10 ]
+        domain: [ 0, 2 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_upper_only = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(upper_only_model, 0),
+              EqualsProto(expected_upper_only));
+
+  const CpModelProto lower_only_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 10 ]
+        domain: [ 24, 26 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_lower_only = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 2, 2 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 4, 6 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(lower_only_model, 0),
+              EqualsProto(expected_lower_only));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMClampedBounds) {
+  // Exercises clamping of big_lb / big_ub when MaxBoundedSubsetSum falls back
+  // to GCD mode (num_values > 10), as well as clamping small_lb / small_ub to
+  // [0, max_error] when > 10 variables keep fast interval bounds.
+  const CpModelProto gcd_mode_lb = ParseTestProto(R"pb(
+    variables { domain: [ 0, 20 ] }
+    variables { domain: [ 0, 11 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 10 ]
+        domain: [ 5, 8 ]
+      }
+    }
+  )pb");
+  EXPECT_EQ(PresolveOneConstraint(gcd_mode_lb, 0).constraints_size(), 2);
+
+  const CpModelProto gcd_mode_ub = ParseTestProto(R"pb(
+    variables { domain: [ 0, 20 ] }
+    variables { domain: [ 0, 11 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 10 ]
+        domain: [ 122, 125 ]
+      }
+    }
+  )pb");
+  EXPECT_EQ(PresolveOneConstraint(gcd_mode_ub, 0).constraints_size(), 2);
+
+  const CpModelProto clamp_r_lb = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 10
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 100, -100 ]
+        domain: [ -50, 1 ]
+      }
+    }
+  )pb");
+  const CpModelProto clamp_r_lb_presolved =
+      PresolveOneConstraint(clamp_r_lb, 0);
+  ASSERT_EQ(clamp_r_lb_presolved.constraints_size(), 2);
+  EXPECT_THAT(clamp_r_lb_presolved.constraints(1).linear().domain(),
+              ElementsAre(0, 1));
+
+  const CpModelProto clamp_r_ub = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 10
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 100, -100 ]
+        domain: [ 7, 50 ]
+      }
+    }
+  )pb");
+  const CpModelProto clamp_r_ub_presolved =
+      PresolveOneConstraint(clamp_r_ub, 0);
+  ASSERT_EQ(clamp_r_ub_presolved.constraints_size(), 2);
+  EXPECT_THAT(clamp_r_ub_presolved.constraints(1).linear().domain(),
+              ElementsAre(7, 8));
+}
+
+TEST(PresolveCpModelTest, DecoupleOpposingBigMSkipsNewlyFixedVar) {
+  // PropagateDomainsInLinear intersects doubleton variable 2 with its second
+  // constraint (fixing it to 5) without recanonicalizing constraint 0; the
+  // decoupling pass must skip fixed variable 2 when splitting constraint 0.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 100, -100 ]
+        domain: [ 6, 6 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 5 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 3, 4 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 4 ]
+      }
+    }
+  )pb");
+
+  CpModelProto presolved = initial_model;
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &presolved, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  presolver.PresolveOneConstraint(0);
+  presolver.RemoveEmptyConstraints();
+
+  ASSERT_EQ(presolved.constraints_size(), 4);
+  EXPECT_THAT(presolved.constraints(2), EqualsProto(R"pb(
+                linear {
+                  vars: [ 3, 4 ]
+                  coeffs: [ 1, -1 ]
+                  domain: [ 0, 0 ]
+                }
+              )pb"));
+  EXPECT_THAT(presolved.constraints(3), EqualsProto(R"pb(
+                linear {
+                  vars: [ 0, 1 ]
+                  coeffs: [ 1, 1 ]
+                  domain: [ 1, 1 ]
+                }
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintBoolean) {
+  // 1 <= x + y + 1000 * b <= 1000 with x, y in [-5, 5] and b in [0, 1].
+  // min_activity = -10 (ub_threshold = 11), max_activity = 1010
+  // (lb_threshold = 10), so 1000 is tightened to max(11, 10) = 11 and the RHS
+  // becomes [1, 11].
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ -5, 5 ] }
+    variables { domain: [ -5, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1000 ]
+        domain: [ 1, 1000 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 1, 11 ]
+                domain: [ 1, 11 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     TightenBigMInBoxedLinearConstraintNegativeAndGeneralIntegerWithGcd) {
+  // -3984 <= 2 * x - 1000 * z <= -1990 with x in [-10, 10] and z in [2, 4].
+  // min_activity = -4020 (ub_threshold = 36), max_activity = -1980
+  // (lb_threshold = 10), so -1000 is tightened to -36 with RHS [-128, -62],
+  // and GCD division by 2 reduces this to -64 <= x - 18 * z <= -31.
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ 2, 4 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 2, -1000 ]
+        domain: [ -3984, -1990 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, -18 ]
+                domain: [ -64, -31 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintMultipleTerms) {
+  // -995 <= x + 1000 * b0 - 1000 * b1 <= 995 with x in [-10, 10] and
+  // b0, b1 in [0, 1] tightens both big-M coefficients to 15 in one pass.
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ -10, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1000, -1000 ]
+        domain: [ -995, 995 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 15, -15 ]
+                domain: [ -10, 10 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     TightenBigMInBoxedLinearConstraintSkipsMultiIntervalRhs) {
+  // Multi-interval RHS domains must not be shifted/tightened as a single box,
+  // even when max_coeff_magnitude (3000) exceeds max(ub_threshold,
+  // lb_threshold) = max(2900, 2516) = 2900.
+  CpModelProto hole_rhs_model;
+  LinearConstraintProto* hole_lin =
+      hole_rhs_model.add_constraints()->mutable_linear();
+  for (int i = 0; i < 8; ++i) {
+    IntegerVariableProto* var = hole_rhs_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(2);
+    hole_lin->add_vars(i);
+    hole_lin->add_coeffs(1);
+  }
+  for (const int64_t coeff : {500, 3000}) {
+    const int idx = hole_rhs_model.variables_size();
+    IntegerVariableProto* b = hole_rhs_model.add_variables();
+    b->add_domain(0);
+    b->add_domain(1);
+    hole_lin->add_vars(idx);
+    hole_lin->add_coeffs(coeff);
+  }
+  for (const int64_t bound : {1, 1000, 2900, 3515}) {
+    hole_lin->add_domain(bound);
+  }
+  const CpModelProto presolved_hole_rhs =
+      PresolveOneConstraint(hole_rhs_model, 0);
+  ASSERT_EQ(presolved_hole_rhs.constraints_size(), 1);
+  EXPECT_THAT(presolved_hole_rhs.constraints(0).linear(),
+              EqualsProto(hole_rhs_model.constraints(0).linear()));
+}
+
+TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintDetectsUnsat) {
+  // With 10 variables (above PropagateDomainsInLinear's slow_mode cutoff):
+  // sum_{i=0..8} y_i in [0, 18] and b in [0, 1].
+  // 40 <= sum y_i + 100 * b <= 45 has threshold = max(40, 118 - 45) = 73 < 100.
+  // Tightening 100 -> 73 shifts the RHS to [40, 18], proving infeasibility.
+  CpModelProto initial_model;
+  LinearConstraintProto* lin =
+      initial_model.add_constraints()->mutable_linear();
+  for (int i = 0; i < 9; ++i) {
+    IntegerVariableProto* var = initial_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(2);
+    lin->add_vars(i);
+    lin->add_coeffs(1);
+  }
+  IntegerVariableProto* b = initial_model.add_variables();
+  b->add_domain(0);
+  b->add_domain(1);
+  lin->add_vars(9);
+  lin->add_coeffs(100);
+  lin->add_domain(40);
+  lin->add_domain(45);
+
+  CpModelProto presolved_model = initial_model;
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &presolved_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  presolver.PresolveOneConstraint(0);
+  EXPECT_TRUE(context.ModelIsUnsat());
+}
+
+TEST(PresolveCpModelTest,
+     TightenBigMInBoxedLinearConstraintSkipsFixedVariable) {
+  // PropagateDomainsInLinear fixes var 3 to [1, 1] in context without removing
+  // it from the proto yet; ExtractEnforcementLiteralFromLinearConstraint skips
+  // fixed var 3 while tightening var 2 from 100 to 2, and PresolveSmallLinear
+  // then canonicalizes fixed var 3 out of the constraint.
+  const CpModelProto fixed_var_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 2 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 2, 100, 500 ]
+        domain: [ 502, 613 ]
+      }
+    }
+  )pb");
+  const CpModelProto presolved_fixed =
+      PresolveOneConstraint(fixed_var_model, 0);
+  EXPECT_THAT(presolved_fixed.variables(3).domain(), ElementsAre(1, 1));
+  ASSERT_EQ(presolved_fixed.constraints_size(), 1);
+  EXPECT_THAT(presolved_fixed.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 2, 2 ]
+                domain: [ 2, 15 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintRandomEquivalence) {
+  absl::BitGen random;
+  int num_tightened = 0;
+  for (int iter = 0; iter < 200; ++iter) {
+    CpModelProto initial_model;
+    const int num_vars = 3;
+    std::vector<Domain> orig_domains(num_vars);
+    for (int i = 0; i < num_vars; ++i) {
+      const int64_t lb = absl::Uniform<int64_t>(random, -4, 4);
+      const int64_t ub = lb + absl::Uniform<int64_t>(random, 1, 5);
+      Domain d(lb, ub);
+      if (ub - lb >= 2 && absl::Bernoulli(random, 0.3)) {
+        d = d.IntersectionWith(Domain(lb + 1, lb + 1).Complement());
+      }
+      orig_domains[i] = d;
+      FillDomainInProto(d, initial_model.add_variables());
+    }
+
+    ConstraintProto* ct = initial_model.add_constraints();
+    LinearConstraintProto* lin = ct->mutable_linear();
+    std::vector<int64_t> coeffs(num_vars);
+    int64_t min_act = 0;
+    int64_t max_act = 0;
+    for (int i = 0; i < num_vars; ++i) {
+      int64_t c = (i == num_vars - 1) ? absl::Uniform<int64_t>(random, 20, 80)
+                                      : absl::Uniform<int64_t>(random, 1, 6);
+      if (absl::Bernoulli(random, 0.5)) c = -c;
+      coeffs[i] = c;
+      lin->add_vars(i);
+      lin->add_coeffs(c);
+      min_act += c > 0 ? c * orig_domains[i].Min() : c * orig_domains[i].Max();
+      max_act += c > 0 ? c * orig_domains[i].Max() : c * orig_domains[i].Min();
+    }
+    if (max_act - min_act < 2) continue;
+    const int64_t rhs_lb = absl::Uniform<int64_t>(random, min_act + 1, max_act);
+    const int64_t rhs_ub =
+        absl::Bernoulli(random, 0.2)
+            ? rhs_lb
+            : absl::Uniform<int64_t>(random, rhs_lb, max_act);
+    lin->add_domain(rhs_lb);
+    lin->add_domain(rhs_ub);
+
+    CpModelProto presolved_model = initial_model;
+    CpModelProto mapping_model;
+    Model model;
+    SatParameters* params = model.GetOrCreate<SatParameters>();
+    params->set_keep_all_feasible_solutions_in_presolve(true);
+    params->set_enumerate_all_solutions(true);
+    params->set_presolve_extract_integer_enforcement(false);
+    PresolveContext context(&model, &presolved_model, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    presolver.PresolveOneConstraint(0);
+    presolver.RemoveEmptyConstraints();
+
+    const bool is_unsat = context.ModelIsUnsat();
+    if (!is_unsat && presolved_model.constraints_size() == 1 &&
+        presolved_model.constraints(0).constraint_case() ==
+            ConstraintProto::kLinear &&
+        presolved_model.constraints(0).linear().coeffs_size() == num_vars &&
+        std::abs(presolved_model.constraints(0).linear().coeffs(num_vars - 1)) <
+            std::abs(coeffs[num_vars - 1])) {
+      ++num_tightened;
+    }
+
+    const int total_vars = presolved_model.variables_size();
+    auto eval_lit = [](int lit, const std::vector<int64_t>& vals) -> bool {
+      const int var = PositiveRef(lit);
+      return RefIsPositive(lit) ? (vals[var] != 0) : (vals[var] == 0);
+    };
+    auto eval_ct = [&](const ConstraintProto& c_proto,
+                       const std::vector<int64_t>& vals) -> bool {
+      for (const int lit : c_proto.enforcement_literal()) {
+        if (!eval_lit(lit, vals)) return true;
+      }
+      switch (c_proto.constraint_case()) {
+        case ConstraintProto::CONSTRAINT_NOT_SET:
+          return true;
+        case ConstraintProto::kBoolOr: {
+          for (const int lit : c_proto.bool_or().literals()) {
+            if (eval_lit(lit, vals)) return true;
+          }
+          return false;
+        }
+        case ConstraintProto::kBoolAnd: {
+          for (const int lit : c_proto.bool_and().literals()) {
+            if (!eval_lit(lit, vals)) return false;
+          }
+          return true;
+        }
+        case ConstraintProto::kLinear: {
+          int64_t sum = 0;
+          for (int k = 0; k < c_proto.linear().vars_size(); ++k) {
+            const int var = c_proto.linear().vars(k);
+            CHECK_GE(var, 0);
+            sum += c_proto.linear().coeffs(k) * vals[var];
+          }
+          return ReadDomainFromProto(c_proto.linear()).Contains(sum);
+        }
+        default:
+          ADD_FAILURE() << "Unexpected constraint case: "
+                        << c_proto.constraint_case();
+          return false;
+      }
+    };
+    auto check_full_assignment = [&](const std::vector<int64_t>& vals) -> bool {
+      for (int j = 0; j < total_vars; ++j) {
+        if (!context.DomainOf(j).Contains(vals[j])) return false;
+        const AffineRelation::Relation r = context.GetAffineRelation(j);
+        if (r.representative != j &&
+            vals[j] != r.coeff * vals[r.representative] + r.offset) {
+          return false;
+        }
+      }
+      for (const ConstraintProto& c_proto : presolved_model.constraints()) {
+        if (!eval_ct(c_proto, vals)) return false;
+      }
+      for (const ConstraintProto& c_proto : mapping_model.constraints()) {
+        if (!eval_ct(c_proto, vals)) return false;
+      }
+      return true;
+    };
+    auto eval_presolved = [&](std::vector<int64_t> vals) -> bool {
+      if (is_unsat) return false;
+      for (int i = 0; i < num_vars; ++i) {
+        if (!context.DomainOf(i).Contains(vals[i])) return false;
+      }
+      vals.resize(total_vars, 0);
+      const auto extend = [&](auto& self, int var_idx) -> bool {
+        if (var_idx == total_vars) return check_full_assignment(vals);
+        for (const int64_t v : context.DomainOf(var_idx).Values()) {
+          vals[var_idx] = v;
+          if (self(self, var_idx + 1)) return true;
+        }
+        return false;
+      };
+      return extend(extend, num_vars);
+    };
+
+    const Domain orig_rhs(rhs_lb, rhs_ub);
+    for (const int64_t x0 : orig_domains[0].Values()) {
+      for (const int64_t x1 : orig_domains[1].Values()) {
+        for (const int64_t x2 : orig_domains[2].Values()) {
+          const int64_t act = coeffs[0] * x0 + coeffs[1] * x1 + coeffs[2] * x2;
+          const bool orig_feasible = orig_rhs.Contains(act);
+          const bool presolved_feasible = eval_presolved({x0, x1, x2});
+          ASSERT_EQ(orig_feasible, presolved_feasible)
+              << "x=(" << x0 << "," << x1 << "," << x2 << ") initial:\n"
+              << initial_model << "\npresolved:\n"
+              << presolved_model;
+        }
+      }
+    }
+  }
+  EXPECT_GT(num_tightened, 20);
+}
+
+TEST(PresolveCpModelTest,
+     CumulativeConvertsTwoValueDemandToOptionalAndNoOverlap) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 10, 20 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 10, 20 ] }
+    variables { domain: [ 0, 0, 2, 2 ] }
+    variables { domain: [ 0, 0, 2, 2 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        size { offset: 10 }
+        end { vars: 1 coeffs: 1 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        size { offset: 10 }
+        end { vars: 3 coeffs: 1 }
+      }
+    }
+    constraints {
+      cumulative {
+        capacity { offset: 3 }
+        intervals: [ 0, 1 ]
+        demands { vars: 4 coeffs: 1 }
+        demands { vars: 5 coeffs: 1 }
+      }
+    }
+  )pb");
+
+  CpModelProto presolved_model = initial_model;
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &presolved_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  presolver.PresolveOneConstraint(/*c=*/2);
+  presolver.RemoveEmptyConstraints();
+
+  bool has_no_overlap = false;
+  bool has_cumulative = false;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kNoOverlap) {
+      has_no_overlap = true;
+    }
+    if (ct.constraint_case() == ConstraintProto::kCumulative) {
+      has_cumulative = true;
+    }
+  }
+  EXPECT_TRUE(has_no_overlap);
+  EXPECT_FALSE(has_cumulative);
+}
+
+TEST(PresolveCpModelTest,
+     PropagateDomainsInLinearKeepsMultiEnforcedNonBooleansUnsplit) {
+  // Minimum activity of 2*b0 - 3*b1 + 4*y0 - 5*y1 with b_j in [0, 1] and y_j in
+  // [0, 3] is -3 - 15 = -18. Because there is more than one enforcement literal
+  // and not all variables are Booleans, the constraint is never split: all
+  // terms stay in a single normalized +-1 linear equality and reach a fixpoint
+  // on the next pass.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3, 4, 5 ]
+        coeffs: [ 2, -3, 4, -5 ]
+        domain: [ -100, -18 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3, 4, 5 ]
+        coeffs: [ 1, -1, 1, -1 ]
+        domain: [ -4, -4 ]
+      }
+    }
+  )pb");
+
+  CpModelProto presolved_model = initial_model;
+  CpModelProto mapping_model;
+  Model model;
+  model.GetOrCreate<SatParameters>()
+      ->set_keep_all_feasible_solutions_in_presolve(true);
+  PresolveContext context(&model, &presolved_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  presolver.PresolveOneConstraint(0);
+  EXPECT_GT(context.num_presolve_operations, 0);
+  const int64_t ops_after_first_pass = context.num_presolve_operations;
+  EXPECT_FALSE(presolver.PresolveOneConstraint(0));
+  EXPECT_EQ(context.num_presolve_operations, ops_after_first_pass);
+  presolver.RemoveEmptyConstraints();
+  EXPECT_THAT(presolved_model, EqualsProto(expected_model));
+}
+
+TEST(PresolveCpModelTest,
+     PropagateDomainsInLinearCombinesMultiEnforcedBooleansIntoBoolAnd) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3, 4 ]
+        coeffs: [ 2, -3, 4 ]
+        domain: [ -10, -3 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      bool_and { literals: [ -3, 3, -5 ] }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_model));
+}
+
+TEST(PresolveCpModelTest,
+     PresolveEnforcedLinear2EqCstCombinesBooleansIntoSingleBoolAnd) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 2, 3 ]
+        domain: [ 5, 5 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      bool_and { literals: [ 2, 3 ] }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_model));
+}
+
+TEST(PresolveCpModelTest,
+     PresolveEnforcedLinear2EqCstKeepsMultiEnforcedNonBooleansUnsplit) {
+  // 2*x + 5*y == 10 over x in [0, 3], y in [0, 2] has the unique solution
+  // (x, y) = (0, 2), which lies at domain extrema, so it normalizes in place to
+  // x - y == -2 without splitting across [0, 1].
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 2, 5 ]
+        domain: [ 10, 10 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -2, -2 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0),
+              EqualsProto(expected_model));
 }
 
 }  // namespace

@@ -126,6 +126,11 @@ class ImpliedBounds {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
   }
 
+  bool HasImpliedBounds(IntegerVariable var) const {
+    return var >= 0 && var < has_implied_bounds_.size() &&
+           has_implied_bounds_[var];
+  }
+
   // Returns all the implied values stored for a given literal.
   const absl::flat_hash_map<IntegerVariable, IntegerValue>& GetImpliedValues(
       Literal literal) const {

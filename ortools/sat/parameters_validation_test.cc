@@ -83,6 +83,18 @@ TEST(ValidateParameters, UseSharedTreeSearch) {
   EXPECT_THAT(ValidateParameters(params), HasSubstr("only be set on workers"));
 }
 
+TEST(ValidateParameters, SharedTreeWorkerMinDtimeBeforeSync) {
+  SatParameters params;
+  params.set_shared_tree_worker_min_dtime_before_sync(-1);
+
+  EXPECT_THAT(ValidateParameters(params), HasSubstr("non-negative"));
+
+  params.set_shared_tree_worker_min_dtime_before_sync(
+      std::numeric_limits<double>::infinity());
+
+  EXPECT_THAT(ValidateParameters(params), HasSubstr("not finite"));
+}
+
 TEST(ValidateParameters, NaNs) {
   const google::protobuf::Descriptor& descriptor = *SatParameters::descriptor();
   const google::protobuf::Reflection& reflection =

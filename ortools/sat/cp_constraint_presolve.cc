@@ -816,7 +816,7 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
               target.vars(0), target.coeffs(0), gcd, -target.offset())) {
         return false;
       }
-      CanonicalizeLinearExpression(*ct, lin_max->mutable_target());
+      context_->CanonicalizeLinMax(ct);
       context_->UpdateConstraintVariableUsage(c);
       CHECK_EQ(LinearExpressionGcd(target, gcd), gcd);
     } else {
@@ -831,6 +831,7 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
   for (LinearExpressionProto& expr : *lin_max->mutable_exprs()) {
     DivideLinearExpression(gcd, &expr);
   }
+  DCHECK(LinMaxIsCanonical(*ct));
   return true;
 }
 
@@ -1003,6 +1004,14 @@ bool CpConstraintPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
     for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
       infered_min = std::max(infered_min, context_->MinOf(expr));
       infered_max = std::max(infered_max, context_->MaxOf(expr));
+    }
+
+    // For T = max(E, -E) = |E|, the target is always non-negative even when the
+    // domain of E spans both negative and positive values.
+    if (ct->lin_max().exprs_size() == 2 &&
+        LinearExpressionProtosAreEqual(ct->lin_max().exprs(0),
+                                       ct->lin_max().exprs(1), -1)) {
+      infered_min = std::max<int64_t>(infered_min, 0);
     }
 
     if (target.vars().empty()) {
@@ -1273,6 +1282,14 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
       infered_min = std::max(infered_min, context_->MinOf(expr));
       infered_max = std::max(infered_max, context_->MaxOf(expr));
     }
+
+    // As in PropagateAndReduceLinMax(), recognize that max(E, -E) = |E| >= 0
+    // when checking whether the target domain contains all possible rhs values.
+    if (ct->lin_max().exprs_size() == 2 &&
+        LinearExpressionProtosAreEqual(ct->lin_max().exprs(0),
+                                       ct->lin_max().exprs(1), -1)) {
+      infered_min = std::max<int64_t>(infered_min, 0);
+    }
     Domain rhs_domain;
     for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
       rhs_domain = rhs_domain.UnionWith(
@@ -1330,26 +1347,6 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {
     context_->UpdateRuleStats("lin_max: unused affine target");
     context_->MarkVariableAsRemoved(target.vars(0));
-    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
-    return RemoveConstraint(ct);
-  }
-
-  // If the target is only used in the objective, and safe, we can simplify the
-  // constraint.
-  if (linear_target_domain_contains_max_domain &&
-      context_->VariableWithCostIsUniqueAndRemovable(target.vars(0)) &&
-      (target.coeffs(0) > 0) ==
-          (context_->ObjectiveCoeff(target.vars(0)) > 0)) {
-    context_->UpdateRuleStats("lin_max: rewrite with precedences");
-    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-      ConstraintProto* new_ct = context_->AddConstraint();
-      LinearConstraintProto* prec = new_ct->mutable_linear();
-      prec->add_domain(0);
-      prec->add_domain(kint64max);
-      AddLinearExpressionToLinearConstraint(target, 1, prec);
-      AddLinearExpressionToLinearConstraint(expr, -1, prec);
-      context_->CanonicalizeLinearConstraint(new_ct);
-    }
     context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     return RemoveConstraint(ct);
   }
@@ -3360,6 +3357,36 @@ bool CpConstraintPresolver::PresolveEnforcedLinear2EqCst(ConstraintProto* ct,
     DCHECK(context_->DomainOf(var2).Contains(value2));
     DCHECK_EQ(coeff1 * value1 + coeff2 * value2, rhs);
 
+    const bool bool1 = context_->CanBeUsedAsLiteral(var1);
+    const bool bool2 = context_->CanBeUsedAsLiteral(var2);
+    if (bool1 && bool2) {
+      BoolArgumentProto* bool_and =
+          context_->AddEnforcedConstraint(ct)->mutable_bool_and();
+      bool_and->add_literals(value1 == 1 ? var1 : NegatedRef(var1));
+      bool_and->add_literals(value2 == 1 ? var2 : NegatedRef(var2));
+      context_->UpdateRuleStats(
+          "linear2: implied ax + by = cte has only one solution");
+      return RemoveConstraint(ct);
+    }
+
+    if (ct->enforcement_literal().size() > 1) {
+      if (std::abs(coeff1) == 1 && std::abs(coeff2) == 1) return false;
+      const bool extremum1 =
+          value1 == context_->MinOf(var1) || value1 == context_->MaxOf(var1);
+      const bool extremum2 =
+          value2 == context_->MinOf(var2) || value2 == context_->MaxOf(var2);
+      if (!extremum1 || !extremum2) return false;
+      const int64_t new_coeff1 = value1 == context_->MinOf(var1) ? 1 : -1;
+      const int64_t new_coeff2 = value2 == context_->MinOf(var2) ? 1 : -1;
+      LinearConstraintProto* lin = ct->mutable_linear();
+      lin->set_coeffs(0, new_coeff1);
+      lin->set_coeffs(1, new_coeff2);
+      FillDomainInProto(Domain(new_coeff1 * value1 + new_coeff2 * value2), lin);
+      context_->UpdateRuleStats(
+          "linear2: implied ax + by = cte has only one solution");
+      return true;
+    }
+
     LinearConstraintProto* linear1 =
         context_->AddEnforcedConstraint(ct)->mutable_linear();
     linear1->add_vars(var1);
@@ -3698,6 +3725,76 @@ bool CpConstraintPresolver::PresolveDiophantine(ConstraintProto* ct) {
   return RemoveConstraint(ct);
 }
 
+void CpConstraintPresolver::DecoupleForcedBigMSuffix(
+    int c, ConstraintProto* ct,
+    const PresolveContext::MergedCanonicalLinearConstraint& canonical,
+    int64_t magnitude, int64_t big_gcd, int64_t forced_big, int64_t max_error) {
+  const bool use_ub = canonical.ub < canonical.max_variation;
+  const bool use_lb = canonical.lb > 0;
+  const int64_t small_lb =
+      use_lb ? std::max<int64_t>(0, canonical.lb - forced_big) : 0;
+  const int64_t small_ub =
+      use_ub ? std::min(max_error, canonical.ub - forced_big) : max_error;
+  DCHECK_LE(0, small_lb);
+  DCHECK_LE(small_lb, small_ub);
+  DCHECK_LE(small_ub, max_error);
+  DCHECK(small_lb > 0 || small_ub < max_error);
+
+  const LinearConstraintProto& lin = ct->linear();
+  LinearConstraintProto big_lin;
+  LinearConstraintProto small_lin;
+  int64_t small_gcd = 0;
+  for (int k = 0; k < lin.vars_size(); ++k) {
+    const int var = lin.vars(k);
+    const int64_t coeff = lin.coeffs(k);
+    DCHECK_NE(coeff, 0);
+    if (context_->IsFixed(var)) continue;
+    if (std::abs(coeff) >= magnitude) {
+      DCHECK_EQ(coeff % big_gcd, 0);
+      big_lin.add_vars(var);
+      big_lin.add_coeffs(coeff / big_gcd);
+    } else {
+      small_gcd = std::gcd(small_gcd, std::abs(coeff));
+      small_lin.add_vars(var);
+      small_lin.add_coeffs(coeff);
+    }
+  }
+  DCHECK_GT(big_lin.vars_size(), 0);
+  DCHECK_GT(small_lin.vars_size(), 0);
+  DCHECK_GT(small_gcd, 0);
+
+  const auto [min_small, max_small] =
+      context_->ComputeMinMaxActivity(small_lin);
+  DCHECK_EQ(max_small - min_small, max_error);
+  Domain small_rhs(min_small + small_lb, min_small + small_ub);
+  if (small_gcd > 1) {
+    small_rhs = small_rhs.InverseMultiplicationBy(small_gcd);
+    if (small_rhs.IsEmpty()) {
+      (void)MarkConstraintAsFalse(ct, "linear: not satisfied after GCD");
+      context_->UpdateConstraintVariableUsage(c);
+      return;
+    }
+    context_->UpdateRuleStats("linear: divide by GCD");
+    for (int64_t& coeff : *small_lin.mutable_coeffs()) {
+      coeff /= small_gcd;
+    }
+  }
+  FillDomainInProto(small_rhs, &small_lin);
+
+  const auto [scaled_min_big, scaled_max_big] =
+      context_->ComputeMinMaxActivity(big_lin);
+  const int64_t big_rhs = scaled_min_big + forced_big / big_gcd;
+  DCHECK_LE(scaled_min_big, big_rhs);
+  DCHECK_LE(big_rhs, scaled_max_big);
+  FillDomainInProto(Domain(big_rhs), &big_lin);
+
+  context_->UpdateRuleStats("linear: decouple big-M part");
+  *context_->AddEnforcedConstraint(ct)->mutable_linear() = std::move(big_lin);
+  *context_->AddEnforcedConstraint(ct)->mutable_linear() = std::move(small_lin);
+  (void)RemoveConstraint(ct);
+  context_->UpdateConstraintVariableUsage(c);
+}
+
 // This tries to decompose the constraint into coeff * part1 + part2 and show
 // that the value that part2 take is not important, thus the constraint can
 // only be transformed on a constraint on the first part.
@@ -3813,7 +3910,7 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
       simplify_ub = true;
     }
 
-    if (max_error == 0) break;  // Last term.
+    if (i == 0 || max_error == 0) break;  // Last term.
     if (simplify_lb && simplify_ub) {
       // We have a simplification since terms with smaller magnitude can be
       // ignored.
@@ -3849,6 +3946,27 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
       FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mut_lin);
       DivideLinearByGcd(ct);
       context_->UpdateConstraintVariableUsage(c);
+      return;
+    }
+
+    // Check if the processed big-M suffix is forced to a single shifted value
+    // (for instance when opposing big-M terms cancel out in an equality or
+    // narrow ranged constraint).
+    const int64_t max_big_variation = canonical.max_variation - max_error;
+    const int64_t big_gcd = static_cast<int64_t>(gcd);
+    const int64_t big_lb =
+        use_lb ? std::max<int64_t>(
+                     0, max_big_variation - lb_feasible_.CurrentMax())
+               : 0;
+    const int64_t big_ub =
+        use_ub ? std::min(max_big_variation, ub_feasible_.CurrentMax())
+               : max_big_variation;
+    DCHECK_EQ(big_lb % big_gcd, 0);
+    DCHECK_EQ(big_ub % big_gcd, 0);
+    DCHECK_LE(big_lb, big_ub);
+    if (big_lb == big_ub) {
+      DecoupleForcedBigMSuffix(c, ct, canonical, magnitude, big_gcd, big_lb,
+                               max_error);
       return;
     }
   }
@@ -4042,79 +4160,80 @@ bool CpConstraintPresolver::PropagateDomainsInLinear(int ct_index,
     FillDomainInProto(rhs, ct->mutable_linear());
   }
 
-  if (ct_index >= 0 && num_vars > 1 && rhs.IsFixed()) {
-    BoolArgumentProto* bool_and = nullptr;
-    if (rhs.FixedValue() == implied_rhs.Min()) {
-      if (ct->enforcement_literal().empty()) {
-        context_->UpdateRuleStats("linear: all fixed to min");
-        for (int i = 0; i < num_vars; ++i) {
-          const int var = ct->linear().vars(i);
-          const int64_t coeff = ct->linear().coeffs(i);
-          const int64_t value =
-              coeff > 0 ? context_->MinOf(var) : context_->MaxOf(var);
-          if (!context_->IntersectDomainWith(var, Domain(value))) return false;
-        }
-      } else {
-        // Replace by linear1 constraints.
-        context_->UpdateRuleStats(
-            "linear: all fixed to min in enforced constraint");
-        for (int i = 0; i < num_vars; ++i) {
-          const int var = ct->linear().vars(i);
-          const int64_t coeff = ct->linear().coeffs(i);
-          const int64_t value =
-              coeff > 0 ? context_->MinOf(var) : context_->MaxOf(var);
-          if (context_->CanBeUsedAsLiteral(var)) {
-            if (bool_and == nullptr) {
-              bool_and =
-                  context_->AddEnforcedConstraint(ct)->mutable_bool_and();
-            }
-            bool_and->add_literals(value == 1 ? var : NegatedRef(var));
-            continue;
-          }
-          ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
-          new_ct->mutable_linear()->add_vars(var);
-          new_ct->mutable_linear()->add_coeffs(1);
-          new_ct->mutable_linear()->add_domain(value);
-          new_ct->mutable_linear()->add_domain(value);
-        }
-      }
-      return RemoveConstraint(ct);
-    } else if (rhs.FixedValue() == implied_rhs.Max()) {
-      if (ct->enforcement_literal().empty()) {
-        context_->UpdateRuleStats("linear: all fixed to max");
-        for (int i = 0; i < num_vars; ++i) {
-          const int var = ct->linear().vars(i);
-          const int64_t coeff = ct->linear().coeffs(i);
-          const int64_t value =
-              coeff > 0 ? context_->MaxOf(var) : context_->MinOf(var);
-          if (!context_->IntersectDomainWith(var, Domain(value))) return false;
-        }
-      } else {
-        // Replace by linear1 constraints.
-        context_->UpdateRuleStats(
-            "linear: all fixed to max in enforced constraint");
-        for (int i = 0; i < num_vars; ++i) {
-          const int var = ct->linear().vars(i);
-          const int64_t coeff = ct->linear().coeffs(i);
-          const int64_t value =
-              coeff > 0 ? context_->MaxOf(var) : context_->MinOf(var);
-          if (context_->CanBeUsedAsLiteral(var)) {
-            if (bool_and == nullptr) {
-              bool_and =
-                  context_->AddEnforcedConstraint(ct)->mutable_bool_and();
-            }
-            bool_and->add_literals(value == 1 ? var : NegatedRef(var));
-            continue;
-          }
-          ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
-          new_ct->mutable_linear()->add_vars(var);
-          new_ct->mutable_linear()->add_coeffs(1);
-          new_ct->mutable_linear()->add_domain(value);
-          new_ct->mutable_linear()->add_domain(value);
+  if (ct_index >= 0 && num_vars > 1 && rhs.IsFixed() &&
+      (rhs.FixedValue() == implied_rhs.Min() ||
+       rhs.FixedValue() == implied_rhs.Max())) {
+    const bool fix_to_min = rhs.FixedValue() == implied_rhs.Min();
+    const auto fixed_value_of = [&](int var, int64_t coeff) {
+      return (coeff > 0) == fix_to_min ? context_->MinOf(var)
+                                       : context_->MaxOf(var);
+    };
+    if (ct->enforcement_literal().empty()) {
+      context_->UpdateRuleStats(fix_to_min ? "linear: all fixed to min"
+                                           : "linear: all fixed to max");
+      for (int i = 0; i < num_vars; ++i) {
+        const int var = ct->linear().vars(i);
+        const int64_t coeff = ct->linear().coeffs(i);
+        if (!context_->IntersectDomainWith(
+                var, Domain(fixed_value_of(var, coeff)))) {
+          return false;
         }
       }
       return RemoveConstraint(ct);
     }
+
+    bool all_bools = true;
+    bool all_unit_coeffs = true;
+    for (int i = 0; i < num_vars; ++i) {
+      if (!context_->CanBeUsedAsLiteral(ct->linear().vars(i))) {
+        all_bools = false;
+      }
+      if (std::abs(ct->linear().coeffs(i)) != 1) {
+        all_unit_coeffs = false;
+      }
+    }
+
+    if (!all_bools && ct->enforcement_literal().size() > 1) {
+      if (all_unit_coeffs) return rhs != old_rhs;
+      context_->UpdateRuleStats(
+          fix_to_min ? "linear: all fixed to min in enforced constraint"
+                     : "linear: all fixed to max in enforced constraint");
+      LinearConstraintProto* lin = ct->mutable_linear();
+      int64_t new_rhs = 0;
+      for (int i = 0; i < num_vars; ++i) {
+        const int var = lin->vars(i);
+        const int64_t coeff = lin->coeffs(i);
+        const int64_t value = fixed_value_of(var, coeff);
+        const int64_t new_coeff = coeff > 0 ? 1 : -1;
+        lin->set_coeffs(i, new_coeff);
+        new_rhs += new_coeff * value;
+      }
+      FillDomainInProto(Domain(new_rhs), lin);
+      return true;
+    }
+
+    context_->UpdateRuleStats(
+        fix_to_min ? "linear: all fixed to min in enforced constraint"
+                   : "linear: all fixed to max in enforced constraint");
+    BoolArgumentProto* bool_and = nullptr;
+    for (int i = 0; i < num_vars; ++i) {
+      const int var = ct->linear().vars(i);
+      const int64_t coeff = ct->linear().coeffs(i);
+      const int64_t value = fixed_value_of(var, coeff);
+      if (context_->CanBeUsedAsLiteral(var)) {
+        if (bool_and == nullptr) {
+          bool_and = context_->AddEnforcedConstraint(ct)->mutable_bool_and();
+        }
+        bool_and->add_literals(value == 1 ? var : NegatedRef(var));
+        continue;
+      }
+      ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
+      new_ct->mutable_linear()->add_vars(var);
+      new_ct->mutable_linear()->add_coeffs(1);
+      new_ct->mutable_linear()->add_domain(value);
+      new_ct->mutable_linear()->add_domain(value);
+    }
+    return RemoveConstraint(ct);
   }
 
   // Propagate the variable bounds.
@@ -4948,10 +5067,10 @@ bool CpConstraintPresolver::DetectTwoTermTilting(
 // We also generalize this to integer variable at one of their bound.
 //
 // This operation is similar to coefficient strengthening in the MIP world.
-void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
+bool CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     int ct_index, ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::kLinear) return;
-  if (context_->ModelIsUnsat()) return;
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (context_->ModelIsUnsat()) return false;
   DeterministicTimer<{.scale = 1.713e-08, .offset = 1.020e-09}> timer(
       time_limit_, ct->linear().vars_size());
 
@@ -4960,11 +5079,11 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 
   // No need to process size one constraints, they will be presolved separately.
   // We also do not want to split them in two.
-  if (num_vars <= 1) return;
+  if (num_vars <= 1) return false;
 
   const PresolveContext::LinearStats ct_stats =
       context_->ComputeLinearStats(arg);
-  if (ct_stats.max_coeff_magnitude == 1) return;
+  if (ct_stats.max_coeff_magnitude == 1) return false;
 
   // We can only extract enforcement literals if the maximum coefficient
   // magnitude is large enough. Note that we handle complex domain.
@@ -4992,7 +5111,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
         LowerThanCoeffStrengthening(/*from_lower_bound=*/true,
                                     ct_stats.min_coeff_magnitude,
                                     rhs_max - ct_stats.min_activity, ct);
-        return;
+        return false;
       }
       if (ct_stats.max_activity <= rhs_max &&
           ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude >
@@ -5000,7 +5119,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
         LowerThanCoeffStrengthening(/*from_lower_bound=*/false,
                                     ct_stats.min_coeff_magnitude,
                                     ct_stats.max_activity - rhs_min, ct);
-        return;
+        return false;
       }
     }
   }
@@ -5021,14 +5140,55 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
   const bool lower_bounded = ct_stats.min_activity < rhs_domain.Min();
   const bool upper_bounded = ct_stats.max_activity > rhs_domain.Max();
-  if (!lower_bounded && !upper_bounded) return;
+  if (!lower_bounded && !upper_bounded) return false;
   if (lower_bounded && upper_bounded) {
+    // Even without splitting the constraint, any coefficient larger than both
+    // (lb - min_activity) and (max_activity - ub) can be tightened to their
+    // maximum.
+    const int64_t threshold = std::max(ub_threshold, lb_threshold);
+    if (rhs_domain.NumIntervals() == 1 &&
+        ct_stats.max_coeff_magnitude > threshold) {
+      int64_t rhs_lb = rhs_domain.Min();
+      int64_t rhs_ub = rhs_domain.Max();
+      bool changed = false;
+      LinearConstraintProto* mutable_arg = ct->mutable_linear();
+      for (int i = 0; i < num_vars; ++i) {
+        const int var = mutable_arg->vars(i);
+        DCHECK_GE(var, 0);
+        const int64_t coeff = mutable_arg->coeffs(i);
+        if (context_->IsFixed(var) || std::abs(coeff) <= threshold) continue;
+
+        if (coeff > 0) {
+          rhs_lb -= (coeff - threshold) * context_->MinOf(var);
+          rhs_ub -= (coeff - threshold) * context_->MaxOf(var);
+          mutable_arg->set_coeffs(i, threshold);
+        } else {
+          rhs_lb += (-coeff - threshold) * context_->MaxOf(var);
+          rhs_ub += (-coeff - threshold) * context_->MinOf(var);
+          mutable_arg->set_coeffs(i, -threshold);
+        }
+        changed = true;
+        context_->UpdateRuleStats("linear: coefficient strengthening");
+      }
+      if (changed) {
+        if (rhs_lb > rhs_ub) {
+          if (MarkConstraintAsFalse(ct,
+                                    "linear: infeasible boxed constraint")) {
+            context_->UpdateConstraintVariableUsage(ct_index);
+          }
+          return false;
+        }
+        FillDomainInProto(Domain(rhs_lb, rhs_ub), mutable_arg);
+        return true;
+      }
+    }
+
     // We disable this for now.
-    if (true) return;
+    if (true) return false;
 
     // Lets not split except if we extract enforcement.
     if (ct_stats.max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) {
-      return;
+      return false;
     }
 
     context_->UpdateRuleStats("linear: split boxed constraint");
@@ -5051,7 +5211,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 
     ct->Clear();
     context_->UpdateConstraintVariableUsage(ct_index);
-    return;
+    return false;
   }
 
   // Any coefficient greater than this will cause the constraint to be trivially
@@ -5090,9 +5250,11 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 
   // To avoid a quadratic loop, we will rewrite the linear expression at the
   // same time as we extract enforcement literals.
+  const int old_num_enforcement_literals = ct->enforcement_literal_size();
   int new_size = 0;
   int64_t rhs_offset = 0;
   bool some_integer_encoding_were_extracted = false;
+  bool coeff_strengthened = false;
   LinearConstraintProto* mutable_arg = ct->mutable_linear();
   for (int i = 0; i < arg.vars_size(); ++i) {
     int ref = arg.vars(i);
@@ -5122,6 +5284,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
         context_->UpdateRuleStats("linear: advanced coefficient strengthening");
       }
       if (coeff != new_magnitude) {
+        coeff_strengthened = true;
         if (lower_bounded) {
           // coeff * (X - LB + LB) -> new_magnitude * (X - LB) + coeff * LB
           rhs_offset -= (coeff - new_magnitude) * context_->MinOf(ref);
@@ -5164,6 +5327,8 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   if (some_integer_encoding_were_extracted || new_size == 1) {
     context_->UpdateConstraintVariableUsage(ct_index);
   }
+  return coeff_strengthened ||
+         ct->enforcement_literal_size() > old_num_enforcement_literals;
 }
 
 // Convert some linear constraint involving only Booleans to their Boolean
@@ -7195,6 +7360,16 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
   DeterministicTimer<{.scale = 2.904e-07, .offset = 8.579e-06}> timer(
       time_limit_, ct->cumulative().intervals_size());
 
+  bool move_constraint_last = false;
+  auto finalize_return = [&](bool result) {
+    if (move_constraint_last && !context_->ModelIsUnsat() &&
+        ct->constraint_case() == ConstraintProto::kCumulative) {
+      *context_->AddConstraint() = *ct;
+      return RemoveConstraint(ct);
+    }
+    return result;
+  };
+
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
 
   bool changed = CanonicalizeLinearExpression(*ct, proto->mutable_capacity());
@@ -7203,7 +7378,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
     changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
-  const int64_t capacity_max = context_->MaxOf(proto->capacity());
+  int64_t capacity_max = context_->MaxOf(proto->capacity());
 
   // Checks the capacity of the constraint.
   {
@@ -7288,24 +7463,26 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
 
-  // Filter absent intervals, or zero demands, or demand incompatible with the
-  // capacity.
+  // Convert {0, d} demand of compulsory intervals to optional intervals with
+  // fixed demand d, and filter absent intervals, zero demands, or demands
+  // incompatible with the capacity.
   {
     int new_size = 0;
+    int num_converted_demands = 0;
     int num_zero_demand_removed = 0;
     int num_zero_size_removed = 0;
     int num_incompatible_intervals = 0;
+    absl::flat_hash_map<std::pair<int, int>, int> optional_interval_cache;
     for (int i = 0; i < proto->intervals_size(); ++i) {
-      if (context_->ConstraintIsInactive(proto->intervals(i))) continue;
+      int interval_index = proto->intervals(i);
+      if (context_->ConstraintIsInactive(interval_index)) continue;
 
-      const LinearExpressionProto& demand_expr = proto->demands(i);
-      const int64_t demand_max = context_->MaxOf(demand_expr);
-      if (demand_max == 0) {
+      LinearExpressionProto demand_expr = proto->demands(i);
+      if (context_->MaxOf(demand_expr) == 0) {
         num_zero_demand_removed++;
         continue;
       }
 
-      const int interval_index = proto->intervals(i);
       if (context_->SizeMax(interval_index) <= 0) {
         // Size 0 intervals cannot contribute to a cumulative.
         num_zero_size_removed++;
@@ -7322,13 +7499,71 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
           DCHECK_EQ(interval_ct->enforcement_literal_size(), 1);
           const int literal = interval_ct->enforcement_literal(0);
           if (!context_->SetLiteralToFalse(literal)) {
-            return true;
+            return finalize_return(true);
           }
           num_incompatible_intervals++;
           continue;
         } else {
           return context_->NotifyThatModelIsUnsat(
               "cumulative: inconsistent intervals cannot be performed");
+        }
+      }
+
+      if (!context_->IsFixed(demand_expr) && demand_expr.vars_size() == 1 &&
+          context_->DomainOf(demand_expr.vars(0)).Size() == 2 &&
+          context_->MinOf(demand_expr) == 0 &&
+          context_->MaxOf(demand_expr) > 0) {
+        const int64_t demand_max = context_->MaxOf(demand_expr);
+        const int demand_lit =
+            context_->GetOrCreateAffineValueEncoding(demand_expr, demand_max);
+        if (context_->ModelIsUnsat()) return finalize_return(true);
+
+        if (context_->LiteralIsFalse(demand_lit)) {
+          num_zero_demand_removed++;
+          continue;
+        } else if (context_->LiteralIsTrue(demand_lit)) {
+          demand_expr = ConstantExpressionProto(demand_max);
+          changed = true;
+        } else if (!context_->ConstraintIsOptional(interval_index)) {
+          bool size_domain_changed = false;
+          if (!context_->IntersectDomainWith(
+                  context_->Constraint(interval_index).interval().size(),
+                  Domain(0, kint64max), &size_domain_changed)) {
+            return finalize_return(true);
+          }
+          if (context_->SizeMax(interval_index) <= 0) {
+            num_zero_size_removed++;
+            continue;
+          }
+          auto [it, inserted] = optional_interval_cache.try_emplace(
+              {interval_index, demand_lit}, -1);
+          if (inserted) {
+            const ConstraintProto old_ct = context_->Constraint(interval_index);
+            ConstraintProto* new_interval_ct = context_->AddConstraint();
+            *new_interval_ct = old_ct;
+            new_interval_ct->clear_enforcement_literal();
+            new_interval_ct->add_enforcement_literal(demand_lit);
+            it->second = context_->NumConstraints() - 1;
+            move_constraint_last = true;
+          }
+          interval_index = it->second;
+          demand_expr = ConstantExpressionProto(demand_max);
+          changed = true;
+          ++num_converted_demands;
+        } else if (context_->Constraint(interval_index)
+                       .enforcement_literal_size() == 1) {
+          const int enf_rep = context_->GetLiteralRepresentative(
+              context_->Constraint(interval_index).enforcement_literal(0));
+          const int demand_rep = context_->GetLiteralRepresentative(demand_lit);
+          if (demand_rep == enf_rep) {
+            demand_expr = ConstantExpressionProto(demand_max);
+            changed = true;
+            ++num_converted_demands;
+          } else if (demand_rep == NegatedRef(enf_rep)) {
+            ++num_converted_demands;
+            num_zero_demand_removed++;
+            continue;
+          }
         }
       }
 
@@ -7340,7 +7575,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
             DCHECK_EQ(interval_ct->enforcement_literal_size(), 1);
             const int literal = interval_ct->enforcement_literal(0);
             if (!context_->SetLiteralToFalse(literal)) {
-              return true;
+              return finalize_return(true);
             }
             num_incompatible_intervals++;
             continue;
@@ -7351,7 +7586,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
               context_->Constraint(interval_index);
           if (!context_->IntersectDomainWith(interval_ct.interval().size(),
                                              {0, 0})) {
-            return true;
+            return finalize_return(true);
           }
           context_->UpdateRuleStats(
               "cumulative: zero size of performed demand that exceeds "
@@ -7362,7 +7597,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
       }
 
       proto->set_intervals(new_size, interval_index);
-      *proto->mutable_demands(new_size) = proto->demands(i);
+      *proto->mutable_demands(new_size) = std::move(demand_expr);
       new_size++;
     }
 
@@ -7374,6 +7609,11 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
           proto->mutable_demands()->end());
     }
 
+    if (num_converted_demands > 0) {
+      context_->UpdateRuleStats(
+          "cumulative: converted {0, d} demand to optional interval",
+          num_converted_demands);
+    }
     if (num_zero_demand_removed > 0) {
       context_->UpdateRuleStats(
           "cumulative: removed intervals with no demands");
@@ -7398,7 +7638,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
       bool domain_changed = false;
       if (!context_->IntersectDomainWith(demand_expr, {0, capacity_max},
                                          &domain_changed)) {
-        return true;
+        return finalize_return(true);
       }
       if (domain_changed) {
         context_->UpdateRuleStats(
@@ -7549,7 +7789,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
       context_->UpdateRuleStats("cumulative: propagate min capacity");
       if (!context_->IntersectDomainWith(
               capacity_expr, Domain(max_of_performed_demand_mins, kint64max))) {
-        return true;
+        return finalize_return(true);
       }
     }
 
@@ -7585,6 +7825,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       const int64_t old_capacity = context_->MinOf(proto->capacity());
       *proto->mutable_capacity() = ConstantExpressionProto(old_capacity / gcd);
+      capacity_max = context_->MaxOf(proto->capacity());
       context_->UpdateRuleStats(
           "cumulative: divide demands and capacity by gcd");
     }
@@ -7614,7 +7855,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
     if (context_->SizeMin(index) <= 0) {
       // The behavior for zero-duration interval is currently not the same in
       // the no-overlap and the cumulative constraint.
-      return changed;
+      return finalize_return(changed);
     }
 
     const int64_t demand_min = context_->MinOf(demand_expr);
@@ -7629,24 +7870,24 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
       } else {
         CHECK_EQ(ct.enforcement_literal().size(), 1);
         if (!context_->SetLiteralToFalse(ct.enforcement_literal(0))) {
-          return true;
+          return finalize_return(true);
         }
       }
-      return changed;
+      return finalize_return(changed);
     } else if (demand_max > capacity_max) {
       if (ct.enforcement_literal().empty()) {
         context_->UpdateRuleStats(
             "cumulative: demand_max exceeds capacity max");
         if (!context_->IntersectDomainWith(demand_expr,
                                            Domain(kint64min, capacity_max))) {
-          return true;
+          return finalize_return(true);
         }
       } else {
         // TODO(user): we abort because we cannot convert this to a no_overlap
         // for instance.
         context_->UpdateRuleStats(
             "cumulative: demand_max of optional interval exceeds capacity");
-        return changed;
+        return finalize_return(changed);
       }
     }
   }
@@ -7703,7 +7944,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
 
   RunPropagatorsForConstraint(*ct);
-  return changed;
+  return finalize_return(changed);
 }
 
 bool CpConstraintPresolver::PresolveRoutes(ConstraintProto* ct) {
@@ -8361,9 +8602,10 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::kLinMax:
-      if (CanonicalizeLinearArgument(*ct, ct->mutable_lin_max())) {
+      if (context_->CanonicalizeLinMax(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
+      if (ct->constraint_case() != ConstraintProto::kLinMax) return true;
       return PresolveLinMax(c, ct);
     case ConstraintProto::kIntProd:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_prod())) {
@@ -8423,11 +8665,10 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
 
-      // If we extracted some enforcement, we redo some presolve.
-      const int old_num_enforcement_literals = ct->enforcement_literal_size();
-      ExtractEnforcementLiteralFromLinearConstraint(c, ct);
-      if (context_->ModelIsUnsat()) return false;
-      if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
+      // If we extracted some enforcement or tightened coefficients, we redo
+      // some presolve.
+      if (ExtractEnforcementLiteralFromLinearConstraint(c, ct)) {
+        if (context_->ModelIsUnsat()) return false;
         if (DivideLinearByGcd(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
@@ -8435,6 +8676,7 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
           context_->UpdateConstraintVariableUsage(c);
         }
       }
+      if (context_->ModelIsUnsat()) return false;
 
       if (PresolveDiophantine(ct)) {
         context_->UpdateConstraintVariableUsage(c);

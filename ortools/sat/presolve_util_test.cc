@@ -15,7 +15,9 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <array>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -433,7 +435,8 @@ TEST(ClauseIsEnforcementImpliesLiteralTest, BasicTest) {
       {+1, -5, +7, -9}, {NegatedRef(+1), NegatedRef(-5), NegatedRef(-9)}, +7));
 }
 
-LinearConstraintProto GetLinear(std::vector<std::pair<int, int64_t>> terms) {
+LinearConstraintProto GetLinear(
+    absl::Span<const std::pair<int, int64_t>> terms) {
   LinearConstraintProto result;
   for (const auto [var, coeff] : terms) {
     result.add_vars(var);
@@ -526,6 +529,111 @@ TEST(VectorWithSparseUsageTest, RandomTest) {
       reference[index] += 1;
       view[index] += 1;
       ASSERT_EQ(view[index], reference[index]);
+    }
+  }
+}
+
+std::vector<int64_t> BuildShiftedOffsetMatrix(absl::Span<const int64_t> r,
+                                              absl::Span<const int64_t> p) {
+  const int n = r.size();
+  constexpr int64_t kInf = std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> m(n * n, kInf);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      if (i != j) m[i * n + j] = p[i] + r[i] - r[j];
+    }
+  }
+  return m;
+}
+
+TEST(ComputeCliqueShiftsAndSizesTest, RecoversShiftedNoOverlapAndAllDiff) {
+  std::vector<int64_t> shifts, sizes;
+
+  // Large release-date shifts where zero shifts are infeasible (`o(i, j) <=
+  // 0`).
+  ASSERT_TRUE(ComputeCliqueShiftsAndSizes(
+      4, BuildShiftedOffsetMatrix({0, 12, 25, 40}, {10, 15, 14, 12}), &shifts,
+      &sizes));
+  EXPECT_THAT(shifts, ElementsAre(0, 12, 25, 40));
+  EXPECT_THAT(sizes, ElementsAre(10, 15, 14, 12));
+
+  // Small shifts where `s = 0` is feasible (`o(i, j) >= 1`) but suboptimal.
+  ASSERT_TRUE(ComputeCliqueShiftsAndSizes(
+      3, BuildShiftedOffsetMatrix({5, 8, 10}, {10, 10, 10}), &shifts, &sizes));
+  EXPECT_THAT(shifts, ElementsAre(0, 3, 5));
+  EXPECT_THAT(sizes, ElementsAre(10, 10, 10));
+
+  // Equal-shift ties and shifted all_diff (`p_i = 1`).
+  ASSERT_TRUE(ComputeCliqueShiftsAndSizes(
+      4, BuildShiftedOffsetMatrix({0, 0, 10, 10}, {5, 7, 4, 6}), &shifts,
+      &sizes));
+  EXPECT_THAT(shifts, ElementsAre(0, 0, 10, 10));
+  EXPECT_THAT(sizes, ElementsAre(5, 7, 4, 6));
+
+  ASSERT_TRUE(ComputeCliqueShiftsAndSizes(
+      4, BuildShiftedOffsetMatrix({3, 5, 7, 8}, {1, 1, 1, 1}), &shifts,
+      &sizes));
+  EXPECT_THAT(shifts, ElementsAre(0, 2, 4, 5));
+  EXPECT_THAT(sizes, ElementsAre(1, 1, 1, 1));
+}
+
+TEST(ComputeCliqueShiftsAndSizesTest, RejectsNegativeCyclesAndOverflow) {
+  constexpr int64_t kInf = std::numeric_limits<int64_t>::max();
+  constexpr int64_t kMin = std::numeric_limits<int64_t>::min();
+  std::vector<int64_t> shifts, sizes;
+
+  // Cyclic `x_0 - x_1 != 1, x_1 - x_2 != 1, x_2 - x_0 != 1` (`o = 0` cycle).
+  EXPECT_FALSE(ComputeCliqueShiftsAndSizes(
+      3, {kInf, 0, 2, 2, kInf, 0, 0, 2, kInf}, &shifts, &sizes));
+
+  // Extreme int64_t magnitudes rejected without signed overflow.
+  EXPECT_FALSE(ComputeCliqueShiftsAndSizes(
+      3, {kInf, kMin, 1, 1, kInf, 1, 1, 1, kInf}, &shifts, &sizes));
+  EXPECT_FALSE(ComputeCliqueShiftsAndSizes(
+      3, {kInf, kInf / 2, 1, 1, kInf, 1, 1, 1, kInf}, &shifts, &sizes));
+}
+
+TEST(ComputeCliqueShiftsAndSizesTest, RandomizedSoundnessAndExactRecovery) {
+  constexpr int64_t kInf = std::numeric_limits<int64_t>::max();
+  absl::BitGen random;
+  std::vector<int64_t> shifts, sizes;
+  for (int trial = 0; trial < 200; ++trial) {
+    const int n = absl::Uniform(random, 3, 12);
+    std::vector<int64_t> r(n), p(n);
+    for (int i = 0; i < n; ++i) {
+      r[i] = (trial % 4 == 1) ? (absl::Uniform(random, 0, 3) * 15)
+                              : absl::Uniform(random, 0, 200);
+      p[i] = (trial % 4 == 2) ? 1 : absl::Uniform(random, 1, 30);
+    }
+    std::vector<int64_t> m = BuildShiftedOffsetMatrix(r, p);
+    const bool exact = (trial % 4 < 3);
+    if (!exact) {
+      for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+          if (i == j) continue;
+          if (absl::Bernoulli(random, 0.15)) {
+            m[i * n + j] = kInf;
+          } else {
+            m[i * n + j] += absl::Uniform(random, 0, 4);
+          }
+        }
+      }
+    }
+
+    ASSERT_TRUE(ComputeCliqueShiftsAndSizes(n, m, &shifts, &sizes));
+    EXPECT_EQ(*std::min_element(shifts.begin(), shifts.end()), 0);
+    for (int i = 0; i < n; ++i) {
+      EXPECT_GE(sizes[i], 1);
+      for (int j = 0; j < n; ++j) {
+        if (i != j && m[i * n + j] < kInf) {
+          EXPECT_LE(sizes[i] + shifts[i] - shifts[j], m[i * n + j]);
+        }
+      }
+    }
+    if (exact) {
+      const int64_t min_r = *std::min_element(r.begin(), r.end());
+      for (int i = 0; i < n; ++i) EXPECT_EQ(shifts[i], r[i] - min_r);
+      EXPECT_EQ(sizes, p);
     }
   }
 }

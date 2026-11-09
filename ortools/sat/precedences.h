@@ -814,6 +814,7 @@ class Linear2Bounds : public LazyReasonInterface {
   SharedStatistics* shared_stats_;
 
   // This is used for the lazy-reason implemented in Explain().
+  LinearExpression2 level_zero_saved_reason_;
   util_intops::StrongVector<ReasonIndex, LinearExpression2> saved_reasons_;
 
   int64_t num_missing_propag_root_ = 0;

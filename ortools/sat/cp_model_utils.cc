@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -703,6 +704,117 @@ bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
   return true;
 }
 
+bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
+                                 const LinearExpressionProto& expr) {
+  if (expr.vars_size() != expr.coeffs_size()) return false;
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int var = expr.vars(i);
+    if (!RefIsPositive(var) || expr.coeffs(i) == 0) return false;
+    if (i > 0 && expr.vars(i - 1) >= var) return false;
+    if (enforcements.contains(var) || enforcements.contains(NegatedRef(var))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool LinearExpressionIsCanonical(const LinearExpressionProto& expr) {
+  return LinearExpressionIsCanonical({}, expr);
+}
+
+bool LinMaxIsCanonical(const ConstraintProto& ct) {
+  if (ct.constraint_case() != ConstraintProto::kLinMax) return false;
+  absl::flat_hash_set<int> enforcements;
+  for (int i = 0; i < ct.enforcement_literal_size(); ++i) {
+    const int lit = ct.enforcement_literal(i);
+    if (i > 0 && ct.enforcement_literal(i - 1) >= lit) return false;
+    if (enforcements.contains(NegatedRef(lit))) return false;
+    enforcements.insert(lit);
+  }
+  const LinearArgumentProto& lin_max = ct.lin_max();
+  if (!LinearExpressionIsCanonical(enforcements, lin_max.target())) {
+    return false;
+  }
+  for (int i = 0; i < lin_max.exprs_size(); ++i) {
+    if (!LinearExpressionIsCanonical(enforcements, lin_max.exprs(i))) {
+      return false;
+    }
+    if (i > 0 &&
+        LinearExpressionProtoLessThan(lin_max.exprs(i), lin_max.exprs(i - 1))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
+                                  LinearExpressionProto* expr) {
+  if (LinearExpressionIsCanonical(enforcements, *expr)) return;
+  int64_t offset = expr->offset();
+  std::vector<std::pair<int, int64_t>> terms;
+  terms.reserve(expr->vars_size());
+  DCHECK_EQ(expr->vars_size(), expr->coeffs_size());
+  for (int i = 0; i < expr->vars_size(); ++i) {
+    const int var = expr->vars(i);
+    DCHECK(RefIsPositive(var));
+    const int64_t coeff = expr->coeffs(i);
+    if (coeff == 0) continue;
+    if (enforcements.contains(var)) {
+      offset += coeff;
+      continue;
+    }
+    if (enforcements.contains(NegatedRef(var))) continue;
+    terms.push_back({var, coeff});
+  }
+  std::sort(terms.begin(), terms.end());
+  expr->clear_vars();
+  expr->clear_coeffs();
+  expr->set_offset(offset);
+  int current_var = 0;
+  int64_t current_coeff = 0;
+  for (const auto [var, coeff] : terms) {
+    if (var == current_var) {
+      current_coeff += coeff;
+    } else {
+      if (current_coeff != 0) {
+        expr->add_vars(current_var);
+        expr->add_coeffs(current_coeff);
+      }
+      current_var = var;
+      current_coeff = coeff;
+    }
+  }
+  if (current_coeff != 0) {
+    expr->add_vars(current_var);
+    expr->add_coeffs(current_coeff);
+  }
+}
+
+void CanonicalizeLinearExpression(LinearExpressionProto* expr) {
+  CanonicalizeLinearExpression({}, expr);
+}
+
+void CanonicalizeLinMax(ConstraintProto* ct) {
+  DCHECK_EQ(ct->constraint_case(), ConstraintProto::kLinMax);
+  gtl::STLSortAndRemoveDuplicates(ct->mutable_enforcement_literal());
+  absl::flat_hash_set<int> enforcements;
+  for (const int lit : ct->enforcement_literal()) {
+    if (enforcements.contains(NegatedRef(lit))) {
+      ct->Clear();
+      return;
+    }
+    enforcements.insert(lit);
+  }
+  LinearArgumentProto* lin_max = ct->mutable_lin_max();
+  CanonicalizeLinearExpression(enforcements, lin_max->mutable_target());
+  for (LinearExpressionProto& expr : *lin_max->mutable_exprs()) {
+    CanonicalizeLinearExpression(enforcements, &expr);
+  }
+  std::sort(lin_max->mutable_exprs()->begin(), lin_max->mutable_exprs()->end(),
+            LinearExpressionProtoLessThan);
+  DCHECK(LinMaxIsCanonical(*ct));
+}
+
 uint64_t FingerprintExpression(const LinearExpressionProto& lin,
                                uint64_t seed) {
   uint64_t fp = seed;
@@ -1160,7 +1272,7 @@ bool IsAffineIntAbs(const ConstraintProto& ct) {
 AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
   CHECK_LE(expr.vars_size(), 1);
   if (expr.vars().empty()) {
-    return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
+    return AffineExpr::Const(expr.offset());
   }
   CHECK_EQ(expr.coeffs().size(), 1);
   return AffineExpr{
