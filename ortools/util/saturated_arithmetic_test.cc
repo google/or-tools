@@ -211,6 +211,46 @@ TEST_F(SaturatedArithmeticTest, CapSubFrom) {
   }
 }
 
+TEST_F(SaturatedArithmeticTest, MulIntoOverflow) {
+  std::vector<int64_t> values = int64_values_;
+  for (int64_t extra :
+       {int64_t{-7}, int64_t{7}, kint64max / 7, -(kint64max / 7),
+        kint64max / 7 + 1, -(kint64max / 7 + 1), kint64max / 7 - 1,
+        -(kint64max / 7 - 1), int64_t{3} << 60, -(int64_t{3} << 60),
+        int64_t{3} << 61, -(int64_t{3} << 61)}) {
+    values.push_back(extra);
+  }
+  for (int k = 0; k < 63; ++k) {
+    values.push_back(int64_t{1} << k);
+    values.push_back(-(int64_t{1} << k));
+  }
+
+  for (int64_t a : values) {
+    for (int64_t b : values) {
+      const absl::int128 exact = absl::int128(a) * absl::int128(b);
+      const bool expected_overflow =
+          exact <= absl::int128(kint64min) || exact > absl::int128(kint64max);
+
+      int64_t result = 0;
+      const bool overflow = MulIntoOverflow(a, b, &result);
+      ASSERT_EQ(overflow, expected_overflow) << a << " * " << b;
+      if (!overflow) {
+        ASSERT_NE(result, kint64min) << a << " * " << b;
+        ASSERT_EQ(result, static_cast<int64_t>(exact)) << a << " * " << b;
+      }
+
+      // Also verify the CapProd-based fallback used on non-Clang compilers.
+      const int64_t prod = CapProd(a, b);
+      const bool fallback_overflow =
+          prod == kint64min || (prod == kint64max && kint64max / a != b);
+      ASSERT_EQ(fallback_overflow, expected_overflow) << a << " * " << b;
+      if (!fallback_overflow) {
+        ASSERT_EQ(prod, static_cast<int64_t>(exact)) << a << " * " << b;
+      }
+    }
+  }
+}
+
 TEST(CapOrFloatAdd, VariousTypes) {
   constexpr double kInf = std::numeric_limits<float>::infinity();
   EXPECT_EQ(CapOrFloatAdd(0.5, 0.25), 0.75);

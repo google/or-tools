@@ -341,6 +341,18 @@ inline int64_t CapProd(int64_t x, int64_t y) {
 #endif
 }
 
+// Computes *result = x * y, and returns true iff there is an overflow or if
+// the result is kint64min.
+inline bool MulIntoOverflow(int64_t x, int64_t y, int64_t* result) {
+#if defined(__clang__)
+  return __builtin_mul_overflow(x, y, result) || *result == kint64min;
+#else
+  const int64_t prod = CapProd(x, y);
+  *result = prod;
+  return prod == kint64min || (prod == kint64max && kint64max / x != y);
+#endif
+}
+
 template <typename T>
 T CapOrFloatAdd(T x, T y) {
   static_assert(std::is_floating_point_v<T> || std::is_integral_v<T>);
