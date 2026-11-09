@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -36,7 +35,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -1172,8 +1170,7 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   // become the representative for both.
   if (std::abs(a) > 1 && std::abs(b) > 1) {
     UpdateRuleStats("affine: created common representative");
-    if (!CanonicalizeAffineVariable(rx.representative, a, std::abs(b),
-                                    offset)) {
+    if (!CanonicalizeAffineVariable(rx.representative, a, std::abs(b), o)) {
       return false;
     }
 
@@ -1950,7 +1947,7 @@ void PresolveContext::ReadObjectiveFromProto() {
   }
 }
 
-bool PresolveContext::RestrictObjectiveDomain(Domain domain) {
+bool PresolveContext::RestrictObjectiveDomain(const Domain& domain) {
   if (objective_domain_.IsIncludedIn(domain)) return true;
 
   UpdateRuleStats("objective: restricted objective domain");
@@ -2887,6 +2884,30 @@ bool PresolveContext::CanonicalizeLinearExpression(
   return result;
 }
 
+bool PresolveContext::CanonicalizeLinMax(ConstraintProto* ct) {
+  DCHECK_EQ(ct->constraint_case(), ConstraintProto::kLinMax);
+  if (ModelIsUnsat()) return false;
+  bool changed = false;
+  for (int& lit : *ct->mutable_enforcement_literal()) {
+    const int rep = GetLiteralRepresentative(lit);
+    if (rep != lit) {
+      lit = rep;
+      changed = true;
+    }
+  }
+  const int old_enforcement_size = ct->enforcement_literal_size();
+  LinearArgumentProto* proto = ct->mutable_lin_max();
+  changed |= CanonicalizeLinearExpression(ct->enforcement_literal(),
+                                          proto->mutable_target());
+  for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+    changed |= CanonicalizeLinearExpression(ct->enforcement_literal(), &expr);
+  }
+  sat::CanonicalizeLinMax(ct);
+  changed |= ct->enforcement_literal_size() != old_enforcement_size;
+  changed |= ct->constraint_case() != ConstraintProto::kLinMax;
+  return changed;
+}
+
 ConstraintProto* PresolveContext::NewMappingConstraint(absl::string_view file,
                                                        int line) {
   const int c = mapping_model->constraints().size();
@@ -2973,6 +2994,9 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     ApplyToAllVariableIndices(mapping_function, &ct);
     ApplyToAllLiteralIndices(mapping_function, &ct);
     ApplyToAllIntervalIndices(interval_mapping_function, &ct);
+    if (ct.constraint_case() == ConstraintProto::kLinMax) {
+      CanonicalizeLinMax(&ct);
+    }
     if (ct.constraint_case() == ConstraintProto::kRoutes) {
       for (RoutesConstraintProto::NodeExpressions& node_exprs :
            *ct.mutable_routes()->mutable_dimensions()) {

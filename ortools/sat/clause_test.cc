@@ -377,6 +377,24 @@ TEST(BinaryImplicationGraphTest, HeuristicAmoPartition) {
               ElementsAre(LiteralsAre(+6, +7, +2, +1)));
 }
 
+TEST(BinaryImplicationGraphTest, HeuristicAmoPartitionWithExpandedAmos) {
+  Model model;
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  trail->Resize(20);
+  graph->Resize(20);
+
+  // With default at_most_one_max_expansion_size (100), these AMOs are expanded
+  // into direct binary implications.
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, +3, +4})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+5, +6, +7})));
+
+  std::vector<Literal> literals = Literals({+1, +8, +2, +5, +3, +6});
+  EXPECT_THAT(graph->HeuristicAmoPartition(&literals),
+              ElementsAre(UnorderedLiteralsAre(+1, +2, +3),
+                          UnorderedLiteralsAre(+5, +6)));
+}
+
 TEST(BinaryImplicationGraphTest, RandomImpliedLiteral) {
   Model model;
   auto* trail = model.GetOrCreate<Trail>();

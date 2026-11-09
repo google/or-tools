@@ -236,8 +236,10 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
 
 // 2X - Y >= 0
 // X => Y
+// min -X
 //
-// Doing (X++, Y++) is always beneficial if possible.
+// Doing (X++, Y++) is always beneficial if possible (without the objective,
+// clamping 2X - Y >= 0 to lb_slack = 1 on Booleans also admits (X--, Y--)).
 TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables {
@@ -258,6 +260,10 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
         coeffs: [ 2, -1 ]
         domain: [ 0, 10 ]
       }
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ -1 ]
     }
     solution_hint {
       vars: [ 0, 1 ]
@@ -1166,6 +1172,276 @@ TEST(DualBoundReductionTest, MultipleEquivalenceDetection) {
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
   EXPECT_EQ(context.solution_crush().GetVarValues()[1], 1);
   EXPECT_EQ(context.solution_crush().GetVarValues()[2], 1);
+}
+
+// On the boxed constraint 2 <= 2X + 4Y + 2Z + 2W <= 6 over Booleans:
+// - Lower-bound slack is 2, so clamping coefficients to 2 shows (X++, Y--)
+//   never violates >= 2.
+// - Upper-bound slack is 4, and 2 <= 4 shows (X++, Y--) never violates <= 6.
+// Together with AtMostOne(X, Y) and objective X + 2Y + 3Z + 4W, X uniquely
+// dominates Y and fixes Y = 0.
+TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraint) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "W"
+      domain: [ 0, 1 ]
+    }
+    constraints { at_most_one { literals: [ 0, 1 ] } }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 2, 4, 2, 2 ]
+        domain: [ 2, 6 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2, 3 ]
+      coeffs: [ 1, 2, 3, 4 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 0, 1, 1, 0 ]
+    }
+  )pb");
+  ASSERT_TRUE(SolutionIsFeasible(model_proto, {0, 1, 1, 0}));
+
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.LoadAndClampSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(Y), ElementsAre(X));
+
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
+  EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(1, 0, 1, 0));
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+}
+
+// On -2 <= 3X + 2Y - 2Z <= 8 with X, Y, Z in [0, 2]:
+// - min_activity = -4 (lb_slack = 2) and max_activity = 10 (ub_slack = 2).
+// - Clamping coefficients on the upper bound to ub_slack = 2 shows (X++, Y--)
+//   never violates <= 8 (since Y-- forces Y' <= 1, keeping 3X' + 2Y' - 2Z <= 8)
+//   even though 3 > 2 increases the linear expression.
+TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraintUpperSlackClamp) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 2 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 2 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 0, 2 ]
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 2 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 3, 2, -2 ]
+        domain: [ -2, 8 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1 ]
+      coeffs: [ 1, 2 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 2, 0 ]
+    }
+  )pb");
+  ASSERT_TRUE(SolutionIsFeasible(model_proto, {0, 2, 0}));
+
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.LoadAndClampSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  const IntegerVariable Z = VarDomination::RefToIntegerVariable(2);
+  EXPECT_THAT(var_dom.DominatingVariables(Y), ElementsAre(X, NegationOf(Z)));
+
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
+  EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(2, 0, 0));
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+}
+
+CpModelProto MakeUnclampedBoxedPartitionModel(int num_z_vars) {
+  CpModelProto model_proto;
+  for (int i = 0; i < num_z_vars + 2; ++i) {
+    IntegerVariableProto* var = model_proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+  const int y0 = num_z_vars;
+  const int y1 = num_z_vars + 1;
+
+  // bool_or over all variables: without partition refinement on the unclamped
+  // boxed constraint below, y1's initial candidate list starts with z_0..z_54
+  // and crops out y0 at kMaxInitialSize = 50.
+  BoolArgumentProto* bool_or = model_proto.add_constraints()->mutable_bool_or();
+  for (int i = 0; i < num_z_vars + 2; ++i) {
+    bool_or->add_literals(i);
+  }
+
+  BoolArgumentProto* amo = model_proto.add_constraints()->mutable_at_most_one();
+  amo->add_literals(y0);
+  amo->add_literals(y1);
+
+  // 4 <= 2 * sum(z_i) + y0 + y1 <= 100:
+  // lb_slack = 4, ub_slack = 2 * num_z_vars + 2 - 100 = 12, and
+  // max_coeff_magnitude = 2 <= min(4, 12), so neither side clamps any
+  // coefficient and ActivityShouldNotChange refines {y0, y1} into its own part.
+  LinearConstraintProto* linear =
+      model_proto.add_constraints()->mutable_linear();
+  for (int i = 0; i < num_z_vars; ++i) {
+    linear->add_vars(i);
+    linear->add_coeffs(2);
+  }
+  linear->add_vars(y0);
+  linear->add_coeffs(1);
+  linear->add_vars(y1);
+  linear->add_coeffs(1);
+  linear->add_domain(4);
+  linear->add_domain(100);
+
+  CpObjectiveProto* obj = model_proto.mutable_objective();
+  for (int i = 0; i < num_z_vars; ++i) {
+    obj->add_vars(i);
+    obj->add_coeffs(1);
+  }
+  obj->add_vars(y0);
+  obj->add_coeffs(1);
+  obj->add_vars(y1);
+  obj->add_coeffs(2);
+
+  PartialVariableAssignment* hint = model_proto.mutable_solution_hint();
+  for (int i = 0; i < num_z_vars + 2; ++i) {
+    hint->add_vars(i);
+    hint->add_values((i == 0 || i == 1 || i == y1) ? 1 : 0);
+  }
+  return model_proto;
+}
+
+TEST(VarDominationTest, UnclampedBoxedLinearConstraintRefinesPartition) {
+  constexpr int kNumZVars = 55;
+  constexpr int kY0 = kNumZVars;
+  constexpr int kY1 = kNumZVars + 1;
+  CpModelProto model_proto = MakeUnclampedBoxedPartitionModel(kNumZVars);
+  ASSERT_EQ(ValidateCpModel(model_proto), "");
+
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.LoadAndClampSolutionHint();
+  ASSERT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+
+  ScanModelForDominanceDetection(context, &var_dom);
+
+  EXPECT_THAT(
+      var_dom.DominatingVariables(VarDomination::RefToIntegerVariable(kY1)),
+      ElementsAre(VarDomination::RefToIntegerVariable(kY0)));
+
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(context.DomainOf(kY1).ToString(), "[0]");
+  EXPECT_EQ(context.solution_crush().GetVarValues()[kY0], 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[kY1], 0);
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+}
+
+// On the unpropagated equality 3X + Y + Z == 1 over Booleans:
+// - lb_slack = 1 and ub_slack = 4 (max_coeff_magnitude = 3 > min(1, 4)).
+// - Clamping >= 1 to [1, 1, 1] while keeping <= 1 at [3, 1, 1] detects that Y
+//   dominates X, fixing X = 0 via AtMostOne(X, Y).
+TEST(VarDominationTest, DominanceAcrossUnpropagatedEqualityConstraint) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 0, 1 ]
+    }
+    constraints { at_most_one { literals: [ 0, 1 ] } }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 3, 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2 ]
+      coeffs: [ 2, 1, 3 ]
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 0, 1 ]
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model_proto), "");
+  ASSERT_TRUE(SolutionIsFeasible(model_proto, {0, 0, 1}));
+
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.LoadAndClampSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
+
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
+  EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(0, 0, 1));
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
 }
 
 }  // namespace

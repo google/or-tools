@@ -1414,6 +1414,112 @@ TEST(SolveCpModelTest, BadHintWithCore) {
   EXPECT_EQ(2.0, response.objective_value());
 }
 
+TEST(SolveCpModelTest, EqualWeightAmoCompressionWithCore) {
+  CpModelProto model_proto;
+  constexpr int kGroupSize = 36;
+  for (int i = 0; i < 2 * kGroupSize; ++i) {
+    auto* var = model_proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+  auto* exo1 = model_proto.add_constraints()->mutable_exactly_one();
+  auto* exo2 = model_proto.add_constraints()->mutable_exactly_one();
+  auto* obj = model_proto.mutable_objective();
+  for (int i = 0; i < kGroupSize; ++i) {
+    exo1->add_literals(i);
+    obj->add_vars(i);
+    obj->add_coeffs(i < kGroupSize / 2 ? 2 : 5);
+  }
+  for (int j = 0; j < kGroupSize; ++j) {
+    const int var = kGroupSize + j;
+    exo2->add_literals(var);
+    obj->add_vars(var);
+    obj->add_coeffs(j < kGroupSize / 2 ? 3 : 7);
+  }
+  // Make the cheap half of exo1 incompatible with the cheap half of exo2.
+  for (int i = 0; i < kGroupSize / 2; ++i) {
+    for (int j = 0; j < kGroupSize / 2; ++j) {
+      auto* clause = model_proto.add_constraints()->mutable_bool_or();
+      clause->add_literals(-(i + 1));
+      clause->add_literals(-(kGroupSize + j + 1));
+    }
+  }
+  Model model;
+  model.Add(
+      NewSatParameters("optimize_with_core:true, linearization_level:0, "
+                       "cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(8.0, response.objective_value());
+}
+
+TEST(SolveCpModelTest, PrimaryAmoFoldingSoundnessWithCore) {
+  // Test both a true primary ExactlyOne (size 105) and a primary AtMostOne (not
+  // ExactlyOne, size 105) where all primary literals can be 0 while y = 1.
+  for (const bool is_exactly_one : {false, true}) {
+    CpModelProto model_proto;
+    for (int i = 0; i < 107; ++i) {
+      auto* var = model_proto.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+    }
+    auto* amo_ct = model_proto.add_constraints();
+    for (int i = 0; i < 105; ++i) {
+      if (is_exactly_one) {
+        amo_ct->mutable_exactly_one()->add_literals(i);
+      } else {
+        amo_ct->mutable_at_most_one()->add_literals(i);
+      }
+    }
+    // Variable 105 (y) and Variable 106 (y2) form an AMO {y, y2}.
+    auto* y_amo = model_proto.add_constraints()->mutable_at_most_one();
+    y_amo->add_literals(105);
+    y_amo->add_literals(106);
+
+    // Primary literals 0..49 imply y (105), and 50..104 imply ~y (-106).
+    for (int i = 0; i < 50; ++i) {
+      auto* clause = model_proto.add_constraints()->mutable_bool_or();
+      clause->add_literals(-(i + 1));
+      clause->add_literals(105);
+      // Also forbid 0..49 so that if is_exactly_one is false, all 0..104 can be
+      // 0 while y = 1.
+      if (!is_exactly_one) {
+        model_proto.add_constraints()->mutable_bool_or()->add_literals(
+            -(i + 1));
+      }
+    }
+    for (int i = 50; i < 105; ++i) {
+      auto* clause = model_proto.add_constraints()->mutable_bool_or();
+      clause->add_literals(-(i + 1));
+      clause->add_literals(-106);
+    }
+    // Require y (105) or y2 (106) to be true.
+    auto* req = model_proto.add_constraints()->mutable_bool_or();
+    req->add_literals(105);
+    req->add_literals(106);
+
+    auto* obj = model_proto.mutable_objective();
+    for (int i = 0; i < 105; ++i) {
+      obj->add_vars(i);
+      obj->add_coeffs(i < 50 ? 2 : 3);
+    }
+    obj->add_vars(105);
+    obj->add_coeffs(5);
+    obj->add_vars(106);
+    obj->add_coeffs(10);
+
+    Model model;
+    model.Add(
+        NewSatParameters("optimize_with_core:true, linearization_level:0, "
+                         "cp_model_presolve:false"));
+    const CpSolverResponse response = SolveCpModel(model_proto, &model);
+    EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    // When is_exactly_one is true, picking i in 0..49 forces y=1 (cost 2+5=7).
+    // When is_exactly_one is false, all 0..104 can be 0 and y=1 (cost 5).
+    EXPECT_EQ(response.objective_value(), is_exactly_one ? 7.0 : 5.0);
+  }
+}
+
 TEST(SolveCpModelTest, ForcedBadHint) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: 0 domain: 5 }
@@ -5709,56 +5815,31 @@ TEST(SolveCpModelTest,
 }
 
 TEST(SolveCpModelTest, CumulativeNegativeCapacity16Threads) {
+  const CpModelProto pigeonhole = PigeonholeProblem(10);
   CpModelProto model_proto;
-  // Vars 0 and 1: x0, x1 in [0, 1].
-  for (int i = 0; i < 2; ++i) {
-    auto* var = model_proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-  }
+  model_proto.mutable_variables()->CopyFrom(pigeonhole.variables());
+  const int x0 = AddVariable(0, 1, &model_proto);
+  const int x1 = AddVariable(0, 1, &model_proto);
 
-  // Cumulative constraint enforced by ~x1 (literal -2) with 0 intervals and
+  // Cumulative constraint enforced by ~x1 with 0 intervals and
   // capacity = 10*x0 - 5. At (x0, x1) = (0, 0), ~x1 is true and capacity = -5 <
   // 0.
   auto* cumu_ct = model_proto.add_constraints();
-  cumu_ct->add_enforcement_literal(-2);
+  cumu_ct->add_enforcement_literal(-x1 - 1);
   auto* cumu = cumu_ct->mutable_cumulative();
-  cumu->mutable_capacity()->add_vars(0);
+  cumu->mutable_capacity()->add_vars(x0);
   cumu->mutable_capacity()->add_coeffs(10);
   cumu->mutable_capacity()->set_offset(-5);
 
-  // Add Pairwise Pigeonhole Principle (10 pigeons in 9 holes) where every
-  // pigeon clause AND every hole clause contains ~x0 (-1) or ~x1 (-2).
-  // Thus any state with x0=0 and x1=0 has 0 clause violations regardless of
-  // the values of the pigeon variables, while proving UNSAT when x0=1 or x1=1
-  // takes longer than FeasibilityJumpSolver takes to start.
-  const int num_pigeons = 10;
-  const int num_holes = 9;
-  for (int p = 0; p < num_pigeons; ++p) {
-    for (int h = 0; h < num_holes; ++h) {
-      auto* var = model_proto.add_variables();
-      var->add_domain(0);
-      var->add_domain(1);
-    }
-  }
-  auto var_index = [&](int p, int h) { return 2 + p * num_holes + h; };
-  for (int neg_lit : {-1, -2}) {
-    for (int p = 0; p < num_pigeons; ++p) {
-      auto* clause = model_proto.add_constraints()->mutable_bool_or();
-      for (int h = 0; h < num_holes; ++h) {
-        clause->add_literals(var_index(p, h));
-      }
-      clause->add_literals(neg_lit);
-    }
-    for (int h = 0; h < num_holes; ++h) {
-      for (int p1 = 0; p1 < num_pigeons; ++p1) {
-        for (int p2 = p1 + 1; p2 < num_pigeons; ++p2) {
-          auto* clause = model_proto.add_constraints()->mutable_bool_or();
-          clause->add_literals(-var_index(p1, h) - 1);
-          clause->add_literals(-var_index(p2, h) - 1);
-          clause->add_literals(neg_lit);
-        }
-      }
+  // Add *two* infeasible pigeonhole subproblems over the same base variables,
+  // enforced by x0 and x1 respectively, so any state with x0=0 and x1=0 has 0
+  // clause violations regardless of the pigeon variables, while proving UNSAT
+  // when x0=1 or x1=1 takes longer than FeasibilityJumpSolver takes to start.
+  for (const int neg_lit : {-x0 - 1, -x1 - 1}) {
+    for (const ConstraintProto& ct : pigeonhole.constraints()) {
+      ConstraintProto* clause = model_proto.add_constraints();
+      *clause = ct;
+      clause->mutable_bool_or()->add_literals(neg_lit);
     }
   }
 
@@ -6232,9 +6313,148 @@ TEST(SolveCpModelTest,
   }
 }
 
+TEST(SolveCpModelTest, LnsPresolveTimeoutAdvancesDeterministicTime) {
+  constexpr int kNumVars = 40;
+  CpModelProto model_proto;
+  auto* objective = model_proto.mutable_objective();
+  auto* hint = model_proto.mutable_solution_hint();
+  LinearConstraintProto* knapsack_a =
+      model_proto.add_constraints()->mutable_linear();
+  LinearConstraintProto* knapsack_b =
+      model_proto.add_constraints()->mutable_linear();
+  int64_t sum_a = 0;
+  int64_t sum_b = 0;
+  for (int i = 0; i < kNumVars; ++i) {
+    AddVariable(0, 1, &model_proto);
+    objective->add_vars(i);
+    objective->add_coeffs(i + 1);
+    hint->add_vars(i);
+    hint->add_values(1);
+
+    const int64_t coeff_a = i + 2;
+    const int64_t coeff_b = (i % 5) + 1;
+    knapsack_a->add_vars(i);
+    knapsack_a->add_coeffs(coeff_a);
+    sum_a += coeff_a;
+    knapsack_b->add_vars(i);
+    knapsack_b->add_coeffs(coeff_b);
+    sum_b += coeff_b;
+  }
+  knapsack_a->add_domain(sum_a / 2);
+  knapsack_a->add_domain(sum_a);
+  knapsack_b->add_domain(sum_b / 2);
+  knapsack_b->add_domain(sum_b);
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_symmetry_level(0);
+  params.set_num_workers(1);
+  params.set_interleave_search(true);
+  params.add_filter_subsolvers("lns_rnd_var");
+  params.set_lns_initial_deterministic_limit(1e-9);
+  params.set_max_deterministic_time(1e-4);
+  params.set_log_search_progress(true);
+  params.set_log_to_response(true);
+
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::FEASIBLE);
+  EXPECT_GE(response.deterministic_time(), 1e-4);
+  EXPECT_THAT(response.solve_log(),
+              ::testing::ContainsRegex("'lns_rnd_var': +0/[1-9]"));
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+
+TEST(LoadCpModelTest, LargeMultiEnforcedBoolAndEnumeratesExactSolutions) {
+  constexpr int kNumEnforcements = 5;
+  constexpr int kNumNegatedRhs = 30;
+  CpModelProto model_proto;
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    AddVariable(0, 1, &model_proto);
+  }
+  ConstraintProto* exo = model_proto.add_constraints();
+  for (int j = 0; j <= kNumNegatedRhs; ++j) {
+    exo->mutable_exactly_one()->add_literals(AddVariable(0, 1, &model_proto));
+  }
+
+  // expanded_literals = (5 + 1) * 30 = 180,
+  // encoded_literals = (5 + 1) + 2 * (5 + 30) = 76, diff = 104 > 100.
+  ConstraintProto* bool_and = model_proto.add_constraints();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    bool_and->add_enforcement_literal(i);
+  }
+  for (int j = 0; j < kNumNegatedRhs; ++j) {
+    bool_and->mutable_bool_and()->add_literals(-(kNumEnforcements + j + 1));
+  }
+
+  for (const bool presolve : {false, true}) {
+    Model model;
+    SatParameters params;
+    params.set_enumerate_all_solutions(true);
+    params.set_keep_all_feasible_solutions_in_presolve(true);
+    params.set_cp_model_presolve(presolve);
+    model.Add(NewSatParameters(params));
+
+    int num_solutions = 0;
+    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
+      ++num_solutions;
+      EXPECT_TRUE(SolutionIsFeasible(model_proto, r.solution()));
+    }));
+
+    const CpSolverResponse response = SolveCpModel(model_proto, &model);
+    EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    // (2^5 - 1) * 31 + 1 = 962 exact solutions; one-sided channelling of the
+    // auxiliary Boolean at load time would overcount inactive assignments.
+    EXPECT_EQ(num_solutions, 962) << "presolve=" << presolve;
+  }
+}
+
+TEST(LoadCpModelTest, LargeMultiEnforcedBoolAndOptimizationMatchesPresolve) {
+  constexpr int kNumEnforcements = 6;
+  constexpr int kNumRhs = 30;
+  CpModelProto model_proto;
+  auto* objective = model_proto.mutable_objective();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    AddVariable(0, 1, &model_proto);
+    objective->add_vars(i);
+    objective->add_coeffs(-100);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    const int var = AddVariable(0, 1, &model_proto);
+    objective->add_vars(var);
+    objective->add_coeffs(j + 1);
+  }
+
+  ConstraintProto* bool_and = model_proto.add_constraints();
+  for (int i = 0; i < kNumEnforcements; ++i) {
+    bool_and->add_enforcement_literal(i);
+  }
+  for (int j = 0; j < kNumRhs; ++j) {
+    bool_and->mutable_bool_and()->add_literals(kNumEnforcements + j);
+  }
+
+  // Cap at most 20 of the 30 RHS variables to 1 so activating all 6
+  // enforcements is infeasible, forcing the optimum to activate 5 of 6 (-500).
+  LinearConstraintProto* cap = model_proto.add_constraints()->mutable_linear();
+  for (int j = 0; j < kNumRhs; ++j) {
+    cap->add_vars(kNumEnforcements + j);
+    cap->add_coeffs(1);
+  }
+  cap->add_domain(0);
+  cap->add_domain(20);
+
+  for (const bool presolve : {false, true}) {
+    SatParameters params;
+    params.set_cp_model_presolve(presolve);
+    params.set_num_workers(1);
+    const CpSolverResponse response = SolveWithParameters(model_proto, params);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    EXPECT_DOUBLE_EQ(response.objective_value(), -500.0);
+    EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+  }
+}
 
 }  // namespace
 }  // namespace sat

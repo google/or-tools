@@ -15,16 +15,13 @@
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
@@ -462,6 +459,7 @@ class PresolveContext {
                                     bool* is_trivial = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
+  bool CanonicalizeLinMax(ConstraintProto* ct);
 
   // This method only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
@@ -742,7 +740,7 @@ class PresolveContext {
   // anything with that variable since it appears in at least two constraints.
   void ReadObjectiveFromProto();
   bool AddToObjectiveOffset(int64_t delta);
-  [[nodiscard]] bool RestrictObjectiveDomain(Domain domain);
+  [[nodiscard]] bool RestrictObjectiveDomain(const Domain& domain);
   [[nodiscard]] bool CanonicalizeOneObjectiveVariable(int var);
   [[nodiscard]] bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;

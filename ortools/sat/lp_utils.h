@@ -212,8 +212,19 @@ std::vector<int> PartitionGraph(
 // If params.mip_automatically_scale_variables() is true, we also detect
 // components that can be made integral via variable scaling (for example,
 // 2-modular components where any LP optimal basic solution is half-integral, or
-// components with rational bounds/RHS or column scaling). In this case we
-// return a non-empty scaling vector.
+// components with rational bounds/RHS or column scaling). When a component with
+// unit column scaling cannot be made integral and mip_scale_to_max_bound or
+// mip_scale_for_precision is enabled, we still scale all variables in the
+// component by a common power-of-two factor to preserve its +/-1 coefficients.
+// Whenever any variable is scaled, we return a non-empty scaling vector.
+//
+// Note that if some constraints in `mp_model` are enforced by external integer
+// variables (e.g., via MPModelProtoWrapper), it is valid to pass the underlying
+// MPModelProto directly (treating enforced constraints as always active, rather
+// than skipping them): for any fixed integer assignment of the external
+// variables, inactive enforced constraints simply remove rows from the
+// component LP, which preserves total unimodularity (or 2-modularity), vertex
+// integrality, and the worst-case vertex bounds computed when tightening.
 std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
     const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
     bool only_tighten_bounds = false);

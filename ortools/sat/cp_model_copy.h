@@ -14,12 +14,11 @@
 #ifndef ORTOOLS_SAT_CP_MODEL_COPY_H_
 #define ORTOOLS_SAT_CP_MODEL_COPY_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -35,7 +34,6 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -448,7 +446,7 @@ bool CopyModel(const CpModelProto& in_proto, bool clear_internal_fields,
 ABSL_MUST_USE_RESULT bool CopyModelAdvanced(
     const CpModelProto& in_proto, bool clear_internal_fields,
     absl::Span<const Domain> domains,
-    std::function<bool(int)> active_constraints,
+    const std::function<bool(int)>& active_constraints,
     std::vector<int>* interval_mapping, CpModelProto* out_proto, Model* model);
 
 // Accessing Domain can be expensive, so we maintain a vector of bool for the

@@ -271,6 +271,32 @@ TEST(AddWeightedSumLowerOrEqual, RandomTest) {
   }
 }
 
+TEST(AddWeightedSumLowerOrEqual, ContractiveCycleAtLevelZeroTerminatesQuickly) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 1000000000000LL));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 1000000000000LL));
+  const Literal b(model.Add(NewBooleanVariable()), true);
+
+  // Feasible contractive cycle ((x, y) = (0, 0) is feasible) that would
+  // otherwise require > 27 million level-zero bound pushes to converge.
+  AddWeightedSumLowerOrEqual({x, y}, {1000000, -999999}, 0, &model);
+  AddWeightedSumLowerOrEqual({y, x}, {1000000, -999999}, 0, &model);
+
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  EXPECT_TRUE(sat_solver->Propagate());
+  EXPECT_LT(integer_trail->num_level_zero_enqueues(), 20000);
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+  EXPECT_TRUE(integer_trail->CurrentBranchHadAnIncompletePropagation());
+
+  // Subsequent level-1 probing decision and backtrack to level 0 succeed
+  // cleanly without leaking or overflowing lazy reason indices.
+  EXPECT_NE(sat_solver->EnqueueDecisionAndBackjumpOnConflict(b),
+            kUnsatTrailIndex);
+  EXPECT_TRUE(sat_solver->ResetToLevelZero());
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

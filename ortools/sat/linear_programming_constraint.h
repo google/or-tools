@@ -14,7 +14,6 @@
 #ifndef ORTOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define ORTOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
-#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -69,7 +68,7 @@ class ScatteredIntegerVector {
   void ClearAndResize(int size);
 
   // Does vector[col] += value and returns false in case of overflow.
-  bool Add(glop::ColIndex col, IntegerValue value);
+  [[nodiscard]] bool Add(glop::ColIndex col, IntegerValue value);
 
   // Similar to Add() but for multiplier * terms.
   //
@@ -315,10 +314,27 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
           integer_multipliers);
 
+  // Expands `cut` (substituting LP slack variables `>= first_slack` via
+  // `tmp_slack_rows_`), divides by GCD, and writes the resulting constraint to
+  // `*result`. Returns false on insufficient violation, integer overflow, or
+  // when `max_cut_size > 0` and the expanded cut exceeds `max_cut_size`.
+  bool ConvertCutToLinearConstraint(absl::string_view name,
+                                    absl::string_view info,
+                                    IntegerVariable first_slack,
+                                    const CutData& cut, int max_cut_size,
+                                    LinearConstraint* result);
+
   // Second half of AddCutFromConstraints().
   bool PostprocessAndAddCut(const std::string& name, const std::string& info,
                             IntegerVariable first_slack, const CutData& cut,
                             int max_cut_size = 0);
+
+  // DEBUG only. Logs the cut, its generator and the base constraint when the
+  // cut is violated by the loaded debug solution.
+  void LogCutViolatedByDebugSolution(absl::string_view name,
+                                     absl::string_view info,
+                                     IntegerVariable first_slack,
+                                     const CutData& cut) const;
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
@@ -384,13 +400,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
 
-  // Simple heuristic to try to minimize |upper_bound - ImpliedLB(terms)|. This
-  // should make the new constraint tighter and correct a bit the imprecision
-  // introduced by rounding the floating-point values.
+  // Heuristic to minimize upper_bound - ImpliedLB(terms) by adjusting the
+  // integer row multipliers. This makes the new constraint tighter and
+  // corrects rounding imprecision from ScaleMultipliers(). If fixed_col is
+  // valid, rows touching fixed_col are left unchanged so its coefficient stays
+  // constant.
   void AdjustNewLinearConstraint(
-      std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
-      ScatteredIntegerVector* scattered_vector,
-      IntegerValue* upper_bound) const;
+      absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
+          integer_multipliers,
+      ScatteredIntegerVector* scattered_vector, IntegerValue* upper_bound,
+      glop::ColIndex fixed_col = glop::kInvalidCol) const;
 
   // Converts a dense representation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
@@ -515,7 +534,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Temporary data for cuts.
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
-  std::array<CutData, 3> tmp_rounding_cuts_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 
@@ -529,6 +547,27 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<std::pair<glop::RowIndex, double>> tmp_lp_multipliers_;
   std::vector<std::pair<glop::RowIndex, double>> tmp_cg_multipliers_;
   std::vector<std::pair<glop::RowIndex, IntegerValue>> tmp_integer_multipliers_;
+
+  // Used by AdjustNewLinearConstraint().
+  struct AdjustKink {
+    int64_t q;
+    absl::int128 partial_jump;
+    absl::int128 full_jump;
+  };
+  struct ColBounds {
+    int64_t lb;
+    int64_t ub;
+  };
+  bool AdjustSingleRow(int idx, bool allow_sign_change,
+                       glop::ColIndex fixed_col,
+                       absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
+                           integer_multipliers,
+                       ScatteredIntegerVector* scattered_vector,
+                       IntegerValue* upper_bound,
+                       bool* blocked_by_sign_change) const;
+  mutable std::vector<AdjustKink> tmp_kinks_;
+  mutable std::vector<ColBounds> tmp_col_bounds_;
+  mutable std::vector<IntegerValue> tmp_adjust_multipliers_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
@@ -577,7 +616,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.
-  ImpliedBoundsProcessor implied_bounds_processor_;
+  ImpliedBoundsProcessor* implied_bounds_processor_;
 
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.

@@ -15,8 +15,10 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -236,6 +238,110 @@ TEST(LinearExpression2Test, GetDifferenceLowerBound) {
           .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y, 2),
                                    AffineExpression(x, 2)),
       std::nullopt);
+}
+
+TEST(IntegerBaseOverflowTest, MulAndAddOverflowHelpers) {
+  constexpr int64_t kMin = std::numeric_limits<int64_t>::min();
+  constexpr int64_t kMax = std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> values = {
+      kMin,
+      kMin + 1,
+      kMin + 2,
+      -1000,
+      -7,
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      2,
+      3,
+      7,
+      1000,
+      kMax - 2,
+      kMax - 1,
+      kMax,
+      kMax / 7,
+      -(kMax / 7),
+      kMax / 7 + 1,
+      -(kMax / 7 + 1),
+      kMax / 7 - 1,
+      -(kMax / 7 - 1),
+      int64_t{3} << 60,
+      -(int64_t{3} << 60),
+      int64_t{3} << 61,
+      -(int64_t{3} << 61),
+  };
+  for (int k = 0; k < 63; ++k) {
+    values.push_back(int64_t{1} << k);
+    values.push_back(-(int64_t{1} << k));
+  }
+
+#if defined(__SIZEOF_INT128__)
+  for (int64_t a : values) {
+    for (int64_t b : values) {
+      const __int128 exact_prod =
+          static_cast<__int128>(a) * static_cast<__int128>(b);
+      const bool expected_prod_overflow =
+          exact_prod <= static_cast<__int128>(kMin) ||
+          exact_prod > static_cast<__int128>(kMax);
+      ASSERT_EQ(ProdOverflow(IntegerValue(a), IntegerValue(b)),
+                expected_prod_overflow)
+          << a << " * " << b;
+      IntegerValue prod_result(0);
+      ASSERT_EQ(MulIntoOverflow(IntegerValue(a), IntegerValue(b), &prod_result),
+                expected_prod_overflow)
+          << a << " * " << b;
+      if (!expected_prod_overflow) {
+        ASSERT_NE(prod_result.value(), kMin);
+        ASSERT_EQ(prod_result.value(), static_cast<int64_t>(exact_prod));
+        ASSERT_NE((-prod_result).value(), kMin);
+      }
+
+      const __int128 exact_sum =
+          static_cast<__int128>(a) + static_cast<__int128>(b);
+      const bool expected_add_ok = exact_sum > static_cast<__int128>(kMin) &&
+                                   exact_sum <= static_cast<__int128>(kMax);
+      IntegerValue sum_result(b);
+      ASSERT_EQ(AddTo(IntegerValue(a), &sum_result), expected_add_ok)
+          << a << " + " << b;
+      if (expected_add_ok) {
+        ASSERT_NE(sum_result.value(), kMin);
+        ASSERT_EQ(sum_result.value(), static_cast<int64_t>(exact_sum));
+        // Negating any non-overflowing result stays in [-kMax, +kMax].
+        ASSERT_NE((-sum_result).value(), kMin);
+      } else {
+        ASSERT_EQ(sum_result, IntegerValue(b));
+      }
+    }
+  }
+#endif
+
+  // Inner product overflow must still fail AddProductTo even if adding to
+  // *result would bring the mathematical total back into [-kMax, kMax].
+  IntegerValue acc(-100);
+  EXPECT_FALSE(
+      AddProductTo(IntegerValue(int64_t{1} << 62), IntegerValue(2), &acc));
+  EXPECT_EQ(acc, IntegerValue(-100));
+
+  acc = IntegerValue(100);
+  EXPECT_FALSE(
+      AddProductTo(IntegerValue(-(int64_t{1} << 62)), IntegerValue(2), &acc));
+  EXPECT_EQ(acc, IntegerValue(100));
+
+  // Exact +kint64max and -kint64max succeed.
+  acc = IntegerValue(0);
+  EXPECT_TRUE(AddProductTo(IntegerValue(7), IntegerValue(kMax / 7), &acc));
+  EXPECT_EQ(acc, IntegerValue(kMax));
+
+  acc = IntegerValue(0);
+  EXPECT_TRUE(AddProductTo(IntegerValue(-7), IntegerValue(kMax / 7), &acc));
+  EXPECT_EQ(acc, IntegerValue(-kMax));
+
+  acc = IntegerValue(0);
+  EXPECT_TRUE(AddSquareTo(IntegerValue(int64_t{1} << 31), &acc));
+  EXPECT_EQ(acc, IntegerValue(int64_t{1} << 62));
+  EXPECT_FALSE(AddSquareTo(IntegerValue(int64_t{1} << 32), &acc));
 }
 
 }  // namespace

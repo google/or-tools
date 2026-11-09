@@ -16,10 +16,12 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -29,6 +31,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
@@ -43,7 +46,9 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -116,6 +121,10 @@ struct CutTerm {
 };
 
 // Our cuts are always of the form linear_expression <= rhs.
+//
+// Value of CutData::first_slack when the cut contains no LP slack variable.
+const IntegerVariable kNoSlackVariable(
+    std::numeric_limits<IntegerVariable::ValueType>::max());
 struct CutData {
   // We need level zero bounds and LP relaxation values to fill a CutData.
   // Returns false if we encounter any integer overflow.
@@ -148,6 +157,13 @@ struct CutData {
   // num_relevant_entries and max_magnitude.
   void SortRelevantEntries();
 
+  // Terms whose variable is >= first_slack are LP row slacks that will be
+  // substituted by their row when the cut is converted back to a linear
+  // constraint. Returns the largest absolute coefficient that `term` can put
+  // on a structural variable after this substitution, i.e. |expr_coeff| times
+  // the infinity norm of the row for a slack and just |expr_coeff| otherwise.
+  IntegerValue SubstitutedInfinityNorm(const CutTerm& term) const;
+
   std::string DebugString() const;
 
   // Note that we use a 128-bit rhs so we can freely complement variables
@@ -158,6 +174,12 @@ struct CutData {
   // Only filled after SortRelevantEntries().
   IntegerValue max_magnitude;
   int num_relevant_entries;
+
+  // See SubstitutedInfinityNorm(). slack_infinity_norms[(var - first_slack) /
+  // 2] is the infinity norm of the LP row of the slack variable `var`. By
+  // default there are no slacks.
+  IntegerVariable first_slack = kNoSlackVariable;
+  absl::InlinedVector<IntegerValue, 8> slack_infinity_norms;
 };
 
 // Stores temporaries used to build or manipulate a CutData.
@@ -191,21 +213,32 @@ class CutDataBuilder {
 // We use a class to reuse memory of the tmp terms.
 class ImpliedBoundsProcessor {
  public:
-  // We will only replace IntegerVariable appearing in lp_vars_.
-  ImpliedBoundsProcessor(absl::Span<const IntegerVariable> lp_vars_,
+  explicit ImpliedBoundsProcessor(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        implied_bounds_(model->GetOrCreate<ImpliedBounds>()) {}
+
+  // Convenience constructor for tests with a fixed set of LP variables.
+  ImpliedBoundsProcessor(absl::Span<const IntegerVariable> lp_vars,
                          IntegerTrail* integer_trail,
                          ImpliedBounds* implied_bounds)
-      : lp_vars_(lp_vars_.begin(), lp_vars_.end()),
+      : default_lp_vars_(lp_vars.begin(), lp_vars.end()),
         integer_trail_(integer_trail),
         implied_bounds_(implied_bounds) {}
 
-  // See if some of the implied bounds equations are violated and add them to
-  // the IB cut pool if that is the case.
+  // Recomputes the implied-bound cache for the LP variables in `lp_vars` and
+  // separates any implied-bound equations violated by `lp_values` into the IB
+  // cut pool.
   //
-  // Important: This must be called before we process any constraints with a
-  // different lp_values or level zero bounds.
+  // Important: This must be called before processing any constraints with a
+  // different LP component, `lp_values`, or level-zero bounds.
   void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
+      absl::Span<const IntegerVariable> lp_vars,
       const util_intops::StrongVector<IntegerVariable, double>& lp_values);
+
+  void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
+    RecomputeCacheAndSeparateSomeImpliedBoundCuts(default_lp_vars_, lp_values);
+  }
 
   // This assumes the term is simple: expr[0] = var - LB / UB - var. We use an
   // implied lower bound on this expr, independently of the term.coeff sign.
@@ -237,9 +270,18 @@ class ImpliedBoundsProcessor {
   // Return false if there are no exploitable implied bounds.
   bool CacheDataForCut(IntegerVariable first_slack, CutData* cut);
 
+  // Returns an upper bound on the integer value X can reach when any fractional
+  // implied-bound Boolean active in the LP is rounded up to its bound while
+  // keeping its non-negative implied-bound slack fixed.
+  IntegerValue ImpliedRoundedUpValue(const CutTerm& term) const;
+
   bool TryToExpandWithLowerImpliedbound(bool complement, CutTerm* term,
                                         absl::int128* rhs,
                                         std::vector<CutTerm>* new_bool_terms);
+
+  bool TryToExpandWithImpliedBound(bool try_tight_upper_ib, bool complement,
+                                   CutTerm* term, absl::int128* rhs,
+                                   std::vector<CutTerm>* new_bool_terms);
 
   // This can be used to share the hash-map memory.
   CutDataBuilder* MutableCutBuilder() { return &cut_builder_; }
@@ -250,10 +292,6 @@ class ImpliedBoundsProcessor {
     tmp_terms_.clear();
     return &tmp_terms_;
   }
-
-  // Add a new variable that could be used in the new cuts.
-  // Note that the cache must be computed to take this into account.
-  void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
   // Once RecomputeCacheAndSeparateSomeImpliedBoundCuts() has been called,
   // we can get the best implied bound for each variable.
@@ -287,12 +325,18 @@ class ImpliedBoundsProcessor {
   TopNCuts& IbCutPool() { return ib_cut_pool_; }
 
  private:
+  bool HasLpVariable(IntegerVariable var) const {
+    return var >= 0 && var < lp_vars_.size() && lp_vars_[var];
+  }
+
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
       const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
-  absl::flat_hash_set<IntegerVariable> lp_vars_;
-  mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
+  std::vector<IntegerVariable> default_lp_vars_;
+  SparseBitset<IntegerVariable> lp_vars_;
+  util_intops::StrongVector<IntegerVariable, BestImpliedBoundInfo> cache_;
+  SparseBitset<IntegerVariable> is_cached_;
 
   // Temporary data used by CacheDataForCut().
   std::vector<CutTerm> tmp_terms_;
@@ -375,9 +419,10 @@ inline std::function<IntegerValue(IntegerValue)> ExtendNegativeFunction(
     std::function<IntegerValue(IntegerValue)> base_f, IntegerValue period) {
   const IntegerValue m = -base_f(-period);
   return [m, period, base_f](IntegerValue v) {
+    const IntegerValue q = FloorRatio(v, period);
     const IntegerValue r = PositiveRemainder(v, period);
-    const IntegerValue output_r = m + base_f(r - period);
-    return FloorRatio(v, period) * m + output_r;
+    const IntegerValue b = base_f(r - period);
+    return q >= 0 ? q * m + (m + b) : (q + 1) * m + b;
   };
 }
 
@@ -385,8 +430,6 @@ struct CutPostprocessingStats {
   int64_t num_lb_ibs = 0;
   int64_t num_ub_ibs = 0;
   int64_t num_merges = 0;
-  int64_t num_final_complements = 0;
-  int64_t num_zero_loss_adjusts = 0;
   int64_t num_lifts = 0;
   int64_t num_gubs = 0;
   int64_t num_bumps = 0;
@@ -395,8 +438,6 @@ struct CutPostprocessingStats {
     num_lb_ibs += other.num_lb_ibs;
     num_ub_ibs += other.num_ub_ibs;
     num_merges += other.num_merges;
-    num_final_complements += other.num_final_complements;
-    num_zero_loss_adjusts += other.num_zero_loss_adjusts;
     num_lifts += other.num_lifts;
     num_gubs += other.num_gubs;
     num_bumps += other.num_bumps;
@@ -408,14 +449,35 @@ struct CutPostprocessingStats {
     stats->push_back({absl::StrCat(prefix, "num_implied_lb"), num_lb_ibs});
     stats->push_back({absl::StrCat(prefix, "num_implied_ub"), num_ub_ibs});
     stats->push_back({absl::StrCat(prefix, "num_merges"), num_merges});
-    stats->push_back(
-        {absl::StrCat(prefix, "num_final_complements"), num_final_complements});
-    stats->push_back(
-        {absl::StrCat(prefix, "num_zero_loss_adjusts"), num_zero_loss_adjusts});
     stats->push_back({absl::StrCat(prefix, "num_lifting"), num_lifts});
     stats->push_back({absl::StrCat(prefix, "num_gubs"), num_gubs});
     stats->push_back({absl::StrCat(prefix, "num_bumps"), num_bumps});
   }
+};
+
+// Before applying the super-additive rounding function f() (built by
+// GetSuperAdditiveRoundingFunction() for the given divisor, t and max_scaling)
+// to a cut, this relaxes negative coefficients k * divisor - eps up to the
+// exact multiple k * divisor (dropping the term when k == 0). Each relaxation
+// increases the rhs by eps * bound_diff, and we only do it while the function
+// rebuilt for the new rhs remainder keeps the same value as f() on the divisor
+// and on all the terms with a non-zero LP value (and while at least half of the
+// remaining rhs slack below the next multiple is kept). Since f(k * divisor) >
+// f(k * divisor - eps), this strengthens and sparsifies the rounded cut with
+// zero loss of LP violation.
+//
+// Returns the number of adjusted terms, and replaces *f by the function rebuilt
+// for the new rhs remainder when this number is positive.
+class ZeroLossCoefficientAdjuster {
+ public:
+  int Adjust(IntegerValue divisor, IntegerValue factor_t,
+             IntegerValue max_scaling, CutData* cut,
+             std::function<IntegerValue(IntegerValue)>* f);
+
+ private:
+  std::vector<IntegerValue> remainders_;
+  std::vector<IntegerValue> best_rs_;
+  std::vector<std::pair<int, IntegerValue>> adjusts_;
 };
 
 // Exploit AtMostOne from the model to derive stronger cuts.
@@ -430,11 +492,10 @@ class GUBHelper {
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
   ~GUBHelper();
 
-  // Applies implied-bound substitutions, complements terms when beneficial
-  // under f(), adjusts negative terms up to multiples of divisor when doing so
-  // does not change the rounded RHS, applies f() to all terms and the RHS, and
-  // strengthens the cut using GUB (at-most-one) lifting and Boolean bumping.
-  // Returns true if the resulting cut has violation >= kMinCutViolation.
+  // Applies implied-bound substitutions, applies f() to all terms and the RHS,
+  // and strengthens the cut using GUB (at-most-one) lifting and Boolean
+  // bumping. Returns true if the resulting cut has violation >=
+  // kMinCutViolation.
   bool ApplyWithPostprocessing(
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue divisor,
       ImpliedBoundsProcessor* ib_processor, CutData* cut);
@@ -443,18 +504,6 @@ class GUBHelper {
   const CutPostprocessingStats& last_stats() const { return last_stats_; }
 
  private:
-  // Greedily complements terms X -> (ub - lb) - X' when doing so strictly
-  // increases the LP violation of the rounded cut under the fixed function f().
-  void ComplementWithFixedF(const std::function<IntegerValue(IntegerValue)>& f,
-                            IntegerValue divisor, IntegerValue f_divisor,
-                            CutData* cut);
-
-  // Greedily relaxes negative terms k * divisor - eps up to k * divisor (0 when
-  // k == 0) within the RHS remainder plateau where f() stays constant, so the
-  // rounded RHS is unchanged and zero LP violation is lost.
-  void AdjustWithFixedF(const std::function<IntegerValue(IntegerValue)>& f,
-                        IntegerValue divisor, CutData* cut);
-
   // Extracts simple Boolean terms that appear in at-most-one (AMO) constraints
   // into literals_, counts uncomplemented occurrences per AMO in amo_count_,
   // sorts complemented terms first (then by decreasing |original_coeff|), and
@@ -504,7 +553,6 @@ class GUBHelper {
   std::vector<IntegerValue> initial_coeffs_;
   std::vector<bool> used_in_gub_;
   std::vector<LiteralInCut> literals_;
-  std::vector<std::pair<int, IntegerValue>> tmp_adjusts_;
   absl::flat_hash_set<Literal> already_seen_;
   absl::flat_hash_map<int, int> amo_count_;
   absl::flat_hash_map<int, double> amo_score_;
@@ -548,6 +596,7 @@ struct RoundingOptions {
   IntegerValue max_scaling = IntegerValue(60);
   bool use_ib_before_heuristic = true;
   bool prefer_positive_ib = true;
+  bool use_tight_upper_ib = true;
 };
 class IntegerRoundingCutHelper {
  public:
@@ -570,9 +619,10 @@ class IntegerRoundingCutHelper {
  private:
   double GetScaledViolation(IntegerValue divisor, IntegerValue max_scaling,
                             IntegerValue remainder_threshold,
-                            const CutData& cut);
+                            bool unscaled_neg_slack, const CutData& cut);
 
   GUBHelper gub_helper_;
+  ZeroLossCoefficientAdjuster zero_loss_adjuster_;
   SharedStatistics* shared_stats_;
 
   // The helper is just here to reuse the memory for these vectors.
@@ -580,6 +630,12 @@ class IntegerRoundingCutHelper {
   std::vector<IntegerValue> remainders_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
+
+  // Positions of the terms of cut_ that are not simple Booleans (the only ones
+  // that can be large-domain negative terms or implied-bound slacks). Filled
+  // once after SortRelevantEntries() and valid until postprocessing since
+  // complementation and coefficient adjustments do not reorder cut_.terms.
+  std::vector<int> large_domain_indices_;
 
   int64_t num_ib_used_ = 0;
   CutData cut_;
@@ -601,7 +657,8 @@ class IntegerRoundingCutHelper {
 class CoverCutHelper {
  public:
   explicit CoverCutHelper(Model* model)
-      : gub_helper_(model),
+      : parameters_(*model->GetOrCreate<SatParameters>()),
+        gub_helper_(model),
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
 
   ~CoverCutHelper();
@@ -665,7 +722,8 @@ class CoverCutHelper {
   // This looks at base_ct_ and reorders the terms so that the first ones are in
   // the cover. Returns zero if no interesting cover was found.
   template <class CompareAdd, class CompareRemove>
-  int GetCoverSize(int relevant_size);
+  int GetCoverSize(int relevant_size,
+                   const ImpliedBoundsProcessor* ib_processor);
 
   // Same as GetCoverSize() but only look at Booleans, and use a different
   // heuristic.
@@ -674,12 +732,15 @@ class CoverCutHelper {
   template <class Compare>
   int MinimizeCover(int cover_size, absl::int128 slack);
 
+  const SatParameters& parameters_;
   GUBHelper gub_helper_;
+  ZeroLossCoefficientAdjuster zero_loss_adjuster_;
   SharedStatistics* shared_stats_;
 
   // Here to reuse memory, cut_ is both the input and the output.
   CutData cut_;
   CutData temp_cut_;
+  std::vector<int> large_domain_indices_;
 
   // Hack to not sort twice.
   bool has_bool_base_ct_ = false;
@@ -694,6 +755,7 @@ class CoverCutHelper {
     int64_t num_cuts = 0;
     int64_t num_initial_ibs = 0;
     int64_t num_overflow_aborts = 0;
+    int64_t num_zero_loss_adjusts = 0;
     CutPostprocessingStats postprocessing_stats;
   };
   CutStats flow_stats_;

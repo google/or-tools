@@ -199,7 +199,7 @@ class TimeTablingPerTask : public PropagatorInterface {
 
   // Returns true if the task is present and has a mandatory part.
   // This is only valid after BuildProfile() has been called.
-  bool IsInProfile(int t) const { return cached_demands_min_[t] > 0; }
+  bool IsInProfile(int t) const { return in_profile_[t]; }
 
   // Number of tasks.
   const int num_tasks_;
@@ -220,6 +220,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   // of profile_tasks_.
   std::vector<int> profile_tasks_;
   int num_profile_tasks_;
+  std::vector<bool> in_profile_;
 
   // Only tasks with a mandatory part will have their demand cached.
   // Others will have zero here.

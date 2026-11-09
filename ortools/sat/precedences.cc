@@ -1772,17 +1772,9 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
     // TODO(user): create a Linear2 trail and enqueue this bound there.
     ++enqueue_individual_var_bounds_;
 
-    const ReasonIndex reason_index =
-        integer_trail_->AppendReasonToInternalBuffers(literal_reason,
-                                                      integer_reason);
-    if (reason_index >= saved_reasons_.size()) {
-      saved_reasons_.resize(reason_index + 1);
-    }
-
     // We require positive coefficients here.
     CHECK_GT(expr.coeffs[0], 0);
     CHECK_GT(expr.coeffs[1], 0);
-    saved_reasons_[reason_index] = expr;
 
     // This is a simple linear2 propagation with lazy reason.
     // It will be explained by Explain() below.
@@ -1791,6 +1783,32 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
         integer_trail_->LowerBound(expr.vars[1]) * expr.coeffs[1];
     const IntegerValue linear_slack = ub - min_activity;
     CHECK_GE(linear_slack, 0);  // Conflict should already be dealt with.
+
+    bool pushes_something = false;
+    for (int i = 0; i < 2; ++i) {
+      const IntegerValue lb = integer_trail_->LowerBound(expr.vars[i]);
+      const IntegerValue div = linear_slack / expr.coeffs[i];
+      if (div < integer_trail_->UpperBound(expr.vars[i]) - lb) {
+        pushes_something = true;
+        break;
+      }
+    }
+    if (!pushes_something) return true;
+
+    int reason_id = -1;
+    if (trail_->CurrentDecisionLevel() == 0) {
+      level_zero_saved_reason_ = expr;
+    } else {
+      const ReasonIndex reason_index =
+          integer_trail_->AppendReasonToInternalBuffers(literal_reason,
+                                                        integer_reason);
+      if (reason_index >= saved_reasons_.size()) {
+        saved_reasons_.resize(reason_index + 1);
+      }
+      saved_reasons_[reason_index] = expr;
+      reason_id = reason_index.value();
+    }
+
     for (int i = 0; i < 2; ++i) {
       const IntegerValue lb = integer_trail_->LowerBound(expr.vars[i]);
       const IntegerValue div = linear_slack / expr.coeffs[i];
@@ -1799,8 +1817,8 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
       const IntegerValue propagation_slack =
           (div + 1) * expr.coeffs[i] - linear_slack - 1;
       if (!integer_trail_->EnqueueWithLazyReason(
-              IntegerLiteral::LowerOrEqual(expr.vars[i], new_ub),
-              reason_index.value(), propagation_slack, this)) {
+              IntegerLiteral::LowerOrEqual(expr.vars[i], new_ub), reason_id,
+              propagation_slack, this)) {
         return false;
       }
     }
@@ -1840,6 +1858,11 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
 
 void Linear2Bounds::Explain(int id, IntegerLiteral /*to_explain*/,
                             IntegerReason* reason) {
+  if (id < 0) {
+    reason->vars = level_zero_saved_reason_.non_zero_vars();
+    reason->coeffs = level_zero_saved_reason_.non_zero_coeffs();
+    return;
+  }
   const ReasonIndex reason_index(id);
   reason->boolean_literals_at_false =
       integer_trail_->LiteralReasonAsSpan(reason_index);

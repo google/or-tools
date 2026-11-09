@@ -271,6 +271,112 @@ TEST(GeneratorTest, UCBScore) {
   EXPECT_NEAR(5.8255, generator.GetUCBScore(/*total_num_calls=*/200), 1e-4);
 }
 
+TEST(NeighborhoodGeneratorTest, AdaptivePresolveDeterministicLimit) {
+  CpModelProto proto;
+  IntegerVariableProto* var = proto.add_variables();
+  var->add_domain(0);
+  var->add_domain(1);
+
+  Model model;
+  const CpSolverResponse solution = SolveCpModel(proto, &model);
+  EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
+
+  SatParameters params;
+  params.set_lns_initial_presolve_deterministic_limit(0.5);
+  params.set_lns_max_presolve_deterministic_limit(10.0);
+
+  Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  ModelSharedTimeLimit time_limit(&main_model);
+  NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
+                                     &time_limit);
+  RelaxRandomVariablesGenerator generator(&helper, "test");
+
+  // Initial limit matches parameter.
+  EXPECT_DOUBLE_EQ(generator.presolve_deterministic_limit(), 0.5);
+
+  // When a solve task times out in presolve (presolve_limit_reached = true),
+  // the presolve limit doubles on Synchronize() up to max.
+  NeighborhoodGenerator::SolveData timeout_data;
+  timeout_data.presolve_deterministic_limit =
+      generator.presolve_deterministic_limit();
+  timeout_data.presolve_limit_reached = true;
+  generator.AddSolveData(timeout_data);
+  generator.Synchronize();
+  EXPECT_DOUBLE_EQ(generator.presolve_deterministic_limit(), 1.0);
+
+  // Repeated presolve timeouts cap at lns_max_presolve_deterministic_limit.
+  for (int i = 0; i < 10; ++i) {
+    NeighborhoodGenerator::SolveData d;
+    d.presolve_deterministic_limit = generator.presolve_deterministic_limit();
+    d.presolve_limit_reached = true;
+    generator.AddSolveData(d);
+    generator.Synchronize();
+  }
+  EXPECT_DOUBLE_EQ(generator.presolve_deterministic_limit(), 10.0);
+
+  // When presolve finishes well within budget (< 25%), the limit decays gently
+  // towards max(initial_limit, 2 * presolve_deterministic_time).
+  NeighborhoodGenerator::SolveData success_data;
+  success_data.presolve_deterministic_limit =
+      generator.presolve_deterministic_limit();
+  success_data.presolve_limit_reached = false;
+  success_data.presolve_deterministic_time = 0.2;
+  success_data.initial_best_objective = IntegerValue(100);
+  success_data.new_objective = IntegerValue(50);
+  generator.AddSolveData(success_data);
+  generator.Synchronize();
+  EXPECT_DOUBLE_EQ(generator.presolve_deterministic_limit(), 10.0 * 0.95);
+}
+
+TEST(NeighborhoodGeneratorTest,
+     LnsSolverAdaptsPresolveLimitIndependentlyOfSearchLimit) {
+  CpModelProto proto;
+  constexpr int kNumVars = 400;
+  auto* hint = proto.mutable_solution_hint();
+  auto* obj = proto.mutable_objective();
+  for (int i = 0; i < kNumVars; ++i) {
+    auto* var = proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    hint->add_vars(i);
+    hint->add_values(1);
+    obj->add_vars(i);
+    obj->add_coeffs(1);
+  }
+  for (int i = 0; i < kNumVars; ++i) {
+    auto* ct = proto.add_constraints()->mutable_linear();
+    ct->add_vars(i);
+    ct->add_vars((i + 1) % kNumVars);
+    ct->add_coeffs(1);
+    ct->add_coeffs(1);
+    ct->add_domain(1);
+    ct->add_domain(2);
+  }
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_lns_only(true);
+  params.set_num_violation_ls(0);
+  params.set_use_feasibility_pump(false);
+  params.set_use_rins_lns(false);
+  params.set_num_workers(2);
+  params.set_interleave_search(true);
+  // Tiny search limit and tiny initial presolve limit: LNS can only improve
+  // the initial hinted solution (400 -> < 400) if LNS presolve adapts its own
+  // limit past lns_initial_deterministic_limit up toward max!
+  params.set_lns_initial_deterministic_limit(1e-6);
+  params.set_lns_initial_presolve_deterministic_limit(1e-6);
+  params.set_lns_max_presolve_deterministic_limit(1.0);
+  params.set_max_deterministic_time(0.5);
+
+  const CpSolverResponse response = SolveWithParameters(proto, params);
+  ASSERT_THAT(response.status(), testing::AnyOf(CpSolverStatus::FEASIBLE,
+                                                CpSolverStatus::OPTIMAL));
+  EXPECT_LT(response.objective_value(), kNumVars);
+}
+
 TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRINS) {
   CpModelProto proto;
   IntegerVariableProto* var = proto.add_variables();

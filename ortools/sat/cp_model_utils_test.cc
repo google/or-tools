@@ -524,6 +524,179 @@ TEST(ComputeFloatObjectiveValueTest, ExactWithLargeInt64Solution) {
   EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
 }
 
+TEST(CanonicalizeLinMaxTest, SortsTermsAndExpressions) {
+  ConstraintProto ct = ParseTestProto(R"pb(
+    lin_max {
+      target {
+        vars: [ 2, 1, 2 ]
+        coeffs: [ 1, 3, 2 ]
+        offset: 4
+      }
+      exprs {
+        vars: [ 1, 0 ]
+        coeffs: [ 2, 1 ]
+        offset: 5
+      }
+      exprs {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, -1 ]
+        offset: 10
+      }
+      exprs {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, -1 ]
+        offset: 2
+      }
+    }
+  )pb");
+  EXPECT_FALSE(LinMaxIsCanonical(ct));
+  CanonicalizeLinMax(&ct);
+  EXPECT_TRUE(LinMaxIsCanonical(ct));
+
+  const ConstraintProto expected = ParseTestProto(R"pb(
+    lin_max {
+      target {
+        vars: [ 1, 2 ]
+        coeffs: [ 3, 3 ]
+        offset: 4
+      }
+      exprs {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, -1 ]
+        offset: 2
+      }
+      exprs {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, -1 ]
+        offset: 10
+      }
+      exprs {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        offset: 5
+      }
+    }
+  )pb");
+  EXPECT_THAT(ct, testing::EqualsProto(expected));
+}
+
+TEST(CanonicalizeLinMaxTest, CancelsZeroCoefficientTerms) {
+  ConstraintProto ct = ParseTestProto(R"pb(
+    lin_max {
+      target {
+        vars: [ 0, 1, 0 ]
+        coeffs: [ 2, 0, -2 ]
+        offset: 3
+      }
+      exprs {
+        vars: [ 1, 1 ]
+        coeffs: [ 4, -4 ]
+        offset: 7
+      }
+      exprs { offset: 1 }
+    }
+  )pb");
+  EXPECT_FALSE(LinMaxIsCanonical(ct));
+  CanonicalizeLinMax(&ct);
+  EXPECT_TRUE(LinMaxIsCanonical(ct));
+
+  const ConstraintProto expected = ParseTestProto(R"pb(
+    lin_max {
+      target { offset: 3 }
+      exprs { offset: 1 }
+      exprs { offset: 7 }
+    }
+  )pb");
+  EXPECT_THAT(ct, testing::EqualsProto(expected));
+}
+
+TEST(CanonicalizeLinMaxTest, CanonicalizesEnforcementLiterals) {
+  ConstraintProto ct = ParseTestProto(R"pb(
+    enforcement_literal: [ 1, -1, 1 ]
+    lin_max {
+      target {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 3, 4, 5 ]
+        offset: 1
+      }
+      exprs {
+        vars: [ 1, 2 ]
+        coeffs: [ 2, 1 ]
+        offset: 10
+      }
+      exprs {
+        vars: [ 0, 2 ]
+        coeffs: [ -2, 1 ]
+        offset: 5
+      }
+    }
+  )pb");
+  EXPECT_FALSE(LinMaxIsCanonical(ct));
+  CanonicalizeLinMax(&ct);
+  EXPECT_TRUE(LinMaxIsCanonical(ct));
+
+  const ConstraintProto expected = ParseTestProto(R"pb(
+    enforcement_literal: [ -1, 1 ]
+    lin_max {
+      target {
+        vars: [ 2 ]
+        coeffs: [ 5 ]
+        offset: 5
+      }
+      exprs {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        offset: 5
+      }
+      exprs {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        offset: 12
+      }
+    }
+  )pb");
+  EXPECT_THAT(ct, testing::EqualsProto(expected));
+
+  // Contradictory enforcement literals (x and not(x)) are not canonical and
+  // clear the constraint when canonicalized.
+  ConstraintProto contradictory_ct = ParseTestProto(R"pb(
+    enforcement_literal: [ -1, 0 ]
+    lin_max {
+      target {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+      }
+      exprs {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+      }
+    }
+  )pb");
+  EXPECT_FALSE(LinMaxIsCanonical(contradictory_ct));
+  CanonicalizeLinMax(&contradictory_ct);
+  EXPECT_EQ(contradictory_ct.constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+}
+
+TEST(AffineExprTest, ConstAndVarHelpers) {
+  constexpr AffineExpr c = AffineExpr::Const(42);
+  EXPECT_EQ(c.var, -1);
+  EXPECT_EQ(c.coeff, 0);
+  EXPECT_EQ(c.offset, 42);
+  EXPECT_TRUE(c.is_constant());
+  EXPECT_EQ(c.constant_value(), 42);
+
+  constexpr AffineExpr v = AffineExpr::Var(7);
+  EXPECT_EQ(v.var, 7);
+  EXPECT_EQ(v.coeff, 1);
+  EXPECT_EQ(v.offset, 0);
+  EXPECT_FALSE(v.is_constant());
+
+  AffineExpr scaled{.var = 5, .coeff = 0, .offset = 10};
+  EXPECT_TRUE(scaled.is_constant());
+  EXPECT_EQ(scaled.constant_value(), 10);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

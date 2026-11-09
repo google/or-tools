@@ -1222,6 +1222,10 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
           RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
+        if (after_presolve && !LinMaxIsCanonical(ct)) {
+          return absl::StrCat("LinMax constraint is not in canonical form: ",
+                              ProtobufShortDebugString(ct));
+        }
         break;
       }
       case ConstraintProto::ConstraintCase::kIntProd:

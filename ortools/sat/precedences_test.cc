@@ -1191,6 +1191,63 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(1));
 }
 
+TEST(BinaryRelationMapsTest, EnqueueLowerOrEqualDoesNotLeakReasons) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 100));
+  const IntegerVariable w = model.Add(NewIntegerVariable(0, 100));
+  const Literal b(model.Add(NewBooleanVariable()), true);
+
+  auto* bounds = model.GetOrCreate<Linear2Bounds>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+
+  LinearExpression2 xy;
+  xy.vars[0] = x;
+  xy.vars[1] = y;
+  xy.coeffs[0] = IntegerValue(1);
+  xy.coeffs[1] = IntegerValue(1);
+  xy.SimpleCanonicalization();
+
+  // At level 0, neither non-tightening nor tightening bounds retain lazy
+  // reasons.
+  EXPECT_TRUE(bounds->EnqueueLowerOrEqual(bounds->GetIndex(xy), xy,
+                                          IntegerValue(150), {}, {}));
+  EXPECT_EQ(integer_trail->UpperBound(x), IntegerValue(100));
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+
+  EXPECT_TRUE(bounds->EnqueueLowerOrEqual(bounds->GetIndex(xy), xy,
+                                          IntegerValue(80), {}, {}));
+  EXPECT_EQ(integer_trail->UpperBound(x), IntegerValue(80));
+  EXPECT_EQ(integer_trail->UpperBound(y), IntegerValue(80));
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+
+  // At level 1, non-tightening bounds do not allocate lazy reasons, and
+  // tightening bounds are reclaimed on ResetToLevelZero().
+  EXPECT_NE(sat_solver->EnqueueDecisionAndBackjumpOnConflict(b),
+            kUnsatTrailIndex);
+  LinearExpression2 zw;
+  zw.vars[0] = z;
+  zw.vars[1] = w;
+  zw.coeffs[0] = IntegerValue(1);
+  zw.coeffs[1] = IntegerValue(1);
+  zw.SimpleCanonicalization();
+
+  EXPECT_TRUE(bounds->EnqueueLowerOrEqual(
+      bounds->GetIndex(zw), zw, IntegerValue(150), {b.Negated()}, {}));
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+
+  EXPECT_TRUE(bounds->EnqueueLowerOrEqual(bounds->GetIndex(zw), zw,
+                                          IntegerValue(60), {b.Negated()}, {}));
+  EXPECT_EQ(integer_trail->UpperBound(z), IntegerValue(60));
+  EXPECT_EQ(integer_trail->UpperBound(w), IntegerValue(60));
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 2);
+
+  EXPECT_TRUE(sat_solver->ResetToLevelZero());
+  EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research
