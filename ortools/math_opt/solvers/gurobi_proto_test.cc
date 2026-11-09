@@ -11,13 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/util/stats.h"
+#include "absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
+#include "ortools/math_opt/solvers/gurobi.pb.h"
 
+namespace operations_research::math_opt {
 namespace {
 
-void TestInvalidCodeIn_IF_STATS_ENABLED() {
-  // expected-error-re@+1 {{{{.*}}undeclared identifier 'does_not_exist'{{.*}}}}
-  IF_STATS_ENABLED(does_not_exist);
+using ::testing::HasSubstr;
+
+TEST(ISVKeyTest, DebugStringRedaction) {
+  GurobiInitializerProto::ISVKey key;
+  key.set_name("the name");
+  key.set_application_name("uoss");
+  key.set_expiration(3);
+  constexpr absl::string_view kSecret = "should not be visible";
+  key.set_key(kSecret);
+
+  EXPECT_THAT(key.DebugString(), Not(HasSubstr(kSecret)));
 }
 
 }  // namespace
+}  // namespace operations_research::math_opt
