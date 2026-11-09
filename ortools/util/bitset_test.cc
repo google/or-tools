@@ -46,61 +46,45 @@ using ::testing::ElementsAre;
 
 namespace bitset_index {
 
-// These implementations are currently not exposed in `bitset.h` but we want to
-// test their performances.
-int LSB32Std(uint32_t n) { return std::countr_zero(n); }
-int LSB64Std(uint64_t n) { return std::countr_zero(n); }
-int MSB32Std(uint32_t n) { return 31 - std::countl_zero(n); }
-int MSB64Std(uint64_t n) { return 63 - std::countl_zero(n); }
-
 // An enum to select between LSBIndex and MSBIndex.
 enum class Function { kLSB, kMSB };
 
-// An enum to select the implementation.
-enum class Impl { kBasic, kBuiltin, kDeBruijn, kStd };
-
 // A type to describe a complete implementation.
-template <Function function, typename T, Impl implementation, auto FunctionPtr>
+template <Function function, typename T, internal::BitScanAlgorithm algo>
 struct TestCase {
   using UIntT = T;
   static constexpr Function kFunction = function;
-  static constexpr Impl kImpl = implementation;
-  static int Compute(UIntT value) { return FunctionPtr(value); }
+  static constexpr internal::BitScanAlgorithm kAlgo = algo;
+  static int Compute(UIntT value) {
+    if constexpr (function == Function::kLSB) {
+      return internal::LeastSignificantBitPosition<algo>(value);
+    } else {
+      return internal::MostSignificantBitPosition<algo>(value);
+    }
+  }
 };
 
 // Shorthand for all available types.
-using LSB_32_Basic = TestCase<Function::kLSB, uint32_t, Impl::kBasic,
-                              LeastSignificantBitPosition32Default>;
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-using LSB_32_Builtin = TestCase<Function::kLSB, uint32_t, Impl::kBuiltin,
-                                LeastSignificantBitPosition32Fast>;
-#endif
-using LSB_32_DeBruijn = TestCase<Function::kLSB, uint32_t, Impl::kDeBruijn,
-                                 LeastSignificantBitPosition32DeBruijn>;
-using LSB_32_Std = TestCase<Function::kLSB, uint32_t, Impl::kStd, LSB32Std>;
-using LSB_64_Basic = TestCase<Function::kLSB, uint64_t, Impl::kBasic,
-                              LeastSignificantBitPosition64Default>;
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-using LSB_64_Builtin = TestCase<Function::kLSB, uint64_t, Impl::kBuiltin,
-                                LeastSignificantBitPosition64Fast>;
-#endif
-using LSB_64_DeBruijn = TestCase<Function::kLSB, uint64_t, Impl::kDeBruijn,
-                                 LeastSignificantBitPosition64DeBruijn>;
-using LSB_64_Std = TestCase<Function::kLSB, uint64_t, Impl::kStd, LSB64Std>;
-using MSB_32_Basic = TestCase<Function::kMSB, uint32_t, Impl::kBasic,
-                              MostSignificantBitPosition32Default>;
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-using MSB_32_Builtin = TestCase<Function::kMSB, uint32_t, Impl::kBuiltin,
-                                MostSignificantBitPosition32Fast>;
-#endif
-using MSB_32_Std = TestCase<Function::kMSB, uint32_t, Impl::kStd, MSB32Std>;
-using MSB_64_Basic = TestCase<Function::kMSB, uint64_t, Impl::kBasic,
-                              MostSignificantBitPosition64Default>;
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-using MSB_64_Builtin = TestCase<Function::kMSB, uint64_t, Impl::kBuiltin,
-                                MostSignificantBitPosition64Fast>;
-#endif
-using MSB_64_Std = TestCase<Function::kMSB, uint64_t, Impl::kStd, MSB64Std>;
+using LSB_32_Basic =
+    TestCase<Function::kLSB, uint32_t, internal::BitScanAlgorithm::kBasic>;
+using LSB_32_DeBruijn =
+    TestCase<Function::kLSB, uint32_t, internal::BitScanAlgorithm::kDeBruijn>;
+using LSB_32_Std =
+    TestCase<Function::kLSB, uint32_t, internal::BitScanAlgorithm::kStd>;
+using LSB_64_Basic =
+    TestCase<Function::kLSB, uint64_t, internal::BitScanAlgorithm::kBasic>;
+using LSB_64_DeBruijn =
+    TestCase<Function::kLSB, uint64_t, internal::BitScanAlgorithm::kDeBruijn>;
+using LSB_64_Std =
+    TestCase<Function::kLSB, uint64_t, internal::BitScanAlgorithm::kStd>;
+using MSB_32_Basic =
+    TestCase<Function::kMSB, uint32_t, internal::BitScanAlgorithm::kBasic>;
+using MSB_32_Std =
+    TestCase<Function::kMSB, uint32_t, internal::BitScanAlgorithm::kStd>;
+using MSB_64_Basic =
+    TestCase<Function::kMSB, uint64_t, internal::BitScanAlgorithm::kBasic>;
+using MSB_64_Std =
+    TestCase<Function::kMSB, uint64_t, internal::BitScanAlgorithm::kStd>;
 
 // This help produce readable names for the typed tests.
 class NameGenerator {
@@ -114,15 +98,13 @@ class NameGenerator {
     }
     ABSL_UNREACHABLE();
   }
-  static absl::string_view GetString(Impl implementation) {
-    switch (implementation) {
-      case Impl::kBasic:
+  static absl::string_view GetString(internal::BitScanAlgorithm algo) {
+    switch (algo) {
+      case internal::BitScanAlgorithm::kBasic:
         return "Basic";
-      case Impl::kBuiltin:
-        return "Builtin";
-      case Impl::kDeBruijn:
+      case internal::BitScanAlgorithm::kDeBruijn:
         return "DeBruijn";
-      case Impl::kStd:
+      case internal::BitScanAlgorithm::kStd:
         return "Std";
     }
     ABSL_UNREACHABLE();
@@ -134,7 +116,7 @@ class NameGenerator {
         std::is_same_v<UIntT, uint32_t> || std::is_same_v<UIntT, uint64_t>,
         "Unsupported type");
     return absl::StrFormat("%s(uint%d)_%s", GetString(T::kFunction),
-                           sizeof(UIntT) * 8, GetString(T::kImpl));
+                           sizeof(UIntT) * 8, GetString(T::kAlgo));
   }
 };
 
@@ -142,23 +124,9 @@ template <typename TestCase>
 class BitIndex : public testing::Test {};
 
 using BitIndexTypes =
-    ::testing::Types<LSB_32_Basic,
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-                     LSB_32_Builtin,
-#endif
-                     LSB_32_DeBruijn, LSB_32_Std, LSB_64_Basic,
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-                     LSB_64_Builtin,
-#endif
-                     LSB_64_DeBruijn, LSB_64_Std, MSB_32_Basic,
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-                     MSB_32_Builtin,
-#endif
-                     MSB_32_Std, MSB_64_Basic,
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-                     MSB_64_Builtin,
-#endif
-                     MSB_64_Std>;
+    ::testing::Types<LSB_32_Basic, LSB_32_DeBruijn, LSB_32_Std, LSB_64_Basic,
+                     LSB_64_DeBruijn, LSB_64_Std, MSB_32_Basic, MSB_32_Std,
+                     MSB_64_Basic, MSB_64_Std>;
 TYPED_TEST_SUITE(BitIndex, BitIndexTypes, NameGenerator);
 
 TYPED_TEST(BitIndex, SingleBit) {
@@ -173,6 +141,9 @@ TYPED_TEST(BitIndex, SingleBit) {
   }
   // NOTE: `LeastSignificantBitPosition64` and `LeastSignificantBitPosition32`
   // are currently unspecified for the 0 value so we don't test it.
+  if constexpr (kFunction == Function::kMSB) {
+    EXPECT_EQ(0, TestCase::Compute(0));
+  }
 }
 
 TYPED_TEST(BitIndex, TwoBits) {
@@ -272,27 +243,6 @@ TEST_CLEAR_BIT(64);
 
 #undef TEST_CLEAR_BIT
 
-#define TEST_BIT_COUNT(size, zero)                  \
-  TEST(BitsetTest, BitCount##size) {                \
-    const int kTests = 1000;                        \
-    absl::BitGen randomizer;                        \
-    uint##size##_t bits = zero;                     \
-    int count = 0;                                  \
-    for (int i = 0; i < kTests; ++i) {              \
-      int bit = absl::Uniform(randomizer, 0, size); \
-      if (!IsBitSet##size(&bits, bit)) {            \
-        SetBit##size(&bits, bit);                   \
-        ++count;                                    \
-      }                                             \
-      EXPECT_EQ(count, BitCount##size(bits));       \
-    }                                               \
-  }
-
-TEST_BIT_COUNT(32, 0UL);
-TEST_BIT_COUNT(64, 0ULL);
-
-#undef TEST_BIT_COUNT
-
 #define TEST_ONE_RANGE(size)                                   \
   TEST(BitsetTest, OneRange##size) {                           \
     absl::BitGen randomizer;                                   \
@@ -320,7 +270,7 @@ TEST_ONE_RANGE(64);
     for (int i = 0; i < size; ++i) {                         \
       uint##size##_t bits = IntervalUp##size(i);             \
       EXPECT_EQ(i, LeastSignificantBitPosition##size(bits)); \
-      EXPECT_EQ(size - i, BitCount##size(bits));             \
+      EXPECT_EQ(size - i, std::popcount(bits));              \
     }                                                        \
   }
 
@@ -334,7 +284,7 @@ TEST_INTERVAL_UP(64)
     for (int i = 0; i < size; ++i) {                        \
       uint##size##_t bits = IntervalDown##size(i);          \
       EXPECT_EQ(i, MostSignificantBitPosition##size(bits)); \
-      EXPECT_EQ(i + 1, BitCount##size(bits));               \
+      EXPECT_EQ(i + 1, std::popcount(bits));                \
     }                                                       \
   }
 

@@ -13,6 +13,7 @@
 
 #include "ortools/util/bitset.h"
 
+#include <bit>
 #include <cstdint>
 
 #include "absl/flags/flag.h"
@@ -25,37 +26,37 @@ namespace operations_research {
 
 // ---------- Bit Operations ----------
 
-#define BIT_COUNT_RANGE(size, zero)                                           \
-  uint##size##_t BitCountRange##size(const uint##size##_t* const bits,        \
-                                     uint##size##_t start,                    \
-                                     uint##size##_t end) {                    \
-    if (static_cast<int##size##_t>(end - start) >                             \
-        absl::GetFlag(FLAGS_bitset_small_bitset_count)) {                     \
-      const int offset_start = BitOffset##size(start);                        \
-      const int pos_start = BitPos##size(start);                              \
-      const int offset_end = BitOffset##size(end);                            \
-      const int pos_end = BitPos##size(end);                                  \
-      if (offset_end == offset_start) {                                       \
-        return BitCount##size(bits[offset_start] &                            \
-                              OneRange##size(pos_start, pos_end));            \
-      } else {                                                                \
-        uint##size##_t bit_count = zero;                                      \
-        bit_count +=                                                          \
-            BitCount##size(bits[offset_start] & IntervalUp##size(pos_start)); \
-        for (int offset = offset_start + 1; offset < offset_end; ++offset) {  \
-          bit_count += BitCount##size(bits[offset]);                          \
-        }                                                                     \
-        bit_count +=                                                          \
-            BitCount##size(bits[offset_end] & IntervalDown##size(pos_end));   \
-        return bit_count;                                                     \
-      }                                                                       \
-    } else {                                                                  \
-      uint##size##_t bit_count = zero;                                        \
-      for (uint##size##_t i = start; i <= end; ++i) {                         \
-        bit_count += IsBitSet##size(bits, i);                                 \
-      }                                                                       \
-      return bit_count;                                                       \
-    }                                                                         \
+#define BIT_COUNT_RANGE(size, zero)                                          \
+  uint##size##_t BitCountRange##size(const uint##size##_t* const bits,       \
+                                     uint##size##_t start,                   \
+                                     uint##size##_t end) {                   \
+    if (static_cast<int##size##_t>(end - start) >                            \
+        absl::GetFlag(FLAGS_bitset_small_bitset_count)) {                    \
+      const int offset_start = BitOffset##size(start);                       \
+      const int pos_start = BitPos##size(start);                             \
+      const int offset_end = BitOffset##size(end);                           \
+      const int pos_end = BitPos##size(end);                                 \
+      if (offset_end == offset_start) {                                      \
+        return std::popcount(bits[offset_start] &                            \
+                             OneRange##size(pos_start, pos_end));            \
+      } else {                                                               \
+        uint##size##_t bit_count = zero;                                     \
+        bit_count +=                                                         \
+            std::popcount(bits[offset_start] & IntervalUp##size(pos_start)); \
+        for (int offset = offset_start + 1; offset < offset_end; ++offset) { \
+          bit_count += std::popcount(bits[offset]);                          \
+        }                                                                    \
+        bit_count +=                                                         \
+            std::popcount(bits[offset_end] & IntervalDown##size(pos_end));   \
+        return bit_count;                                                    \
+      }                                                                      \
+    } else {                                                                 \
+      uint##size##_t bit_count = zero;                                       \
+      for (uint##size##_t i = start; i <= end; ++i) {                        \
+        bit_count += IsBitSet##size(bits, i);                                \
+      }                                                                      \
+      return bit_count;                                                      \
+    }                                                                        \
   }
 
 BIT_COUNT_RANGE(64, uint64_t{0})

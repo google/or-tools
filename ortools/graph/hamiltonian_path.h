@@ -185,9 +185,8 @@ class Set {
     return (value_ & other.value_) == other.value_;
   }
 
-  // Returns the number of elements in the set. Uses the 32-bit version for
-  // types that have 32-bits or less. Specialized for uint64_t.
-  int Cardinality() const { return BitCount32(value_); }
+  // Returns the number of elements in the set.
+  int Cardinality() const { return std::popcount(value_); }
 
   // Returns the index of the smallest element in the set. Uses the 32-bit
   // version for types that have 32-bits or less. Specialized for uint64_t.
