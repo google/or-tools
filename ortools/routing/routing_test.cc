@@ -48,6 +48,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
@@ -62,6 +63,7 @@
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/graph/bounded_dijkstra.h"
+#include "ortools/graph/graph.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/ils.pb.h"
@@ -3438,33 +3440,186 @@ TEST(SoftBoundsAndDisjointWindowsTest, PackWithLargeHorizon) {
   }
 }
 
-Model::RouteDimensionTravelInfo CreateDimensionTravelInfo() {
-  constexpr int kNumTransitions = 2;
-  Model::RouteDimensionTravelInfo travel_info;
-  travel_info.travel_cost_coefficient = 0;  // No cost
-  travel_info.transition_info.resize(kNumTransitions);
+std::unique_ptr<Model> BuildTestModelForCumulOptimization(
+    int num_nodes, absl::string_view dim_name, int64_t cumul_max,
+    int64_t span_cost, int64_t global_span_cost, bool use_span_limit,
+    int64_t slack_cost, bool has_variable_transits = false) {
+  const int kVehicles = 1;
+  const IndexManager manager(num_nodes, kVehicles, NodeIndex(0));
 
-  const std::vector<absl::InlinedVector<int64_t, 8>> x_anchors = {{0, 50, 100},
-                                                                  {0, 80, 120}};
-  const std::vector<absl::InlinedVector<int64_t, 8>> y_anchors = {
-      {70, 50, 30}, {80, 120, 80}};
-  for (int k = 0; k < kNumTransitions; ++k) {
-    auto& transition = travel_info.transition_info[k];
-    transition.pre_travel_transit_value = 0;
-    transition.post_travel_transit_value = 0;
-    transition.travel_start_dependent_travel =
-        FloatSlopePiecewiseLinearFunction(x_anchors[k], y_anchors[k]);
+  auto model = std::make_unique<Model>(manager);
+  // Add time dimension.
+  model->AddConstantDimensionWithSlack(
+      1, /*capacity*/ 10'000, /*slack_max*/ 10'000,
+      /*fix_start_cumul_to_zero*/ false, dim_name, has_variable_transits);
+  Dimension* const time = model->GetMutableDimension(dim_name);
+  time->SetSpanCostCoefficientForAllVehicles(span_cost);
+  time->SetGlobalSpanCostCoefficient(global_span_cost);
+  time->SetSlackCostCoefficientForAllVehicles(slack_cost);
+  time->CumulVar(num_nodes)->SetMax(cumul_max);
+  if (use_span_limit) {
+    // We set a span limit that doesn't constrain the model but forces the
+    // Model to instantiate a local cumul optimizer for this dimension upon
+    // closing the model. When 'use_span_limit' is false, the local cumul
+    // optimizer is only created when calling
+    // OptimizeCumulsOfDimensionFromAssignmentWithDimensionTravelInfo() or
+    // OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo().
+    time->SetSpanUpperBoundForVehicle(cumul_max, /*vehicle=*/0);
   }
 
-  PopulateTravelInfoCompressionCost(
-      travel_info,
-      /*lower_bound_compressed_travel_factor=*/0.7,
-      /*upper_bound_travel_factor=*/3.0,
-      /*potential_cost=*/1 << 12,
-      /*static_travel_durations=*/{40, 60},
-      /*num_points_lin_cost=*/30);
+  return model;
+}
 
-  return travel_info;
+using OptimizeCumulsOfDimensionTest =
+    ::testing::TestWithParam<::testing::tuple<int64_t, int64_t, bool>>;
+
+// Small test for
+// Model::OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo
+TEST_P(OptimizeCumulsOfDimensionTest, WithTransitTargetInfo) {
+  const int kNumNodes = 2;
+  const std::string kDimName = "time";
+  const auto [span_cost, global_span_cost, use_span_limit] = GetParam();
+  SCOPED_TRACE(DUMP_VARS(span_cost, global_span_cost, use_span_limit));
+
+  std::unique_ptr<Model> model = BuildTestModelForCumulOptimization(
+      kNumNodes, kDimName, /*cumul_max=*/100, span_cost, global_span_cost,
+      use_span_limit, /*slack_cost=*/5, /*has_variable_transits=*/true);
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  parameters.mutable_time_limit()->set_seconds(5);
+  const Assignment* assignment = model->SolveWithParameters(parameters);
+  ASSERT_NE(assignment, nullptr);
+
+  const Dimension* const dim = model->GetMutableDimension(kDimName);
+
+  std::vector<int64_t> kExpectedCumuls = {0, 1, 2};
+  for (int i = 0; i <= kNumNodes; ++i) {
+    EXPECT_EQ(assignment->Value(dim->CumulVar(i)), kExpectedCumuls[i]);
+    if (i < kNumNodes) {
+      EXPECT_EQ(assignment->Value(dim->VariableTransitVar(i)), 0);
+    }
+  }
+
+  const std::vector<int64_t> kTransitTargets = {50, 150};
+  std::vector<Model::TransitTargetInfo> transit_target_info_per_route = {
+      {.transit_targets = kTransitTargets,
+       .transit_target_cost = {.threshold_ratio = 0.5,
+                               .cost_coefficient_below_threshold = 20,
+                               .cost_coefficient_above_threshold = 10}}};
+  assignment =
+      model->OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo(
+          dim, assignment, std::move(transit_target_info_per_route),
+          absl::Seconds(30));
+  ASSERT_NE(assignment, nullptr);
+
+  // Since the time window to come back is at most 100 and the threshold is
+  // 0.5 * 50 = 25 for the first arc and 0.5 * 150 = 75 for the second arc,
+  // total transits should get compressed "fairly" to 25 for the first arc and
+  // 75 for the second arc (1 fixed transit + 24 or 74 variable transit).
+  kExpectedCumuls = {0, 25, 100};
+  for (int i = 0; i <= kNumNodes; ++i) {
+    EXPECT_EQ(assignment->Value(dim->CumulVar(i)), kExpectedCumuls[i]);
+  }
+  const std::vector<int64_t> kExpectedVariableTransits = {24, 74};
+  for (int i = 0; i < kNumNodes; ++i) {
+    EXPECT_EQ(assignment->Value(dim->VariableTransitVar(i)),
+              kExpectedVariableTransits[i]);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(WithParameters, OptimizeCumulsOfDimensionTest,
+                         ::testing::Combine(::testing::Values(0, 10),
+                                            ::testing::Values(0, 10),
+                                            ::testing::Bool()));
+
+// Tests that OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo()
+// simply returns the original assignment when the model has no variable
+// transits.
+TEST(OptimizeCumulsOfDimensionWithTargetsTest, NoDiffWithoutVariableTransits) {
+  const std::string kDimName = "time";
+  std::unique_ptr<Model> model = BuildTestModelForCumulOptimization(
+      /*num_nodes=*/2, /*dim_name=*/kDimName, /*cumul_max=*/100,
+      /*span_cost=*/10, /*global_span_cost=*/0, /*use_span_limit=*/false,
+      /*slack_cost=*/5, /*has_variable_transits=*/false);
+
+  const Assignment* const assignment = model->Solve();
+  ASSERT_NE(assignment, nullptr);
+  const Dimension* const dim = model->GetMutableDimension(kDimName);
+  const std::vector<Model::TransitTargetInfo> transit_target_info_per_route = {
+      {.transit_targets = {50, 50},
+       .transit_target_cost = {.threshold_ratio = 0.5,
+                               .cost_coefficient_below_threshold = 20,
+                               .cost_coefficient_above_threshold = 10}}};
+
+  const Assignment* const new_assignment =
+      model->OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo(
+          dim, assignment, std::move(transit_target_info_per_route),
+          absl::Seconds(30));
+  EXPECT_EQ(new_assignment, assignment);
+}
+
+// Tests that OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo()
+// correctly shifts departure time to the second time window when leaving in
+// the first time window is not optimal.
+TEST(OptimizeCumulsOfDimensionWithTargetsTest, WithTimeWindowShift) {
+  const std::string kDimName = "time";
+  const int kNumNodes = 2;
+  std::unique_ptr<Model> model = BuildTestModelForCumulOptimization(
+      kNumNodes, /*dim_name=*/kDimName, /*cumul_max=*/100,
+      /*span_cost=*/10, /*global_span_cost=*/0, /*use_span_limit=*/false,
+      /*slack_cost=*/5, /*has_variable_transits=*/true);
+  Dimension* const dim = model->GetMutableDimension(kDimName);
+
+  // Vehicle start time windows: [0, 10], [20]
+  dim->CumulVar(0)->SetRange(0, 20);
+  model->solver()->AddConstraint(model->solver()->MakeNotMemberCt(
+      dim->CumulVar(0), std::vector<int64_t>{11}, std::vector<int64_t>{19}));
+  // First node time windows: [0, 1], [30, 40]
+  dim->CumulVar(1)->SetRange(0, 40);
+  model->solver()->AddConstraint(model->solver()->MakeNotMemberCt(
+      dim->CumulVar(1), std::vector<int64_t>{2}, std::vector<int64_t>{29}));
+
+  const Assignment* const assignment = model->Solve();
+  ASSERT_NE(assignment, nullptr);
+  std::vector<int64_t> kExpectedCumuls = {0, 1, 2};
+  for (int i = 0; i <= kNumNodes; ++i) {
+    EXPECT_EQ(assignment->Value(dim->CumulVar(i)), kExpectedCumuls[i]);
+    if (i < kNumNodes) {
+      EXPECT_EQ(assignment->Value(dim->VariableTransitVar(i)), 0);
+    }
+  }
+
+  // Explore two scenarios:
+  // - Scenario 1: Transit targets are {10, 50}, so the second time window is
+  //   chosen for departure, and we get to the first node at 20+10 = 30.
+  // - Scenario 2: Transit targets are {5, 50}, so again the optimal departure
+  //   is at 20, but we get to the first node at 20+5 = 25, so the LP solution
+  //   is actually infeasible with respect to the time window. This should force
+  //   the scheduling module to use CP-SAT for an exact solution, which has a
+  //   slack of 5 on the first arc.
+  const std::vector<std::vector<int64_t>> kTransitTargetScenarios = {{10, 50},
+                                                                     {5, 50}};
+  kExpectedCumuls = {20, 30, 80};
+  for (const auto& transit_targets : kTransitTargetScenarios) {
+    const std::vector<Model::TransitTargetInfo> transit_target_info_per_route =
+        {{.transit_targets = transit_targets,
+          .transit_target_cost = {.threshold_ratio = 0.5,
+                                  .cost_coefficient_below_threshold = 20,
+                                  .cost_coefficient_above_threshold = 10}}};
+
+    const Assignment* const optimized_assignment =
+        model->OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo(
+            dim, model->Solve(), std::move(transit_target_info_per_route),
+            absl::Seconds(30));
+
+    for (int i = 0; i <= kNumNodes; ++i) {
+      EXPECT_EQ(optimized_assignment->Value(dim->CumulVar(i)),
+                kExpectedCumuls[i]);
+    }
+    for (int i = 0; i < kNumNodes; ++i) {
+      EXPECT_EQ(optimized_assignment->Value(dim->VariableTransitVar(i)),
+                transit_targets[i] - 1);
+    }
+  }
 }
 
 // Testing on a model found by pilot user: one depot, 2 nodes with soft
@@ -3662,6 +3817,7 @@ TEST(VehicleResourceAssignmentTest, SimpleResourcesTest) {
   for (int64_t resource_cost : {0, 1}) {
     for (int64_t span_upper_bound : {int64_t{5}, kint64max}) {
       for (auto fs : EnumerateEnumValues<FirstSolutionStrategy::Value>()) {
+        SCOPED_TRACE(DUMP_VARS(resource_cost, span_upper_bound, fs));
         FirstSolutionStrategy::Value strategy;
         ASSERT_TRUE(FirstSolutionStrategy_Value_Parse(
             FirstSolutionStrategy_Value_Name(fs), &strategy));
@@ -6171,6 +6327,7 @@ TEST(FirstSolutionStrategyTest, InvalidStrategy) {
         static_cast<FirstSolutionStrategy::Value>(
             FirstSolutionStrategy::Value_MAX + 1)};
     for (int i = 0; i < std::size(kStrategies); ++i) {
+      SCOPED_TRACE(DUMP_VARS(kStrategies[i]));
       IndexManager manager(5, 1, NodeIndex(0));
       Model model(manager);
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
@@ -6190,6 +6347,7 @@ TEST(FirstSolutionStrategyTest, InvalidThenValidStrategy) {
         static_cast<FirstSolutionStrategy::Value>(
             FirstSolutionStrategy::Value_MAX + 1)};
     for (int i = 0; i < std::size(kStrategies); ++i) {
+      SCOPED_TRACE(DUMP_VARS(kStrategies[i]));
       IndexManager manager(5, 1, NodeIndex(0));
       Model model(manager);
       RoutingSearchParameters invalid_parameters =
@@ -6215,6 +6373,7 @@ TEST(FirstSolutionStrategyTest, ValidThenInvalidStrategy) {
         static_cast<FirstSolutionStrategy::Value>(
             FirstSolutionStrategy::Value_MAX + 1)};
     for (int i = 0; i < std::size(kStrategies); ++i) {
+      SCOPED_TRACE(DUMP_VARS(kStrategies[i]));
       IndexManager manager(5, 1, NodeIndex(0));
       Model model(manager);
       RoutingSearchParameters valid_parameters =
@@ -9108,6 +9267,7 @@ TEST(InsertNodesInAssignmentWithParametersTest, PartiallyFixedSolution) {
   };
   for (int fixed_chain_length = 0; fixed_chain_length < 4;
        ++fixed_chain_length) {
+    SCOPED_TRACE(DUMP_VARS(fixed_chain_length));
     Model model(manager);
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     // Insert 1 in 0->2->3->4
@@ -9245,6 +9405,7 @@ TEST(FastSolveFromAssignmentWithParameters, EmptySolution) {
 TEST(FastSolveFromAssignmentWithParameters, ImproveSolution) {
   for (int64_t solution_limit :
        {int64_t{1}, int64_t{2}, int64_t{100}, kint64max}) {
+    SCOPED_TRACE(DUMP_VARS(solution_limit));
     const IndexManager manager(/*num_nodes=*/4, /*num_vehicles=*/2,
                                /*depot=*/NodeIndex(0));
     Model model(manager);
@@ -9932,7 +10093,8 @@ TEST_P(VehicleClassTest, AllowedResources) {
       }
     }
     model.CloseModel();
-    EXPECT_EQ(model.GetVehicleClassesCount(), 3);
+    EXPECT_EQ(model.GetVehicleClassesCount(), 3)
+        << DUMP_VARS(set_values_on_resource_var);
   }
 }
 
@@ -13164,6 +13326,7 @@ class PathEnergyCostTest
 
 TEST_P(PathEnergyCostTest, SolverOptimizesEnergy) {
   const auto [cheap_vehicles_have_zero_cost, start_unperformed] = GetParam();
+  SCOPED_TRACE(DUMP_VARS(cheap_vehicles_have_zero_cost, start_unperformed));
   // Four vehicles, 1 and 2 are still used when empty so it is better to use
   // one of those anyways. 1 is cheaper than 2.
   std::vector<bool> vehicle_used_when_empty{false, true, true, false};
@@ -13218,17 +13381,31 @@ TEST_P(PathEnergyCostTest, SolverOptimizesEnergy) {
   }
 
   ASSERT_TRUE(solution != nullptr);
-  // Vehicle 1 should do everything because it is used when empty and cheapest.
-  // Vehicle 2 has some cost because used when empty.
-  // Other vehicles are unused, cost 0.
-  const int64_t cost_vehicle_1 =
-      3 * 10 * 1000 +  // 10 arcs carrying the initial 1000 at unit cost 3.
-      3 * 42 +         // 3 * (1 + 2 + ... + 7 + 7 + 7) energy cost below
-      11 * 3;          // 11 * (8 - 7 + 9 - 7)  soft_energy cost.
-  const int64_t cost_vehicle_2 = 5 * 1000;  // start -> end
-  const int64_t total_cost =
-      (cheap_vehicles_have_zero_cost ? 33 : cost_vehicle_1) + cost_vehicle_2;
-  EXPECT_EQ(solution->ObjectiveValue(), total_cost);
+  int64_t expected_total_cost = 0;
+  if (cheap_vehicles_have_zero_cost) {
+    // Vehicle 0 and Vehicle 1 have no energy cost under the threshold, so all 9
+    // nodes are dispatched across both of them to stay under the threshold (7
+    // on one, leading to 1007 of "force", 2 on the other, leading to 1002) The
+    // threshold being 1007, these routes have 0 cost.
+    // Vehicle 2 has some cost because used when empty.
+    // Other vehicles are unused, cost 0.
+    const int64_t cost_vehicle_0 = 0;
+    const int64_t cost_vehicle_1 = 0;
+    const int64_t cost_vehicle_2 = 5 * 1000;  // start -> end
+    expected_total_cost = cost_vehicle_0 + cost_vehicle_1 + cost_vehicle_2;
+  } else {
+    // Vehicle 1 should do everything because it is used when empty and
+    // cheapest.
+    // Vehicle 2 has some cost because used when empty.
+    // Other vehicles are unused, cost 0.
+    const int64_t cost_vehicle_1 =
+        3 * 10 * 1000 +  // 10 arcs carrying the initial 1000 at unit cost 3.
+        3 * 42 +         // 3 * (1 + 2 + ... + 7 + 7 + 7) energy cost below
+        11 * 3;          // 11 * (8 - 7 + 9 - 7)  soft_energy cost.
+    const int64_t cost_vehicle_2 = 5 * 1000;  // start -> end
+    expected_total_cost = cost_vehicle_1 + cost_vehicle_2;
+  }
+  EXPECT_EQ(solution->ObjectiveValue(), expected_total_cost);
 }
 
 INSTANTIATE_TEST_SUITE_P(PathEnergyCostTest, PathEnergyCostTest,
@@ -13597,6 +13774,9 @@ void TestFullNeighborhood(const Model& model,
                           bool add_vehicle_ends_to_neighbors,
                           bool only_sort_neighbors_for_partial_neighborhoods) {
   for (int node = 0; node < model.Size() + model.vehicles(); ++node) {
+    SCOPED_TRACE(DUMP_VARS(node, add_vehicle_starts_to_neighbors,
+                           add_vehicle_ends_to_neighbors,
+                           only_sort_neighbors_for_partial_neighborhoods));
     EXPECT_EQ(
         node_neighbors.GetOutgoingNeighborsOfNodeForCostClass(1, node).size(),
         GetExpectedNumNeighborsForFullGraph(
@@ -13835,7 +14015,8 @@ void TestFullIncreasingNeighborhood(
             only_sort_neighbors_for_partial_neighborhoods ? -1 : node;
         EXPECT_THAT(neighbors,
                     ElementsAreArray(AllIncreasingIndicesExcept(
-                        incoming_neighbors ? 0 : 1, size - 1, node_to_skip)));
+                        incoming_neighbors ? 0 : 1, size - 1, node_to_skip)))
+            << DUMP_VARS(node);
       }
     }
   }
@@ -14179,6 +14360,7 @@ TEST(SolveFromMultipleFirstSolutions, InitialAssignmentsWithFallback) {
 
 TEST(SolveFromFirstSolutionHint, InitialAssignmentFallbacksToHint) {
   for (bool use_hint : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(use_hint));
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     parameters.set_fallback_to_cp_sat_size_threshold(0);
     parameters.set_solution_limit(1);
@@ -14306,6 +14488,7 @@ TEST(UnaryDimensionsTest, ManyTransitDimensionWithOptionalNodes) {
   const int num_nodes = 6;
   IndexManager manager(num_nodes, num_vehicles, NodeIndex(0));
   for (bool all_transits_identical : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(all_transits_identical));
     Model model(manager);
     for (int i = 1; i < num_nodes; ++i) {
       model.AddDisjunction({manager.NodeToIndex(NodeIndex(i))}, 1000);

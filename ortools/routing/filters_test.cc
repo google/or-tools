@@ -3306,6 +3306,15 @@ LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
       new FilterWithPathState(path_state_filter, filter));
 }
 
+LocalSearchFilter* MakeRouteConstraintFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeRouteConstraintFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
 using RoutingFilterTestWithUnaryCallbackAndSolverType =
     ::testing::TestWithParam<
         std::tuple<bool, RoutingSearchParameters::SchedulingSolver>>;

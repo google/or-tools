@@ -71,99 +71,70 @@ namespace operations_research::routing {
 namespace {
 // Route constraint filter
 
-class RouteConstraintFilter : public BasePathFilter {
+class RouteConstraintFilter : public LocalSearchFilter {
  public:
-  explicit RouteConstraintFilter(const Model& routing_model)
-      : BasePathFilter(routing_model.Nexts(),
-                       routing_model.Size() + routing_model.vehicles(),
-                       routing_model.GetPathsMetadata()),
-        routing_model_(routing_model),
+  RouteConstraintFilter(const Model& routing_model, const PathState* path_state)
+      : routing_model_(routing_model),
+        path_state_(path_state),
         current_vehicle_cost_(0),
         delta_vehicle_cost_(0),
-        current_vehicle_costs_(routing_model.vehicles(), 0) {
-    start_to_vehicle_.resize(Size(), -1);
-    vehicle_to_start_.resize(routing_model.vehicles());
-    for (int v = 0; v < routing_model.vehicles(); v++) {
-      const int64_t start = routing_model.Start(v);
-      start_to_vehicle_[start] = v;
-      vehicle_to_start_[v] = start;
-    }
-  }
+        current_vehicle_costs_(routing_model.vehicles(), 0) {}
   ~RouteConstraintFilter() override = default;
   std::string DebugString() const override { return "RouteConstraintFilter"; }
   int64_t GetSynchronizedObjectiveValue() const override {
     return current_vehicle_cost_;
   }
   int64_t GetAcceptedObjectiveValue() const override {
-    return lns_detected() ? 0 : delta_vehicle_cost_;
+    return path_state_->IsInvalid() ? 0 : delta_vehicle_cost_;
   }
-
- private:
-  void OnSynchronizePathFromStart(int64_t start) override {
-    route_.clear();
-    int64_t node = start;
-    while (node < Size()) {
-      route_.push_back(node);
-      node = Value(node);
-    }
-    route_.push_back(node);
-    std::optional<int64_t> route_cost = routing_model_.GetRouteCost(route_);
-    DCHECK(route_cost.has_value());
-    current_vehicle_costs_[start_to_vehicle_[start]] = route_cost.value();
-  }
-  void OnAfterSynchronizePaths() override {
-    current_vehicle_cost_ = 0;
-    for (int vehicle = 0; vehicle < vehicle_to_start_.size(); vehicle++) {
-      const int64_t start = vehicle_to_start_[vehicle];
-      DCHECK_EQ(vehicle, start_to_vehicle_[start]);
-      if (!IsVarSynced(start)) {
-        return;
-      }
-      CapAddTo(current_vehicle_costs_[vehicle], &current_vehicle_cost_);
+  void Synchronize(const Assignment* /*assignment*/,
+                   const Assignment* /*delta*/) override {
+    for (const int path : path_state_->ChangedPaths()) {
+      std::optional<int64_t> route_cost =
+          routing_model_.GetRouteCost(GetRoute(path));
+      DCHECK(route_cost.has_value());
+      CapSubFrom(current_vehicle_costs_[path], &current_vehicle_cost_);
+      current_vehicle_costs_[path] = route_cost.value();
+      CapAddTo(route_cost.value(), &current_vehicle_cost_);
     }
   }
-  bool InitializeAcceptPath() override {
+  bool Accept(const Assignment* /*delta*/, const Assignment* /*deltadelta*/,
+              int64_t /*objective_min*/, int64_t objective_max) override {
+    if (path_state_->IsInvalid()) return true;
     delta_vehicle_cost_ = current_vehicle_cost_;
-    return true;
-  }
-  bool AcceptPath(int64_t path_start, int64_t /*chain_start*/,
-                  int64_t /*chain_end*/) override {
-    delta_vehicle_cost_ =
-        CapSub(delta_vehicle_cost_,
-               current_vehicle_costs_[start_to_vehicle_[path_start]]);
-    route_.clear();
-    int64_t node = path_start;
-    while (node < Size()) {
-      route_.push_back(node);
-      node = GetNext(node);
+    for (const int path : path_state_->ChangedPaths()) {
+      CapSubFrom(current_vehicle_costs_[path], &delta_vehicle_cost_);
+      std::optional<int64_t> route_cost =
+          routing_model_.GetRouteCost(GetRoute(path));
+      if (!route_cost.has_value()) return false;
+      CapAddTo(route_cost.value(), &delta_vehicle_cost_);
     }
-    route_.push_back(node);
-    std::optional<int64_t> route_cost = routing_model_.GetRouteCost(route_);
-    if (!route_cost.has_value()) {
-      return false;
-    }
-    CapAddTo(route_cost.value(), &delta_vehicle_cost_);
-    return true;
-  }
-  bool FinalizeAcceptPath(int64_t /*objective_min*/,
-                          int64_t objective_max) override {
     return delta_vehicle_cost_ <= objective_max;
   }
 
+ private:
+  absl::Span<const int64_t> GetRoute(int path) {
+    route_.clear();
+    for (const int64_t node : path_state_->Nodes(path)) {
+      route_.push_back(node);
+    }
+    return route_;
+  }
+
   const Model& routing_model_;
+  const PathState* const path_state_;
   int64_t current_vehicle_cost_;
   int64_t delta_vehicle_cost_;
   std::vector<int64_t> current_vehicle_costs_;
-  std::vector<int64_t> vehicle_to_start_;
-  std::vector<int> start_to_vehicle_;
   std::vector<int64_t> route_;
 };
 
 }  // namespace
 
-IntVarLocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model) {
+LocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model,
+                                             const PathState* path_state) {
   return routing_model.solver()->RevAlloc(
-      new RouteConstraintFilter(routing_model));
+      new RouteConstraintFilter(routing_model, path_state));
 }
 
 namespace {
@@ -4416,8 +4387,9 @@ void PathStateFilter::CutChains() {
     const int node_index = path_state_->CommittedIndex(node);
     const int next_index = path_state_->CommittedIndex(next);
     const int node_path = path_state_->Path(node);
-    if (next != node &&
-        (next_index != node_index + 1 || node_path < 0)) {  // New arc.
+    if (next != node && (next_index != node_index + 1 || node_path < 0 ||
+                         (node == path_state_->Start(node_path) &&
+                          next == path_state_->End(node_path)))) {  // New arc.
       tail_head_indices_.push_back({node_index, next_index});
       changed_arcs_[num_changed_arcs++] = {node, next};
       if (node_path >= 0 && !path_has_changed_[node_path]) {

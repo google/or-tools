@@ -144,11 +144,12 @@ bool DimensionFixedTransitsEqualTransitEvaluators(const Dimension& dimension) {
 
 // Concatenates cumul_values and break_values into 'values', and generates the
 // corresponding 'variables' vector.
-void AppendRouteCumulAndBreakVarAndValues(
-    const Dimension& dimension, int vehicle,
-    absl::Span<const int64_t> cumul_values,
-    absl::Span<const int64_t> break_values, std::vector<IntVar*>* variables,
-    std::vector<int64_t>* values) {
+void AppendRouteVarAndValues(const Dimension& dimension, int vehicle,
+                             absl::Span<const int64_t> cumul_values,
+                             absl::Span<const int64_t> break_values,
+                             absl::Span<const int64_t> variable_transit_values,
+                             std::vector<IntVar*>* variables,
+                             std::vector<int64_t>* values) {
   auto& vars = *variables;
   auto& vals = *values;
   DCHECK_EQ(vars.size(), vals.size());
@@ -163,6 +164,16 @@ void AppendRouteCumulAndBreakVarAndValues(
       current = model.NextVar(current)->Value();
     }
   }
+  DCHECK_EQ(vars.size(), vals.size());
+  if (!variable_transit_values.empty()) {
+    vals.insert(vals.end(), variable_transit_values.begin(),
+                variable_transit_values.end());
+    for (int node = model.Start(vehicle); !model.IsEnd(node);
+         node = model.NextVar(node)->Value()) {
+      vars.push_back(dimension.VariableTransitVar(node));
+    }
+  }
+  DCHECK_EQ(vars.size(), vals.size());
   if (dimension.HasBreakConstraints() && !break_values.empty()) {
     for (IntervalVar* interval :
          dimension.GetBreakIntervalsOfVehicle(vehicle)) {
@@ -176,7 +187,7 @@ void AppendRouteCumulAndBreakVarAndValues(
   for (int j = old_num_values; j < vals.size(); ++j) {
     // Value kint64min signals an unoptimized variable, skip setting those.
     if (vals[j] == kint64min) continue;
-    // Skip variables that are not bound.
+    // Skip variables that are already bound.
     if (vars[j]->Bound()) continue;
     vals[new_num_values] = vals[j];
     vars[new_num_values] = vars[j];
@@ -204,25 +215,35 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromLocalDimensionCosts(LocalDimensionCumulOptimizer* lp_optimizer,
                                    LocalDimensionCumulOptimizer* mp_optimizer,
+                                   bool optimize_and_pack)
+      : SetCumulsFromLocalDimensionCosts(lp_optimizer, mp_optimizer,
+                                         optimize_and_pack,
+                                         /*dimension_travel_info_per_route=*/{},
+                                         /*transit_target_info_per_route=*/{}) {
+  }
+
+  SetCumulsFromLocalDimensionCosts(LocalDimensionCumulOptimizer* lp_optimizer,
+                                   LocalDimensionCumulOptimizer* mp_optimizer,
                                    bool optimize_and_pack,
                                    std::vector<Model::RouteDimensionTravelInfo>
                                        dimension_travel_info_per_route)
-      : model_(*lp_optimizer->dimension()->model()),
-        dimension_(*lp_optimizer->dimension()),
-        lp_optimizer_(lp_optimizer),
-        mp_optimizer_(mp_optimizer),
-        rg_index_(model_.GetDimensionResourceGroupIndices(&dimension_).empty()
-                      ? -1
-                      : model_.GetDimensionResourceGroupIndex(&dimension_)),
-        resource_group_(rg_index_ >= 0 ? model_.GetResourceGroup(rg_index_)
-                                       : nullptr),
-        vehicle_resource_class_values_(model_.vehicles()),
-        optimize_and_pack_(optimize_and_pack),
-        dimension_travel_info_per_route_(
-            std::move(dimension_travel_info_per_route)),
-        decision_level_(0) {
-    DCHECK(dimension_travel_info_per_route_.empty() ||
-           dimension_travel_info_per_route_.size() == model_.vehicles());
+      : SetCumulsFromLocalDimensionCosts(
+            lp_optimizer, mp_optimizer, optimize_and_pack,
+            std::move(dimension_travel_info_per_route),
+            /*transit_target_info_per_route=*/{}) {
+    DCHECK_EQ(dimension_travel_info_per_route_.size(), model_.vehicles());
+  }
+
+  SetCumulsFromLocalDimensionCosts(
+      LocalDimensionCumulOptimizer* lp_optimizer,
+      LocalDimensionCumulOptimizer* mp_optimizer,
+      std::vector<Model::TransitTargetInfo> transit_target_info_per_route)
+      : SetCumulsFromLocalDimensionCosts(
+            lp_optimizer, mp_optimizer,
+            /*optimize_and_pack=*/false,
+            /*dimension_travel_info_per_route=*/{},
+            std::move(transit_target_info_per_route)) {
+    DCHECK_EQ(transit_target_info_per_route_.size(), model_.vehicles());
   }
 
   Decision* Next(Solver* solver) override {
@@ -246,6 +267,31 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   using Resource = Model::ResourceGroup::Resource;
   using RCIndex = ResourceClassIndex;
   using RouteDimensionTravelInfo = Model::RouteDimensionTravelInfo;
+
+  SetCumulsFromLocalDimensionCosts(
+      LocalDimensionCumulOptimizer* lp_optimizer,
+      LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack,
+      std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+      std::vector<Model::TransitTargetInfo> transit_target_info_per_route)
+      : model_(*lp_optimizer->dimension()->model()),
+        dimension_(*lp_optimizer->dimension()),
+        lp_optimizer_(lp_optimizer),
+        mp_optimizer_(mp_optimizer),
+        rg_index_(model_.GetDimensionResourceGroupIndices(&dimension_).empty()
+                      ? -1
+                      : model_.GetDimensionResourceGroupIndex(&dimension_)),
+        resource_group_(rg_index_ >= 0 ? model_.GetResourceGroup(rg_index_)
+                                       : nullptr),
+        vehicle_resource_class_values_(model_.vehicles()),
+        optimize_and_pack_(optimize_and_pack),
+        dimension_travel_info_per_route_(
+            std::move(dimension_travel_info_per_route)),
+        transit_target_info_per_route_(
+            std::move(transit_target_info_per_route)),
+        decision_level_(0) {
+    DCHECK(dimension_travel_info_per_route_.empty() ||
+           transit_target_info_per_route_.empty());
+  }
 
   bool FillCPVariablesAndValues(Solver* solver) {
     DCHECK(DimensionFixedTransitsEqualTransitEvaluators(dimension_));
@@ -271,15 +317,15 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       // keep track of the FEASIBLE-only cases, and resolve the feasible-only
       // cases with the remaining time (if any) after all routes have been
       // scheduled with the initial 'solve_duration_ratio'.
-      if (!ComputeCumulAndBreakValuesForVehicle(
+      if (!ComputeVariableValuesForVehicle(
               vehicle, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
               next)) {
         return false;
       }
       solve_duration_shares--;
-      AppendRouteCumulAndBreakVarAndValues(dimension_, vehicle, cumul_values_,
-                                           break_start_end_values_,
-                                           &cp_variables_, &cp_values_);
+      AppendRouteVarAndValues(dimension_, vehicle, cumul_values_,
+                              break_start_end_values_, variable_transit_values_,
+                              &cp_variables_, &cp_values_);
     }
 
     if (vehicles_with_resource_assignment_.empty()) {
@@ -308,9 +354,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
           resource_group_->GetResourceClassIndex(resource_index).value();
       const std::vector<int64_t>& optimal_cumul_values = cumul_values[rc_index];
       const std::vector<int64_t>& optimal_break_values = break_values[rc_index];
-      AppendRouteCumulAndBreakVarAndValues(dimension_, v, optimal_cumul_values,
-                                           optimal_break_values, &cp_variables_,
-                                           &cp_values_);
+      AppendRouteVarAndValues(dimension_, v, optimal_cumul_values,
+                              optimal_break_values, {}, &cp_variables_,
+                              &cp_values_);
 
       const std::vector<IntVar*>& resource_vars =
           model_.ResourceVars(rg_index_);
@@ -400,11 +446,38 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
               model_.vehicles());
   }
 
-  bool ComputeCumulAndBreakValuesForVehicle(
+  DimensionSchedulingStatus OptimizeRoute(
+      LocalDimensionCumulOptimizer* optimizer, int vehicle,
+      double solve_duration_ratio,
+      const std::function<int64_t(int64_t)>& next_accessor,
+      const RouteDimensionTravelInfo* dimension_travel_info,
+      const Resource* resource) {
+    if (!transit_target_info_per_route_.empty()) {
+      DCHECK_EQ(dimension_travel_info, nullptr);
+      DCHECK_EQ(resource, nullptr) << "NOT IMPLEMENTED YET!";
+      DCHECK_LE(vehicle, transit_target_info_per_route_.size());
+      return optimizer->ComputeRouteCumulsWithTransitTargets(
+          vehicle, solve_duration_ratio, next_accessor,
+          transit_target_info_per_route_[vehicle], &variable_transit_values_,
+          &cumul_values_, &break_start_end_values_);
+    }
+    return optimize_and_pack_
+               ? optimizer->ComputePackedRouteCumuls(
+                     vehicle, solve_duration_ratio, next_accessor,
+                     dimension_travel_info, resource, &cumul_values_,
+                     &break_start_end_values_)
+               : optimizer->ComputeRouteCumuls(
+                     vehicle, solve_duration_ratio, next_accessor,
+                     dimension_travel_info, resource, &cumul_values_,
+                     &break_start_end_values_);
+  }
+
+  bool ComputeVariableValuesForVehicle(
       int vehicle, double solve_duration_ratio,
       const std::function<int64_t(int64_t)>& next_accessor) {
     cumul_values_.clear();
     break_start_end_values_.clear();
+    variable_transit_values_.clear();
     const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route_.empty()
             ? nullptr
@@ -427,27 +500,14 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         use_mp_optimizer ? mp_optimizer_ : lp_optimizer_;
     DCHECK_NE(optimizer, nullptr);
     DimensionSchedulingStatus status =
-        optimize_and_pack_ ? optimizer->ComputePackedRouteCumuls(
-                                 vehicle, solve_duration_ratio, next_accessor,
-                                 dimension_travel_info, resource,
-                                 &cumul_values_, &break_start_end_values_)
-                           : optimizer->ComputeRouteCumuls(
-                                 vehicle, solve_duration_ratio, next_accessor,
-                                 dimension_travel_info, resource,
-                                 &cumul_values_, &break_start_end_values_);
+        OptimizeRoute(optimizer, vehicle, solve_duration_ratio, next_accessor,
+                      dimension_travel_info, resource);
     // If relaxation is not feasible, try the MP optimizer.
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       DCHECK(!use_mp_optimizer);
       DCHECK_NE(mp_optimizer_, nullptr);
-      status = optimize_and_pack_
-                   ? mp_optimizer_->ComputePackedRouteCumuls(
-                         vehicle, solve_duration_ratio, next_accessor,
-                         dimension_travel_info, resource, &cumul_values_,
-                         &break_start_end_values_)
-                   : mp_optimizer_->ComputeRouteCumuls(
-                         vehicle, solve_duration_ratio, next_accessor,
-                         dimension_travel_info, resource, &cumul_values_,
-                         &break_start_end_values_);
+      status = OptimizeRoute(mp_optimizer_, vehicle, solve_duration_ratio,
+                             next_accessor, dimension_travel_info, resource);
     }
     return status != DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -506,6 +566,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   std::vector<VehicleResourceClassValues> vehicle_resource_class_values_;
   const bool optimize_and_pack_;
   const std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route_;
+  const std::vector<Model::TransitTargetInfo> transit_target_info_per_route_;
   std::vector<IntVar*> cp_variables_;
   std::vector<int64_t> cp_values_;
   // Decision level of this decision builder:
@@ -522,10 +583,20 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       used_resources_per_class_;
   std::vector<int64_t> cumul_values_;
   std::vector<int64_t> break_start_end_values_;
+  std::vector<int64_t> variable_transit_values_;
   std::vector<int> resource_indices_;
 };
 
 }  // namespace
+
+DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool optimize_and_pack) {
+  return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
+      lp_optimizer, mp_optimizer, optimize_and_pack));
+}
 
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
     Solver* absl_nonnull solver,
@@ -537,6 +608,15 @@ DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
   return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
       lp_optimizer, mp_optimizer, optimize_and_pack,
       std::move(dimension_travel_info_per_route)));
+}
+
+DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    std::vector<Model::TransitTargetInfo> transit_target_info_per_route) {
+  return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
+      lp_optimizer, mp_optimizer, std::move(transit_target_info_per_route)));
 }
 
 namespace {
