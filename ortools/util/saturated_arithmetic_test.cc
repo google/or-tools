@@ -157,10 +157,10 @@ TEST_BINARY_OPERATOR(CapSubGeneric, "-", ReferenceCapSub);
 TEST_BINARY_OPERATOR(CapProd, "*", ReferenceCapProd);
 TEST_BINARY_OPERATOR(CapProdGeneric, "*", ReferenceCapProd);
 
-#if defined(__GNUC__) && defined(__x86_64__)
-TEST_BINARY_OPERATOR(CapAddAsm, "+", ReferenceCapAdd);
-TEST_BINARY_OPERATOR(CapSubAsm, "-", ReferenceCapSub);
-TEST_BINARY_OPERATOR(CapProdAsm, "*", ReferenceCapProd);
+#if defined(__GNUC__) || defined(__clang__)
+TEST_BINARY_OPERATOR(CapAddBuiltIn, "+", ReferenceCapAdd);
+TEST_BINARY_OPERATOR(CapSubBuiltIn, "-", ReferenceCapSub);
+TEST_BINARY_OPERATOR(CapProdBuiltIn, "*", ReferenceCapProd);
 #endif
 
 TEST_F(SaturatedArithmeticTest, CapOpp) {
@@ -239,7 +239,7 @@ TEST_F(SaturatedArithmeticTest, MulIntoOverflow) {
         ASSERT_EQ(result, static_cast<int64_t>(exact)) << a << " * " << b;
       }
 
-      // Also verify the CapProd-based fallback used on non-Clang compilers.
+      // Also verify the CapProd-based fallback used without builtins.
       const int64_t prod = CapProd(a, b);
       const bool fallback_overflow =
           prod == kint64min || (prod == kint64max && kint64max / a != b);

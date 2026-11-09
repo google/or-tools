@@ -85,12 +85,7 @@ inline int64_t SimpleMultiplication(int64_t x, int64_t y) { return x * y; }
 BENCH_INT64_OPERATOR(CapAdd, CornerCases);
 BENCH_INT64_OPERATOR(CapSub, CornerCases);
 BENCH_INT64_OPERATOR(CapProd, CornerCases);
-#if defined(__GNUC__) && defined(__x86_64__)
-BENCH_INT64_OPERATOR(CapAddAsm, CornerCases);
-BENCH_INT64_OPERATOR(CapSubAsm, CornerCases);
-BENCH_INT64_OPERATOR(CapProdAsm, CornerCases);
-#endif
-#if defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__)
 BENCH_INT64_OPERATOR(CapAddBuiltIn, CornerCases);
 BENCH_INT64_OPERATOR(CapSubBuiltIn, CornerCases);
 BENCH_INT64_OPERATOR(CapProdBuiltIn, CornerCases);
@@ -103,12 +98,7 @@ BENCH_INT64_OPERATOR(CapProdGeneric, CornerCases);
 BENCH_INT64_OPERATOR(CapAdd, NonOverflowCases);
 BENCH_INT64_OPERATOR(CapSub, NonOverflowCases);
 BENCH_INT64_OPERATOR(CapProd, NonOverflowCases);
-#if defined(__GNUC__) && defined(__x86_64__)
-BENCH_INT64_OPERATOR(CapAddAsm, NonOverflowCases);
-BENCH_INT64_OPERATOR(CapSubAsm, NonOverflowCases);
-BENCH_INT64_OPERATOR(CapProdAsm, NonOverflowCases);
-#endif
-#if defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__)
 BENCH_INT64_OPERATOR(CapAddBuiltIn, NonOverflowCases);
 BENCH_INT64_OPERATOR(CapSubBuiltIn, NonOverflowCases);
 BENCH_INT64_OPERATOR(CapProdBuiltIn, NonOverflowCases);
