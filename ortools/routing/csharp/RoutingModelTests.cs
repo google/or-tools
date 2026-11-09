@@ -226,8 +226,8 @@ namespace Google.OrTools.Tests {
 
         if (addRouteConstraint) {
           routing.AddRouteConstraint(new ConstantRouteConstraintCallback(10),
-              /*costs_are_homogeneous_across_vehicles=*/true);
-          Assert.Equal(10, routing.GetRouteCost(new long[] {0, 2, 4, 0}));
+                                     /*costs_are_homogeneous_across_vehicles=*/true);
+          Assert.Equal(10, routing.GetRouteCost(new long[] { 0, 2, 4, 0 }));
         }
 
         RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();

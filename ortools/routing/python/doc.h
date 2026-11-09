@@ -453,6 +453,8 @@ static const char *mkd_doc_operations_research_routing_Dimension_SlackVar = R"do
 
 static const char *mkd_doc_operations_research_routing_Dimension_TransitVar = R"doc()doc";
 
+static const char *mkd_doc_operations_research_routing_Dimension_VariableTransitVar = R"doc()doc";
+
 static const char *mkd_doc_operations_research_routing_Dimension_VehicleLinearConstraintsInfo = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_VehicleLinearConstraintsInfo_bitset =
@@ -551,6 +553,8 @@ static const char *mkd_doc_operations_research_routing_Dimension_transits = R"do
 static const char *mkd_doc_operations_research_routing_Dimension_transits_2 = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_variable_transits = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Dimension_variable_transits_2 = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_vehicle_break_distance_duration = R"doc()doc";
 
@@ -920,6 +924,8 @@ static const char *mkd_doc_operations_research_routing_Model_AppendArcCosts = R"
 static const char *mkd_doc_operations_research_routing_Model_AppendAssignmentIfFeasible = R"doc(Append an assignment to a vector of assignments if it is feasible.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuildersForOptimizingCumulsWithTransitTargets = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuildersForPackingCumuls = R"doc()doc";
 
@@ -1745,6 +1751,8 @@ scheduling w.r.t the original costs in the model, while also
 minimizing the "error" in the transit value considered between
 consecutive nodes compared to the given piecewise linear formulations.)doc";
 
+static const char *mkd_doc_operations_research_routing_Model_OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo = R"doc()doc";
+
 static const char *mkd_doc_operations_research_routing_Model_PackCumulsOfOptimizerDimensionsFromAssignment =
 R"doc(For every dimension in the model with an optimizer in
 local/global_dimension_optimizers_info_.dimension_optimizers, this
@@ -2390,6 +2398,20 @@ static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSig
 static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSign_kTransitEvaluatorSignPositiveOrZero = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSign_kTransitEvaluatorSignUnknown = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_cost_coefficient_above_threshold = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_cost_coefficient_below_threshold = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_threshold_ratio = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo_transit_target_cost = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo_transit_targets = R"doc(Stores the transit target value for each node on a route.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_UnaryTransitCallbackOrNull = R"doc()doc";
 

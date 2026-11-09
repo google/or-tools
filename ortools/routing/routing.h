@@ -1770,6 +1770,23 @@ class OR_ROUTING_DLL Model {
 
 #endif  // !defined(SWIG)
 
+  struct TransitTargetCost {
+    double threshold_ratio;
+    int64_t cost_coefficient_below_threshold;
+    int64_t cost_coefficient_above_threshold;
+  };
+  struct TransitTargetInfo {
+    /// Stores the transit target value for each node on a route.
+    absl::Span<const int64_t> transit_targets;
+    TransitTargetCost transit_target_cost;
+  };
+  const operations_research::Assignment*
+  OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo(
+      const Dimension* dimension,
+      const operations_research::Assignment* original_assignment,
+      std::vector<TransitTargetInfo> transit_target_info_per_route,
+      absl::Duration duration_limit);
+
 #if !defined(SWIG)
   // TODO(user): Revisit if coordinates are added to the Model class.
   void SetSweepArranger(SweepArranger* sweep_arranger);
@@ -2649,12 +2666,17 @@ class OR_ROUTING_DLL Model {
       const Assignment* original_assignment, absl::Duration duration_limit,
       const Dimension* dimension,
       std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+      std::vector<TransitTargetInfo> transit_target_info_per_route,
       bool* time_limit_was_reached);
   void AppendDecisionBuildersForPackingCumuls(
       std::vector<DecisionBuilder*>* decision_builders) const;
   void AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
       const Dimension* dimension,
       std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+      std::vector<DecisionBuilder*>* decision_builders);
+  void AppendDecisionBuildersForOptimizingCumulsWithTransitTargets(
+      const Dimension* dimensions,
+      std::vector<TransitTargetInfo> transit_target_info_per_route,
       std::vector<DecisionBuilder*>* decision_builders);
 
   // Detects implicit pickup delivery pairs. These pairs are
@@ -3241,6 +3263,9 @@ class Dimension {
   operations_research::IntVar* FixedTransitVar(int64_t index) const {
     return fixed_transits_[index];
   }
+  operations_research::IntVar* VariableTransitVar(int64_t index) const {
+    return variable_transits_[index];
+  }
   operations_research::IntVar* SlackVar(int64_t index) const {
     return slacks_[index];
   }
@@ -3268,6 +3293,9 @@ class Dimension {
   }
   const std::vector<operations_research::IntVar*>& transits() const {
     return transits_;
+  }
+  const std::vector<operations_research::IntVar*>& variable_transits() const {
+    return variable_transits_;
   }
   const std::vector<operations_research::IntVar*>& slacks() const {
     return slacks_;

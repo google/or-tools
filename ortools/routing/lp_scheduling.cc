@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -342,17 +341,16 @@ DimensionSchedulingStatus
 LocalDimensionCumulOptimizer::ComputeRouteCumulsWithTransitTargets(
     int vehicle, double solve_duration_ratio,
     const std::function<int64_t(int64_t)>& next_accessor,
-    absl::Span<const int64_t> transit_targets,
-    DimensionCumulOptimizerCore::TransitTargetCost transit_target_cost,
+    const Model::TransitTargetInfo& transit_target_info,
     std::vector<int64_t>* optimal_variable_transits,
     std::vector<int64_t>* optimal_cumuls,
     std::vector<int64_t>* optimal_breaks) {
   DCHECK_GT(solve_duration_ratio, 0);
   DCHECK_LE(solve_duration_ratio, 1);
   return optimizer_core_.OptimizeSingleRouteWithTransitTargets(
-      vehicle, solve_duration_ratio, next_accessor, transit_targets,
-      transit_target_cost, solver_[vehicle].get(), optimal_variable_transits,
-      optimal_cumuls, optimal_breaks);
+      vehicle, solve_duration_ratio, next_accessor, transit_target_info,
+      solver_[vehicle].get(), optimal_variable_transits, optimal_cumuls,
+      optimal_breaks);
 }
 
 const int CumulBoundsPropagator::kNoParent = -2;
@@ -1264,8 +1262,8 @@ DimensionSchedulingStatus
 DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
     int vehicle, double solve_duration_ratio,
     const std::function<int64_t(int64_t)>& next_accessor,
-    absl::Span<const int64_t> transit_targets,
-    TransitTargetCost transit_target_cost, LinearSolverWrapper* solver,
+    const Model::TransitTargetInfo& transit_target_info,
+    LinearSolverWrapper* solver,
     std::vector<int64_t>* optimal_variable_transits,
     std::vector<int64_t>* optimal_cumuls,
     std::vector<int64_t>* optimal_breaks) {
@@ -1276,6 +1274,7 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
   const int64_t cumul_offset =
       dimension_->GetLocalOptimizerOffsetForVehicle(vehicle);
   const auto& transit_evaluator = dimension_->transit_evaluator(vehicle);
+  const auto& [transit_targets, transit_target_cost] = transit_target_info;
   // Setup the regular route cumul constraints.
   if (!SetRouteCumulConstraints(
           vehicle, next_accessor, transit_evaluator, transit_targets, {},
