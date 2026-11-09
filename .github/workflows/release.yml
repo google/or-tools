@@ -6,7 +6,18 @@ on:
     branches:
       - rc
       - mizux/rc
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      publish_nuget:
+        description: 'Stage and publish NuGet packages via OSS Exit Gate'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref_name}}
@@ -219,6 +230,123 @@ jobs:
     - name: Test Windows ${{matrix.target.name}} Meta Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}}
+
+###############################################################################
+# Publish NuGet Delivery via OSS Exit Gate
+  publish_nuget:
+    name: Publish(NuGet•OSS Exit Gate)
+    runs-on: ubuntu-22.04
+    needs: [test_native_delivery, test_meta]
+    if: >-
+      github.repository_owner == 'google' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.publish_nuget) ||
+       startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Download Native Dotnet Artifacts
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        pattern: "ortools-*-*-dotnet"
+        merge-multiple: true
+        path: .
+    - name: Download Meta Dotnet Artifact
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        name: ortools-meta-dotnet
+        path: .
+    - name: Authenticate to Google Cloud (OSS Exit Gate)
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      with:
+        workload_identity_provider: 'projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github'
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+    - name: Clean up stale releases from staging repo
+      shell: bash
+      run: |
+        packages=$(gcloud artifacts packages list \
+          --project="oss-exit-gate-prod" \
+          --location="us" \
+          --repository="or-tools--nuget" \
+          --format="value(name)" 2>/dev/null || true)
+        if [ -n "${packages}" ]; then
+          echo "${packages}" | xargs -r -I {} sh -c '
+            package_name=$(basename "{}")
+            echo "Deleting package: $package_name..."
+            gcloud artifacts packages delete "{}" \
+              --project="oss-exit-gate-prod" \
+              --location="us" \
+              --repository="or-tools--nuget" \
+              --quiet
+          '
+        fi
+    - name: Stage NuGet packages and upload OSS Exit Gate manifest
+      shell: bash
+      env:
+        RUN_ID: ${{ github.run_id }}
+        RUN_ATTEMPT: ${{ github.run_attempt }}
+      run: |
+        set -euo pipefail
+        python3 - <<'PY'
+        import glob
+        import json
+        import subprocess
+        import xml.etree.ElementTree as ET
+        import zipfile
+
+        nupkgs = sorted(set(glob.glob("export/*.nupkg") + glob.glob("export_meta/*.nupkg")))
+        nupkgs = [p for p in nupkgs if not p.endswith(".symbols.nupkg")]
+        if not nupkgs:
+            raise SystemExit("No .nupkg artifacts found in export/ or export_meta/.")
+
+        for nupkg in nupkgs:
+            with zipfile.ZipFile(nupkg, "r") as zf:
+                nuspecs = [n for n in zf.namelist() if n.endswith(".nuspec") and "/" not in n]
+                if not nuspecs:
+                    raise SystemExit(f"No root .nuspec found inside {nupkg}")
+                root = ET.fromstring(zf.read(nuspecs[0]))
+            pkg_id = None
+            version = None
+            for section in root:
+                if section.tag.split("}")[-1] == "metadata":
+                    for child in section:
+                        tag = child.tag.split("}")[-1]
+                        if tag == "id" and child.text:
+                            pkg_id = child.text.strip().lower()
+                        elif tag == "version" and child.text:
+                            version = child.text.strip()
+            if not pkg_id or not version:
+                raise SystemExit(f"Failed to parse package id/version from {nupkg}")
+
+            print(f"Uploading {nupkg} -> package={pkg_id} version={version}")
+            subprocess.run(
+                [
+                    "gcloud",
+                    "artifacts",
+                    "generic",
+                    "upload",
+                    "--project=oss-exit-gate-prod",
+                    "--location=us",
+                    "--repository=or-tools--nuget",
+                    f"--package={pkg_id}",
+                    f"--version={version}",
+                    f"--source={nupkg}",
+                ],
+                check=True,
+            )
+
+        with open("manifest.json", "w", encoding="utf-8") as fh:
+            json.dump({"publish_all": True}, fh)
+            fh.write("\n")
+        PY
+
+        gcloud storage cp manifest.json \
+          "gs://oss-exit-gate-prod-projects-bucket/or-tools/nuget/manifests/manifest-${RUN_ID}-${RUN_ATTEMPT}.json"
 
 ###############################################################################
 # DOCKER ARCHIVES
