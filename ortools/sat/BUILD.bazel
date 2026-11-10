@@ -311,12 +311,31 @@ or_cc_test(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_copy",
+        ":cp_model_utils",
         ":model",
         ":sat_parameters_cc_proto",
+        ":synchronization",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/base:protobuf_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
+
+or_cc_binary(
+    name = "cp_model_copy_benchmark",
+    testonly = True,
+    srcs = ["cp_model_copy_benchmark.cc"],
+    tags = ["manual"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_copy",
+        ":cp_model_utils",
+        ":synchronization",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -955,7 +974,14 @@ or_cc_test(
     name = "feasibility_jump_test",
     srcs = ["feasibility_jump_test.cc"],
     deps = [
+        ":cp_model_cc_proto",
         ":feasibility_jump",
+        ":model",
+        ":sat_parameters_cc_proto",
+        ":stat_tables",
+        ":subsolver",
+        ":synchronization",
+        ":util",
         "//ortools/base:gmock_main",
     ],
 )

@@ -149,8 +149,10 @@ struct ConstraintScaler {
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;
 
-  // To compute the error due to variable discretization.
-  std::vector<bool> var_is_integer;
+  // Bounds [lb, ub] on (discretized_var - original_var) for each variable,
+  // used to compute the constraint error due to variable discretization.
+  std::vector<double> var_discretization_error_lb;
+  std::vector<double> var_discretization_error_ub;
 
   // Parameters passed to FindBestScalingAndComputeErrors(), see documentation
   // there to understand their meaning.
@@ -167,6 +169,8 @@ struct ConstraintScaler {
   std::vector<double> upper_bounds;
   std::vector<int64_t> int_lower_bounds;
   std::vector<int64_t> int_upper_bounds;
+  TightSum tmp_discretization_lb;
+  TightSum tmp_discretization_ub;
 };
 
 // Given a set of edges on a graph with nodes [0, n), can we partition the
