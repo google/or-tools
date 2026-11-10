@@ -1958,21 +1958,32 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   upper_bounds.clear();
   int_lower_bounds.clear();
   int_upper_bounds.clear();
-  double discretization_error = 0.0;
+  tmp_discretization_lb.Clear();
+  tmp_discretization_ub.Clear();
+  const bool has_discretization_errors = !var_discretization_error_lb.empty();
   const int num_coeffs = vars.size();
   for (int i = 0; i < num_coeffs; ++i) {
     const double coeff = coeffs[i];
     if (coeff == 0.0) continue;
-    if (!var_is_integer[vars[i]]) {
-      discretization_error += std::abs(coeff);
+    const int var = vars[i];
+    if (has_discretization_errors) {
+      const double var_err_lb = var_discretization_error_lb[var];
+      const double var_err_ub = var_discretization_error_ub[var];
+      if (coeff > 0.0) {
+        if (var_err_lb != 0.0) tmp_discretization_lb.AddProd(coeff, var_err_lb);
+        if (var_err_ub != 0.0) tmp_discretization_ub.AddProd(coeff, var_err_ub);
+      } else {
+        if (var_err_ub != 0.0) tmp_discretization_lb.AddProd(coeff, var_err_ub);
+        if (var_err_lb != 0.0) tmp_discretization_ub.AddProd(coeff, var_err_lb);
+      }
     }
 
-    const auto& var_proto = var_domains[vars[i]];
+    const auto& var_proto = var_domains[var];
     const int64_t lb = var_proto->domain(0);
     const int64_t ub = var_proto->domain(var_proto->domain_size() - 1);
     if (lb == 0 && ub == 0) continue;
 
-    var_indices.push_back(vars[i]);
+    var_indices.push_back(var);
     coefficients.push_back(coeff);
     lower_bounds.push_back(lb);
     upper_bounds.push_back(ub);
@@ -1985,6 +1996,29 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 
     min_activity += min_term;
     max_activity += max_term;
+  }
+
+  // Given the bounds [discretization_error_lb, discretization_error_ub] on
+  // sum_i coeff_i * (discretized_x_i - x_i), any feasible solution x of
+  // ct_lower_bound <= sum_i coeff_i * x_i <= ct_upper_bound maps to a
+  // discretized point satisfying:
+  //   ct_lower_bound + discretization_error_lb <= sum_i coeff_i * discretized_x
+  //   sum_i coeff_i * discretized_x <= ct_upper_bound + discretization_error_ub
+  // Apply this before checking min/max activity and before computing tight
+  // rounding errors on the discretized domain.
+  const double discretization_error_lb =
+      tmp_discretization_lb.TightLowerBound();
+  const double discretization_error_ub =
+      tmp_discretization_ub.TightUpperBound();
+  if (use_proper_relaxation) {
+    if (std::isfinite(ct_lower_bound) && discretization_error_lb != 0.0) {
+      ct_lower_bound =
+          ExactScaledSumLb(ct_lower_bound, discretization_error_lb);
+    }
+    if (std::isfinite(ct_upper_bound) && discretization_error_ub != 0.0) {
+      ct_upper_bound =
+          ExactScaledSumUb(ct_upper_bound, discretization_error_ub);
+    }
   }
 
   // Relax bound using activity and skip trivial constraints (with double
@@ -2025,8 +2059,14 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   min_scaling_factor = std::min(scaling_factor, min_scaling_factor);
   max_absolute_rhs_error =
       std::max(max_absolute_rhs_error, scaled_sum_error / scaling_factor);
-  max_discretization_error =
-      std::max(max_discretization_error, discretization_error);
+  if (ct_lower_bound != -kInfinity) {
+    max_discretization_error = std::max(
+        max_discretization_error, std::max(0.0, -discretization_error_lb));
+  }
+  if (ct_upper_bound != kInfinity) {
+    max_discretization_error = std::max(max_discretization_error,
+                                        std::max(0.0, discretization_error_ub));
+  }
 
   if (use_tight_bounds || use_proper_relaxation) {
     tight_error_helper.LoadUnscaledConstraint(coefficients, int_lower_bounds,
@@ -2088,8 +2128,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     // problem that is within tight_precision. However, we don't relax too much
     // if we are not precise, and just hope for the best
     if (use_proper_relaxation) {
-      ct_lower_bound -= lb_error1 + discretization_error;
-      ct_upper_bound += ub_error1 + discretization_error;
+      ct_lower_bound -= lb_error1;
+      ct_upper_bound += ub_error1;
     } else {
       ct_lower_bound -= std::min(wanted_precision, lb_error1);
       ct_upper_bound += std::min(wanted_precision, ub_error1);
@@ -2490,9 +2530,9 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
   const int num_variables = mp_model.num_variables();
 
-  // This is only used to fill scaler.max_discretization_error.
   ConstraintScaler scaler;
-  scaler.var_is_integer.assign(num_variables, false);
+  scaler.var_discretization_error_lb.assign(num_variables, 0.0);
+  scaler.var_discretization_error_ub.assign(num_variables, 0.0);
 
   // Add the variables.
   const bool keep_names = !params.ignore_names();
@@ -2506,30 +2546,50 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     const double var_ub = mp_var.upper_bound();
     CHECK_GE(var_lb, -kMaxVariableBound);
     CHECK_LE(var_ub, kMaxVariableBound);
-    scaler.var_is_integer[i] =
-        mp_var.is_integer() || (var_lb == 0.0 && var_ub == 0.0);
 
     // Note that the cast is "perfect" because we forbid large values.
     if (params.mip_proper_relaxation() && !mp_var.is_integer()) {
-      // If we have an feasible floating-point solution, we want the discretized
-      // version where we always snap to the point with the best objective to be
-      // feasible.
+      // If we have a feasible floating-point solution, we want the discretized
+      // version where we always snap to the integer point with the best
+      // objective to remain feasible, and record tight bounds [err_lb, err_ub]
+      // on (snapped_var - var) for constraint relaxation.
+      double d_min;
+      double d_max;
+      double err_lb;
+      double err_ub;
       if (mp_var.objective_coefficient() > 0.0) {
-        cp_var->add_domain(static_cast<int64_t>(std::floor(var_lb)));
-        cp_var->add_domain(static_cast<int64_t>(std::floor(var_ub)));
+        d_min = std::floor(var_lb);
+        d_max = std::floor(var_ub);
+        err_lb = -1.0;
+        err_ub = 0.0;
       } else if (mp_var.objective_coefficient() < 0.0) {
-        cp_var->add_domain(static_cast<int64_t>(std::ceil(var_lb)));
-        cp_var->add_domain(static_cast<int64_t>(std::ceil(var_ub)));
+        d_min = std::ceil(var_lb);
+        d_max = std::ceil(var_ub);
+        err_lb = 0.0;
+        err_ub = 1.0;
       } else {
-        // We could choose an arbitrary direction here.
-        cp_var->add_domain(static_cast<int64_t>(std::floor(var_lb)));
-        cp_var->add_domain(static_cast<int64_t>(std::ceil(var_ub)));
+        d_min = std::round(var_lb);
+        d_max = std::round(var_ub);
+        err_lb = -0.5;
+        err_ub = 0.5;
       }
+      if (d_min == d_max) {
+        err_lb = std::max(err_lb, ExactScaledSumLb(d_min, -var_ub));
+        err_ub = std::min(err_ub, ExactScaledSumUb(d_min, -var_lb));
+      }
+      cp_var->add_domain(static_cast<int64_t>(d_min));
+      cp_var->add_domain(static_cast<int64_t>(d_max));
+      scaler.var_discretization_error_lb[i] = err_lb;
+      scaler.var_discretization_error_ub[i] = err_ub;
     } else {
       cp_var->add_domain(static_cast<int64_t>(
           std::ceil(var_lb - params.mip_wanted_precision())));
       cp_var->add_domain(static_cast<int64_t>(
           std::floor(var_ub + params.mip_wanted_precision())));
+      if (!mp_var.is_integer() && (var_lb != 0.0 || var_ub != 0.0)) {
+        scaler.var_discretization_error_lb[i] = -1.0;
+        scaler.var_discretization_error_ub[i] = 1.0;
+      }
     }
 
     if (cp_var->domain(0) > cp_var->domain(1)) {

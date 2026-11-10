@@ -2005,7 +2005,7 @@ message SatParameters {
   // overflow when evaluating bounds * coeff for instance. We are a bit more
   // defensive, but in practice, users shouldn't use super large values in a
   // MIP.
-  optional double mip_max_valid_magnitude = 199 [default = 1e20];
+  optional double mip_max_valid_magnitude = 199 [default = 1e25];
 
   // By default, any variable/constraint bound with a finite value and a
   // magnitude greater than the mip_max_valid_magnitude will result with a
