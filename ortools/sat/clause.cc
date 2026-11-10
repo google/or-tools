@@ -2488,7 +2488,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
 
     // Also mark all the ones reachable through the root AMOs.
     {
-      auto is_marked = is_marked_.BitsetView();
+      auto is_marked = is_marked_.view();
       for (const int start : implications_and_amos_[root].offsets()) {
         for (const Literal l : AtMostOne(start)) {
           if (l.Index() == root) continue;
@@ -3334,7 +3334,7 @@ template <bool fill_implied_by>
 absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
     Literal root) {
   auto* const stack = bfs_stack_.data();
-  auto is_marked = is_marked_.BitsetView();
+  auto is_marked = is_marked_.view();
   auto is_redundant = is_redundant_.const_view();
 
   int stack_size = 1;

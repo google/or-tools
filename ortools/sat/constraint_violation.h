@@ -101,8 +101,9 @@ class LinearIncrementalEvaluator {
   bool VarIsConsistent(int var) const;
 
   // Intersect constraint bounds with [lb..ub].
+  // The constraint must not have enforcement literals.
   // Sets reduced to true if a reduction of the domain took place.
-  // Returns false if the model becomes UNSAT.
+  // Returns false if the domain becomes empty (meaning the model is UNSAT).
   bool ReduceBounds(int c, int64_t lb, int64_t ub, bool& reduced);
 
   // Model getters.

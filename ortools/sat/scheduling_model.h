@@ -127,6 +127,13 @@ class SchedulingResource {
   std::optional<int> barrier_interval_;
 };
 
+// Scans `model_proto` (or the subset of constraints in `constraint_indices` if
+// non-empty) for `no_overlap` and `cumulative` resources, including variable
+// capacities and barrier intervals.
+std::vector<SchedulingResource> ScanSchedulingResources(
+    const CpModelProto& model_proto,
+    absl::Span<const int> constraint_indices = {});
+
 // Represents a resource demand required by a task recipe.
 class ResourceDemand {
  public:

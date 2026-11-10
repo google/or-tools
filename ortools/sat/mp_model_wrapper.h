@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 
+#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -80,6 +81,14 @@ class EnforcedLinearConstraint {
     CHECK_LE(new_num_terms, num_terms());
     constraint_->mutable_var_index()->Truncate(new_num_terms);
     constraint_->mutable_coefficient()->Truncate(new_num_terms);
+  }
+  void Clear() {
+    constraint_->set_lower_bound(-std::numeric_limits<double>::infinity());
+    constraint_->set_upper_bound(std::numeric_limits<double>::infinity());
+    constraint_->clear_var_index();
+    constraint_->clear_coefficient();
+    enforcement_vars_.clear();
+    enforcement_values_.clear();
   }
 
   // And for the enforcement.
@@ -172,6 +181,7 @@ class MPModelProtoWrapper {
   // WARNING: This do not see "enforcement" and the model should be manipulated
   // with care. It is forbidden to change the number of variable or constraint.
   MPModelProto* mutable_underlying_model() { return &mp_model_; }
+  const MPModelProto& underlying_model() const { return mp_model_; }
 
  private:
   double objective_scaling_;

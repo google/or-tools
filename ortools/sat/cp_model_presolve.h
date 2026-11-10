@@ -118,7 +118,7 @@ class CpModelPresolver {
   // Runs the expansion and fix constraints that became non-canonical.
   void ExpandCpModelAndCanonicalizeConstraints();
 
-  ABSL_MUST_USE_RESULT bool CanonicalizeAllLinears();
+  ABSL_MUST_USE_RESULT bool CanonicalizeConstraintsLazily();
 
   // This detects and converts constraints of the form:
   // "X = sum Boolean * value", with "sum Boolean <= 1".

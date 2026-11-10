@@ -19,7 +19,10 @@
 #include <stdint.h>
 
 #include <cmath>
+#include <cstdint>
+#include <functional>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -37,6 +40,68 @@
 
 namespace operations_research {
 namespace sat {
+
+// Once a MPModelProtoWrapper is ready to be converted to CP-SAT, we split it
+// into disjoint residual continuous components and process them one by one. The
+// wrapper is never modified during that phase: instead, each wrapper variable x
+// is mapped to a CP-SAT variable x' with
+//   x = x' / scaling + shift
+// and this struct holds the current state of x'. Constraints and objective are
+// transformed on the fly when they are converted.
+struct MipVariableState {
+  // Current bounds of x', i.e. in the scaled and shifted space.
+  double lb = -std::numeric_limits<double>::infinity();
+  double ub = std::numeric_limits<double>::infinity();
+  bool is_integer = false;
+
+  // See the formula above. The shift is expressed in the wrapper space.
+  double scaling = 1.0;
+  double shift = 0.0;
+
+  // Tight bounds [error_lb, error_ub] (with error_lb <= 0 <= error_ub) on
+  // (discretized_x' - x') for variables marked as integer via approximate
+  // rational scaling. Zero for exact integers and continuous variables.
+  double error_lb = 0.0;
+  double error_ub = 0.0;
+};
+
+// A residual continuous component: a set of continuous variables and the
+// constraints in which they appear, such that no constraint of the component
+// contains a continuous variable outside of it. All indices refer to the
+// variables and constraints of the MPModelProtoWrapper being converted.
+//
+// Note that in `constraints`, all the variables that are not in
+// `continuous_vars` must be integer ("external" variables).
+struct ResidualContinuousComponent {
+  std::vector<int> continuous_vars;
+  std::vector<int> constraints;
+
+  // Dense mapping shared by all the component functions below:
+  // var_to_local_col[v] is the position of v in `continuous_vars`, or -1 for
+  // any other variable (in particular the external integer variables of
+  // `constraints`). Since this is of size num_variables, it points to a buffer
+  // shared by all the components and is only valid while this component is
+  // being processed, see ScopedVarToLocalCol.
+  absl::Span<const int> var_to_local_col;
+};
+
+// Fills `buffer` (which must be of size num_variables and filled with -1) with
+// the mapping of the given component and sets `compo->var_to_local_col`. The
+// buffer is restored to -1 and the span cleared on destruction.
+class ScopedVarToLocalCol {
+ public:
+  ScopedVarToLocalCol(ResidualContinuousComponent* compo,
+                      std::vector<int>* buffer);
+  ~ScopedVarToLocalCol();
+
+  // Not copyable or movable.
+  ScopedVarToLocalCol(const ScopedVarToLocalCol&) = delete;
+  ScopedVarToLocalCol& operator=(const ScopedVarToLocalCol&) = delete;
+
+ private:
+  ResidualContinuousComponent* compo_;
+  std::vector<int>* buffer_;
+};
 
 // Returns the highest x such that 2^x <= value.
 // This is meant to be called with a non-negative value.
@@ -96,6 +161,16 @@ double FindBestScalingAndComputeErrors(
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error, double* max_scaling_factor = nullptr);
 
+// Prescribed scaling of a constraint of a residual component that was made
+// integral by MarkComponentTotallyUnimodularAsInteger(). The component matrix
+// is TUM (`modular_factor = 1`) or 2-modular (`modular_factor = 2`), and with
+// `scaling_factor` the scaled constraint has +/-1 coefficients on the component
+// variables and multiples of `modular_factor` on the external ones.
+struct ModularConstraintScaling {
+  double scaling_factor = 0.0;
+  int64_t modular_factor = 0;
+};
+
 // Helper to scale linear constraints with floating point coefficients to
 // CpModelProto::ConstraintProto. We use a class to reuse the temporary memory
 // when we scale many constraints.
@@ -111,6 +186,12 @@ struct ConstraintScaler {
   // "scaling_target". We usually scale with a power of two scaling factor or
   // a rational scaling factor if we detect a good one via FindRationalFactor().
   //
+  // If `modular` is given, we use its scaling factor instead and round the
+  // scaled constraint bounds to multiples of its `modular_factor` (outward if
+  // `use_proper_relaxation` is true) so that the LP extreme points of the
+  // component stay integral. The caller must make sure that the scaled
+  // constraint cannot overflow.
+  //
   // Returns an error if the given constraint contained huge coefficients or
   // infinity. Note that we do not consider it an error if the wanted precision
   // is not reached (best effort). One can check the error statistics field
@@ -119,16 +200,20 @@ struct ConstraintScaler {
       absl::Span<const int> vars, absl::Span<const double> coeffs,
       double ct_lower_bound, double ct_upper_bound, absl::string_view name,
       absl::Span<const IntegerVariableProto* const> var_domains,
-      ConstraintProto* constraint);
+      ConstraintProto* constraint,
+      std::optional<ModularConstraintScaling> modular = std::nullopt);
 
   // Scales an individual EnforcedLinearConstraint and adds it to the given
   // CpModelProto.
   //
   // This is a wrapper around the other ScaleAndAddConstraint() that uses the
   // vars, coeffs, lower_bound, upper_bound and enforcements of the given
-  // mp_constraint.
+  // mp_constraint, transformed according to the scaling and shift of each
+  // variable in `states` (see MipVariableState).
   absl::Status ScaleAndAddConstraint(
-      const EnforcedLinearConstraint& mp_constraint, CpModelProto* cp_model);
+      const EnforcedLinearConstraint& mp_constraint,
+      absl::Span<const MipVariableState> states, CpModelProto* cp_model,
+      std::optional<ModularConstraintScaling> modular = std::nullopt);
 
   // Statistics over all scaled constraints. This can be inspected to know the
   // final error produced by ScaleAndAddConstraint().
@@ -149,8 +234,10 @@ struct ConstraintScaler {
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;
 
-  // To compute the error due to variable discretization.
-  std::vector<bool> var_is_integer;
+  // Bounds [lb, ub] on (discretized_var - original_var) for each variable,
+  // used to compute the constraint error due to variable discretization.
+  std::vector<double> var_discretization_error_lb;
+  std::vector<double> var_discretization_error_ub;
 
   // Parameters passed to FindBestScalingAndComputeErrors(), see documentation
   // there to understand their meaning.
@@ -167,6 +254,10 @@ struct ConstraintScaler {
   std::vector<double> upper_bounds;
   std::vector<int64_t> int_lower_bounds;
   std::vector<int64_t> int_upper_bounds;
+  std::vector<double> tmp_transformed_coeffs;
+  std::vector<int64_t> tmp_enforcement_values;
+  TightSum tmp_discretization_lb;
+  TightSum tmp_discretization_ub;
 };
 
 // Given a set of edges on a graph with nodes [0, n), can we partition the
@@ -184,6 +275,81 @@ struct EdgeConstraintForPartition {
 };
 std::vector<int> PartitionGraph(
     int n, absl::Span<const EdgeConstraintForPartition> edges);
+
+// Initializes the state of all variables from the current wrapper bounds and
+// integrality (no scaling, no shift, no error).
+std::vector<MipVariableState> InitialVariableStates(
+    const MPModelProtoWrapper& mp_model);
+
+// Writes back the given states into `mp_model`: variable bounds and
+// integrality, scaled constraint coefficients, shifted constraint bounds,
+// scaled objective and shifted objective offset, and scaled/shifted solution
+// hint. This is mainly useful for tests.
+void ApplyVariableStatesToModel(absl::Span<const MipVariableState> states,
+                                MPModelProto* mp_model);
+
+// Splits `mp_model` into pure integer constraints (constraints with no
+// continuous variable with a non-zero coefficient) and disjoint residual
+// continuous components (connected components of continuous variables linked
+// by shared constraints). Always-true constraints (`lb == -inf && ub == +inf`)
+// are omitted. All indices refer to the MPModelProtoWrapper.
+struct ResidualContinuousComponents {
+  std::vector<int> pure_integer_constraints;
+  std::vector<ResidualContinuousComponent> components;
+};
+ResidualContinuousComponents SplitIntoResidualContinuousComponents(
+    const MPModelProtoWrapper& mp_model);
+
+// Statistics accumulated by the per-component functions below, and the
+// corresponding logging functions.
+struct TumStats {
+  int num_components = 0;
+  int num_tum_components = 0;
+  int num_2_modular_components = 0;
+  int num_new_tum_integers = 0;
+  int num_new_2_modular_integers = 0;
+  int num_modular_constraints = 0;
+  double max_var_bound_error = 0.0;
+  int num_common_scaled = 0;
+  double min_common_scaling = std::numeric_limits<double>::infinity();
+  double max_common_scaling = 0.0;
+
+  int num_bound_tightened_components = 0;
+  int num_tightened_bounds = 0;
+  double old_min = std::numeric_limits<double>::infinity();
+  double old_max = -std::numeric_limits<double>::infinity();
+  double new_min = std::numeric_limits<double>::infinity();
+  double new_max = -std::numeric_limits<double>::infinity();
+};
+void LogTumStats(const TumStats& stats, SolverLogger* logger);
+
+struct OneVariableComponentStats {
+  int num_components = 0;
+  int num_integers = 0;
+  int num_fixed = 0;
+  int num_pow2_preferred = 0;
+  int num_missed = 0;
+  double max_scaling = 0.0;
+};
+void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
+                                  SolverLogger* logger);
+
+struct PrecisionScalingStats {
+  int num_scaled = 0;
+  int min_exponent = std::numeric_limits<int>::max();
+  int max_exponent = 0;
+};
+void LogPrecisionScalingStats(const SatParameters& params,
+                              const MPModelProto& mp_model,
+                              absl::Span<const MipVariableState> states,
+                              const PrecisionScalingStats& stats,
+                              SolverLogger* logger);
+
+struct ShiftStats {
+  int64_t num_shifted = 0;
+  double max_shift = 0.0;
+};
+void LogShiftStats(const ShiftStats& stats, SolverLogger* logger);
 
 // Once all integer variables have a value, we can split the model into separate
 // components. If a given component is totally unimodular, then there exists a
@@ -213,10 +379,9 @@ std::vector<int> PartitionGraph(
 // components that can be made integral via variable scaling (for example,
 // 2-modular components where any LP optimal basic solution is half-integral, or
 // components with rational bounds/RHS or column scaling). When a component with
-// unit column scaling cannot be made integral and mip_scale_to_max_bound or
-// mip_scale_for_precision is enabled, we still scale all variables in the
-// component by a common power-of-two factor to preserve its +/-1 coefficients.
-// Whenever any variable is scaled, we return a non-empty scaling vector.
+// unit column scaling cannot be made integral and mip_scale_for_precision is
+// enabled, we still scale all variables in the component by a common
+// power-of-two factor to preserve its +/-1 coefficients.
 //
 // Note that if some constraints in `mp_model` are enforced by external integer
 // variables (e.g., via MPModelProtoWrapper), it is valid to pass the underlying
@@ -225,47 +390,86 @@ std::vector<int> PartitionGraph(
 // variables, inactive enforced constraints simply remove rows from the
 // component LP, which preserves total unimodularity (or 2-modularity), vertex
 // integrality, and the worst-case vertex bounds computed when tightening.
-std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    bool only_tighten_bounds = false);
+//
+// The variables marked as integer have their bounds enlarged (when
+// `mip_proper_relaxation` is true) or snapped to multiples of the
+// `modular_factor`, and this returns the scaling to use for each of
+// `compo.constraints` in ConstraintScaler::ScaleAndAddConstraint(), or an empty
+// vector if the component was not made integral.
+//
+// This processes a single residual continuous component (whose
+// `var_to_local_col` must be set) and only updates `states`.
+std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    TumStats* stats);
 
-// Multiplies all continuous variables by the given scaling parameters and
-// changes the rest of the model accordingly. The returned vector contains the
-// scaling of each variable (will always be 1.0 for integers) and can be used
-// to recover a solution of the unscaled problem from one of the new scaled
-// problems by dividing the variable values.
+// Processes a residual continuous component with a single continuous variable
+// x, which is thus the unique non-integer of all its constraints.
 //
-// We usually scale a continuous variable by scaling, but if its domain is going
-// to have larger values than max_bound, then we scale to have the max domain
-// magnitude equal to max_bound.
+// In a minimization problem, if all these constraints are "nice" (integer
+// coefficients and bounds after scaling x by a rational factor s, see
+// GetIntegralityMultiplier()) then there is an optimal solution where s * x is
+// integer: on the side where the objective pushes x, the tightest active
+// constraint (or the bound of x) is integral in the scaled space. Note that
+// when x has no objective, this is true for both sides and we require both.
+// Such a x is marked as integer with scaling s and tight bounds
+// [error_lb, error_ub] on (discretized_x' - x') accounting for the approximate
+// rationals (see FindRationalFactor()) and the errors on the other variables.
 //
-// Note that it is recommended to call DetectImpliedIntegers() before this
-// function so that we do not scale variables that do not need to be scaled.
+// With `mip_scale_for_precision`, this is only done if the resulting worst
+// case error on x is not larger than the one of the power of two scaling that
+// ScaleComponentContinuousVariablesForGivenPrecision() would use otherwise.
+// With a large rational s, the latter is usually as precise and avoids large
+// constraint scaling factors.
 //
-// TODO(user): Also scale the solution hint if any.
-std::vector<double> ScaleContinuousVariables(
-    const SatParameters& params, MPModelProto* mp_model,
-    absl::Span<const double> current_vars_scaling = {});
+// If the scaled domain of x contains no integer point, x is fixed to the
+// relevant bound instead.
+//
+// This only updates `states`, `compo.var_to_local_col` must be set.
+void ScaleOneVariableResidualMatrix(const SatParameters& params,
+                                    const ResidualContinuousComponent& compo,
+                                    const MPModelProtoWrapper& mp_model,
+                                    absl::Span<MipVariableState> states,
+                                    OneVariableComponentStats* stats);
 
-// Scales with a power of two so that all continuous variable domains are
-// as big as possible while staying in [-max_bound, max_bound].
-//
-// We use "wanted_precision" to compute a maximum scaling needed per variable
-// so that if a variable only appears with really low coefficients in all
-// constraints, we don't need to scale it too much.
-std::vector<double> ScaleContinuousVariablesUpToMaxBound(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    absl::Span<const double> current_vars_scaling = {});
+// Uses the same TUM detection on the whole model, before it is split into
+// components, to only tighten the bounds of the variables with a large domain
+// that belong to a TUM component whose LP vertices are integral whatever the
+// value of the external integer variables (Hoffman-Kruskal). Integer variables
+// with a large domain are considered too (e.g. big-M scheduling formulations).
+void TightenResidualTotallyUnimodularVariableBounds(
+    const SatParameters& params, MPModelProtoWrapper* mp_model,
+    SolverLogger* logger);
 
-// For each constraint and the objective, computes the scaling factor that
-// allows to satisfy mip_wanted_precision and records the power-of-two headroom
-// left up to mip_max_activity_exponent. Then scales each continuous variable by
-// the minimum headroom across all constraints (and the objective) in which it
-// appears, capped by the maximum scaling needed for mip_wanted_precision and
-// the maximum valid CP-SAT variable domain.
-std::vector<double> ScaleContinuousVariablesForGivenPrecision(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    absl::Span<const double> current_vars_scaling = {});
+// Multiplies all continuous variables of the component by
+// params.mip_var_scaling(). If the domain of a variable is going to have larger
+// values than mip_max_bound, then we scale to have the max domain magnitude
+// equal to mip_max_bound instead. Variables already scaled are left alone.
+void ScaleComponentContinuousVariables(const SatParameters& params,
+                                       const ResidualContinuousComponent& compo,
+                                       absl::Span<MipVariableState> states);
+
+// For each constraint, computes the scaling factor that allows to satisfy
+// mip_wanted_precision and records the power-of-two headroom left up to
+// mip_max_activity_exponent. Then scales each continuous variable by the
+// minimum headroom across all constraints in which it appears, capped by the
+// maximum scaling needed for mip_wanted_precision and the maximum valid CP-SAT
+// variable domain.
+void ScaleComponentContinuousVariablesForGivenPrecision(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    PrecisionScalingStats* stats);
+
+// Shifts the domain of each variable in `vars` by `get_shift(state)` (expressed
+// in the current scaled space) so that it ends up closer to zero. The shift of
+// an integer variable must be integer, and a variable must not be shifted more
+// than once (`state.shift == 0.0` whenever `get_shift(state) != 0.0`) so
+// `state.shift` stays exact.
+void ShiftVariables(
+    const std::function<double(const MipVariableState&)>& get_shift,
+    absl::Span<const int> vars, absl::Span<MipVariableState> states,
+    ShiftStats* stats);
 
 // This simple step helps and should be done first. Returns false if the model
 // is trivially infeasible because of crossing bounds. The version with the
@@ -273,9 +477,18 @@ std::vector<double> ScaleContinuousVariablesForGivenPrecision(
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
+bool MakeBoundsOfIntegerVariablesInteger(
+    const SatParameters& params, absl::Span<const double> var_scaling,
+    absl::Span<const double> integer_error_lb,
+    absl::Span<const double> integer_error_ub, MPModelProto* mp_model,
+    SolverLogger* logger);
+
+// Same as above but only for the integer variables in `vars` and using the
+// scaling and error bounds from `states`. Increments `num_changes`.
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
-                                         absl::Span<const double> var_scaling,
-                                         MPModelProto* mp_model,
+                                         absl::Span<const int> vars,
+                                         absl::Span<MipVariableState> states,
+                                         int64_t* num_changes,
                                          SolverLogger* logger);
 
 // Helpers used in bound propagation. We special case the coefficient == 1.0 as
@@ -363,6 +576,8 @@ bool RestrictBoundsWithDualReasoning(const SatParameters& params,
 // a pure IP.
 void DisplayVariableStatistics(const MPModelProto& mp_model,
                                SolverLogger* logger);
+void DisplayVariableStatistics(absl::Span<const MipVariableState> states,
+                               SolverLogger* logger);
 
 // This function changes bounds of variables or constraints that have a
 // magnitude greater than mip_max_valid_magnitude.
@@ -383,15 +598,25 @@ bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger);
 
-// This will mark implied integers as such. Note that it can also discover
-// variables of the form coeff * Integer + offset, and will change the model
-// so that these are marked as integers. It is why we return both a scaling and
-// an offset to transform the solution back to its original domain.
+// This will mark as integer the continuous variables that are the unique
+// non-integer of an equality constraint with "nice" coefficients and bounds
+// (see GetIntegralityMultiplier()), possibly with a rational scaling. Note that
+// it can also discover variables of the form coeff * Integer + offset, and will
+// change the model so that these are marked as integers. It is why we return
+// both a scaling and an offset to transform the solution back to its original
+// domain. The continuous variables that are the unique non-integer of
+// inequalities only are handled later by ScaleOneVariableResidualMatrix().
 //
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
+// Updates in-place tight bounds `[integer_error_lb[v], integer_error_ub[v]]`
+// (with `integer_error_lb[v] <= 0 <= integer_error_ub[v]`, sized to
+// `mp_model->num_variables()`) on `(discretized_v - scaled_v)` in the scaled
+// variable space for variables marked as integer by this pass.
 std::vector<double> DetectImpliedIntegers(const SatParameters& params,
                                           MPModelProtoWrapper* mp_model,
+                                          absl::Span<double> integer_error_lb,
+                                          absl::Span<double> integer_error_ub,
                                           SolverLogger* logger);
 
 // Clamps variable bounds to [-mip_max_bound, mip_max_bound]. Returns false if
@@ -399,21 +624,57 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
 bool ClampVariableBounds(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger, int* num_clamped = nullptr);
 
+// Same as above, but only for the variables in `vars` and without logging the
+// number of clamped bounds (which is added to `num_clamped`).
+bool ClampVariableBounds(const SatParameters& params,
+                         absl::Span<const int> vars,
+                         absl::Span<MipVariableState> states,
+                         SolverLogger* logger, int* num_clamped);
+
 // Extracts enforcement literals (and integer enforcements) from one-sided
 // constraints in the given MPModelProtoWrapper.
 void ExtractEnforcementLiterals(const SatParameters& params,
                                 MPModelProtoWrapper* mp_model,
                                 SolverLogger* logger);
 
+// Converts a single variable into an IntegerVariableProto and updates its
+// discretization error bounds. Returns false if the variable cannot take an
+// integer value. `objective_coefficient` is the one from the wrapper (only its
+// sign matters).
+bool ConvertVariableToCpVariable(const SatParameters& params, int var_index,
+                                 double objective_coefficient,
+                                 MipVariableState* state,
+                                 IntegerVariableProto* cp_var,
+                                 int* num_small_domains);
+
+// Logs constraint scaling and discretization statistics collected in `scaler`.
+void DisplayConstraintScalingStats(const SatParameters& params,
+                                   const ConstraintScaler& scaler,
+                                   int num_clamped, int num_small_domains,
+                                   SolverLogger* logger);
+
+// Populates `cp_model->floating_point_objective()` from `mp_model` transformed
+// according to `states`.
+void PopulateCpModelFloatingPointObjective(
+    const MPModelProtoWrapper& mp_model,
+    absl::Span<const MipVariableState> states, CpModelProto* cp_model);
+
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
 //
+// `integer_error_lb` and `integer_error_ub` (sized to
+// `mp_model.num_variables()`) pass precomputed discretization error bounds
+// `[lb, ub]` on `(discretized_v - scaled_v)` for variables marked as integer
+// via approximate rational scaling (use `0.0` for exact integers and continuous
+// variables).
+//
 // There are a bunch of caveats and you can find more details on the
 // SatParameters proto documentation for the mip_* parameters.
-bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
-                                       const MPModelProtoWrapper& mp_model,
-                                       int num_clamped, CpModelProto* cp_model,
-                                       SolverLogger* logger);
+bool ConvertMPModelProtoToCpModelProto(
+    const SatParameters& params, const MPModelProtoWrapper& mp_model,
+    int num_clamped, absl::Span<const double> integer_error_lb,
+    absl::Span<const double> integer_error_ub, CpModelProto* cp_model,
+    SolverLogger* logger);
 
 // Converts a CP-SAT model to a MPModelProto one.
 // This only works for pure linear models (otherwise it returns false). This is

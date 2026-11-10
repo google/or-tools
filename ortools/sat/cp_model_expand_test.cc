@@ -678,8 +678,8 @@ TEST(IntProdExpandTest, EnforcementLiterals) {
       enforcement_literal: 0
       int_prod {
         target { offset: 27 }
-        exprs { vars: 4 coeffs: 1 }
         exprs { vars: 3 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
       }
     })pb");
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
@@ -1365,34 +1365,11 @@ TEST(AutomatonExpandTest, EverythingZeroWithEnforcementLiteral) {
   ExpandCpModel(&context);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {}
-    constraints {
-      enforcement_literal: 0
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: [ 0, 0 ]
-      }
-    }
-    constraints {
-      enforcement_literal: 0
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: [ 0, 0 ]
-      }
-    }
-    constraints {
-      enforcement_literal: 0
-      linear {
-        vars: 2
-        coeffs: 1
-        domain: [ 0, 0 ]
-      }
-    }
+    constraints {}
   )pb");
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
@@ -1988,14 +1965,7 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {}
-    constraints {
-      enforcement_literal: -1
-      linear {
-        vars: 1
-        coeffs: -1
-        domain: [ -1, 0 ]
-      }
-    }
+    constraints {}
     constraints {
       enforcement_literal: -1
       linear {
@@ -2012,14 +1982,7 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
         domain: [ 0, 1 ]
       }
     }
-    constraints {
-      enforcement_literal: -1
-      linear {
-        vars: 3
-        coeffs: -1
-        domain: [ -1, 0 ]
-      }
-    }
+    constraints {}
   )pb");
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }

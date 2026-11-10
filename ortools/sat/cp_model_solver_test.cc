@@ -557,9 +557,10 @@ TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
   )pb");
   CpModelProto cp_model;
   SolverLogger logger;
-  ConvertMPModelProtoToCpModelProto(SatParameters(),
-                                    MPModelProtoWrapper(std::move(mp_model)),
-                                    /*num_clamped=*/0, &cp_model, &logger);
+  const std::vector<double> zero_errors(mp_model.variable_size(), 0.0);
+  ConvertMPModelProtoToCpModelProto(
+      SatParameters(), MPModelProtoWrapper(std::move(mp_model)),
+      /*num_clamped=*/0, zero_errors, zero_errors, &cp_model, &logger);
   Model model;
   model.Add(NewSatParameters("cp_model_presolve:false"));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
@@ -6454,6 +6455,34 @@ TEST(LoadCpModelTest, LargeMultiEnforcedBoolAndOptimizationMatchesPresolve) {
     EXPECT_DOUBLE_EQ(response.objective_value(), -500.0);
     EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
   }
+}
+
+TEST(SolveCpModelTest, MaxHsPropagatesInfeasibleHittingSetSubmodel) {
+  CpModelProto m;
+  auto* cap = m.add_constraints()->mutable_linear();
+  cap->add_domain(0);
+  cap->add_domain(2);
+  for (int i = 0; i < 5; ++i) {
+    AddVariable(0, 1, &m);
+    m.mutable_objective()->add_vars(i);
+    m.mutable_objective()->add_coeffs(1);
+    cap->add_vars(i);
+    cap->add_coeffs(1);
+  }
+  for (int a = 0; a < 5; ++a) {
+    for (int b = a + 1; b < 5; ++b) {
+      for (int c = b + 1; c < 5; ++c) {
+        auto* ct = m.add_constraints()->mutable_bool_or();
+        for (int v : {a, b, c}) ct->add_literals(v);
+      }
+    }
+  }
+  SatParameters params;
+  params.set_num_workers(1);
+  params.set_optimize_with_core(true);
+  params.set_optimize_with_max_hs(true);
+  const CpSolverResponse response = SolveWithParameters(m, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
 }  // namespace

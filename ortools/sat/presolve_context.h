@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -30,6 +31,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/base_export.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -120,6 +123,29 @@ class LazyConstraintVariableGraph {
     if (c < to_update_.size()) {
       to_update_.Set(c);
     }
+  }
+
+  // This lazily recomputes what needs to be recomputed.
+  void LazyUpdate() {
+    const int old_size = constraint_to_vars_.size();
+    const int new_size = cp_model_.constraints_size();
+    DCHECK_LE(old_size, new_size);
+    CHECK_EQ(old_size, to_update_.size());
+
+    if (new_size > old_size) {
+      constraint_to_vars_.resize(new_size);
+      constraint_to_linear1_var_.resize(new_size, -1);
+      for (int c = old_size; c < new_size; ++c) {
+        AddVariableUsage(c);
+      }
+    }
+
+    // Note that the update assumes new constraints have already been handled,
+    // so the order is important here.
+    for (const int c : to_update_.PositionsSetAtLeastOnce()) {
+      UpdateConstraintVariableUsage(c);
+    }
+    to_update_.ClearAndResize(new_size);
   }
 
   // Variable <-> constraint graph.
@@ -213,29 +239,6 @@ class LazyConstraintVariableGraph {
   void UpdateLinear1Usage(const ConstraintProto& ct, int c);
   void UpdateConstraintVariableUsage(int c);
 
-  // This lazily recomputes what needs to be recomputed.
-  void LazyUpdate() {
-    const int old_size = constraint_to_vars_.size();
-    const int new_size = cp_model_.constraints_size();
-    DCHECK_LE(old_size, new_size);
-    CHECK_EQ(old_size, to_update_.size());
-
-    if (new_size > old_size) {
-      constraint_to_vars_.resize(new_size);
-      constraint_to_linear1_var_.resize(new_size, -1);
-      for (int c = old_size; c < new_size; ++c) {
-        AddVariableUsage(c);
-      }
-    }
-
-    // Note that the update assumes new constraints have already been handled,
-    // so the order is important here.
-    for (const int c : to_update_.PositionsSetAtLeastOnce()) {
-      UpdateConstraintVariableUsage(c);
-    }
-    to_update_.ClearAndResize(new_size);
-  }
-
   // This can change behind the class back, but is never mutated here.
   const CpModelProto& cp_model_;
   const SolutionCrush& solution_crush_;
@@ -265,6 +268,50 @@ class LazyConstraintVariableGraph {
   SparseBitset<int> var_with_reduced_small_degree_;
 };
 
+// Dirty-tracking and Arena-matched scratch state for lazy constraint
+// canonicalization.
+struct ConstraintCanonicalizationState {
+  explicit ConstraintCanonicalizationState(google::protobuf::Arena* arena)
+      : owned_detached_ct(arena == nullptr ? std::make_unique<ConstraintProto>()
+                                           : nullptr),
+        detached_ct(
+            arena != nullptr
+                ? google::protobuf::Arena::Create<ConstraintProto>(arena)
+                : owned_detached_ct.get()) {}
+
+  void Reset() {
+    constraints_to_canonicalize.ClearAndResize(0);
+    routes_with_dimensions.clear();
+    DCHECK_EQ(detached_constraint_index, -1);
+  }
+
+  // Constraints in [0, size()) marked dirty explicitly (via
+  // MarkConstraintForCanonicalization or UpdateConstraintVariableUsage) or via
+  // vars_invalidating_canonicality_. Constraints in [size(), NumConstraints())
+  // are newly appended and implicitly need initial canonicalization.
+  SparseBitset<int> constraints_to_canonicalize;
+
+  // Indices of kRoutes constraints with non-empty dimensions, tracked
+  // separately because UsedVariables() does not index variables appearing only
+  // inside routes().dimensions().
+  std::vector<int> routes_with_dimensions;
+
+  // Reusable scratch buffer for sorting dirty constraint indices into
+  // deterministic order during CanonicalizeConstraintsLazily().
+  std::vector<int> tmp_dirty_constraints;
+
+  // Index of the constraint currently swapped out of working_model_ during
+  // CanonicalizeConstraintsLazily() (or -1 when none is detached), used to
+  // DCHECK against re-entrant Constraint(c) / MutableConstraint(c) access.
+  int detached_constraint_index = -1;
+
+  // Scratch ConstraintProto allocated on the same google::protobuf::Arena as
+  // working_model_ (or heap-owned via owned_detached_ct when arena == nullptr)
+  // so Swap() detaches and reattaches constraints in O(1).
+  std::unique_ptr<ConstraintProto> owned_detached_ct;
+  ConstraintProto* detached_ct = nullptr;
+};
+
 // Wrap the CpModelProto we are presolving with extra data structures like the
 // in-memory domain of each variable and the constraint variable graph.
 class PresolveContext {
@@ -278,6 +325,7 @@ class PresolveContext {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         working_model_(cp_model),
+        canonicalization_(cp_model->GetArena()),
         solution_crush_(solution_crush_proto),
         graph_(cp_model, &solution_crush_) {}
 
@@ -451,7 +499,7 @@ class PresolveContext {
 
   // Canonicalization of linear constraints. This might also be needed when
   // creating new constraints to make sure there are no duplicate variables.
-  // Returns true if the set of variables in the expression changed.
+  // Returns true if the constraint was modified.
   //
   // This uses affine relations and regroups duplicate/fixed terms.
   bool CanonicalizeLinearConstraint(ConstraintProto* ct,
@@ -459,7 +507,32 @@ class PresolveContext {
                                     bool* is_trivial = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
-  bool CanonicalizeLinMax(ConstraintProto* ct);
+
+  // Graph-free structural canonicalization of a single constraint using
+  // current domains and affine relations. Returns true if `*ct` was mutated in
+  // a way that may change its variable usage or structure.
+  bool CanonicalizeConstraint(ConstraintProto* ct);
+
+  // Lazy pass-entry canonicalization of all dirty constraints, cascading until
+  // quiescence or UNSAT.
+  bool NeedsCanonicalization() const;
+  void CanonicalizeConstraintsLazily();
+  void MarkConstraintForCanonicalization(int c) {
+    if (c < canonicalization_.constraints_to_canonicalize.size()) {
+      canonicalization_.constraints_to_canonicalize.Set(c);
+    }
+  }
+
+  // These methods are not fully optimized and must only be used for debug
+  // checks (e.g., DCHECK) and tests. ModelProtoIsCanonical() checks the proto
+  // on a fresh presolve context and does not require any sort order.
+  bool ConstraintIsCanonical(const ConstraintProto& ct,
+                             bool check_sorted = true) const;
+  bool ConstraintIsCanonical(int c, bool check_sorted = true) const;
+  bool AllConstraintsAreCanonical(bool check_sorted = true) const;
+  // TODO(user): move this outside of PresolveContext and take a const
+  // CpModelProto as parameter.
+  bool ModelProtoIsCanonical(CpModelProto* proto) const;
 
   // This method only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
@@ -560,6 +633,7 @@ class PresolveContext {
   void UpdateConstraintVariableUsage(int c) {
     if (is_unsat_) return;
     graph_.MarkForLazyUpdate(c);
+    MarkConstraintForCanonicalization(c);
   }
 
   SparseBitset<int>* MutableVarWithReducedSmallDegree() {
@@ -907,6 +981,7 @@ class PresolveContext {
   int NumConstraints() const { return working_model_->constraints().size(); }
   int NumVariables() const { return working_model_->variables().size(); }
   const ConstraintProto& Constraint(int c) const {
+    DCHECK_NE(c, canonicalization_.detached_constraint_index);
     return working_model_->constraints(c);
   }
 
@@ -919,6 +994,7 @@ class PresolveContext {
 
   // CpModelProto mutable accessors.
   ConstraintProto* MutableConstraint(int c) {
+    DCHECK_NE(c, canonicalization_.detached_constraint_index);
     return working_model_->mutable_constraints(c);
   }
   void ClearConstraint(int c) { MutableConstraint(c)->Clear(); }
@@ -927,6 +1003,11 @@ class PresolveContext {
   // pattern and shouldn't break invariants.
   void RemoveLastConstraint() {
     working_model_->mutable_constraints()->RemoveLast();
+    const int num_constraints = NumConstraints();
+    if (num_constraints <
+        canonicalization_.constraints_to_canonicalize.size()) {
+      canonicalization_.constraints_to_canonicalize.Resize(num_constraints);
+    }
   }
 
   // WARNING. Only use when you know what you are doing as some modification
@@ -975,6 +1056,53 @@ class PresolveContext {
                                         absl::string_view file, int line);
 
  private:
+  PresolveContext(const PresolveContext& other, CpModelProto* cp_model,
+                  CpModelProto* mapping)
+      : mapping_model(mapping),
+        lrat_proof_handler(other.lrat_proof_handler),
+        logger_(other.logger_),
+        params_(other.params_),
+        time_limit_(other.time_limit_),
+        random_(other.random_),
+        working_model_(cp_model),
+        canonicalization_(cp_model->GetArena()),
+        solution_crush_(nullptr),
+        graph_(cp_model, &solution_crush_) {}
+
+  class ConstraintCanonicalizer {
+   public:
+    ConstraintCanonicalizer(PresolveContext* context, ConstraintProto* ct)
+        : context_(context), ct_(ct) {}
+
+    bool Canonicalize();
+
+   private:
+    void DivideLinearByGcd();
+    void CanonicalizeLinear();
+    void CanonicalizeLinearOfSizeOne();
+    void CanonicalizeBoolOr();
+    void CanonicalizeBoolAnd();
+    void CanonicalizeAtMostOrExactlyOne();
+    void CanonicalizeAtMostOne();
+    void CanonicalizeExactlyOne();
+    void CanonicalizeBoolXor();
+    void CanonicalizeLinMax();
+
+    // Shared helpers.
+    void ExploitEquivalenceRelations();
+    bool CanonicalizeEnforcementLiterals();
+    void MarkOptionalIntervalAsFalse();
+    void RemoveConstraint();
+    void MarkConstraintAsFalse(absl::string_view reason);
+    void CanonicalizeAllExprs();
+    void SortExpressions(
+        google::protobuf::RepeatedPtrField<LinearExpressionProto>* exprs);
+
+    PresolveContext* const context_;
+    ConstraintProto* const ct_;
+    bool changed_ = false;
+  };
+
   // Helper to add an affine relation x = c.y + o to the given repository.
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
 
@@ -1000,6 +1128,15 @@ class PresolveContext {
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
+  // These methods are not fully optimized and must only be used for debug
+  // checks (e.g., DCHECK) and tests.
+  bool LiteralsAreCanonical(absl::Span<const int> lits,
+                            const absl::flat_hash_set<int>& enforcements = {},
+                            bool check_sorted = true) const;
+  bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
+                                   const LinearExpressionProto& expr,
+                                   bool check_sorted = true) const;
+
   SolverLogger* logger_;
   const SatParameters& params_;
   TimeLimit* time_limit_;
@@ -1008,11 +1145,18 @@ class PresolveContext {
   // The model we are modifying during presolve.
   CpModelProto* working_model_ = nullptr;
 
+  // Constraint-side lazy canonicalization state.
+  ConstraintCanonicalizationState canonicalization_;
+
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat_ = false;
 
   // The current domain of each variable.
   std::vector<Domain> domains_;
+
+  // Variables newly fixed or ceasing to be affine representatives since the
+  // last CanonicalizeConstraintsLazily() pass.
+  SparseBitset<int> vars_invalidating_canonicality_;
 
   // Used to maintain the hint during presolve.
   SolutionCrush solution_crush_;
