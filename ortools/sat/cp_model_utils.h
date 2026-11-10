@@ -149,6 +149,15 @@ void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
 void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 
+// Applies the given function to all LinearExpressionProto fields of the
+// constraint.
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(LinearExpressionProto* expr)> function,
+    ConstraintProto* ct);
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(const LinearExpressionProto& expr)> function,
+    const ConstraintProto& ct);
+
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
 // NOTE(user): There is no such function in the proto API as of 16/01/2017.
 constexpr absl::string_view ConstraintCaseName(

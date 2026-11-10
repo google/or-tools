@@ -2076,6 +2076,258 @@ TEST(PresolveCpModelTest,
               EqualsProto(expected_model));
 }
 
+TEST(PresolveCpModelTest, LowerThanCoeffStrengtheningPartialAmoGcd) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4 ]
+        coeffs: [ 2, 2, 4, 4, 6 ]
+        domain: [ 0, 7 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3, 4 ]
+                coeffs: [ 1, 1, 2, 2, 3 ]
+                domain: [ 0, 3 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     LowerThanCoeffStrengtheningPartialAmoGcdUpdatesCanonical) {
+  // Enforced constraint: (x3 && x4) => 2*x0 + 6*x1 + 11*x2 <= 9
+  // with x0 in [0, 1], x1 in [0, 2], x2 in [0, 1].
+  // 1. LowerThanCoeffStrengthening ("linear with partial amo: gcd" with gcd=2)
+  //    rewrites the constraint to x0 + 3*x1 + 5*x2 <= 4 and updates
+  //    `canonical` in place.
+  // 2. TryToReduceCoefficientsOfLinearConstraint then uses the updated
+  //    `canonical` to decouple the forced big-M term 5*x2 into x2 == 0 and
+  //    x0 + 3*x1 <= 4.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 3, 4 ]
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 2, 6, 11 ]
+        domain: [ 0, 9 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 2);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 2 ]
+                coeffs: [ 1 ]
+                domain: [ 0, 0 ]
+              )pb"));
+  EXPECT_THAT(presolved.constraints(1).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, 3 ]
+                domain: [ 0, 4 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, LowerThanCoeffStrengtheningFixesVariableToBound) {
+  // PropagateDomainsInLinear narrows x9 from {0, 3, 4} to [3, 4] (not fixed,
+  // so the constraint is not recanonicalized), raising min_activity from 0 to
+  // 33 and reducing the effective upper-bound slack rhs = 44 - 33 = 11.
+  // LowerThanCoeffStrengthening then sees coeff(x8) = 12 > rhs = 11 on an
+  // unenforced constraint and fixes x8 to its lower bound 0.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 3, 4 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 2, 2, 2, 2, 2, 2, 2, 3, 12, 11 ]
+        domain: [ 32, 44 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  EXPECT_THAT(presolved.variables(8).domain(), ElementsAre(0, 0));
+  EXPECT_THAT(presolved.variables(9).domain(), ElementsAre(3, 4));
+}
+
+TEST(PresolveCpModelTest, LowerThanCoeffStrengtheningPhaseBUpperAndLowerBound) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 2, 3 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5 ]
+        coeffs: [ 2, 3, 3, 3, 9, 10 ]
+        domain: [ -100, 30 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5 ]
+        coeffs: [ 2, 3, 3, 3, -9, 10 ]
+        domain: [ -5, 100 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved_ub = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved_ub.constraints_size(), 2);
+  EXPECT_THAT(presolved_ub.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3, 4, 5 ]
+                coeffs: [ 2, 3, 3, 3, 10, 10 ]
+                domain: [ 22, 32 ]
+              )pb"));
+
+  const CpModelProto presolved_lb = PresolveOneConstraint(initial_model, 1);
+  ASSERT_EQ(presolved_lb.constraints_size(), 2);
+  EXPECT_THAT(presolved_lb.constraints(1).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3, 4, 5 ]
+                coeffs: [ 2, 3, 3, 3, -10, 10 ]
+                domain: [ -7, 3 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     LowerThanCoeffStrengtheningSetAllToOneDecouplesForcedBigM) {
+  // Enforced constraint: (x4 && x5) => 4*x0 + 5*x1 + 5*x2 + 20*x3 <= 10
+  // with all variables in [0, 1].
+  // 1. LowerThanCoeffStrengthening ("linear with partial amo: constant coeff"
+  //    with 10/4 == 10/5 == 2) sets `set_all_to_one`, rewrites the constraint
+  //    to x0 + x1 + x2 + 3*x3 <= 2, and updates `canonical` in place.
+  // 2. TryToReduceCoefficientsOfLinearConstraint then uses the updated
+  //    `canonical` to decouple the forced big-M term 3*x3 into x3 == 0 and
+  //    x0 + x1 + x2 <= 2.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 4, 5 ]
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 4, 5, 5, 20 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 2);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 3 ]
+                coeffs: [ 1 ]
+                domain: [ 0, 0 ]
+              )pb"));
+  EXPECT_THAT(presolved.constraints(1).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 1, 1 ]
+                domain: [ 0, 2 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, TwoTermTiltingRunsBeforeApproximateGcd) {
+  // Enforced constraint: (x3 && x4) => 7*x0 + 7*x1 + 19*x2 <= 26 with
+  // x0, x1 in [0, 1] and x2 in [0, 2].
+  // LowerThanCoeffStrengthening skips 2-magnitude constraints (< 3), and
+  // DetectTwoTermTilting runs before TryToReduceCoefficientsOfLinearConstraint
+  // so it yields the optimal x0 + x1 + 2*x2 <= 3 instead of approximate GCD's
+  // (base = 7) x0 + x1 + 3*x2 <= 4.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 3, 4 ]
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 7, 7, 19 ]
+        domain: [ 0, 26 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 1, 2 ]
+                domain: [ 0, 3 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     LowerThanCoeffStrengtheningFixesVarEnablingTwoTermTilting) {
+  // With 10 variables, PropagateDomainsInLinear runs in fast mode and narrows
+  // x9 from {0, 9, 10} to [9, 10] (not fixed, so the constraint is not
+  // recanonicalized), raising min_activity from 0 to 45 and reducing the
+  // effective upper-bound slack rhs = 53 - 45 = 8.
+  // LowerThanCoeffStrengthening fixes x8 (coeff = 12 > 8) to 0 and updates
+  // `canonical` in place from 3 magnitudes {3, 5, 12} down to 2 magnitudes
+  // {3, 5}. DetectTwoTermTilting then immediately tilts
+  // 3*(x0+...+x5) + 5*(x6+x7+(x9-9)) <= 8 to
+  // 2*(x0+...+x5) + 3*(x6+x7+(x9-9)) <= 5.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 9, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 3, 3, 3, 3, 3, 3, 5, 5, 12, 5 ]
+        domain: [ 41, 53 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  EXPECT_THAT(presolved.variables(8).domain(), ElementsAre(0, 0));
+  EXPECT_THAT(presolved.variables(9).domain(), ElementsAre(9, 10));
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+                coeffs: [ 2, 2, 2, 2, 2, 2, 3, 3, 3, 3 ]
+                domain: [ 27, 32 ]
+              )pb"));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

@@ -4550,16 +4550,43 @@ bool CpConstraintPresolver::PropagateDomainsInLinear(int ct_index,
 
 // The constraint from its lower value is sum positive_coeff * X <= rhs.
 // If from_lower_bound is false, then it is the constraint from its upper value.
-void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
-                                                        int64_t min_magnitude,
-                                                        int64_t rhs,
-                                                        ConstraintProto* ct) {
+void CpConstraintPresolver::LowerThanCoeffStrengthening(
+    ConstraintProto* ct,
+    PresolveContext::MergedCanonicalLinearConstraint* canonical) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return;
+  if (ct->linear().domain().size() != 2) return;
+  if (context_->ModelIsUnsat()) return;
+  if (canonical->lb > canonical->ub) return;
+  // With 2 distinct coefficient magnitudes, DetectSimpleSum and
+  // DetectTwoTermTilting already achieve the optimal coefficient reduction.
+  if (canonical->terms.size() < 3) return;
+
+  const bool use_ub = canonical->ub < canonical->max_variation;
+  const bool use_lb = canonical->lb > 0;
+  if (use_ub == use_lb) return;
+
+  const int64_t min_magnitude = canonical->terms.front().magnitude;
+  const int64_t max_magnitude = canonical->terms.back().magnitude;
+  if (min_magnitude <= 1) return;
+  DCHECK_LT(min_magnitude, max_magnitude);
+
+  const bool from_lower_bound = use_ub;
+  const int64_t rhs = from_lower_bound
+                          ? canonical->ub
+                          : (canonical->max_variation - canonical->lb);
+  const int64_t second_threshold = rhs - min_magnitude;
+  if (max_magnitude <= second_threshold) return;
+
   DeterministicTimer<{.scale = 1.493e-08, .offset = 0.000e+00}> timer(
       time_limit_, ct->linear().vars_size());
   const LinearConstraintProto& arg = ct->linear();
-  const int64_t second_threshold = rhs - min_magnitude;
   const int num_vars = arg.vars_size();
 
+  // We also have other kind of coefficient strengthening.
+  // In something like 3x + 5y <= 6, the coefficient 5 can be changed to 6.
+  // And in 5x + 12y <= 12, the coeff 5 can be changed to 6 (not sure how to
+  // generalize this one).
+  //
   // Special case:
   // - The terms above rhs must be fixed to zero.
   // - The terms in (second_threshold, rhs] can be fixed to rhs as
@@ -4577,16 +4604,12 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
     int64_t max_activity_left = 0;
     int64_t activity_when_coeff_are_one = 0;
     int64_t gcd = 0;
-    for (int i = 0; i < num_vars; ++i) {
-      const int64_t magnitude = std::abs(arg.coeffs(i));
-      if (magnitude <= second_threshold) {
-        gcd = std::gcd(gcd, magnitude);
-        max_magnitude_left = std::max(max_magnitude_left, magnitude);
-        const int64_t bound_diff =
-            context_->MaxOf(arg.vars(i)) - context_->MinOf(arg.vars(i));
-        activity_when_coeff_are_one += bound_diff;
-        max_activity_left += magnitude * bound_diff;
-      }
+    for (const auto [range, magnitude] : canonical->terms) {
+      if (magnitude > second_threshold) break;
+      gcd = std::gcd(gcd, magnitude);
+      max_magnitude_left = magnitude;
+      activity_when_coeff_are_one += range;
+      max_activity_left += magnitude * range;
     }
     CHECK_GT(min_magnitude, 0);
     CHECK_LE(min_magnitude, max_magnitude_left);
@@ -4638,11 +4661,14 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
       }
       FillDomainInProto(Domain(rhs_offset, new_rhs + rhs_offset),
                         ct->mutable_linear());
+      // Update `canonical` with the changes made to `ct`.
+      *canonical = context_->BuildMergedCanonicalLinearConstraint(ct->linear());
       return;
     }
   }
 
   int64_t rhs_offset = 0;
+  bool changed = false;
   for (int i = 0; i < num_vars; ++i) {
     int ref = arg.vars(i);
     int64_t coeff = arg.coeffs(i);
@@ -4661,11 +4687,15 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
         // representative right away, but this is a bit difficult to enforce
         // currently.
         context_->UpdateRuleStats("linear: fix variable to its bound");
+        bool domain_changed = false;
         if (!context_->IntersectDomainWith(
-                ref, Domain(from_lower_bound ? context_->MinOf(ref)
-                                             : context_->MaxOf(ref)))) {
+                ref,
+                Domain(from_lower_bound ? context_->MinOf(ref)
+                                        : context_->MaxOf(ref)),
+                &domain_changed)) {
           return;
         }
+        changed |= domain_changed;
       }
 
       // TODO(user): What to do with the coeff if there is enforcement?
@@ -4682,11 +4712,15 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
         rhs_offset -= (coeff - rhs) * context_->MaxOf(ref);
       }
       ct->mutable_linear()->set_coeffs(i, arg.coeffs(i) > 0 ? rhs : -rhs);
+      changed = true;
     }
   }
   if (rhs_offset != 0) {
     FillDomainInProto(ReadDomainFromProto(arg).AdditionWith(Domain(rhs_offset)),
                       ct->mutable_linear());
+  }
+  if (changed) {
+    *canonical = context_->BuildMergedCanonicalLinearConstraint(ct->linear());
   }
 }
 
@@ -5095,34 +5129,6 @@ bool CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const int64_t ub_threshold =
       domain[domain.size() - 2] - ct_stats.min_activity;
   const int64_t lb_threshold = ct_stats.max_activity - domain[1];
-  if (ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude <
-      std::max(ub_threshold, lb_threshold)) {
-    // We also have other kind of coefficient strengthening.
-    // In something like 3x + 5y <= 6, the coefficient 5 can be changed to 6.
-    // And in 5x + 12y <= 12, the coeff 5 can be changed to 6 (not sure how to
-    // generalize this one).
-    if (domain.size() == 2 && ct_stats.min_coeff_magnitude > 1 &&
-        ct_stats.min_coeff_magnitude < ct_stats.max_coeff_magnitude) {
-      const int64_t rhs_min = domain[0];
-      const int64_t rhs_max = domain[1];
-      if (ct_stats.min_activity >= rhs_min &&
-          ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude >
-              rhs_max - ct_stats.min_activity) {
-        LowerThanCoeffStrengthening(/*from_lower_bound=*/true,
-                                    ct_stats.min_coeff_magnitude,
-                                    rhs_max - ct_stats.min_activity, ct);
-        return false;
-      }
-      if (ct_stats.max_activity <= rhs_max &&
-          ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude >
-              ct_stats.max_activity - rhs_min) {
-        LowerThanCoeffStrengthening(/*from_lower_bound=*/false,
-                                    ct_stats.min_coeff_magnitude,
-                                    ct_stats.max_activity - rhs_min, ct);
-        return false;
-      }
-    }
-  }
 
   // We need the constraint to be only bounded on one side in order to extract
   // enforcement literal.
@@ -8687,16 +8693,28 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
           !context_->ModelIsUnsat()) {
         DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(
             time_limit_, ct->linear().vars().size());
-        const PresolveContext::MergedCanonicalLinearConstraint canonical =
+        PresolveContext::MergedCanonicalLinearConstraint canonical =
             context_->BuildMergedCanonicalLinearConstraint(ct->linear());
         if (!canonical.terms.empty()) {
           const double n = static_cast<double>(canonical.terms.size());
           timer.Advance(static_cast<int64_t>(n * std::log(n)));
         }
 
+        // These reductions are ordered from cheapest/exact to most
+        // expensive/heuristic. `DetectSimpleSum` runs in O(|terms|) and should
+        // be handled before `LowerThanCoeffStrengthening` can merge magnitudes.
+        // `LowerThanCoeffStrengthening` should be handled next to potentially
+        // reduce magnitudes. `DetectTwoTermTilting` then finds an optimal and
+        // exact 2-term reduction. `TryToReduceCoefficientsOfLinearConstraint`
+        // runs last because its subset-sum DP is more expensive and its
+        // approximate GCD is heuristic.
+
         if (DetectSimpleSum(ct, canonical)) {
           return true;
         }
+
+        LowerThanCoeffStrengthening(ct, &canonical);
+        if (context_->ModelIsUnsat()) return false;
 
         if (DetectTwoTermTilting(ct, canonical)) {
           return true;

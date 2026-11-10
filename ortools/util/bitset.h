@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 
 namespace operations_research {
@@ -36,7 +37,6 @@ namespace operations_research {
 // Useful constants: word and double word will all bits set.
 static const uint64_t kAllBits64 = uint64_t{0xFFFFFFFFFFFFFFFF};
 static const uint64_t kAllBitsButLsb64 = uint64_t{0xFFFFFFFFFFFFFFFE};
-static const uint32_t kAllBits32 = 0xFFFFFFFFU;
 
 // Returns a word with only bit pos set.
 inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
@@ -44,7 +44,6 @@ inline uint32_t OneBit32(int pos) { return 1U << pos; }
 
 // Returns the word with only the least significant bit of n set.
 inline uint64_t LeastSignificantBitWord64(uint64_t n) { return n & ~(n - 1); }
-inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 
 namespace internal {
 
@@ -226,22 +225,10 @@ inline uint64_t OneRange64(uint64_t s, uint64_t e) {
   return (kAllBits64 << s) ^ ((kAllBits64 - 1) << e);
 }
 
-inline uint32_t OneRange32(uint32_t s, uint32_t e) {
-  DCHECK_LE(s, 31);
-  DCHECK_LE(e, 31);
-  DCHECK_LE(s, e);
-  return (kAllBits32 << s) ^ ((kAllBits32 - 1) << e);
-}
-
 // Returns a word with s least significant bits unset.
 inline uint64_t IntervalUp64(uint64_t s) {
   DCHECK_LE(s, 63);
   return kAllBits64 << s;
-}
-
-inline uint32_t IntervalUp32(uint32_t s) {
-  DCHECK_LE(s, 31);
-  return kAllBits32 << s;
 }
 
 // Returns a word with the s most significant bits unset.
@@ -250,212 +237,188 @@ inline uint64_t IntervalDown64(uint64_t s) {
   return kAllBits64 >> (63 - s);
 }
 
-inline uint32_t IntervalDown32(uint32_t s) {
-  DCHECK_LE(s, 31);
-  return kAllBits32 >> (31 - s);
-}
-
 // ----- Bitset operators -----
-// Bitset: array of uint32_t/uint64_t words
+// Bitset: array of uint64_t words
 
 // Bit operators used to manipulates bitsets.
 
-// Returns the bit number in the word computed by BitOffsetXX,
+// Returns the bit number in the word computed by BitOffset64,
 // corresponding to the bit at position pos in the bitset.
 // Note: '& 63' is faster than '% 64'
 // TODO(user): rename BitPos and BitOffset to something more understandable.
 inline uint32_t BitPos64(uint64_t pos) { return (pos & 63); }
-inline uint32_t BitPos32(uint32_t pos) { return (pos & 31); }
 
 // Returns the word number corresponding to bit number pos.
 inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
-inline uint32_t BitOffset32(uint32_t pos) { return (pos >> 5); }
 
 // Returns the number of words needed to store size bits.
 inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
-inline uint32_t BitLength32(uint32_t size) { return ((size + 31) >> 5); }
 
 // Returns the bit number in the bitset of the first bit of word number v.
 inline uint64_t BitShift64(uint64_t v) { return v << 6; }
-inline uint32_t BitShift32(uint32_t v) { return v << 5; }
 
 // Returns true if the bit pos is set in bitset.
 inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
-}
-inline bool IsBitSet32(const uint32_t* const bitset, uint32_t pos) {
-  return (bitset[BitOffset32(pos)] & OneBit32(BitPos32(pos)));
 }
 
 // Sets the bit pos to true in bitset.
 inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void SetBit32(uint32_t* const bitset, uint32_t pos) {
-  bitset[BitOffset32(pos)] |= OneBit32(BitPos32(pos));
-}
 
 // Sets the bit pos to false in bitset.
 inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-inline void ClearBit32(uint32_t* const bitset, uint32_t pos) {
-  bitset[BitOffset32(pos)] &= ~OneBit32(BitPos32(pos));
-}
 
 // Returns the number of bits set in bitset between positions start and end.
 uint64_t BitCountRange64(const uint64_t* bitset, uint64_t start, uint64_t end);
-uint32_t BitCountRange32(const uint32_t* bitset, uint32_t start, uint32_t end);
 
 // Returns true if no bits are set in bitset between start and end.
 bool IsEmptyRange64(const uint64_t* bitset, uint64_t start, uint64_t end);
-bool IsEmptyRange32(const uint32_t* bitset, uint32_t start, uint32_t end);
 
 // Returns the first bit set in bitset between start and max_bit.
 int64_t LeastSignificantBitPosition64(const uint64_t* bitset, uint64_t start,
                                       uint64_t end);
-int LeastSignificantBitPosition32(const uint32_t* bitset, uint32_t start,
-                                  uint32_t end);
 
 // Returns the last bit set in bitset between min_bit and start.
 int64_t MostSignificantBitPosition64(const uint64_t* bitset, uint64_t start,
                                      uint64_t end);
-int MostSignificantBitPosition32(const uint32_t* bitset, uint32_t start,
-                                 uint32_t end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
 int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* bitset,
                                             uint64_t start, uint64_t end);
-int32_t UnsafeLeastSignificantBitPosition32(const uint32_t* bitset,
-                                            uint32_t start, uint32_t end);
 
 int64_t UnsafeMostSignificantBitPosition64(const uint64_t* bitset,
                                            uint64_t start, uint64_t end);
-int32_t UnsafeMostSignificantBitPosition32(const uint32_t* bitset,
-                                           uint32_t start, uint32_t end);
 
-// This class is like an ITIVector<IndexType, bool> except that it provides a
-// more efficient way to iterate over the positions set to true. It achieves
-// this by caching the current uint64_t bucket in the Iterator and using
-// LeastSignificantBitPosition64() to iterate over the positions at 1 in this
-// bucket.
+// A dynamically sized bitset indexed by `IndexType` (an integral or strong
+// index type) and providing an efficient way to iterate over the true
+// positions. It is tuned for maximum speed, bound checking is performed though
+// DCHECK and is disabled in optimized build.
 template <typename IndexType = int64_t>
 class Bitset64 {
-  // When speed matter, caching the base pointer helps.
-  template <typename DataType>
-  class ViewImpl {
+  // Stores `size` and checks `0 <= index < size` in debug builds; empty struct
+  // in NDEBUG builds so `ViewImpl` below remains a single pointer in size.
+  class BoundsChecker {
    public:
-    explicit ViewImpl(const Bitset64* bitset)
-        : buckets_(bitset->buckets_.data()) {}
-    explicit ViewImpl(Bitset64* bitset) : buckets_(bitset->buckets_.data()) {}
-
-    bool operator[](IndexType i) const {
-      return buckets_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
-    }
-
-    void Clear(IndexType i) {
-      buckets_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
-    }
-
-    void Set(IndexType i) {
-      buckets_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
+#ifndef NDEBUG
+    constexpr explicit BoundsChecker(IndexType size) : size_(size) {}
+    void Check(IndexType index) const {
+      DCHECK_GE(index, IndexType(0));
+      DCHECK_LT(index, size_);
     }
 
    private:
+    const IndexType size_;
+#else
+    constexpr explicit BoundsChecker(IndexType) {}
+    constexpr void Check(IndexType) const {}
+#endif
+  };
+
+  // Lightweight view caching the underlying `buckets_.data()` pointer for tight
+  // loops. Performs bounds checking in debug builds and compiles down to a
+  // single pointer in optimized (NDEBUG) builds.
+  template <typename DataType>
+  class ViewImpl {
+   public:
+    bool operator[](IndexType index) const {
+      return GetBucket(index) & GetBitMask(index);
+    }
+    void Clear(IndexType index) { GetBucket(index) &= ~GetBitMask(index); }
+    void Set(IndexType index) { GetBucket(index) |= GetBitMask(index); }
+    DataType& GetBucket(IndexType index) const {
+      bounds_checker_.Check(index);
+      return buckets_[BitOffset64(Value(index))];
+    }
+
+   private:
+    friend class Bitset64;
+    ViewImpl(DataType* buckets, IndexType size)
+        : buckets_(buckets), bounds_checker_(size) {}
+
+    static DataType GetBitMask(IndexType index) {
+      return OneBit64(BitPos64(Value(index)));
+    }
+
     DataType* const buckets_;
+    ABSL_ATTRIBUTE_NO_UNIQUE_ADDRESS BoundsChecker bounds_checker_;
   };
 
  public:
   using ConstView = ViewImpl<const uint64_t>;
   using View = ViewImpl<uint64_t>;
 
-  Bitset64() : size_(), buckets_() {}
+  // Creates an empty bitset.
+  Bitset64() = default;
+
+  // Constructs a bitset of `size` bits, all initialized to `0`.
   explicit Bitset64(IndexType size)
-      : size_(Value(size) > 0 ? size : IndexType(0)),
-        buckets_(BitLength64(Value(size_))) {}
+      : size_(CheckAndClampSize(size)), buckets_(BitLength64(Value(size_))) {}
 
-  ConstView const_view() const { return ConstView(this); }
-  View view() { return View(this); }
+  // Returns a read-only or mutable view caching the underlying bucket pointer.
+  ConstView const_view() const { return ConstView(buckets_.data(), size_); }
+  View view() { return View(buckets_.data(), size_); }
 
-  // Returns how many bits this Bitset64 can hold.
+  // Returns the number of bits in this bitset.
   IndexType size() const { return size_; }
 
-  // Resizes the Bitset64 to the given number of bits. New bits are sets to 0.
+  // Resizes the Bitset64 to the given number of bits. New bits are sets to `0`.
   void resize(int size) { Resize(IndexType(size)); }
   void Resize(IndexType size) {
-    DCHECK_GE(Value(size), 0);
-    IndexType new_size = Value(size) > 0 ? size : IndexType(0);
-    if (new_size < size_ && Value(new_size) > 0) {
-      const int64_t new_buckets_size = BitLength64(Value(new_size));
-      const uint64_t bitmask = kAllBitsButLsb64
-                               << BitPos64(Value(new_size) - 1);
-      buckets_[new_buckets_size - 1] &= ~bitmask;
+    const IndexType new_size = CheckAndClampSize(size);
+    buckets_.resize(BitLength64(Value(new_size)));
+    if (const uint32_t bit_pos = BitPos64(Value(new_size));
+        new_size < size_ && bit_pos != 0) {
+      buckets_.back() &= OneBit64(bit_pos) - 1;
     }
     size_ = new_size;
-    buckets_.resize(BitLength64(Value(size_)), 0);
   }
 
-  // Resizes the bitset to `size` bits and resets all bits to 0.
+  // Resizes the bitset to `size` bits and clears all the bits.
   void ClearAndResize(IndexType size) {
-    DCHECK_GE(Value(size), 0);
-    size_ = Value(size) > 0 ? size : IndexType(0);
+    size_ = CheckAndClampSize(size);
     buckets_.resize(BitLength64(Value(size_)));
     ClearAll();
   }
 
-  // Resets all bits to 0.
+  // Clears all the bits.
   void ClearAll() {
     // Lowered by the compiler to a single `memset` call.
     absl::c_fill(buckets_, uint64_t{0});
   }
 
-  // Sets the bit at position i to 0.
-  void Clear(IndexType i) {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    buckets_.data()[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
-  }
+  // Clears the bit at position `index`.
+  void Clear(IndexType index) { view().Clear(index); }
 
-  // Sets bucket containing bit i to 0.
-  void ClearBucket(IndexType i) {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    buckets_.data()[BitOffset64(Value(i))] = 0;
-  }
+  // Clears all the bits in the bucket containing bit `index`.
+  void ClearBucket(IndexType index) { view().GetBucket(index) = uint64_t{0}; }
 
-  // Returns true if the bit at position i is set.
-  bool IsSet(IndexType i) const {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    return buckets_.data()[BitOffset64(Value(i))] &
-           OneBit64(BitPos64(Value(i)));
-  }
+  // Returns whether the bit at position `index` is set.
+  bool IsSet(IndexType index) const { return const_view()[index]; }
 
   // Same as IsSet().
-  bool operator[](IndexType i) const { return IsSet(i); }
+  bool operator[](IndexType index) const { return IsSet(index); }
 
-  // Sets the bit at position i to 1.
-  void Set(IndexType i) {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    // The c++ hardening is costly here, so we disable it.
-    buckets_.data()[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
-  }
+  // Sets the bit at position `index`.
+  void Set(IndexType index) { view().Set(index); }
 
-  // If value is true, sets the bit at position i to 1, sets it to 0 otherwise.
-  void Set(IndexType i, bool value) {
+  // Set the bit at position `ìndex` to 1 when value is `true`, and to 0
+  // otherwise.
+  void Set(IndexType index, bool value) {
     if (value) {
-      Set(i);
+      view().Set(index);
     } else {
-      Clear(i);
+      view().Clear(index);
     }
   }
 
-  // Copies bucket containing bit i from "other" to "this".
-  void CopyBucket(const Bitset64<IndexType>& other, IndexType i) {
-    const uint64_t offset = BitOffset64(Value(i));
-    buckets_[offset] = other.buckets_[offset];
+  // Copies the bucket containing bit `index` from `other` to `*this`.
+  void CopyBucket(const Bitset64<IndexType>& other, IndexType index) {
+    view().GetBucket(index) = other.const_view().GetBucket(index);
   }
 
   // Replaces `*this` with the bitwise intersection of `*this` and `other`. The
@@ -491,10 +454,10 @@ class Bitset64 {
                           [](uint64_t bucket) { return bucket == 0; });
   }
 
-  // Class to iterate over the bit positions at 1 of a Bitset64.
+  // Forward iterator over the indices of set bits.
   //
-  // IMPORTANT: Because the iterator "caches" the current uint64_t bucket, this
-  // will probably not do what you want if Bitset64 is modified while iterating.
+  // IMPORTANT: Because `Iterator` caches the current 64-bit bucket, modifying
+  // the bitset while iterating produces undefined results.
   class Iterator {
    public:
     // Make this iterator a std::forward_iterator, so it works with std::sample,
@@ -550,7 +513,7 @@ class Bitset64 {
         current_ = buckets_[bucket];
       }
 
-      // Computes the index and clear the least significant bit of current_.
+      // Computes the index and clears the least significant bit of current_.
       index_ = BitShift64(bucket) | LeastSignificantBitPosition64(current_);
       current_ &= current_ - 1;
       return *this;
@@ -565,17 +528,27 @@ class Bitset64 {
     uint64_t current_ = 0;
   };
 
-  // Allows range-based "for" loop on the non-zero positions:
-  //   for (const IndexType index : bitset) {}
+  // Returns iterators over the indices of bits set to 1, supporting range-based
+  // `for` loops: `for (const IndexType index : bitset)`.
   Iterator begin() const { return Iterator(*this); }
   Iterator end() const { return Iterator::EndIterator(*this); }
 
  private:
-  // Returns the value of the index type.
-  // This function is specialized below to work with IntType and int64_t.
-  static int Value(IndexType input);
+  static constexpr IndexType CheckAndClampSize(IndexType size) {
+    DCHECK_GE(size, IndexType(0));
+    return size > IndexType(0) ? size : IndexType(0);
+  }
 
-  IndexType size_;
+  // Returns the underlying integer value of `index` in its native width.
+  static constexpr auto Value(IndexType index) {
+    if constexpr (std::is_integral_v<IndexType>) {
+      return index;
+    } else {
+      return index.value();
+    }
+  }
+
+  IndexType size_ = IndexType(0);
   std::vector<uint64_t> buckets_;
 };
 
@@ -650,27 +623,6 @@ class BitQueue64 {
   int top_;
   std::vector<uint64_t> data_;
 };
-
-// The specialization of Value() for IntType and int64_t.
-template <typename IntType>
-inline int Bitset64<IntType>::Value(IntType input) {
-  DCHECK_GE(input.value(), 0);
-  return input.value();
-}
-template <>
-inline int Bitset64<int>::Value(int input) {
-  DCHECK_GE(input, 0);
-  return input;
-}
-template <>
-inline int Bitset64<int64_t>::Value(int64_t input) {
-  DCHECK_GE(input, 0);
-  return input;
-}
-template <>
-inline int Bitset64<size_t>::Value(size_t input) {
-  return input;
-}
 
 // A simple utility class to set/unset integer in a range [0, size).
 // This is optimized for sparsity.

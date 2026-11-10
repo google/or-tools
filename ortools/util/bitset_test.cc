@@ -18,8 +18,10 @@
 #include <bit>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "absl/base/optimization.h"
@@ -166,24 +168,19 @@ TYPED_TEST(BitIndex, TwoBits) {
 
 }  // namespace bitset_index
 
-TEST(BitsetTest, BitPos32) {
+TEST(BitsetTest, BitPos64) {
   for (int i = 0; i < 128; ++i) {
-    EXPECT_EQ(BitPos32(i), i % 32);
     EXPECT_EQ(BitPos64(i), i % 64);
   }
 }
 
 TEST(BitsetTest, BitOffset) {
   for (int i = 0; i < 128; ++i) {
-    EXPECT_EQ(BitOffset32(i), i / 32);
     EXPECT_EQ(BitOffset64(i), i / 64);
   }
 }
 
 TEST(BitsetTest, BitLength) {
-  EXPECT_EQ(0, BitLength32(0));
-  EXPECT_EQ(1, BitLength32(32));
-  EXPECT_EQ(2, BitLength32(33));
   EXPECT_EQ(0, BitLength64(0));
   EXPECT_EQ(1, BitLength64(33));
   EXPECT_EQ(1, BitLength64(64));
@@ -198,18 +195,12 @@ TEST(BitsetTest, OneBit) {
 }
 
 TEST(BitsetTest, IsBitSet) {
-  const uint32_t kBits32[2] = {0UL, 0xffffUL};
-  EXPECT_FALSE(IsBitSet32(kBits32, 0));
-  EXPECT_TRUE(IsBitSet32(kBits32, 32));
   const uint64_t kBits64[2] = {0UL, 0xffffffffUL};
   EXPECT_FALSE(IsBitSet64(kBits64, 0));
   EXPECT_TRUE(IsBitSet64(kBits64, 64));
 }
 
-TEST(BitsetTest, BitShift) {
-  EXPECT_EQ(1 << 5, BitShift32(1));
-  EXPECT_EQ(1 << 6, BitShift64(1));
-}
+TEST(BitsetTest, BitShift) { EXPECT_EQ(1 << 6, BitShift64(1)); }
 
 #define TEST_SET_BIT(size)                                       \
   TEST(BitsetTest, SetBit##size) {                               \
@@ -222,7 +213,6 @@ TEST(BitsetTest, BitShift) {
     }                                                            \
   }
 
-TEST_SET_BIT(32)
 TEST_SET_BIT(64)
 
 #undef TEST_SET_BIT
@@ -238,7 +228,6 @@ TEST_SET_BIT(64)
     }                                                            \
   }
 
-TEST_CLEAR_BIT(32);
 TEST_CLEAR_BIT(64);
 
 #undef TEST_CLEAR_BIT
@@ -260,7 +249,6 @@ TEST_CLEAR_BIT(64);
     }                                                          \
   }
 
-TEST_ONE_RANGE(32);
 TEST_ONE_RANGE(64);
 
 #undef TEST_ONE_RANGE
@@ -274,7 +262,6 @@ TEST_ONE_RANGE(64);
     }                                                        \
   }
 
-TEST_INTERVAL_UP(32)
 TEST_INTERVAL_UP(64)
 
 #undef TEST_INTERVAL_UP
@@ -288,7 +275,6 @@ TEST_INTERVAL_UP(64)
     }                                                       \
   }
 
-TEST_INTERVAL_DOWN(32)
 TEST_INTERVAL_DOWN(64)
 
 #undef TEST_INTERVAL_DOWN
@@ -320,7 +306,6 @@ TEST_INTERVAL_DOWN(64)
     }                                                           \
   }
 
-TEST_BIT_COUNT_RANGE(32)
 TEST_BIT_COUNT_RANGE(64)
 
 #undef TEST_BIT_COUNT_RANGE
@@ -352,7 +337,6 @@ TEST_BIT_COUNT_RANGE(64)
     }                                                          \
   }
 
-TEST_IS_EMPTY_RANGE(32)
 TEST_IS_EMPTY_RANGE(64)
 
 #undef TEST_IS_EMPTY_RANGE
@@ -399,7 +383,6 @@ TEST_IS_EMPTY_RANGE(64)
     }                                                                          \
   }
 
-TEST_SIGNIFICANT_BIT_POSITION(32)
 TEST_SIGNIFICANT_BIT_POSITION(64)
 
 #undef TEST_SIGNIFICANT_BIT_POSITION
@@ -627,6 +610,7 @@ TEST(Bitset64Test, Resize) {
 }
 
 TEST(Bitset64Test, Iterator) {
+  static_assert(std::forward_iterator<Bitset64<int>::Iterator>);
   Bitset64<int> bitset(5);
   bitset.Set(0);
   bitset.Set(2);
@@ -779,6 +763,100 @@ TEST(Bitset64Test, IteratorOverRandomBitSet) {
   }
   EXPECT_EQ(num_set_positions, num_iterated_positions);
 }
+
+static_assert(std::is_trivially_copyable_v<Bitset64<int>::View>);
+static_assert(std::is_trivially_copyable_v<Bitset64<int>::ConstView>);
+static_assert(std::is_trivially_copyable_v<Bitset64<TestIndex>::View>);
+static_assert(std::is_trivially_copyable_v<Bitset64<TestIndex>::ConstView>);
+#ifdef NDEBUG
+static_assert(sizeof(Bitset64<int>::View) == sizeof(uint64_t*));
+static_assert(sizeof(Bitset64<int>::ConstView) == sizeof(const uint64_t*));
+static_assert(sizeof(Bitset64<TestIndex>::View) == sizeof(uint64_t*));
+static_assert(sizeof(Bitset64<TestIndex>::ConstView) ==
+              sizeof(const uint64_t*));
+#endif
+
+TEST(Bitset64Test, Views) {
+  Bitset64<TestIndex> bitset(TestIndex(100));
+  Bitset64<TestIndex>::View view = bitset.view();
+  const Bitset64<TestIndex>::ConstView const_view = bitset.const_view();
+
+  view.Set(TestIndex(0));
+  view.Set(TestIndex(63));
+  view.Set(TestIndex(64));
+  view.Set(TestIndex(99));
+
+  EXPECT_TRUE(view[TestIndex(0)]);
+  EXPECT_TRUE(const_view[TestIndex(63)]);
+  EXPECT_TRUE(const_view[TestIndex(64)]);
+  EXPECT_TRUE(const_view[TestIndex(99)]);
+  EXPECT_FALSE(const_view[TestIndex(1)]);
+  EXPECT_FALSE(const_view[TestIndex(65)]);
+
+  view.Clear(TestIndex(63));
+  EXPECT_FALSE(view[TestIndex(63)]);
+  EXPECT_FALSE(const_view[TestIndex(63)]);
+  EXPECT_FALSE(bitset.IsSet(TestIndex(63)));
+
+  EXPECT_EQ(const_view.GetBucket(TestIndex(64)), OneBit64(0) | OneBit64(35));
+  view.GetBucket(TestIndex(64)) = 0;
+  EXPECT_FALSE(const_view[TestIndex(64)]);
+  EXPECT_FALSE(const_view[TestIndex(99)]);
+}
+
+#ifndef NDEBUG
+TEST(Bitset64DeathTest, ViewBoundsChecking) {
+  Bitset64<TestIndex> empty;
+  EXPECT_DEATH((void)empty.const_view()[TestIndex(0)], "");
+  EXPECT_DEATH((void)empty.view()[TestIndex(0)], "");
+  EXPECT_DEATH(empty.view().Set(TestIndex(0)), "");
+  EXPECT_DEATH(empty.view().Clear(TestIndex(0)), "");
+
+  // Size 10 allocates a single 64-bit bucket, so indices 10 and 63 lie within
+  // the allocated word but outside [0, size).
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  Bitset64<TestIndex>::View view = bitset.view();
+  const Bitset64<TestIndex>::ConstView const_view = bitset.const_view();
+
+  EXPECT_DEATH((void)view[TestIndex(-1)], "");
+  EXPECT_DEATH((void)view[TestIndex(10)], "");
+  EXPECT_DEATH((void)view[TestIndex(63)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(-1)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(10)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(63)], "");
+
+  EXPECT_DEATH(view.Set(TestIndex(-1)), "");
+  EXPECT_DEATH(view.Set(TestIndex(10)), "");
+  EXPECT_DEATH(view.Clear(TestIndex(-1)), "");
+  EXPECT_DEATH(view.Clear(TestIndex(10)), "");
+  EXPECT_DEATH((void)view.GetBucket(TestIndex(-1)), "");
+  EXPECT_DEATH((void)view.GetBucket(TestIndex(10)), "");
+  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(-1)), "");
+  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(10)), "");
+}
+
+TEST(Bitset64DeathTest, MemberBoundsChecking) {
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  EXPECT_DEATH((void)bitset[TestIndex(-1)], "");
+  EXPECT_DEATH((void)bitset[TestIndex(10)], "");
+  EXPECT_DEATH(bitset.Set(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.Set(TestIndex(10)), "");
+  EXPECT_DEATH(bitset.Clear(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.Clear(TestIndex(10)), "");
+  EXPECT_DEATH(bitset.ClearBucket(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.ClearBucket(TestIndex(10)), "");
+
+  Bitset64<TestIndex> smaller(TestIndex(5));
+  EXPECT_DEATH(bitset.CopyBucket(smaller, TestIndex(7)), "");
+}
+
+TEST(Bitset64DeathTest, NegativeSize) {
+  EXPECT_DEATH((Bitset64<TestIndex>(TestIndex(-1))), "");
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  EXPECT_DEATH(bitset.Resize(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.ClearAndResize(TestIndex(-1)), "");
+}
+#endif  // NDEBUG
 
 TEST(BitQueue64Test, BasicTest) {
   const int kSize = 100000;
