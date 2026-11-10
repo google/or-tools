@@ -90,7 +90,7 @@ std::shared_ptr<T> MakeSoloArenaShared() {
 
 class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  public:
-  explicit CpBaseModel(std::shared_ptr<CpModelProto> model_proto)
+  explicit CpBaseModel(const std::shared_ptr<CpModelProto>& model_proto)
       : model_proto_(model_proto == nullptr
                          ? MakeSoloArenaShared<CpModelProto>()
                          : model_proto),
@@ -179,7 +179,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
     return 0;  // Unreachable.
   }
 
-  void AssertVariableIsBoolean(std::shared_ptr<Literal> literal) {
+  void AssertVariableIsBoolean(const std::shared_ptr<Literal>& literal) {
     if (PositiveRef(literal->index()) >= model_proto_->variables_size()) {
       ThrowError(PyExc_TypeError, absl::StrCat("Invalid boolean literal: ",
                                                literal->ToString()));
@@ -197,44 +197,41 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
            py::isinstance(value, numpy_bool_type_);
   }
 
-  std::shared_ptr<Constraint> AddAllDifferentInternal(py::args exprs);
+  std::shared_ptr<Constraint> AddAllDifferentInternal(const py::args& exprs);
 
   std::shared_ptr<Constraint> AddAutomatonInternal(
-      py::sequence transition_expressions, int64_t starting_state,
+      const py::sequence& transition_expressions, int64_t starting_state,
       const std::vector<int64_t>& final_states,
       const std::vector<std::vector<int64_t>>& transition_triples);
 
   std::shared_ptr<Constraint> AddBoolArgumentConstraintInternal(
-      BoolArgumentConstraint type, py::args literals);
+      BoolArgumentConstraint type, const py::args& literals);
 
   std::shared_ptr<Constraint> AddBoundedLinearExpressionInternal(
       BoundedLinearExpression* ble);
 
   std::shared_ptr<Constraint> AddElementInternal(const py::handle& index,
-                                                 py::sequence exprs,
+                                                 const py::sequence& exprs,
                                                  const py::handle& target);
 
-  std::shared_ptr<Constraint> AddInverseInternal(py::sequence direct,
-                                                 py::sequence inverse);
+  std::shared_ptr<Constraint> AddInverseInternal(const py::sequence& direct,
+                                                 const py::sequence& inverse);
 
   std::shared_ptr<Constraint> AddLinearArgumentConstraintInternal(
-      LinearArgumentConstraint type, const py::handle& target, py::args exprs);
+      LinearArgumentConstraint type, const py::handle& target,
+      const py::args& exprs);
 
-  std::shared_ptr<Constraint> AddReservoirInternal(py::sequence times,
-                                                   py::sequence level_changes,
-                                                   py::sequence actives,
-                                                   int64_t min_level,
-                                                   int64_t max_level);
+  std::shared_ptr<Constraint> AddReservoirInternal(
+      const py::sequence& times, const py::sequence& level_changes,
+      const py::sequence& actives, int64_t min_level, int64_t max_level);
 
   std::shared_ptr<Constraint> AddTableInternal(
-      py::sequence exprs, const std::vector<std::vector<int64_t>>& tuples,
-      bool negated);
+      const py::sequence& exprs,
+      const std::vector<std::vector<int64_t>>& tuples, bool negated);
 
-  std::shared_ptr<IntervalVar> NewIntervalVarInternal(const std::string& name,
-                                                      const py::handle& start,
-                                                      const py::handle& size,
-                                                      const py::handle& end,
-                                                      py::sequence literals);
+  std::shared_ptr<IntervalVar> NewIntervalVarInternal(
+      const std::string& name, const py::handle& start, const py::handle& size,
+      const py::handle& end, const py::sequence& literals);
 
   std::shared_ptr<Constraint> AddNoOverlapInternal(
       const std::vector<std::shared_ptr<IntervalVar>>& intervals);
@@ -245,7 +242,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
 
   std::shared_ptr<Constraint> AddCumulativeInternal(
       const std::vector<std::shared_ptr<IntervalVar>>& intervals,
-      py::sequence demands, const py::handle& capacity);
+      const py::sequence& demands, const py::handle& capacity);
 
   std::shared_ptr<Constraint> AddCircuitInternal(
       const std::vector<std::tuple<int, int, py::handle>>& arcs);
@@ -301,7 +298,7 @@ void LinearExprToProto(const py::handle& arg, int64_t multiplier,
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddAllDifferentInternal(
-    py::args exprs) {
+    const py::args& exprs) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   if (exprs.size() == 1 && py::isinstance<py::iterable>(exprs[0])) {
@@ -317,7 +314,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddAllDifferentInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddAutomatonInternal(
-    py::sequence transition_expressions, int64_t starting_state,
+    const py::sequence& transition_expressions, int64_t starting_state,
     const std::vector<int64_t>& final_states,
     const std::vector<std::vector<int64_t>>& transition_triples) {
   const int ct_index = model_proto_->constraints_size();
@@ -342,7 +339,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddAutomatonInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddBoolArgumentConstraintInternal(
-    BoolArgumentConstraint type, py::args literals) {
+    BoolArgumentConstraint type, const py::args& literals) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   BoolArgumentProto* proto = nullptr;
@@ -401,7 +398,8 @@ std::shared_ptr<Constraint> CpBaseModel::AddBoundedLinearExpressionInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddElementInternal(
-    const py::handle& index, py::sequence exprs, const py::handle& target) {
+    const py::handle& index, const py::sequence& exprs,
+    const py::handle& target) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   LinearExprToProto(index, 1, ct->mutable_element()->mutable_linear_index());
@@ -413,7 +411,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddElementInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
-    py::sequence direct, py::sequence inverse) {
+    const py::sequence& direct, const py::sequence& inverse) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   ct->mutable_inverse()->mutable_f_direct()->Reserve(direct.size());
@@ -428,7 +426,8 @@ std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
-    LinearArgumentConstraint type, const py::handle& target, py::args exprs) {
+    LinearArgumentConstraint type, const py::handle& target,
+    const py::args& exprs) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   LinearArgumentProto* proto;
@@ -471,8 +470,8 @@ std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddReservoirInternal(
-    py::sequence times, py::sequence level_changes, py::sequence actives,
-    int64_t min_level, int64_t max_level) {
+    const py::sequence& times, const py::sequence& level_changes,
+    const py::sequence& actives, int64_t min_level, int64_t max_level) {
   const int ct_index = model_proto_->constraints_size();
   ReservoirConstraintProto* proto =
       model_proto_->add_constraints()->mutable_reservoir();
@@ -494,7 +493,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddReservoirInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddTableInternal(
-    py::sequence exprs, const std::vector<std::vector<int64_t>>& tuples,
+    const py::sequence& exprs, const std::vector<std::vector<int64_t>>& tuples,
     bool negated) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
@@ -514,7 +513,8 @@ std::shared_ptr<Constraint> CpBaseModel::AddTableInternal(
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
 
-std::string ShortName(int literal, std::shared_ptr<CpModelProto> model_proto) {
+std::string ShortName(int literal,
+                      const std::shared_ptr<CpModelProto>& model_proto) {
   const int var = PositiveRef(literal);
   const IntegerVariableProto& var_proto = model_proto->variables(var);
   const std::string& var_name =
@@ -527,7 +527,7 @@ std::string ShortName(int literal, std::shared_ptr<CpModelProto> model_proto) {
 }
 
 std::string ShortExprName(const LinearExpressionProto& expr,
-                          std::shared_ptr<CpModelProto> model_proto) {
+                          const std::shared_ptr<CpModelProto>& model_proto) {
   if (expr.vars().empty()) {
     return absl::StrCat(expr.offset());
   } else {
@@ -556,7 +556,7 @@ std::string ShortExprName(const LinearExpressionProto& expr,
 
 std::shared_ptr<LinearExpr> RebuildFromLinearExpressionProto(
     const LinearExpressionProto& proto,
-    std::shared_ptr<CpModelProto> model_proto) {
+    const std::shared_ptr<CpModelProto>& model_proto) {
   if (proto.vars().empty()) {
     return LinearExpr::ConstantInt(proto.offset());
   } else if (proto.vars_size() == 1) {
@@ -577,7 +577,7 @@ std::shared_ptr<LinearExpr> RebuildFromLinearExpressionProto(
 class IntervalVar {
  public:
   IntervalVar(std::shared_ptr<CpModelProto> model_proto, int index)
-      : model_proto_(model_proto), index_(index) {
+      : model_proto_(std::move(model_proto)), index_(index) {
     DCHECK_GE(index, 0);
   }
 
@@ -654,7 +654,7 @@ class IntervalVar {
 
 std::shared_ptr<IntervalVar> CpBaseModel::NewIntervalVarInternal(
     const std::string& name, const py::handle& start, const py::handle& size,
-    const py::handle& end, py::sequence literals) {
+    const py::handle& end, const py::sequence& literals) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   if (!name.empty()) ct->set_name(name);
@@ -713,7 +713,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddNoOverlap2DInternal(
 
 std::shared_ptr<Constraint> CpBaseModel::AddCumulativeInternal(
     const std::vector<std::shared_ptr<IntervalVar>>& intervals,
-    const py::sequence demands, const py::handle& capacity) {
+    const py::sequence& demands, const py::handle& capacity) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
@@ -769,7 +769,7 @@ class Constraint {
   // We need to store the CpBaseModel to convert enforcement literals to
   // indices.
   Constraint(std::shared_ptr<CpBaseModel> model, int index)
-      : model_(model), index_(index) {}
+      : model_(std::move(model)), index_(index) {}
 
   int index() const { return index_; }
 
@@ -928,7 +928,7 @@ void DefinePybindWrapperForConstraints(py::module& m) {
       .def(
           "only_enforce_if",
           [](std::shared_ptr<Constraint> self,
-             std::shared_ptr<Literal> literal) {
+             const std::shared_ptr<Literal>& literal) {
             self->proto()->add_enforcement_literal(literal->index());
             return self;
           },
@@ -955,7 +955,7 @@ void DefinePybindWrapperForConstraints(py::module& m) {
       .def(
           "only_enforce_if",
           [](std::shared_ptr<Constraint> self,
-             py::Args<BooleanLiteral> literals) {
+             const py::Args<BooleanLiteral>& literals) {
             if (literals.size() == 1 &&
                 py::isinstance<py::sequence>(literals[0])) {
               py::sequence seq = literals[0].cast<py::sequence>();
@@ -995,7 +995,7 @@ void DefinePybindWrapperForConstraints(py::module& m) {
              return self;
            })
       .def("OnlyEnforceIf", [](std::shared_ptr<Constraint> self,
-                               py::Args<BooleanLiteral> literals) {
+                               const py::Args<BooleanLiteral>& literals) {
         if (literals.size() == 1 && py::isinstance<py::sequence>(literals[0])) {
           py::sequence seq = literals[0].cast<py::sequence>();
           for (const auto& literal : seq) {
@@ -1085,11 +1085,11 @@ Raises:
       .def("__str__", &IntervalVar::ToString)
       .def("__repr__", &IntervalVar::DebugString)
       .def(py::pickle(
-          [](std::shared_ptr<IntervalVar> p) {  // __getstate__
+          [](const std::shared_ptr<IntervalVar>& p) {  // __getstate__
             /* Return a tuple that fully encodes the state of the object */
             return py::make_tuple(p->model_proto(), p->index());
           },
-          [](py::tuple t) {  // __setstate__
+          [](const py::tuple& t) {  // __setstate__
             if (t.size() != 2) throw std::runtime_error("Invalid state!");
 
             return std::make_shared<IntervalVar>(
@@ -1133,13 +1133,12 @@ Raises:
   m.def(
       "rebuild_from_linear_expression_proto",
       [](const LinearExpressionProto& proto,
-         std::shared_ptr<CpModelProto> model_proto)
+         const std::shared_ptr<CpModelProto>& model_proto)
           -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
         if (proto.vars().empty()) {
           return proto.offset();
         } else {
-          return RebuildFromLinearExpressionProto(proto,
-                                                  std::move(model_proto));
+          return RebuildFromLinearExpressionProto(proto, model_proto);
         }
       },
       py::arg("proto"), py::arg("model_proto"));
