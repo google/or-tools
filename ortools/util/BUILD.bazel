@@ -66,6 +66,7 @@ or_cc_library(
     hdrs = ["bitset.h"],
     deps = [
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
     ],

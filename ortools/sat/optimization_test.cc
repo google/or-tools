@@ -184,6 +184,129 @@ TEST(MinimizeCoreWithSearchTest, RemovesIrrelevantAmoGroupAndPartialAmoMember) {
   EXPECT_THAT(core, ElementsAre(Literal(+4), Literal(+7)));
 }
 
+TEST(OptimizeWithSatEncodingTest, CoverProbingAndStratification) {
+  Model model;
+  SatParameters* parameters = model.GetOrCreate<SatParameters>();
+  parameters->set_cover_optimization(true);
+  parameters->set_max_sat_stratification(SatParameters::STRATIFICATION_DESCENT);
+  parameters->set_optimize_with_core(true);
+
+  IntegerVariable x = model.Add(NewIntegerVariable(0, 2));
+  IntegerVariable y = model.Add(NewIntegerVariable(0, 2));
+  IntegerVariable obj = model.Add(NewIntegerVariable(0, 300));
+
+  CpModelProto cp_model;
+  cp_model.mutable_objective()->add_vars(0);
+  cp_model.mutable_objective()->add_coeffs(1);
+  model.GetOrCreate<SharedResponseManager>()->InitializeObjective(cp_model);
+
+  auto* encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+
+  const Literal x_ge_1 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x, IntegerValue(1)));
+  const Literal x_ge_2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x, IntegerValue(2)));
+  const Literal y_ge_1 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(y, IntegerValue(1)));
+  const Literal y_ge_2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(y, IntegerValue(2)));
+
+  // Constraint: x >= 1
+  EXPECT_TRUE(sat_solver->AddUnitClause(x_ge_1));
+
+  // Constraint: x + y >= 2 (if x < 2 then y >= 1; if x < 1 then y >= 2)
+  sat_solver->AddProblemClause({x_ge_2, y_ge_1});
+  sat_solver->AddProblemClause({x_ge_1, y_ge_2});
+
+  model.GetOrCreate<SearchHeuristics>()->fixed_search =
+      FirstUnassignedVarAtItsMinHeuristic({x, y}, &model);
+  ConfigureSearchHeuristics(&model);
+
+  std::vector<IntegerVariable> vars = {x, y};
+  std::vector<IntegerValue> coeffs = {IntegerValue(100), IntegerValue(10)};
+
+  int num_solutions = 0;
+  IntegerValue best_solution_obj = kMaxIntegerValue;
+  CoreBasedOptimizer core(
+      obj, vars, coeffs,
+      [&model, x, y, &num_solutions, &best_solution_obj]() {
+        ++num_solutions;
+        best_solution_obj =
+            IntegerValue(100 * model.Get(Value(x)) + 10 * model.Get(Value(y)));
+      },
+      &model);
+
+  SatSolver::Status status = core.Optimize();
+  EXPECT_EQ(status, SatSolver::Status::INFEASIBLE);  // Optimal proved.
+  EXPECT_GT(num_solutions, 0);
+  EXPECT_EQ(best_solution_obj, IntegerValue(110));
+}
+
+TEST(OptimizeWithSatEncodingTest, MultiStepLazyCoverProbing) {
+  Model model;
+  SatParameters* parameters = model.GetOrCreate<SatParameters>();
+  parameters->set_cover_optimization(true);
+  parameters->set_max_sat_stratification(SatParameters::STRATIFICATION_NONE);
+  parameters->set_optimize_with_core(true);
+
+  IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  IntegerVariable y = model.Add(NewIntegerVariable(0, 4));
+  IntegerVariable z = model.Add(NewIntegerVariable(0, 4));
+  IntegerVariable obj = model.Add(NewIntegerVariable(0, 1000));
+
+  CpModelProto cp_model;
+  cp_model.mutable_objective()->add_vars(0);
+  cp_model.mutable_objective()->add_coeffs(1);
+  model.GetOrCreate<SharedResponseManager>()->InitializeObjective(cp_model);
+
+  auto* encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  const Literal helper(sat_solver->NewBooleanVariable(), true);
+
+  // Enforce x >= 3 via a 1-conflict disjunction so level-0 propagation does not
+  // fix x >= 1..3 upfront, exercising multi-step lazy GenericNode cover probes.
+  const Literal x_ge_3 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x, IntegerValue(3)));
+  sat_solver->AddProblemClause({x_ge_3, helper});
+  sat_solver->AddProblemClause({x_ge_3, helper.Negated()});
+
+  // Enforce y + z >= 4 via clauses so a size-2 LazyCoreNode (initially
+  // size() == 0) must be probed across multiple cover steps (sum >= 1..4).
+  for (int vy = 0; vy <= 4; ++vy) {
+    for (int vz = 0; vz <= 4; ++vz) {
+      if (vy + vz >= 4) continue;
+      const Literal y_ge = encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(y, IntegerValue(vy + 1)));
+      const Literal z_ge = encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(z, IntegerValue(vz + 1)));
+      sat_solver->AddProblemClause({y_ge, z_ge});
+    }
+  }
+
+  model.GetOrCreate<SearchHeuristics>()->fixed_search =
+      FirstUnassignedVarAtItsMinHeuristic({x, y, z}, &model);
+  ConfigureSearchHeuristics(&model);
+
+  int num_solutions = 0;
+  IntegerValue best_solution_obj = kMaxIntegerValue;
+  CoreBasedOptimizer core(
+      obj, {x, y, z}, {IntegerValue(50), IntegerValue(10), IntegerValue(10)},
+      [&model, x, y, z, &num_solutions, &best_solution_obj]() {
+        ++num_solutions;
+        best_solution_obj =
+            IntegerValue(50 * model.Get(Value(x)) + 10 * model.Get(Value(y)) +
+                         10 * model.Get(Value(z)));
+      },
+      &model);
+
+  EXPECT_EQ(core.Optimize(), SatSolver::Status::INFEASIBLE);
+  EXPECT_GT(num_solutions, 0);
+  EXPECT_EQ(best_solution_obj, IntegerValue(190));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->LowerBound(obj),
+            IntegerValue(190));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

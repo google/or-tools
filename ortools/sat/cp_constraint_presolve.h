@@ -236,8 +236,15 @@ class CpConstraintPresolver {
   // strengthened and the constraint remains an active linear constraint.
   bool ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);
-  void LowerThanCoeffStrengthening(bool from_lower_bound, int64_t min_magnitude,
-                                   int64_t rhs, ConstraintProto* ct);
+
+  // Strengthens or reduces coefficients of a one-sided linear constraint (with
+  // at least 3 distinct coefficient magnitudes) when large terms force all
+  // other terms to their bounds (a "partial at-most-one" structure), or fixes
+  // variables whose coefficient exceeds the slack on unenforced constraints.
+  // Updates `*canonical` in place if `ct` or variable domains are modified.
+  void LowerThanCoeffStrengthening(
+      ConstraintProto* ct,
+      PresolveContext::MergedCanonicalLinearConstraint* canonical);
 
   void RunPropagatorsForConstraint(const ConstraintProto& ct);
 

@@ -938,9 +938,6 @@ class SharedClausesManager {
   // increased each time a new Boolean equivalence relation is found.
   std::vector<int> GetRepresentatives(int64_t* timestamp = nullptr);
 
-  // Returns the number of Boolean equivalences found so far.
-  int64_t NumEquivalences() const;
-
   // Returns new glue clauses.
   // The spans are guaranteed to remain valid until the next call to
   // SyncClauses().

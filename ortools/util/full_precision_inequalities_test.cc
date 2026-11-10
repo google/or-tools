@@ -2060,5 +2060,166 @@ TEST(TightSumTest, Negate) {
             std::make_pair(kInf, kInf));
 }
 
+TEST(FastILogBTest, SpecialValues) {
+  EXPECT_EQ(FastILogB(0.0), std::numeric_limits<int>::min());
+  EXPECT_EQ(FastILogB(-0.0), std::numeric_limits<int>::min());
+  EXPECT_EQ(FastILogB(kInf), std::numeric_limits<int>::max());
+  EXPECT_EQ(FastILogB(-kInf), std::numeric_limits<int>::max());
+}
+
+TEST(FastILogBTest, NormalAndSubnormalValues) {
+  constexpr double kDenormMin = std::numeric_limits<double>::denorm_min();
+  constexpr double kMinNormal = std::numeric_limits<double>::min();
+  constexpr double kMaxNormal = std::numeric_limits<double>::max();
+
+  // Subnormal boundaries: [2^-1074, 2^-1022).
+  EXPECT_EQ(FastILogB(kDenormMin), -1074);
+  EXPECT_EQ(FastILogB(-kDenormMin), -1074);
+  EXPECT_EQ(FastILogB(2.0 * kDenormMin), -1073);
+  EXPECT_EQ(FastILogB(-2.0 * kDenormMin), -1073);
+  EXPECT_EQ(FastILogB(3.0 * kDenormMin), -1073);
+  EXPECT_EQ(FastILogB(-3.0 * kDenormMin), -1073);
+  const double kMaxSubnormal = std::nextafter(kMinNormal, 0.0);
+  EXPECT_EQ(FastILogB(kMaxSubnormal), -1023);
+  EXPECT_EQ(FastILogB(-kMaxSubnormal), -1023);
+
+  // Normal boundaries: [2^-1022, 2^1024).
+  EXPECT_EQ(FastILogB(kMinNormal), -1022);
+  EXPECT_EQ(FastILogB(-kMinNormal), -1022);
+  EXPECT_EQ(FastILogB(0.5), -1);
+  EXPECT_EQ(FastILogB(-0.5), -1);
+  EXPECT_EQ(FastILogB(std::nextafter(1.0, 0.0)), -1);
+  EXPECT_EQ(FastILogB(-std::nextafter(1.0, 0.0)), -1);
+  EXPECT_EQ(FastILogB(1.0), 0);
+  EXPECT_EQ(FastILogB(-1.0), 0);
+  EXPECT_EQ(FastILogB(1.5), 0);
+  EXPECT_EQ(FastILogB(-1.5), 0);
+  EXPECT_EQ(FastILogB(std::nextafter(2.0, 1.0)), 0);
+  EXPECT_EQ(FastILogB(-std::nextafter(2.0, 1.0)), 0);
+  EXPECT_EQ(FastILogB(2.0), 1);
+  EXPECT_EQ(FastILogB(-2.0), 1);
+  EXPECT_EQ(FastILogB(kMaxNormal), 1023);
+  EXPECT_EQ(FastILogB(-kMaxNormal), 1023);
+}
+
+TEST(FastOneExpTest, NormalSubnormalAndOutOfRangeExponents) {
+  constexpr double kDenormMin = std::numeric_limits<double>::denorm_min();
+  constexpr double kMinNormal = std::numeric_limits<double>::min();
+
+  // Underflow (< -1074).
+  EXPECT_EQ(FastOneExp(std::numeric_limits<int>::min()), 0.0);
+  EXPECT_EQ(FastOneExp(-10000), 0.0);
+  EXPECT_EQ(FastOneExp(-1075), 0.0);
+
+  // Subnormal powers of two [-1074, -1023].
+  EXPECT_EQ(FastOneExp(-1074), kDenormMin);
+  EXPECT_EQ(FastOneExp(-1073), 2.0 * kDenormMin);
+  EXPECT_EQ(FastOneExp(-1050), std::ldexp(1.0, -1050));
+  EXPECT_EQ(FastOneExp(-1023), std::ldexp(1.0, -1023));
+
+  // Normal powers of two [-1022, 1023].
+  EXPECT_EQ(FastOneExp(-1022), kMinNormal);
+  EXPECT_EQ(FastOneExp(-1), 0.5);
+  EXPECT_EQ(FastOneExp(0), 1.0);
+  EXPECT_EQ(FastOneExp(1), 2.0);
+  EXPECT_EQ(FastOneExp(52), std::ldexp(1.0, 52));
+  EXPECT_EQ(FastOneExp(1023), std::ldexp(1.0, 1023));
+
+  // Overflow (> 1023).
+  EXPECT_EQ(FastOneExp(1024), kInf);
+  EXPECT_EQ(FastOneExp(10000), kInf);
+  EXPECT_EQ(FastOneExp(std::numeric_limits<int>::max()), kInf);
+}
+
+TEST(FastLdExpTest, ZeroAndInfinities) {
+  for (const int exp : {std::numeric_limits<int>::min(), -2000, -1, 0, 1, 2000,
+                        std::numeric_limits<int>::max()}) {
+    EXPECT_EQ(FastLdExp(0.0, exp), 0.0);
+    EXPECT_FALSE(std::signbit(FastLdExp(0.0, exp)));
+    EXPECT_EQ(FastLdExp(-0.0, exp), 0.0);
+    EXPECT_FALSE(std::signbit(FastLdExp(-0.0, exp)));
+    EXPECT_EQ(FastLdExp(kInf, exp), kInf);
+    EXPECT_EQ(FastLdExp(-kInf, exp), -kInf);
+  }
+}
+
+TEST(FastLdExpTest, NormalInputsToNormalSubnormalUnderflowAndOverflow) {
+  constexpr double kDenormMin = std::numeric_limits<double>::denorm_min();
+  constexpr double kMinNormal = std::numeric_limits<double>::min();
+  constexpr double kMaxNormal = std::numeric_limits<double>::max();
+
+  // Normal to normal.
+  EXPECT_EQ(FastLdExp(1.5, 0), 1.5);
+  EXPECT_EQ(FastLdExp(-1.5, 0), -1.5);
+  EXPECT_EQ(FastLdExp(1.5, 3), 12.0);
+  EXPECT_EQ(FastLdExp(-1.5, -2), -0.375);
+  EXPECT_EQ(FastLdExp(kMinNormal, 2045), std::ldexp(1.0, 1023));
+  EXPECT_EQ(FastLdExp(std::ldexp(1.0, 1023), -2045), kMinNormal);
+
+  // Normal to overflow.
+  EXPECT_EQ(FastLdExp(1.0, 1024), kInf);
+  EXPECT_EQ(FastLdExp(-1.0, 1024), -kInf);
+  EXPECT_EQ(FastLdExp(kMinNormal, 2046), kInf);
+  EXPECT_EQ(FastLdExp(-kMinNormal, 2046), -kInf);
+  EXPECT_EQ(FastLdExp(1.5, std::numeric_limits<int>::max()), kInf);
+  EXPECT_EQ(FastLdExp(-1.5, std::numeric_limits<int>::max()), -kInf);
+
+  // Normal to subnormal (exact and truncated toward zero).
+  EXPECT_EQ(FastLdExp(1.0, -1023), std::ldexp(1.0, -1023));
+  EXPECT_EQ(FastLdExp(-1.0, -1023), -std::ldexp(1.0, -1023));
+  EXPECT_EQ(FastLdExp(1.0, -1074), kDenormMin);
+  EXPECT_EQ(FastLdExp(-1.0, -1074), -kDenormMin);
+  EXPECT_EQ(FastLdExp(1.75, -1074), kDenormMin);
+  EXPECT_EQ(FastLdExp(-1.75, -1074), -kDenormMin);
+  EXPECT_EQ(FastLdExp(1.75, -1073), 3.0 * kDenormMin);
+  EXPECT_EQ(FastLdExp(-1.75, -1073), -3.0 * kDenormMin);
+  EXPECT_EQ(FastLdExp(kMaxNormal, -2097), kDenormMin);
+  EXPECT_EQ(FastLdExp(-kMaxNormal, -2097), -kDenormMin);
+
+  // Normal to underflow (returns +0.0).
+  EXPECT_EQ(FastLdExp(1.0, -1075), 0.0);
+  EXPECT_FALSE(std::signbit(FastLdExp(-1.0, -1075)));
+  EXPECT_EQ(FastLdExp(kMaxNormal, -2098), 0.0);
+  EXPECT_FALSE(std::signbit(FastLdExp(-kMaxNormal, -2098)));
+  EXPECT_EQ(FastLdExp(1.0, std::numeric_limits<int>::min()), 0.0);
+  EXPECT_FALSE(std::signbit(FastLdExp(-1.0, std::numeric_limits<int>::min())));
+}
+
+TEST(FastLdExpTest, SubnormalInputsToZeroSubnormalNormalAndOverflow) {
+  constexpr double kDenormMin = std::numeric_limits<double>::denorm_min();
+  constexpr double kMinNormal = std::numeric_limits<double>::min();
+
+  // Subnormal with negative exponent (truncating to smaller subnormal or +0.0).
+  EXPECT_EQ(FastLdExp(3.0 * kDenormMin, -1), kDenormMin);
+  EXPECT_EQ(FastLdExp(-3.0 * kDenormMin, -1), -kDenormMin);
+  EXPECT_EQ(FastLdExp(kDenormMin, -1), 0.0);
+  EXPECT_EQ(FastLdExp(-kDenormMin, -1), 0.0);
+  EXPECT_FALSE(std::signbit(FastLdExp(-kDenormMin, -1)));
+  EXPECT_EQ(FastLdExp(kDenormMin, -52), 0.0);
+  EXPECT_FALSE(std::signbit(FastLdExp(-kDenormMin, -52)));
+  EXPECT_EQ(FastLdExp(kDenormMin, std::numeric_limits<int>::min()), 0.0);
+
+  // Subnormal remaining subnormal (0 <= exponent < s).
+  EXPECT_EQ(FastLdExp(kDenormMin, 0), kDenormMin);
+  EXPECT_EQ(FastLdExp(-kDenormMin, 0), -kDenormMin);
+  EXPECT_EQ(FastLdExp(kDenormMin, 10), std::ldexp(kDenormMin, 10));
+  EXPECT_EQ(FastLdExp(-3.0 * kDenormMin, 50),
+            std::ldexp(-3.0 * kDenormMin, 50));
+
+  // Subnormal promoted to normal (exponent >= s).
+  EXPECT_EQ(FastLdExp(kDenormMin, 52), kMinNormal);
+  EXPECT_EQ(FastLdExp(-kDenormMin, 52), -kMinNormal);
+  EXPECT_EQ(FastLdExp(3.0 * kDenormMin, 51), 1.5 * kMinNormal);
+  EXPECT_EQ(FastLdExp(-3.0 * kDenormMin, 51), -1.5 * kMinNormal);
+  EXPECT_EQ(FastLdExp(kDenormMin, 2097), std::ldexp(1.0, 1023));
+  EXPECT_EQ(FastLdExp(-kDenormMin, 2097), -std::ldexp(1.0, 1023));
+
+  // Subnormal promoted to overflow.
+  EXPECT_EQ(FastLdExp(kDenormMin, 2098), kInf);
+  EXPECT_EQ(FastLdExp(-kDenormMin, 2098), -kInf);
+  EXPECT_EQ(FastLdExp(kDenormMin, std::numeric_limits<int>::max()), kInf);
+  EXPECT_EQ(FastLdExp(-kDenormMin, std::numeric_limits<int>::max()), -kInf);
+}
+
 }  // namespace
 }  // namespace operations_research

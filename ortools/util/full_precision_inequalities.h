@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 #define ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 
+#include <bit>
 #include <cmath>
 #include <compare>
 #include <cstdint>
@@ -42,6 +43,18 @@ double FastStepUp(double v);
 // Function that is equivalent to std::nextafter(v, -kInf), but significantly
 // faster since it doesn't need to set or check CPU flags.
 double FastStepDown(double v);
+
+// Returns `e` such that `2^e <= |v| < 2^(e + 1)`.
+// For v = 0, returns `min_int`. For inf, returns `max_int`.
+int FastILogB(double v);
+
+// Returns `2^exponent` if representable, otherwise 0 or infinity (depending on
+// the sign of the exponent).
+double FastOneExp(int exponent);
+
+// Returns the closest double to `v * 2^exponent` (infinity if overflow).
+// It is truncated if the result is subnormal.
+double FastLdExp(double v, int exponent);
 
 // Represents a power of two, i.e. 2^exponent. Used for the API of TightSum.
 // Supports between 2^-15 and 2^15 (the reason is to avoid overflows in the
@@ -322,6 +335,83 @@ inline double FastStepDown(const double v) {
   if (i == 0) i = kNegZeroBits;
   i += (i != kNegInfBits) ? ((i >= 0) ? -1 : 1) : 0;
   return absl::bit_cast<double>(i);
+}
+
+inline int FastILogB(const double v) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  DCHECK(!std::isnan(v));
+
+  const uint64_t i = absl::bit_cast<uint64_t>(v);
+  const int biased_exp = (i >> 52) & 0x7ff;
+  // inf or NaN.
+  if (biased_exp == 2047) return std::numeric_limits<int>::max();
+  if (biased_exp > 0) return biased_exp - 1023;
+  const uint64_t mantissa = i & ((int64_t{1} << 52) - 1);
+  // 0.
+  if (mantissa == 0) return std::numeric_limits<int>::min();
+  return -1011 - std::countl_zero(mantissa);
+}
+
+inline double FastOneExp(const int exponent) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+
+  if (exponent > 1023) return std::numeric_limits<double>::infinity();
+  if (exponent >= -1022) {
+    return absl::bit_cast<double>(static_cast<uint64_t>(exponent + 1023) << 52);
+  }
+  if (exponent >= -1074) {
+    return absl::bit_cast<double>(uint64_t{1} << (exponent + 1074));
+  }
+  return 0.0;
+}
+
+inline double FastLdExp(const double v, const int exponent) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  constexpr uint64_t kMantissaMask = (int64_t{1} << 52) - 1;
+  DCHECK(!std::isnan(v));
+
+  if (v == 0.0) return 0.0;
+  if (!std::isfinite(v)) return v;
+
+  const uint64_t i = absl::bit_cast<uint64_t>(v);
+  const int64_t biased_exp = (i >> 52) & 0x7ff;
+  int64_t new_biased_exp = biased_exp + exponent;
+  if (new_biased_exp <= -52) return 0.0;
+  if (biased_exp > 0) {
+    if (new_biased_exp >= 2047) return v < 0 ? -kInf : kInf;
+    if (new_biased_exp > 0) {
+      return absl::bit_cast<double>(i +
+                                    (static_cast<uint64_t>(exponent) << 52));
+    }
+    const uint64_t mantissa = (i & kMantissaMask) | (uint64_t{1} << 52);
+    return absl::bit_cast<double>((mantissa >> (1 - new_biased_exp)) |
+                                  (i & (uint64_t{1} << 63)));
+  }
+  // biased_exp == 0.
+  uint64_t mantissa = i & kMantissaMask;
+  if (exponent < 0) {
+    const double res = absl::bit_cast<double>((mantissa >> -exponent) |
+                                              (i & (uint64_t{1} << 63)));
+    return res == -0.0 ? 0.0 : res;
+  }
+  const int s = std::countl_zero(mantissa) - 11;
+  if (exponent < s) {
+    return absl::bit_cast<double>((mantissa << exponent) |
+                                  (i & (uint64_t{1} << 63)));
+  }
+  mantissa <<= s;
+  new_biased_exp -= s - 1;  // new_biased_exp = exponent - (s - 1) > 0.
+  if (new_biased_exp >= 2047) return v < 0 ? -kInf : kInf;
+  return absl::bit_cast<double>((mantissa & kMantissaMask) |
+                                (new_biased_exp << 52) |
+                                (i & (uint64_t{1} << 63)));
 }
 
 // Inline implementation of class TightSum for cases where speed matters (short
