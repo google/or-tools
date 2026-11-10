@@ -697,6 +697,71 @@ TEST(AffineExprTest, ConstAndVarHelpers) {
   EXPECT_EQ(scaled.constant_value(), 10);
 }
 
+TEST(CpModelUtilsTest, ApplyToAllLinearExpressions) {
+  // Unperformed optional interval stub: mutable visitor must not materialize
+  // start/size/end submessages.
+  ConstraintProto unperformed_interval = ParseTestProto(R"pb(
+    enforcement_literal: [ 0 ]
+    interval {}
+  )pb");
+  int visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](LinearExpressionProto* /*expr*/) { ++visited; },
+      &unperformed_interval);
+  EXPECT_EQ(visited, 0);
+  EXPECT_FALSE(unperformed_interval.interval().has_start());
+  EXPECT_FALSE(unperformed_interval.interval().has_size());
+  EXPECT_FALSE(unperformed_interval.interval().has_end());
+
+  // Routes node expressions are visited by both mutable and const overloads.
+  ConstraintProto routes_ct = ParseTestProto(R"pb(
+    routes {
+      tails: [ 0 ]
+      heads: [ 1 ]
+      literals: [ 0 ]
+      dimensions {
+        exprs {
+          vars: [ 1 ]
+          coeffs: [ 2 ]
+          offset: 3
+        }
+      }
+    }
+  )pb");
+  int routes_visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](LinearExpressionProto* expr) {
+        expr->set_offset(expr->offset() + 10);
+        ++routes_visited;
+      },
+      &routes_ct);
+  EXPECT_EQ(routes_visited, 1);
+  EXPECT_EQ(routes_ct.routes().dimensions(0).exprs(0).offset(), 13);
+
+  const ConstraintProto& const_routes = routes_ct;
+  int const_visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](const LinearExpressionProto& expr) {
+        EXPECT_EQ(expr.offset(), 13);
+        ++const_visited;
+      },
+      const_routes);
+  EXPECT_EQ(const_visited, 1);
+
+  // Legacy table with vars populated should not visit exprs.
+  ConstraintProto legacy_table = ParseTestProto(R"pb(
+    table {
+      vars: [ 0, 1 ]
+      values: [ 0, 1 ]
+    }
+  )pb");
+  visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](const LinearExpressionProto& /*expr*/) { ++visited; },
+      static_cast<const ConstraintProto&>(legacy_table));
+  EXPECT_EQ(visited, 0);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

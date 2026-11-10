@@ -518,6 +518,265 @@ void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> f,
 #undef APPLY_TO_SINGULAR_FIELD
 #undef APPLY_TO_REPEATED_FIELD
 
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(LinearExpressionProto* expr)> f,
+    ConstraintProto* ct) {
+  switch (ct->constraint_case()) {
+    case ConstraintProto::ConstraintCase::kBoolOr:
+    case ConstraintProto::ConstraintCase::kBoolAnd:
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+    case ConstraintProto::ConstraintCase::kBoolXor:
+    case ConstraintProto::ConstraintCase::kLinear:
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+    case ConstraintProto::ConstraintCase::kCircuit:
+    case ConstraintProto::ConstraintCase::kNoOverlap:
+    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+    case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+      break;
+    case ConstraintProto::ConstraintCase::kIntDiv: {
+      LinearArgumentProto* proto = ct->mutable_int_div();
+      if (proto->has_target()) f(proto->mutable_target());
+      for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+        f(&expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntMod: {
+      LinearArgumentProto* proto = ct->mutable_int_mod();
+      if (proto->has_target()) f(proto->mutable_target());
+      for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+        f(&expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kLinMax: {
+      LinearArgumentProto* proto = ct->mutable_lin_max();
+      if (proto->has_target()) f(proto->mutable_target());
+      for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+        f(&expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntProd: {
+      LinearArgumentProto* proto = ct->mutable_int_prod();
+      if (proto->has_target()) f(proto->mutable_target());
+      for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+        f(&expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      for (LinearExpressionProto& expr :
+           *ct->mutable_all_diff()->mutable_exprs()) {
+        f(&expr);
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kElement: {
+      const ElementConstraintProto& elem = ct->element();
+      if (elem.index() == 0 && elem.target() == 0 && elem.vars().empty() &&
+          (elem.has_linear_index() || elem.has_linear_target() ||
+           !elem.exprs().empty())) {
+        ElementConstraintProto* proto = ct->mutable_element();
+        if (proto->has_linear_index()) f(proto->mutable_linear_index());
+        if (proto->has_linear_target()) f(proto->mutable_linear_target());
+        for (LinearExpressionProto& expr : *proto->mutable_exprs()) {
+          f(&expr);
+        }
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kRoutes:
+      for (RoutesConstraintProto::NodeExpressions& dim :
+           *ct->mutable_routes()->mutable_dimensions()) {
+        for (LinearExpressionProto& expr : *dim.mutable_exprs()) {
+          f(&expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      if (ct->inverse().f_direct().empty() &&
+          ct->inverse().f_inverse().empty()) {
+        InverseConstraintProto* proto = ct->mutable_inverse();
+        for (LinearExpressionProto& expr : *proto->mutable_f_expr_direct()) {
+          f(&expr);
+        }
+        for (LinearExpressionProto& expr : *proto->mutable_f_expr_inverse()) {
+          f(&expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kReservoir: {
+      ReservoirConstraintProto* proto = ct->mutable_reservoir();
+      for (LinearExpressionProto& expr : *proto->mutable_time_exprs()) {
+        f(&expr);
+      }
+      for (LinearExpressionProto& expr : *proto->mutable_level_changes()) {
+        f(&expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kTable:
+      if (ct->table().vars().empty()) {
+        for (LinearExpressionProto& expr :
+             *ct->mutable_table()->mutable_exprs()) {
+          f(&expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      if (ct->automaton().vars().empty()) {
+        for (LinearExpressionProto& expr :
+             *ct->mutable_automaton()->mutable_exprs()) {
+          f(&expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kInterval: {
+      IntervalConstraintProto* proto = ct->mutable_interval();
+      if (proto->has_start()) f(proto->mutable_start());
+      if (proto->has_size()) f(proto->mutable_size());
+      if (proto->has_end()) f(proto->mutable_end());
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kCumulative: {
+      CumulativeConstraintProto* proto = ct->mutable_cumulative();
+      if (proto->has_capacity()) f(proto->mutable_capacity());
+      for (LinearExpressionProto& expr : *proto->mutable_demands()) {
+        f(&expr);
+      }
+      break;
+    }
+  }
+}
+
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(const LinearExpressionProto& expr)> f,
+    const ConstraintProto& ct) {
+  switch (ct.constraint_case()) {
+    case ConstraintProto::ConstraintCase::kBoolOr:
+    case ConstraintProto::ConstraintCase::kBoolAnd:
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+    case ConstraintProto::ConstraintCase::kBoolXor:
+    case ConstraintProto::ConstraintCase::kLinear:
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+    case ConstraintProto::ConstraintCase::kCircuit:
+    case ConstraintProto::ConstraintCase::kNoOverlap:
+    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+    case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+      break;
+    case ConstraintProto::ConstraintCase::kIntDiv: {
+      const LinearArgumentProto& proto = ct.int_div();
+      if (proto.has_target()) f(proto.target());
+      for (const LinearExpressionProto& expr : proto.exprs()) {
+        f(expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntMod: {
+      const LinearArgumentProto& proto = ct.int_mod();
+      if (proto.has_target()) f(proto.target());
+      for (const LinearExpressionProto& expr : proto.exprs()) {
+        f(expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kLinMax: {
+      const LinearArgumentProto& proto = ct.lin_max();
+      if (proto.has_target()) f(proto.target());
+      for (const LinearExpressionProto& expr : proto.exprs()) {
+        f(expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntProd: {
+      const LinearArgumentProto& proto = ct.int_prod();
+      if (proto.has_target()) f(proto.target());
+      for (const LinearExpressionProto& expr : proto.exprs()) {
+        f(expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+        f(expr);
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kElement: {
+      const ElementConstraintProto& elem = ct.element();
+      if (elem.index() == 0 && elem.target() == 0 && elem.vars().empty() &&
+          (elem.has_linear_index() || elem.has_linear_target() ||
+           !elem.exprs().empty())) {
+        if (elem.has_linear_index()) f(elem.linear_index());
+        if (elem.has_linear_target()) f(elem.linear_target());
+        for (const LinearExpressionProto& expr : elem.exprs()) {
+          f(expr);
+        }
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kRoutes:
+      for (const RoutesConstraintProto::NodeExpressions& dim :
+           ct.routes().dimensions()) {
+        for (const LinearExpressionProto& expr : dim.exprs()) {
+          f(expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      if (ct.inverse().f_direct().empty() && ct.inverse().f_inverse().empty()) {
+        for (const LinearExpressionProto& expr : ct.inverse().f_expr_direct()) {
+          f(expr);
+        }
+        for (const LinearExpressionProto& expr :
+             ct.inverse().f_expr_inverse()) {
+          f(expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kReservoir: {
+      const ReservoirConstraintProto& proto = ct.reservoir();
+      for (const LinearExpressionProto& expr : proto.time_exprs()) {
+        f(expr);
+      }
+      for (const LinearExpressionProto& expr : proto.level_changes()) {
+        f(expr);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kTable:
+      if (ct.table().vars().empty()) {
+        for (const LinearExpressionProto& expr : ct.table().exprs()) {
+          f(expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      if (ct.automaton().vars().empty()) {
+        for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+          f(expr);
+        }
+      }
+      break;
+    case ConstraintProto::ConstraintCase::kInterval: {
+      const IntervalConstraintProto& proto = ct.interval();
+      if (proto.has_start()) f(proto.start());
+      if (proto.has_size()) f(proto.size());
+      if (proto.has_end()) f(proto.end());
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kCumulative: {
+      const CumulativeConstraintProto& proto = ct.cumulative();
+      if (proto.has_capacity()) f(proto.capacity());
+      for (const LinearExpressionProto& expr : proto.demands()) {
+        f(expr);
+      }
+      break;
+    }
+  }
+}
+
 std::vector<int> UsedVariables(const ConstraintProto& ct) {
   std::vector<int> result;
   GetReferencesUsedByConstraint(ct, &result, &result);

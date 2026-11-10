@@ -1555,12 +1555,6 @@ std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
   return GetRepresentativesImpl();
 }
 
-int64_t SharedClausesManager::NumEquivalences() const {
-  absl::ReaderMutexLock mutex_lock(mutex_);
-  return always_synchronize_ ? num_equivalences_
-                             : synchronized_num_equivalences_;
-}
-
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
   absl::MutexLock mutex_lock(mutex_);
   id_to_num_exported_[id] += batch.size();

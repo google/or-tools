@@ -229,9 +229,16 @@ std::vector<int> PartitionGraph(
 // variables, inactive enforced constraints simply remove rows from the
 // component LP, which preserves total unimodularity (or 2-modularity), vertex
 // integrality, and the worst-case vertex bounds computed when tightening.
+// Updates in-place tight bounds `[integer_error_lb[v], integer_error_ub[v]]`
+// (with `integer_error_lb[v] <= 0 <= integer_error_ub[v]`, sized to
+// `mp_model->variable_size()`) on `(discretized_v - scaled_v)` in the scaled
+// variable space for variables marked as integer by this pass, accounting for
+// approximate rational scaling and any pre-existing errors on external integer
+// variables.
 std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    bool only_tighten_bounds = false);
+    const SatParameters& params, MPModelProto* mp_model,
+    absl::Span<double> integer_error_lb, absl::Span<double> integer_error_ub,
+    SolverLogger* logger, bool only_tighten_bounds = false);
 
 // Multiplies all continuous variables by the given scaling parameters and
 // changes the rest of the model accordingly. The returned vector contains the
@@ -277,10 +284,11 @@ std::vector<double> ScaleContinuousVariablesForGivenPrecision(
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
-bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
-                                         absl::Span<const double> var_scaling,
-                                         MPModelProto* mp_model,
-                                         SolverLogger* logger);
+bool MakeBoundsOfIntegerVariablesInteger(
+    const SatParameters& params, absl::Span<const double> var_scaling,
+    absl::Span<const double> integer_error_lb,
+    absl::Span<const double> integer_error_ub, MPModelProto* mp_model,
+    SolverLogger* logger);
 
 // Helpers used in bound propagation. We special case the coefficient == 1.0 as
 // this is frequent and we don't want to artificially add a really small error.
@@ -394,8 +402,14 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
 //
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
+// Updates in-place tight bounds `[integer_error_lb[v], integer_error_ub[v]]`
+// (with `integer_error_lb[v] <= 0 <= integer_error_ub[v]`, sized to
+// `mp_model->num_variables()`) on `(discretized_v - scaled_v)` in the scaled
+// variable space for variables marked as integer by this pass.
 std::vector<double> DetectImpliedIntegers(const SatParameters& params,
                                           MPModelProtoWrapper* mp_model,
+                                          absl::Span<double> integer_error_lb,
+                                          absl::Span<double> integer_error_ub,
                                           SolverLogger* logger);
 
 // Clamps variable bounds to [-mip_max_bound, mip_max_bound]. Returns false if
@@ -412,12 +426,19 @@ void ExtractEnforcementLiterals(const SatParameters& params,
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
 //
+// `integer_error_lb` and `integer_error_ub` (sized to
+// `mp_model.num_variables()`) pass precomputed discretization error bounds
+// `[lb, ub]` on `(discretized_v - scaled_v)` for variables marked as integer
+// via approximate rational scaling (use `0.0` for exact integers and continuous
+// variables).
+//
 // There are a bunch of caveats and you can find more details on the
 // SatParameters proto documentation for the mip_* parameters.
-bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
-                                       const MPModelProtoWrapper& mp_model,
-                                       int num_clamped, CpModelProto* cp_model,
-                                       SolverLogger* logger);
+bool ConvertMPModelProtoToCpModelProto(
+    const SatParameters& params, const MPModelProtoWrapper& mp_model,
+    int num_clamped, absl::Span<const double> integer_error_lb,
+    absl::Span<const double> integer_error_ub, CpModelProto* cp_model,
+    SolverLogger* logger);
 
 // Converts a CP-SAT model to a MPModelProto one.
 // This only works for pure linear models (otherwise it returns false). This is

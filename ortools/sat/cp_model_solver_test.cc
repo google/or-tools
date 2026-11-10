@@ -557,9 +557,10 @@ TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
   )pb");
   CpModelProto cp_model;
   SolverLogger logger;
-  ConvertMPModelProtoToCpModelProto(SatParameters(),
-                                    MPModelProtoWrapper(std::move(mp_model)),
-                                    /*num_clamped=*/0, &cp_model, &logger);
+  const std::vector<double> zero_errors(mp_model.variable_size(), 0.0);
+  ConvertMPModelProtoToCpModelProto(
+      SatParameters(), MPModelProtoWrapper(std::move(mp_model)),
+      /*num_clamped=*/0, zero_errors, zero_errors, &cp_model, &logger);
   Model model;
   model.Add(NewSatParameters("cp_model_presolve:false"));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);

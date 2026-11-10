@@ -382,9 +382,10 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
   CpModelProto initial_model;
   SolverLogger logger;
   CHECK(ClampVariableBounds(SatParameters(), &mp_model, &logger));
-  ConvertMPModelProtoToCpModelProto(SatParameters(),
-                                    MPModelProtoWrapper(std::move(mp_model)),
-                                    /*num_clamped=*/0, &initial_model, &logger);
+  const std::vector<double> zero_errors(mp_model.variable_size(), 0.0);
+  ConvertMPModelProtoToCpModelProto(
+      SatParameters(), MPModelProtoWrapper(std::move(mp_model)),
+      /*num_clamped=*/0, zero_errors, zero_errors, &initial_model, &logger);
 
   const CpModelProto mapping_model =
       GetMappingModel(initial_model, SatParameters());

@@ -2057,133 +2057,6 @@ void VariableDomains::Set(int var, Domain d) {
   domains_[var] = std::move(d);
 }
 
-namespace {
-
-constexpr double kMinRebuildDeterministicTime = 1e-6;
-constexpr double kWorkUnitDeterministicTime = 5e-8;
-constexpr double kRebuildSearchTimeRatio = 10.0;
-constexpr int64_t kMinRemovableVarFractionDenominator = 10;
-
-int64_t CountLinearExpressionWorkUnits(const LinearExpressionProto& expr) {
-  return 1 + expr.vars_size();
-}
-
-int64_t CountLinearArgumentWorkUnits(const LinearArgumentProto& arg) {
-  int64_t work = CountLinearExpressionWorkUnits(arg.target());
-  for (const LinearExpressionProto& expr : arg.exprs()) {
-    work += CountLinearExpressionWorkUnits(expr);
-  }
-  return work;
-}
-
-int64_t CountModelWorkUnits(const CpModelProto& model_proto) {
-  int64_t work = model_proto.variables_size() + model_proto.constraints_size();
-  if (model_proto.has_objective()) {
-    work += model_proto.objective().vars_size();
-  }
-  if (model_proto.has_floating_point_objective()) {
-    work += model_proto.floating_point_objective().vars_size();
-  }
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    work += ct.enforcement_literal_size();
-    switch (ct.constraint_case()) {
-      case ConstraintProto::kBoolOr:
-        work += ct.bool_or().literals_size();
-        break;
-      case ConstraintProto::kBoolAnd:
-        work += ct.bool_and().literals_size();
-        break;
-      case ConstraintProto::kAtMostOne:
-        work += ct.at_most_one().literals_size();
-        break;
-      case ConstraintProto::kExactlyOne:
-        work += ct.exactly_one().literals_size();
-        break;
-      case ConstraintProto::kBoolXor:
-        work += ct.bool_xor().literals_size();
-        break;
-      case ConstraintProto::kIntDiv:
-        work += CountLinearArgumentWorkUnits(ct.int_div());
-        break;
-      case ConstraintProto::kIntMod:
-        work += CountLinearArgumentWorkUnits(ct.int_mod());
-        break;
-      case ConstraintProto::kIntProd:
-        work += CountLinearArgumentWorkUnits(ct.int_prod());
-        break;
-      case ConstraintProto::kLinMax:
-        work += CountLinearArgumentWorkUnits(ct.lin_max());
-        break;
-      case ConstraintProto::kLinear:
-        work += ct.linear().vars_size() + ct.linear().domain_size();
-        break;
-      case ConstraintProto::kAllDiff:
-        for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-          work += CountLinearExpressionWorkUnits(expr);
-        }
-        break;
-      case ConstraintProto::kElement:
-        work += ct.element().vars_size();
-        for (const LinearExpressionProto& expr : ct.element().exprs()) {
-          work += CountLinearExpressionWorkUnits(expr);
-        }
-        break;
-      case ConstraintProto::kCircuit:
-        work += ct.circuit().tails_size();
-        break;
-      case ConstraintProto::kRoutes:
-        work += ct.routes().tails_size();
-        break;
-      case ConstraintProto::kTable:
-        work += ct.table().values_size() + ct.table().vars_size();
-        for (const LinearExpressionProto& expr : ct.table().exprs()) {
-          work += CountLinearExpressionWorkUnits(expr);
-        }
-        break;
-      case ConstraintProto::kAutomaton:
-        work +=
-            ct.automaton().transition_tail_size() + ct.automaton().vars_size();
-        for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
-          work += CountLinearExpressionWorkUnits(expr);
-        }
-        break;
-      case ConstraintProto::kInverse:
-        work +=
-            ct.inverse().f_direct_size() + ct.inverse().f_expr_direct_size();
-        break;
-      case ConstraintProto::kReservoir:
-        work += ct.reservoir().time_exprs_size() +
-                ct.reservoir().level_changes_size();
-        break;
-      case ConstraintProto::kInterval:
-        work += CountLinearExpressionWorkUnits(ct.interval().start()) +
-                CountLinearExpressionWorkUnits(ct.interval().size()) +
-                CountLinearExpressionWorkUnits(ct.interval().end());
-        break;
-      case ConstraintProto::kNoOverlap:
-        work += ct.no_overlap().intervals_size();
-        break;
-      case ConstraintProto::kNoOverlap2D:
-        work += ct.no_overlap_2d().x_intervals_size();
-        break;
-      case ConstraintProto::kCumulative:
-        work +=
-            ct.cumulative().intervals_size() + ct.cumulative().demands_size();
-        break;
-      default:
-        break;
-    }
-  }
-  return work;
-}
-
-double EstimateWorkDeterministicTime(int64_t work_units) {
-  return std::max(kMinRebuildDeterministicTime,
-                  kWorkUnitDeterministicTime * static_cast<double>(work_units));
-}
-
-}  // namespace
-
 DenseModelCopy::DenseModelCopy(absl::string_view name,
                                const CpModelProto& input_model_proto,
                                SharedBoundsManager* shared_bounds,
@@ -2195,19 +2068,15 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
       active_constraints_(std::move(active_constraints)),
       shared_bounds_id_(
           shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)),
-      current_work_units_(CountModelWorkUnits(input_model_proto)) {
+      model_proto_(input_model_proto) {
   const int num_vars = input_model_proto_.variables_size();
   input_var_mapping_.resize(num_vars);
   reverse_mapping_.resize(num_vars);
-  next_equivalent_input_var_.assign(num_vars, -1);
-  tail_input_var_.resize(num_vars);
   for (int i = 0; i < num_vars; ++i) {
     input_var_mapping_[i] = i;
     reverse_mapping_[i] = i;
-    tail_input_var_[i] = i;
   }
   ResetVarDomains();
-  fixed_vars_at_last_rebuild_ = var_domains_.FixedVariables().size();
   input_var_domains_.reserve(num_vars);
   for (int v = 0; v < num_vars; ++v) {
     input_var_domains_.push_back(var_domains_[v]);
@@ -2216,373 +2085,155 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
 
 bool DenseModelCopy::MaybeUpdate(bool& updated) {
   updated = false;
-  if (is_unsat_) return false;
-  if (!UpdateFromSharedBounds()) {
+  int64_t new_bounds_timestamp = bounds_timestamp_;
+  int64_t new_equivalences_timestamp = equivalences_timestamp_;
+  if (!UpdateFromSharedBounds(new_bounds_timestamp)) {
     return false;
   }
-  if (!ShouldRebuild()) {
-    if (first_update_) {
-      first_update_ = false;
-      last_rebuild_dtime_ = EstimateWorkDeterministicTime(current_work_units_);
-      search_dtime_since_rebuild_ = 0.0;
-    }
-    return true;
-  }
-
-  first_update_ = false;
-  if (!SyncDenseDomainsToInputDomains(/*only_multi_var_classes=*/true)) {
-    is_unsat_ = true;
-    return false;
-  }
-
-  int64_t new_equivalences_timestamp = latest_equivalences_timestamp_;
   std::vector<int> input_var_representatives;
   if (shared_clauses_ != nullptr) {
-    if (shared_clauses_->NumEquivalences() >
-        std::max<int64_t>(0, latest_equivalences_timestamp_)) {
-      input_var_representatives =
-          shared_clauses_->GetRepresentatives(&new_equivalences_timestamp);
-    } else if (new_equivalences_timestamp < 0) {
-      new_equivalences_timestamp = 0;
+    input_var_representatives =
+        shared_clauses_->GetRepresentatives(&new_equivalences_timestamp);
+  }
+
+  // TODO(user): throttle this to avoid recomputing too often?
+  if (new_bounds_timestamp != bounds_timestamp_ ||
+      new_equivalences_timestamp != equivalences_timestamp_) {
+    updated = true;
+    bounds_timestamp_ = new_bounds_timestamp;
+    equivalences_timestamp_ = new_equivalences_timestamp;
+    if (!ComputeVariableMapping(input_var_representatives) ||
+        !ApplyVariableMapping()) {
+      return false;
     }
   }
-  if (!input_var_representatives.empty() &&
-      !PropagateInputEquivalences(input_var_representatives)) {
-    is_unsat_ = true;
-    return false;
-  }
-
-  ComputeStepVariableMapping(input_var_representatives);
-  if (model_proto_ != nullptr &&
-      next_reverse_mapping_.size() == var_domains_.size() &&
-      var_domains_.FixedVariables().size() == fixed_vars_at_last_rebuild_) {
-    latest_equivalences_timestamp_ = new_equivalences_timestamp;
-    return true;
-  }
-
-  if (!ApplyStepVariableMapping()) {
-    is_unsat_ = true;
-    return false;
-  }
-
-  updated = true;
-  bounds_timestamp_ = shared_bounds_ == nullptr ? 0 : latest_bounds_timestamp_;
-  equivalences_timestamp_ = new_equivalences_timestamp;
-  latest_equivalences_timestamp_ = new_equivalences_timestamp;
-  fixed_vars_at_last_rebuild_ = var_domains_.FixedVariables().size();
-  const int64_t new_work_units = CountModelWorkUnits(*model_proto_);
-  last_rebuild_dtime_ =
-      EstimateWorkDeterministicTime(current_work_units_ + new_work_units);
-  current_work_units_ = new_work_units;
-  search_dtime_since_rebuild_ = 0.0;
   return true;
 }
 
-bool DenseModelCopy::UpdateFromSharedBounds() {
+bool DenseModelCopy::UpdateFromSharedBounds(int64_t& timestamp) {
   if (shared_bounds_ == nullptr) return true;
-  shared_bounds_->GetChangedBounds(
-      shared_bounds_id_, &tmp_variables_, &tmp_new_lower_bounds_,
-      &tmp_new_upper_bounds_, &latest_bounds_timestamp_);
+  shared_bounds_->GetChangedBounds(shared_bounds_id_, &tmp_variables_,
+                                   &tmp_new_lower_bounds_,
+                                   &tmp_new_upper_bounds_, &timestamp);
   for (int i = 0; i < tmp_variables_.size(); ++i) {
     const int input_var = tmp_variables_[i];
-    const Domain new_domain = input_var_domains_[input_var].IntersectionWith(
-        Domain(tmp_new_lower_bounds_[i], tmp_new_upper_bounds_[i]));
-    if (new_domain.IsEmpty()) {
-      is_unsat_ = true;
-      return false;
-    }
-    if (new_domain == input_var_domains_[input_var]) continue;
-    input_var_domains_[input_var] = new_domain;
-
-    const int ref = input_var_mapping_[input_var];
-    if (ref == kNoVariableMapping) continue;
-    const int dense_var = PositiveRef(ref);
-    const Domain mapped_domain =
-        RefIsPositive(ref) ? new_domain
-                           : Domain(1 - new_domain.Max(), 1 - new_domain.Min());
-    const Domain updated_dense_domain =
-        var_domains_[dense_var].IntersectionWith(mapped_domain);
-    if (updated_dense_domain.IsEmpty()) {
-      is_unsat_ = true;
-      return false;
-    }
-    if (updated_dense_domain != var_domains_[dense_var]) {
-      var_domains_.Set(dense_var, updated_dense_domain);
-    }
+    input_var_domains_[input_var] =
+        input_var_domains_[input_var].IntersectionWith(
+            Domain(tmp_new_lower_bounds_[i], tmp_new_upper_bounds_[i]));
+    if (input_var_domains_[input_var].IsEmpty()) return false;
   }
   return true;
 }
 
-bool DenseModelCopy::ShouldRebuild() const {
-  if (first_update_ && active_constraints_ != nullptr) {
-    return true;
-  }
-  const int64_t num_unfixed_dense_vars =
-      static_cast<int64_t>(var_domains_.size()) - fixed_vars_at_last_rebuild_;
-  if (num_unfixed_dense_vars <= 0) {
-    return false;
-  }
-  const int64_t newly_fixed =
-      static_cast<int64_t>(var_domains_.FixedVariables().size()) -
-      fixed_vars_at_last_rebuild_;
-  const int64_t last_equivalences =
-      std::max<int64_t>(0, latest_equivalences_timestamp_);
-  const int64_t new_equivalences =
-      shared_clauses_ == nullptr
-          ? 0
-          : std::max<int64_t>(
-                0, shared_clauses_->NumEquivalences() - last_equivalences);
-  const int64_t min_removable_vars = std::max<int64_t>(
-      1, num_unfixed_dense_vars / kMinRemovableVarFractionDenominator);
-  if (newly_fixed + new_equivalences < min_removable_vars) {
-    return false;
-  }
-  if (first_update_) {
-    return true;
-  }
-  return search_dtime_since_rebuild_ >=
-         kRebuildSearchTimeRatio * last_rebuild_dtime_;
-}
-
-bool DenseModelCopy::SyncDenseDomainsToInputDomains(
-    bool only_multi_var_classes) {
-  for (int d = 0; d < reverse_mapping_.size(); ++d) {
-    const int head_u = PositiveRef(reverse_mapping_[d]);
-    if (only_multi_var_classes && next_equivalent_input_var_[head_u] == -1) {
-      continue;
-    }
-    const Domain& dense_domain = var_domains_[d];
-    for (int u = head_u; u != -1; u = next_equivalent_input_var_[u]) {
-      const int ref = input_var_mapping_[u];
-      DCHECK_EQ(PositiveRef(ref), d);
-      if (RefIsPositive(ref)) {
-        if (dense_domain == input_var_domains_[u]) continue;
-        const Domain inter =
-            input_var_domains_[u].IntersectionWith(dense_domain);
-        if (inter.IsEmpty()) return false;
-        input_var_domains_[u] = inter;
-      } else {
-        // Only Boolean variables can have a negated reference.
-        const int64_t mapped_min = 1 - dense_domain.Max();
-        const int64_t mapped_max = 1 - dense_domain.Min();
-        if (input_var_domains_[u].Min() == mapped_min &&
-            input_var_domains_[u].Max() == mapped_max) {
-          continue;
-        }
-        const Domain inter = input_var_domains_[u].IntersectionWith(
-            Domain(mapped_min, mapped_max));
-        if (inter.IsEmpty()) return false;
-        input_var_domains_[u] = inter;
-      }
-    }
-  }
-  return true;
-}
-
-bool DenseModelCopy::PropagateInputEquivalences(
+bool DenseModelCopy::ComputeVariableMapping(
     absl::Span<const int> input_var_representatives) {
-  if (input_var_representatives.empty()) return true;
-
   const auto get_representative = [&](int var) {
     if (var >= input_var_representatives.size()) return var;
     return input_var_representatives[var];
   };
-  auto fixed_value = [&](int ref) {
-    if (RefIsPositive(ref)) {
-      return input_var_domains_[ref].FixedValue();
-    } else {
-      // Only Boolean variables can be accessed with a negative reference.
-      return 1 - input_var_domains_[PositiveRef(ref)].FixedValue();
-    }
-  };
-  bool any_input_changed = false;
-  auto fix_literal = [&](int literal, bool value) {
-    if (!RefIsPositive(literal)) {
-      literal = PositiveRef(literal);
-      value = !value;
-    }
-    const int64_t target = value ? 1 : 0;
-    if (input_var_domains_[literal].Min() == target &&
-        input_var_domains_[literal].Max() == target) {
+  const int num_input_vars = input_var_domains_.size();
+  if (!input_var_representatives.empty()) {
+    // If a variable is fixed then the equivalent variables can be fixed too.
+    auto fixed_value = [&](int ref) {
+      if (RefIsPositive(ref)) {
+        return input_var_domains_[ref].FixedValue();
+      } else {
+        // Only Boolean variables can be accessed with a negative reference.
+        return 1 - input_var_domains_[PositiveRef(ref)].FixedValue();
+      }
+    };
+    auto fix_literal = [&](int literal, bool value) {
+      if (!RefIsPositive(literal)) {
+        literal = PositiveRef(literal);
+        value = !value;
+      }
+      const Domain new_domain =
+          input_var_domains_[literal].IntersectionWith(Domain(value ? 1 : 0));
+      if (new_domain.IsEmpty()) return false;
+      input_var_domains_[literal] = new_domain;
       return true;
+    };
+    for (int i = 0; i < num_input_vars; ++i) {
+      if (input_var_domains_[i].IsFixed()) {
+        const int rep = get_representative(i);
+        if (rep != i) {
+          if (!fix_literal(rep, fixed_value(i))) return false;
+        }
+      }
     }
-    const Domain new_domain =
-        input_var_domains_[literal].IntersectionWith(Domain(target));
-    if (new_domain.IsEmpty()) return false;
-    input_var_domains_[literal] = new_domain;
-    any_input_changed = true;
-    return true;
-  };
-
-  const int num_vars_to_check = std::min<int>(input_var_domains_.size(),
-                                              input_var_representatives.size());
-  for (int i = 0; i < num_vars_to_check; ++i) {
-    if (input_var_domains_[i].IsFixed()) {
+    for (int i = 0; i < num_input_vars; ++i) {
       const int rep = get_representative(i);
-      if (rep != i) {
-        if (!fix_literal(rep, fixed_value(i) != 0)) return false;
+      if (rep != i && input_var_domains_[PositiveRef(rep)].IsFixed()) {
+        if (!fix_literal(i, fixed_value(rep))) return false;
       }
     }
   }
-  for (int i = 0; i < num_vars_to_check; ++i) {
-    const int rep = get_representative(i);
-    if (rep != i && input_var_domains_[PositiveRef(rep)].IsFixed()) {
-      if (!fix_literal(i, fixed_value(rep) != 0)) return false;
-    }
-  }
-  if (!any_input_changed) return true;
 
-  bool any_dense_tightened = false;
-  for (int d = 0; d < reverse_mapping_.size(); ++d) {
-    Domain dense_domain = var_domains_[d];
-    for (int u = PositiveRef(reverse_mapping_[d]); u != -1;
-         u = next_equivalent_input_var_[u]) {
-      const int ref = input_var_mapping_[u];
-      DCHECK_EQ(PositiveRef(ref), d);
-      const Domain& input_domain = input_var_domains_[u];
-      const Domain mapped_domain =
-          RefIsPositive(ref)
-              ? input_domain
-              : Domain(1 - input_domain.Max(), 1 - input_domain.Min());
-      dense_domain = dense_domain.IntersectionWith(mapped_domain);
-      if (dense_domain.IsEmpty()) return false;
+  input_var_mapping_.assign(num_input_vars, kNoVariableMapping);
+  reverse_mapping_.clear();
+  int first_fixed_literal = -1;
+  for (int input_var = 0; input_var < num_input_vars; ++input_var) {
+    if (input_var_domains_[input_var].IsFixed()) {
+      const int64_t fixed_value = input_var_domains_[input_var].FixedValue();
+      // ModelCopy requires that if some literals are fixed, then one of them
+      // must not be removed by the mapping.
+      if (first_fixed_literal == -1 && (fixed_value == 0 || fixed_value == 1)) {
+        first_fixed_literal = input_var;
+      } else {
+        continue;
+      }
     }
-    if (dense_domain != var_domains_[d]) {
-      var_domains_.Set(d, dense_domain);
-      any_dense_tightened = true;
+    if (input_var_mapping_[input_var] == kNoVariableMapping) {
+      const int input_rep = get_representative(input_var);
+      const int input_rep_var = PositiveRef(input_rep);
+      if (input_var_mapping_[input_rep_var] == kNoVariableMapping) {
+        input_var_mapping_[input_var] = reverse_mapping_.size();
+        input_var_mapping_[input_rep_var] =
+            RefIsPositive(input_rep)
+                ? input_var_mapping_[input_var]
+                : NegatedRef(input_var_mapping_[input_var]);
+        reverse_mapping_.push_back(input_var);
+      } else {
+        input_var_mapping_[input_var] =
+            RefIsPositive(input_rep)
+                ? input_var_mapping_[input_rep_var]
+                : NegatedRef(input_var_mapping_[input_rep_var]);
+      }
     }
-  }
-  if (any_dense_tightened) {
-    return SyncDenseDomainsToInputDomains();
   }
   return true;
 }
 
-void DenseModelCopy::ComputeStepVariableMapping(
-    absl::Span<const int> input_var_representatives) {
-  const int num_old_dense_vars = var_domains_.size();
-  step_var_mapping_.assign(num_old_dense_vars, kNoVariableMapping);
-  next_reverse_mapping_.clear();
-  next_tail_input_var_.clear();
-  if (!input_var_representatives.empty()) {
-    rep_to_new_dense_ref_.assign(input_var_domains_.size(), kNoVariableMapping);
-  }
+bool DenseModelCopy::ApplyVariableMapping() {
+  model_proto_.Clear();
 
-  int first_fixed_literal = -1;
-  for (int d = 0; d < num_old_dense_vars; ++d) {
-    if (var_domains_.IsFixed(d)) {
-      const int64_t fixed_value = var_domains_[d].FixedValue();
-      // ModelCopy requires that if some literals are fixed, then one of them
-      // must not be removed by the mapping.
-      if (first_fixed_literal == -1 && (fixed_value == 0 || fixed_value == 1)) {
-        first_fixed_literal = d;
-        step_var_mapping_[d] = static_cast<int>(next_reverse_mapping_.size());
-        next_reverse_mapping_.push_back(reverse_mapping_[d]);
-        next_tail_input_var_.push_back(tail_input_var_[d]);
-      }
-      continue;
-    }
-
-    if (input_var_representatives.empty()) {
-      step_var_mapping_[d] = static_cast<int>(next_reverse_mapping_.size());
-      next_reverse_mapping_.push_back(reverse_mapping_[d]);
-      next_tail_input_var_.push_back(tail_input_var_[d]);
-      continue;
-    }
-
-    const int input_ref = reverse_mapping_[d];
-    const int input_var = PositiveRef(input_ref);
-    const int raw_rep = input_var < input_var_representatives.size()
-                            ? input_var_representatives[input_var]
-                            : input_var;
-    const int signed_rep =
-        RefIsPositive(input_ref) ? raw_rep : NegatedRef(raw_rep);
-    const int rep_var = PositiveRef(signed_rep);
-    if (rep_to_new_dense_ref_[rep_var] == kNoVariableMapping) {
-      const int new_d = static_cast<int>(next_reverse_mapping_.size());
-      step_var_mapping_[d] = new_d;
-      rep_to_new_dense_ref_[rep_var] =
-          RefIsPositive(signed_rep) ? new_d : NegatedRef(new_d);
-      next_reverse_mapping_.push_back(input_ref);
-      next_tail_input_var_.push_back(tail_input_var_[d]);
-    } else {
-      const int rep_ref = rep_to_new_dense_ref_[rep_var];
-      step_var_mapping_[d] =
-          RefIsPositive(signed_rep) ? rep_ref : NegatedRef(rep_ref);
-    }
-  }
-}
-
-bool DenseModelCopy::ApplyStepVariableMapping() {
-  const CpModelProto& source_proto = proto();
-  auto next_arena = std::make_unique<google::protobuf::Arena>();
-  CpModelProto* next_proto =
-      google::protobuf::Arena::Create<CpModelProto>(next_arena.get());
   Model local_model;
-  ModelCopy copier(next_proto, &local_model, step_var_mapping_);
-  if (!copier.CreateVariablesFromDomains(var_domains_.AsSpan())) {
+  ModelCopy copier(&model_proto_, &local_model, input_var_mapping_);
+  if (!copier.CreateVariablesFromDomains(input_var_domains_)) {
     return false;
   }
-  if (!copier.ImportAndSimplifyConstraints(source_proto, /*first_copy=*/false,
-                                           model_proto_ != nullptr
-                                               ? std::function<bool(int)>{}
-                                               : active_constraints_)) {
+  if (!copier.ImportAndSimplifyConstraints(input_model_proto_,
+                                           /*first_copy=*/false,
+                                           active_constraints_)) {
     return false;
   }
   if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-          source_proto, /*clear_internal_fields=*/false,
+          input_model_proto_, /*clear_internal_fields=*/false,
           /*copy_symmetry=*/false)) {
     return false;
   }
-  if (!copier.FinishCopy(source_proto)) {
+  if (!copier.FinishCopy(input_model_proto_)) {
     return false;
   }
-
-  const int num_old_dense_vars = var_domains_.size();
-  for (int d = 0; d < num_old_dense_vars; ++d) {
-    const int head_u = PositiveRef(reverse_mapping_[d]);
-    const int step_ref = step_var_mapping_[d];
-    if (step_ref == kNoVariableMapping) {
-      int u = head_u;
-      while (u != -1) {
-        const int next_u = next_equivalent_input_var_[u];
-        DCHECK(input_var_domains_[u].IsFixed());
-        input_var_mapping_[u] = kNoVariableMapping;
-        next_equivalent_input_var_[u] = -1;
-        u = next_u;
-      }
-      continue;
-    }
-
-    for (int u = head_u; u != -1; u = next_equivalent_input_var_[u]) {
-      const int old_ref = input_var_mapping_[u];
-      DCHECK_EQ(PositiveRef(old_ref), d);
-      input_var_mapping_[u] =
-          RefIsPositive(old_ref) ? step_ref : NegatedRef(step_ref);
-    }
-
-    const int new_d = PositiveRef(step_ref);
-    if (PositiveRef(next_reverse_mapping_[new_d]) != head_u) {
-      DCHECK_EQ(next_equivalent_input_var_[next_tail_input_var_[new_d]], -1);
-      next_equivalent_input_var_[next_tail_input_var_[new_d]] = head_u;
-      next_tail_input_var_[new_d] = tail_input_var_[d];
-    }
-  }
-
-  reverse_mapping_.swap(next_reverse_mapping_);
-  tail_input_var_.swap(next_tail_input_var_);
-  arena_ = std::move(next_arena);
-  model_proto_ = next_proto;
   ResetVarDomains();
-  return SyncDenseDomainsToInputDomains();
+  return true;
 }
 
 void DenseModelCopy::ResetVarDomains() {
-  const CpModelProto& current_proto = proto();
-  const int num_vars = current_proto.variables_size();
+  const int num_vars = model_proto_.variables_size();
   var_domains_.Reset(num_vars);
   for (int v = 0; v < num_vars; ++v) {
-    var_domains_.Set(v, ReadDomainFromProto(current_proto.variables(v)));
+    var_domains_.Set(v, ReadDomainFromProto(model_proto_.variables(v)));
   }
 }
 
@@ -2622,10 +2273,9 @@ std::vector<int64_t> DenseModelCopy::ReverseMapSolution(
 
 int64_t DenseModelCopy::MapInnerObjectiveValue(
     int64_t input_inner_objective_value) const {
-  const CpObjectiveProto& dense_objective = proto().objective();
-  CHECK_EQ(dense_objective.integer_scaling_factor(),
+  CHECK_EQ(model_proto_.objective().integer_scaling_factor(),
            input_model_proto_.objective().integer_scaling_factor());
-  CHECK_EQ(dense_objective.integer_after_offset(),
+  CHECK_EQ(model_proto_.objective().integer_after_offset(),
            input_model_proto_.objective().integer_after_offset());
   // We have (see cp_model.proto):
   //   input_outer =
@@ -2636,7 +2286,7 @@ int64_t DenseModelCopy::MapInnerObjectiveValue(
   //   dense_inner = input_inner + input_before_offset - dense_before_offset
   return input_inner_objective_value +
          input_model_proto_.objective().integer_before_offset() -
-         dense_objective.integer_before_offset();
+         model_proto_.objective().integer_before_offset();
 }
 
 }  // namespace sat

@@ -292,6 +292,8 @@ MPSolutionResponse SatSolveProtoInternal(
 
   const int num_variables = mp_model_wrapper->num_variables();
   std::vector<double> var_scaling(num_variables, 1.0);
+  std::vector<double> integer_error_lb(num_variables, 0.0);
+  std::vector<double> integer_error_ub(num_variables, 0.0);
   const auto update_scaling = [&var_scaling](absl::Span<const double> scaling) {
     for (int var = 0; var < scaling.size(); ++var) {
       if (scaling[var] == 1.0) continue;
@@ -329,8 +331,9 @@ MPSolutionResponse SatSolveProtoInternal(
     // because only Boolean [0, 1] indicator enforcements exist before
     // ExtractEnforcementLiterals().
     sat::MarkResidualTotallyUnimodularVariableAsInteger(
-        params, mp_model_wrapper->mutable_underlying_model(), logger,
-        /*only_tighten_bounds=*/true);
+        params, mp_model_wrapper->mutable_underlying_model(),
+        absl::MakeSpan(integer_error_lb), absl::MakeSpan(integer_error_ub),
+        logger, /*only_tighten_bounds=*/true);
   }
 
   // Clamp variable.
@@ -360,8 +363,9 @@ MPSolutionResponse SatSolveProtoInternal(
     // Note that this is more than "implied": it also detect variable that could
     // always be made integer even if there are optimal solutions with such
     // variable at a non-integer value.
-    update_scaling(
-        sat::DetectImpliedIntegers(params, mp_model_wrapper.get(), logger));
+    update_scaling(sat::DetectImpliedIntegers(
+        params, mp_model_wrapper.get(), absl::MakeSpan(integer_error_lb),
+        absl::MakeSpan(integer_error_ub), logger));
   }
 
   // Detects if at optimality some variable could always be made integer.
@@ -369,15 +373,17 @@ MPSolutionResponse SatSolveProtoInternal(
   // ExtractEnforcementLiterals() because all extracted enforcement variables
   // are integer and therefore external when only_tighten_bounds is false.
   update_scaling(sat::MarkResidualTotallyUnimodularVariableAsInteger(
-      params, mp_model_wrapper->mutable_underlying_model(), logger));
+      params, mp_model_wrapper->mutable_underlying_model(),
+      absl::MakeSpan(integer_error_lb), absl::MakeSpan(integer_error_ub),
+      logger));
 
   // Same as MakeBoundsInteger() but no need to scan the constraint again here
   // as that will be done in the scaling. Even this is redundant with what
   // happen in ConvertMPModelProtoToCpModelProto(), we should probably clean
   // that up.
   if (!sat::MakeBoundsOfIntegerVariablesInteger(
-          params, var_scaling, mp_model_wrapper->mutable_underlying_model(),
-          logger)) {
+          params, var_scaling, integer_error_lb, integer_error_ub,
+          mp_model_wrapper->mutable_underlying_model(), logger)) {
     return InfeasibleResponse(
         *logger, "A detected integer variable has an empty domain");
   }
@@ -438,6 +444,7 @@ MPSolutionResponse SatSolveProtoInternal(
 
   sat::CpModelProto cp_model;
   if (!ConvertMPModelProtoToCpModelProto(params, *mp_model_wrapper, num_clamped,
+                                         integer_error_lb, integer_error_ub,
                                          &cp_model, logger)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");

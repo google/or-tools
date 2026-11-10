@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -246,6 +247,39 @@ bool ProbeLiteral(Literal assumption, SatSolver* solver) {
   }
 
   solver->mutable_logger()->EnableLogging(old_log_state);
+  return true;
+}
+
+bool ProbeLiteralWithLimit(Literal assumption, int64_t max_number_of_conflicts,
+                           double max_dtime, TimeLimit* limit,
+                           SatSolver* solver) {
+  if (solver->ModelIsUnsat()) return false;
+
+  const bool old_log_state = solver->mutable_logger()->LoggingIsEnabled();
+  solver->mutable_logger()->EnableLogging(false);
+  const double original_dtime_limit = limit->GetDeterministicLimit();
+  const auto cleanup =
+      absl::MakeCleanup([solver, old_log_state, limit, original_dtime_limit]() {
+        limit->ChangeDeterministicLimit(original_dtime_limit);
+        solver->mutable_logger()->EnableLogging(old_log_state);
+      });
+
+  limit->ChangeDeterministicLimit(std::min(
+      original_dtime_limit, limit->GetElapsedDeterministicTime() + max_dtime));
+  const auto status = solver->ResetAndSolveWithGivenAssumptions(
+      {assumption}, max_number_of_conflicts);
+
+  if (!solver->ResetToLevelZero()) return false;
+  if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+    if (!solver->AddUnitClause(assumption.Negated())) {
+      return false;
+    }
+    if (!solver->Propagate()) {
+      solver->NotifyThatModelIsUnsat();
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -783,9 +817,47 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   }
 
   // Start the algorithm.
+  int iter = 0;
   int max_depth = 0;
   std::string previous_core_info = "";
-  for (int iter = 0;;) {
+
+  // Initial base-node cover probing before main loop.
+  if (parameters_->cover_optimization() && !vars.empty() &&
+      encoder.nodes().size() <= 256) {
+    constexpr double kMaxInitialCoverDTime = 2.0;
+    const double initial_cover_dtime_limit =
+        time_limit_->GetElapsedDeterministicTime() + kMaxInitialCoverDTime;
+    for (EncodingNode* node : encoder.nodes()) {
+      if (time_limit_->LimitReached() ||
+          time_limit_->GetElapsedDeterministicTime() >=
+              initial_cover_dtime_limit) {
+        break;
+      }
+      while (!time_limit_->LimitReached() &&
+             time_limit_->GetElapsedDeterministicTime() <
+                 initial_cover_dtime_limit) {
+        lower_bound += node->Reduce(*sat_solver_);
+        if (node->HasNoWeight()) break;
+        const Literal assumption = node->GetAssumption(sat_solver_);
+        if (!ProbeLiteralWithLimit(
+                assumption, /*max_number_of_conflicts=*/1'000,
+                /*max_dtime=*/0.1, time_limit_, sat_solver_)) {
+          return SatSolver::INFEASIBLE;
+        }
+        if (!sat_solver_->Assignment().LiteralIsAssigned(assumption)) break;
+        ++iter;
+        previous_core_info = "initial_cover";
+      }
+    }
+  }
+
+  EncodingNode* node_to_probe = nullptr;
+  double bottom_stratum_max_dtime = 5.0;
+  bool recheck_strata_after_bottom_timeout = false;
+  Coefficient saved_lb_before_bottom_solve(0);
+  Coefficient saved_ub_before_bottom_solve(0);
+  int saved_fixed_before_bottom_solve = 0;
+  for (;;) {
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
@@ -828,15 +900,37 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 
-    if (parameters_->cover_optimization() && encoder.nodes().size() > 1) {
-      const Literal last_assumption =
-          encoder.mutable_nodes()->back()->GetAssumption(sat_solver_);
-      if (!ProbeLiteral(last_assumption, sat_solver_)) {
-        return SatSolver::INFEASIBLE;
+    if (recheck_strata_after_bottom_timeout) {
+      recheck_strata_after_bottom_timeout = false;
+      if (lower_bound > saved_lb_before_bottom_solve ||
+          upper_bound < saved_ub_before_bottom_solve ||
+          sat_solver_->NumFixedVariables() >
+              saved_fixed_before_bottom_solve + 32) {
+        for (EncodingNode* n : encoder.nodes()) {
+          stratified_lower_bound =
+              std::max(stratified_lower_bound, n->weight());
+        }
       }
-      if (sat_solver_->Assignment().LiteralIsAssigned(last_assumption)) {
-        previous_core_info = "cover";
-        continue;
+    }
+
+    if (parameters_->cover_optimization() && node_to_probe != nullptr) {
+      if (!absl::c_linear_search(encoder.nodes(), node_to_probe) ||
+          node_to_probe->HasNoWeight()) {
+        node_to_probe = nullptr;
+      } else {
+        const Literal last_assumption =
+            node_to_probe->GetAssumption(sat_solver_);
+        if (!ProbeLiteralWithLimit(last_assumption,
+                                   /*max_number_of_conflicts=*/1'000,
+                                   /*max_dtime=*/2.0, time_limit_,
+                                   sat_solver_)) {
+          return SatSolver::INFEASIBLE;
+        }
+        if (sat_solver_->Assignment().LiteralIsAssigned(last_assumption)) {
+          previous_core_info = "cover";
+          continue;
+        }
+        node_to_probe = nullptr;
       }
     }
 
@@ -869,13 +963,56 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     //
     // TODO(user): Find multiple cores like in the "main" algorithm. This is
     // just trying to solve with assumptions not involving the newly found core.
-    //
-    // TODO(user): With stratification, sometimes we just spend too much time
-    // trying to find a feasible solution/prove infeasibility and we could
-    // instead just use stratification=0 to find easy cores and improve lower
-    // bound.
-    const SatSolver::Status result =
-        ResetAndSolveIntegerProblem(assumptions, model_);
+    const Coefficient next_stratified_bound =
+        MaxNodeWeightSmallerThan(encoder.nodes(), stratified_lower_bound);
+    SatSolver::Status result;
+    if (next_stratified_bound > 0) {
+      constexpr double kStratifiedSolveMaxDTime = 1.5;
+      const double original_dtime_limit = time_limit_->GetDeterministicLimit();
+      time_limit_->ChangeDeterministicLimit(std::min(
+          original_dtime_limit, time_limit_->GetElapsedDeterministicTime() +
+                                    kStratifiedSolveMaxDTime));
+      result = ResetAndSolveIntegerProblem(assumptions, model_);
+      time_limit_->ChangeDeterministicLimit(original_dtime_limit);
+      if (result == SatSolver::LIMIT_REACHED && !time_limit_->LimitReached()) {
+        std::vector<Coefficient> unique_weights;
+        for (const EncodingNode* n : encoder.nodes()) {
+          if (n->weight() > 0 && n->weight() < stratified_lower_bound) {
+            unique_weights.push_back(n->weight());
+          }
+        }
+        std::sort(unique_weights.begin(), unique_weights.end());
+        unique_weights.erase(
+            std::unique(unique_weights.begin(), unique_weights.end()),
+            unique_weights.end());
+        stratified_lower_bound = unique_weights.empty()
+                                     ? Coefficient(0)
+                                     : unique_weights[static_cast<int>(
+                                           0.75 * (unique_weights.size() - 1))];
+        continue;
+      }
+    } else if (!assumptions.empty() &&
+               parameters_->max_sat_stratification() !=
+                   SatParameters::STRATIFICATION_NONE &&
+               encoder.nodes().size() > 1) {
+      saved_lb_before_bottom_solve = lower_bound;
+      saved_ub_before_bottom_solve = upper_bound;
+      saved_fixed_before_bottom_solve = sat_solver_->NumFixedVariables();
+      const double original_dtime_limit = time_limit_->GetDeterministicLimit();
+      time_limit_->ChangeDeterministicLimit(std::min(
+          original_dtime_limit, time_limit_->GetElapsedDeterministicTime() +
+                                    bottom_stratum_max_dtime));
+      result = ResetAndSolveIntegerProblem(assumptions, model_);
+      time_limit_->ChangeDeterministicLimit(original_dtime_limit);
+      if (result == SatSolver::LIMIT_REACHED && !time_limit_->LimitReached()) {
+        bottom_stratum_max_dtime *= 2.0;
+        recheck_strata_after_bottom_timeout = true;
+        continue;
+      }
+    } else {
+      result = ResetAndSolveIntegerProblem(assumptions, model_);
+    }
+
     if (result == SatSolver::FEASIBLE) {
       if (!ProcessSolution()) return SatSolver::INFEASIBLE;
       if (stop_) return SatSolver::LIMIT_REACHED;
@@ -909,8 +1046,31 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // We only count an iter when we find a core.
     ++iter;
-    if (!encoder.ProcessCore(core, min_weight, gap, &previous_core_info)) {
-      return SatSolver::INFEASIBLE;
+    bottom_stratum_max_dtime = 5.0;
+    if (core.size() == 1) {
+      node_to_probe = nullptr;
+      for (EncodingNode* n : encoder.nodes()) {
+        if (n->AssumptionIs(core[0])) {
+          node_to_probe = n;
+          break;
+        }
+      }
+      if (!encoder.ProcessCore(core, min_weight, gap, &previous_core_info)) {
+        return SatSolver::INFEASIBLE;
+      }
+    } else {
+      EncodingNode* previous_back =
+          encoder.nodes().empty() ? nullptr : encoder.nodes().back();
+      if (!encoder.ProcessCore(core, min_weight, gap, &previous_core_info)) {
+        return SatSolver::INFEASIBLE;
+      }
+      node_to_probe =
+          (!encoder.nodes().empty() &&
+           encoder.nodes().back() != previous_back &&
+           !encoder.nodes().back()->HasNoWeight() &&
+           encoder.nodes().back()->lb() < encoder.nodes().back()->ub())
+              ? encoder.nodes().back()
+              : nullptr;
     }
     max_depth = std::max(max_depth, encoder.nodes().back()->depth());
   }
