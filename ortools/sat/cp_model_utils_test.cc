@@ -762,6 +762,22 @@ TEST(CpModelUtilsTest, ApplyToAllLinearExpressions) {
   EXPECT_EQ(visited, 0);
 }
 
+TEST(CpModelUtilsTest, CanonicalizeLinearConstraintProto) {
+  LinearConstraintProto lin = ParseTestProto(R"pb(
+    vars: [ 2, 0, 2, 1 ]
+    coeffs: [ 3, 4, -1, 5 ]
+    domain: [ 10, 20 ]
+  )pb");
+  // Enforcement: var 0 == 1 (shifts domain by -4), var 1 == 0 (dropped).
+  CanonicalizeLinearExpression({0, -2}, &lin);
+  const LinearConstraintProto expected = ParseTestProto(R"pb(
+    vars: [ 2 ]
+    coeffs: [ 2 ]
+    domain: [ 6, 16 ]
+  )pb");
+  EXPECT_THAT(lin, testing::EqualsProto(expected));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

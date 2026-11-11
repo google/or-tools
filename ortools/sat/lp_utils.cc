@@ -2397,32 +2397,54 @@ bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
          mp_constraint.upper_bound() == kInfinity;
 }
 
-// TODO(user): unit test this.
+// Tries to find an odd rational multiplier for `coefficients` within
+// `fp_limit`, shifting any coefficient with `frexp` exponent `exp <
+// min_target_exp` up by `2^(min_target_exp - exp)` before rational
+// approximation:
+// - `min_target_exp = k` (with a 7-bit ULP safety margin relative to
+//   `tolerance`) strips up to `k` bits of power-of-two denominator (e.g.
+//   recovering `5^6` from `1e-6 = 2^-6 * 5^-6`).
+// - `min_target_exp = 0` normalizes `< 0.5` coefficients into `[0.5, 1.0)`,
+//   making 8-to-10-digit decimals (such as `333.33333333` in `timtab1CUTS`)
+//   invariant to power-of-two variable down-scaling without amplifying their
+//   truncation error by `2^k`.
+// - `min_target_exp = int::min()` leaves raw fractional parts untouched so
+//   unscaled truncated rationals like `1/450` or `1/1440` are not shifted.
 double FindOddRationalScaling(absl::Span<const double> coefficients,
-                              double tolerance, double fp_limit) {
-  // A normalized double in [0.5, 1.0) has 53 mantissa bits (1 ULP = 2^-53).
-  // We can scale it by 2^k and take the fractional part to strip up to k bits
-  // of power-of-two denominator, as long as the ULP error 2^(k - 53) stays
-  // well below `tolerance` (we keep a 7-bit safety margin).
-  int tol_exp = 0;
-  std::frexp(tolerance, &tol_exp);
-  const int k = std::clamp(53 + tol_exp - 7, 0, 52);
-
+                              double tolerance, double fp_limit,
+                              int min_target_exp) {
   double multiplier = 1.0;
   const int64_t limit =
       static_cast<int64_t>(std::min(std::abs(fp_limit), 1e15));
   for (const double coeff : coefficients) {
     if (coeff == 0.0) continue;
-    int exp;
-    const double mantissa = std::frexp(std::abs(coeff), &exp);
-    const double scaled = std::ldexp(mantissa, std::max(k, exp));
+    const double abs_coeff = std::abs(coeff);
+    int exp = 0;
+    const double mantissa = std::frexp(abs_coeff, &exp);
+    const int shift = min_target_exp > exp ? min_target_exp - exp : 0;
+    const double scaled = std::ldexp(mantissa, exp + shift);
     const double frac = scaled - std::floor(scaled);
     int64_t f =
         FindRationalFactor(multiplier * frac, limit, multiplier * tolerance);
     if (f == 0) return 0.0;
-    f >>= std::countr_zero(static_cast<uint64_t>(f));
+    const int tz_f = std::countr_zero(static_cast<uint64_t>(f));
+    f >>= tz_f;
     multiplier *= f;
     if (multiplier > limit) return 0.0;
+    const int max_pow2 = MaxPowerOfTwoExponentWithinBound(multiplier, limit);
+    if (shift + tz_f > max_pow2) {
+      // `FindRationalFactor` relied on `2^(shift + tz_f)`, which exceeds
+      // `limit / multiplier`. Verify whether `multiplier * 2^r` already
+      // realizes an integer on `coeff` within `limit`.
+      const int r = std::min(max_pow2, std::max(0, 53 - exp));
+      double frac_r = std::ldexp(mantissa, exp + r);
+      frac_r -= std::floor(frac_r);
+      const double prod = multiplier * frac_r;
+      if (std::abs(prod - std::round(prod)) >=
+          std::ldexp(multiplier * tolerance, r)) {
+        return 0.0;
+      }
+    }
   }
   return multiplier;
 }
@@ -2470,8 +2492,9 @@ double FindBestScalingAndComputeErrors(
   // Note that if our current precision is already above the requested one,
   // we choose integer scaling if we get a better precision.
   //
-  // We try two tolerances. FindRationalFactor() accepts a denominator q as soon
-  // as |q * x - round(q * x)| < q * tolerance, so with a tolerance of 1e-8 any
+  // We try two tolerances and three mantissa shift targets (`k`, `0`, and no
+  // shift). FindRationalFactor() accepts a denominator q as soon as
+  // |q * x - round(q * x)| < q * tolerance, so with a tolerance of 1e-8 any
   // convergent with q >= 1e4 is accepted and we cannot reliably recover
   // denominators like 15625 (i.e. coefficients that are multiples of 1e-6),
   // the result even depends on the coefficient order. We thus first try a
@@ -2480,40 +2503,45 @@ double FindBestScalingAndComputeErrors(
   // coefficients are not exact rationals (this matters for the headroom of
   // continuous variables), so we still try it afterwards.
   for (const double rational_tolerance : {1e-10, 1e-8}) {
-    double integer_factor = FindOddRationalScaling(
-        coefficients, rational_tolerance, scaling_factor);
-    DCHECK(std::isfinite(integer_factor));
-    if (integer_factor == 0 || integer_factor >= scaling_factor) continue;
+    int tol_exp = 0;
+    std::frexp(rational_tolerance, &tol_exp);
+    const int k = std::clamp(53 + tol_exp - 7, 0, 52);
+    for (const int min_target_exp : {k, 0, std::numeric_limits<int>::min()}) {
+      double integer_factor = FindOddRationalScaling(
+          coefficients, rational_tolerance, scaling_factor, min_target_exp);
+      DCHECK(std::isfinite(integer_factor));
+      if (integer_factor == 0 || integer_factor >= scaling_factor) continue;
 
-    double local_relative_coeff_error;
-    double local_scaled_sum_error;
+      double local_relative_coeff_error;
+      double local_scaled_sum_error;
 
-    // As long as integer_factor * 2^x is smaller than scaling_factor, consider
-    // it!
-    bool use_rational = false;
-    while (true) {
-      ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
-                           integer_factor, &local_relative_coeff_error,
-                           &local_scaled_sum_error);
+      // As long as integer_factor * 2^x is smaller than scaling_factor,
+      // consider it!
+      bool use_rational = false;
+      while (true) {
+        ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
+                             integer_factor, &local_relative_coeff_error,
+                             &local_scaled_sum_error);
 
-      if (local_scaled_sum_error <
-          wanted_absolute_activity_precision * integer_factor) {
-        // Smaller factor under the wanted precision, select it.
-        use_rational = true;
-        break;
+        if (local_scaled_sum_error <
+            wanted_absolute_activity_precision * integer_factor) {
+          // Smaller factor under the wanted precision, select it.
+          use_rational = true;
+          break;
+        }
+
+        if (integer_factor * 2 >= scaling_factor) break;
+        integer_factor *= 2;
       }
 
-      if (integer_factor * 2 >= scaling_factor) break;
-      integer_factor *= 2;
-    }
-
-    // If use_rational was set, or we have a smaller error, go for it.
-    DCHECK_LT(integer_factor, scaling_factor);
-    if (use_rational || local_scaled_sum_error * scaling_factor <=
-                            *scaled_sum_error * integer_factor) {
-      *relative_coeff_error = local_relative_coeff_error;
-      *scaled_sum_error = local_scaled_sum_error;
-      scaling_factor = integer_factor;
+      // If use_rational was set, or we have a smaller error, go for it.
+      DCHECK_LT(integer_factor, scaling_factor);
+      if (use_rational || local_scaled_sum_error * scaling_factor <=
+                              *scaled_sum_error * integer_factor) {
+        *relative_coeff_error = local_relative_coeff_error;
+        *scaled_sum_error = local_scaled_sum_error;
+        scaling_factor = integer_factor;
+      }
     }
   }
 

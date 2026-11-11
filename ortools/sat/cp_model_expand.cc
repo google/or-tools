@@ -2926,10 +2926,12 @@ void ExpandCpModel(PresolveContext* context) {
         bool changed = false;
         if (!context->params().cp_model_presolve() ||
             context->time_limit()->LimitReached()) {
-          changed = context->CanonicalizeLinMax(context->MutableConstraint(c));
+          changed =
+              context->CanonicalizeConstraint(context->MutableConstraint(c));
         }
-        if (ct.lin_max().exprs().size() <=
-            context->params().max_lin_max_size_for_expansion()) {
+        if (ct.constraint_case() == ConstraintProto::kLinMax &&
+            ct.lin_max().exprs().size() <=
+                context->params().max_lin_max_size_for_expansion()) {
           ExpandLinMax(context->MutableConstraint(c), context);
         } else if (changed) {
           context->UpdateConstraintVariableUsage(c);
