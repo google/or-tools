@@ -1006,29 +1006,31 @@ bool LinMaxIsCanonical(const ConstraintProto& ct) {
   return true;
 }
 
-void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
-                                  LinearExpressionProto* expr) {
-  if (LinearExpressionIsCanonical(enforcements, *expr)) return;
-  int64_t offset = expr->offset();
+namespace {
+template <typename ProtoWithVarsAndCoeffs>
+int64_t CanonicalizeLinearTerms(const absl::flat_hash_set<int>& enforcements,
+                                ProtoWithVarsAndCoeffs* proto) {
+  int64_t sum_of_fixed_terms = 0;
   std::vector<std::pair<int, int64_t>> terms;
-  terms.reserve(expr->vars_size());
-  DCHECK_EQ(expr->vars_size(), expr->coeffs_size());
-  for (int i = 0; i < expr->vars_size(); ++i) {
-    const int var = expr->vars(i);
+  terms.reserve(proto->vars_size());
+  DCHECK_EQ(proto->vars_size(), proto->coeffs_size());
+  for (int i = 0; i < proto->vars_size(); ++i) {
+    const int var = proto->vars(i);
     DCHECK(RefIsPositive(var));
-    const int64_t coeff = expr->coeffs(i);
+    const int64_t coeff = proto->coeffs(i);
     if (coeff == 0) continue;
-    if (enforcements.contains(var)) {
-      offset += coeff;
-      continue;
+    if (!enforcements.empty()) {
+      if (enforcements.contains(var)) {
+        sum_of_fixed_terms += coeff;
+        continue;
+      }
+      if (enforcements.contains(NegatedRef(var))) continue;
     }
-    if (enforcements.contains(NegatedRef(var))) continue;
     terms.push_back({var, coeff});
   }
   std::sort(terms.begin(), terms.end());
-  expr->clear_vars();
-  expr->clear_coeffs();
-  expr->set_offset(offset);
+  proto->clear_vars();
+  proto->clear_coeffs();
   int current_var = 0;
   int64_t current_coeff = 0;
   for (const auto [var, coeff] : terms) {
@@ -1036,21 +1038,39 @@ void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
       current_coeff += coeff;
     } else {
       if (current_coeff != 0) {
-        expr->add_vars(current_var);
-        expr->add_coeffs(current_coeff);
+        proto->add_vars(current_var);
+        proto->add_coeffs(current_coeff);
       }
       current_var = var;
       current_coeff = coeff;
     }
   }
   if (current_coeff != 0) {
-    expr->add_vars(current_var);
-    expr->add_coeffs(current_coeff);
+    proto->add_vars(current_var);
+    proto->add_coeffs(current_coeff);
   }
+  return sum_of_fixed_terms;
+}
+}  // namespace
+
+void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
+                                  LinearExpressionProto* expr) {
+  if (LinearExpressionIsCanonical(enforcements, *expr)) return;
+  expr->set_offset(expr->offset() +
+                   CanonicalizeLinearTerms(enforcements, expr));
 }
 
 void CanonicalizeLinearExpression(LinearExpressionProto* expr) {
   CanonicalizeLinearExpression({}, expr);
+}
+
+void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
+                                  LinearConstraintProto* proto) {
+  const int64_t offset = CanonicalizeLinearTerms(enforcements, proto);
+  if (offset != 0) {
+    FillDomainInProto(ReadDomainFromProto(*proto).AdditionWith(Domain(-offset)),
+                      proto);
+  }
 }
 
 void CanonicalizeLinMax(ConstraintProto* ct) {

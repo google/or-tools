@@ -50,7 +50,6 @@
 #include "ortools/base/protobuf_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/graph/topologicalsorter.h"
@@ -6907,7 +6906,8 @@ void CpModelPresolver::PresolveVarOnlyInLinMaxAndLinear(int var,
       expr->set_offset(expr->offset() - linear.domain(0) * multiplier);
     }
   }
-  context_->CanonicalizeLinMax(context_->MutableConstraint(lin_max_ct_index));
+  context_->CanonicalizeConstraint(
+      context_->MutableConstraint(lin_max_ct_index));
   context_->NewMappingConstraint(context_->Constraint(linear_ct_index),
                                  __FILE__, __LINE__);
 

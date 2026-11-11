@@ -408,6 +408,8 @@ bool LinMaxIsCanonical(const ConstraintProto& ct);
 void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
                                   LinearExpressionProto* expr);
 void CanonicalizeLinearExpression(LinearExpressionProto* expr);
+void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
+                                  LinearConstraintProto* proto);
 
 // Canonicalizes the enforcement literals, target, and expressions of a
 // lin_max constraint, and sorts exprs by (vars, coeffs, offset).

@@ -131,38 +131,45 @@ FeasibilityJumpSolver::~FeasibilityJumpSolver() {
 }
 
 void FeasibilityJumpSolver::ImportState() {
-  state_ = states_->GetNextState();
-  if (state_->move == nullptr) {
-    const int num_variables = dense_model_.var_domains().size();
+  state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
+                                 dense_model_.equivalences_timestamp());
+  const int num_variables = dense_model_.var_domains().size();
+  if (state_->move == nullptr ||
+      state_->move->NumVariables() != num_variables) {
     state_->move = std::make_unique<CompoundMoveBuilder>(num_variables);
   }
 }
 
 void FeasibilityJumpSolver::ReleaseState() {
-  state_->input_solution = dense_model_.ReverseMapSolution(state_->solution);
+  if (!state_->solution.empty()) {
+    state_->input_solution = dense_model_.ReverseMapSolution(state_->solution);
+  }
   states_->Release(state_);
+  state_ = nullptr;
 }
 
 bool FeasibilityJumpSolver::Initialize() {
-  const CpModelProto& model_proto = dense_model_.proto();
-  LinearModel linear_model(model_proto);
-  std::vector<bool> ignored(model_proto.constraints_size(), false);
-  if (params_.feasibility_jump_linearization_level() != 0) {
-    ignored = linear_model.ignored_constraints();
+  if (evaluator_ != nullptr) {
+    dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
+    evaluator_.reset();
   }
+  shared_time_limit_->UpdateLocalLimit(&time_limit_);
 
+  const CpModelProto& model_proto = dense_model_.proto();
   if (params_.feasibility_jump_linearization_level() == 0) {
-    evaluator_ = std::make_unique<LsEvaluator>(
-        model_proto, params_, ignored, absl::Span<const ConstraintProto>{},
-        &time_limit_);
+    evaluator_ =
+        std::make_unique<LsEvaluator>(model_proto, params_, &time_limit_);
   } else {
+    LinearModel linear_model(model_proto);
     evaluator_ = std::make_unique<LsEvaluator>(
-        model_proto, params_, ignored, linear_model.additional_constraints(),
-        &time_limit_);
+        model_proto, params_, linear_model.ignored_constraints(),
+        linear_model.additional_constraints(), &time_limit_);
   }
 
   if (time_limit_.LimitReached()) {
+    dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
     evaluator_.reset();
+    is_initialized_ = false;
     return false;
   }
 
@@ -181,7 +188,7 @@ bool FeasibilityJumpSolver::Initialize() {
     }
   }
   vars_to_scan_.ClearAndReserve(num_vars);
-  var_occurs_in_non_linear_constraint_.resize(num_vars);
+  var_occurs_in_non_linear_constraint_.assign(num_vars, false);
   for (int c = 0; c < evaluator_->NumNonLinearConstraints(); ++c) {
     for (int v : evaluator_->GeneralConstraintToVars(c)) {
       var_occurs_in_non_linear_constraint_[v] = true;
@@ -373,10 +380,38 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   task_generated_ = true;  // Atomic.
 
   return [this] {
+    state_ = nullptr;
+    const auto cleanup = absl::MakeCleanup([this] {
+      // TODO(user): Find better names. DeterministicTime() is maintained by
+      // this class while deterministic_time() is the one saved in the
+      // SubSolver base class.
+      const double current_dtime = DeterministicTime();
+      const double delta = current_dtime - deterministic_time();
+
+      // Because deterministic_time() is computed with a sum of difference, it
+      // might be slightly different than DeterministicTime() and we don't want
+      // to go backward, even by 1e-18.
+      if (delta > 0.0) {
+        AddTaskDeterministicDuration(delta);
+        shared_time_limit_->AdvanceDeterministicTime(delta);
+      }
+
+      if (state_ != nullptr) {
+        ReleaseState();
+      }
+      task_generated_ = false;  // Atomic.
+    });
+
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
     bool updated = false;
-    if (!dense_model_.MaybeUpdate(updated)) return;
+    if (!dense_model_.MaybeUpdate(updated)) {
+      model_is_supported_ = false;
+      return;
+    }
+    if (updated) {
+      dtime_.AdvanceDeterministicTime(dense_model_.estimated_copy_dtime());
+    }
     if (updated || !is_initialized_) {
       if (!Initialize()) return;
     }
@@ -387,7 +422,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     bool reset_weights = false;
     if (state_->bounds_timestamp != dense_model_.bounds_timestamp() ||
         state_->equivalences_timestamp !=
-            dense_model_.equivalences_timestamp()) {
+            dense_model_.equivalences_timestamp() ||
+        (!state_->solution.empty() &&
+         state_->solution.size() != dense_model_.var_domains().size()) ||
+        (!state_->weights.empty() &&
+         state_->weights.size() != evaluator_->NumEvaluatorConstraints())) {
       state_->bounds_timestamp = dense_model_.bounds_timestamp();
       state_->equivalences_timestamp = dense_model_.equivalences_timestamp();
       if (!state_->solution.empty()) {
@@ -550,7 +589,12 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     }
 
     ++state_->counters.num_batches;
-    if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
+    const double search_start_dtime = DeterministicTime();
+    const bool feasible_found =
+        DoSomeLinearIterations() && DoSomeGeneralIterations();
+    dense_model_.AddSearchDeterministicTime(DeterministicTime() -
+                                            search_start_dtime);
+    if (feasible_found) {
       const std::vector<int64_t> input_solution =
           dense_model_.ReverseMapSolution(state_->solution);
       // Checks for infeasibility induced by the non supported constraints.
@@ -597,27 +641,6 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         }
       }
     }
-
-    // Update dtime.
-    // Since we execute only one task at a time, this is safe.
-    {
-      // TODO(user): Find better names. DeterministicTime() is maintained by
-      // this class while deterministic_time() is the one saved in the SubSolver
-      // base class.
-      const double current_dtime = DeterministicTime();
-      const double delta = current_dtime - deterministic_time();
-
-      // Because deterministic_time() is computed with a sum of difference, it
-      // might be slightly different than DeterministicTime() and we don't want
-      // to go backward, even by 1e-18.
-      if (delta >= 0) {
-        AddTaskDeterministicDuration(delta);
-        shared_time_limit_->AdvanceDeterministicTime(delta);
-      }
-    }
-
-    ReleaseState();
-    task_generated_ = false;  // Atomic.
   };
 }
 
