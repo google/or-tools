@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -1000,6 +1001,73 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   EXPECT_EQ(context.DomainOf(0).ToString(), "[10][20][30][40]");
 }
 
+TEST(PresolveContextTest,
+     StoreAffineRelationPropagatesFixedRepresentativesWhenDomainWasRelaxed) {
+  // Subcase 1 (|o| > max(|MinOf(x)|, |MaxOf(x)|)):
+  // y (var 0) has Size() = 201 > kDomainComplexityLimit, so var_y = 10 * y
+  // (var 1) keeps the continuous interval [1000, 3000]. Adding
+  // var_x = var_y - 1000 with var_x in [0, 5] fixes y = 100 and x = 0 during
+  // representative propagation while var_y has [1000, 1005]; var_y must also be
+  // propagated to [1000, 1000] rather than left unfixed.
+  {
+    Model model;
+    CpModelProto working_model = ParseTestProto(R"pb(
+      variables { domain: [ 100, 300 ] }
+      variables { domain: [ 1000, 3000 ] }
+      variables { domain: [ 0, 5 ] }
+      solution_hint {
+        vars: [ 0, 1, 2 ]
+        values: [ 150, 1500, 4 ]
+      }
+    )pb");
+    PresolveContext context(&model, &working_model, nullptr);
+    context.InitializeNewDomains();
+    context.LoadAndClampSolutionHint();
+
+    ASSERT_TRUE(context.StoreAffineRelation(1, 0, 10, 0));
+    ASSERT_TRUE(context.StoreAffineRelation(2, 1, 1, -1000));
+
+    EXPECT_EQ(context.DomainOf(0), Domain(100));
+    EXPECT_EQ(context.DomainOf(1), Domain(1000));
+    EXPECT_EQ(context.DomainOf(2), Domain(0));
+    EXPECT_EQ(context.GetAffineRelation(2).representative, 2);
+    EXPECT_THAT(context.solution_crush().GetVarValues(),
+                testing::ElementsAre(100, 1000, 0));
+  }
+
+  // Subcase 2 (|o| <= max(|MinOf(x)|, |MaxOf(x)|)):
+  // x (var 0) is Boolean [0, 1] with var_x = 2 * x (var 2, domain {0, 2}).
+  // y (var 1) has domain [-200, 0] (Size() = 201 > kDomainComplexityLimit) with
+  // var_y = -4 * y - 2 (var 3, continuous domain [-2, 798]). Adding
+  // var_x = var_y reduces to x = -2 * y - 1 and fixes x = 1 and y = -1 during
+  // representative propagation; it must not fall through to AddRelation and
+  // assign non-literal y ([-1, -1]) as the representative of Boolean x.
+  {
+    Model model;
+    CpModelProto working_model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ -200, 0 ] }
+      variables { domain: [ 0, 2 ] }
+      variables { domain: [ -10, 800 ] }
+    )pb");
+    PresolveContext context(&model, &working_model, nullptr);
+    context.InitializeNewDomains();
+
+    ASSERT_TRUE(context.StoreAffineRelation(2, 0, 2, 0));
+    ASSERT_TRUE(context.StoreAffineRelation(3, 1, -4, -2));
+    ASSERT_TRUE(context.StoreAffineRelation(2, 3, 1, 0));
+
+    EXPECT_EQ(context.DomainOf(0), Domain(1));
+    EXPECT_EQ(context.DomainOf(1), Domain(-1));
+    EXPECT_EQ(context.DomainOf(2), Domain(2));
+    EXPECT_EQ(context.DomainOf(3), Domain(2));
+    EXPECT_EQ(context.GetAffineRelation(0).representative, 0);
+    EXPECT_TRUE(context.CanBeUsedAsLiteral(
+        context.GetAffineRelation(0).representative));
+    EXPECT_EQ(context.GetLiteralRepresentative(0), 0);
+  }
+}
+
 TEST(PresolveContextTest, ObjectiveScalingMinimize) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
@@ -1426,7 +1494,7 @@ TEST(PresolveContextTest, CanonicalizeLinMaxLiteralAndNegationInInitialProto) {
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   ConstraintProto* ct = context.MutableConstraint(0);
-  EXPECT_TRUE(context.CanonicalizeLinMax(ct));
+  EXPECT_TRUE(context.CanonicalizeConstraint(ct));
   EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
 }
 
@@ -1457,8 +1525,386 @@ TEST(PresolveContextTest,
   // Substitute literal 1 with not(0) (-1).
   EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -2));
   ConstraintProto* ct = context.MutableConstraint(0);
-  EXPECT_TRUE(context.CanonicalizeLinMax(ct));
+  EXPECT_TRUE(context.CanonicalizeConstraint(ct));
   EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
+}
+
+TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
+  Model model;
+  // Variables:
+  // 0..5: Booleans [0, 1]
+  // 6..9: Integers [0, 10]
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    # c0: kLinear with unsorted vars, negative leading coeff, GCD 2, and fixed
+    # var 9.
+    constraints {
+      linear {
+        vars: [ 8, 7, 9 ]
+        coeffs: [ 4, -2, 2 ]
+        domain: [ 0, 20 ]
+      }
+    }
+    # c1: kBoolOr with unsorted/duplicate literals and a false literal.
+    constraints { bool_or { literals: [ 3, 1, 0, 1, 4 ] } }
+    # c2: enforced kBoolAnd with redundant enforcement literal in body.
+    constraints {
+      enforcement_literal: [ 1 ]
+      bool_and { literals: [ 0, 1 ] }
+    }
+    # c3: kAtMostOne (3 == 2 will create duplicate 2 -> fixes 2 = 0, leaving [0,
+    # 1]).
+    constraints { at_most_one { literals: [ 3, 2, 0, 1, 4 ] } }
+    # c4: kExactlyOne (with 2 = 0 and 4 = 0, leaves [0, 1]).
+    constraints { exactly_one { literals: [ 2, 0, 1, 4 ] } }
+    # c5: kBoolXor with false literal removal and odd true literal kept at end.
+    constraints { bool_xor { literals: [ 3, -1, 3, 1, 5, 4 ] } }
+    # c6: kLinMax with unsorted exprs.
+    constraints {
+      lin_max {
+        target {
+          vars: [ 8 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 7, 9 ]
+          coeffs: [ 2, 1 ]
+          offset: 1
+        }
+        exprs {
+          vars: [ 6 ]
+          coeffs: [ 1 ]
+          offset: 5
+        }
+      }
+    }
+    # c7: optional kInterval whose enforcement literal 4 will be fixed false.
+    constraints {
+      enforcement_literal: [ 4 ]
+      interval {
+        start {
+          vars: [ 6 ]
+          coeffs: [ 1 ]
+        }
+        size { offset: 3 }
+        end {
+          vars: [ 6 ]
+          coeffs: [ 1 ]
+          offset: 3
+        }
+      }
+    }
+    # c8: performed kInterval referencing affine variable 7.
+    constraints {
+      interval {
+        start {
+          vars: [ 7 ]
+          coeffs: [ 1 ]
+        }
+        size {
+          vars: [ 9 ]
+          coeffs: [ 1 ]
+          offset: 2
+        }
+        end {
+          vars: [ 8 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    # c9: kCumulative referencing interval 7 and 8.
+    constraints {
+      cumulative {
+        intervals: [ 7, 8 ]
+        demands {
+          vars: [ 9 ]
+          coeffs: [ 1 ]
+          offset: 1
+        }
+        demands {
+          vars: [ 7 ]
+          coeffs: [ 2 ]
+        }
+        capacity {
+          vars: [ 8 ]
+          coeffs: [ 1 ]
+          offset: 5
+        }
+      }
+    }
+    # c10: kTable with modern exprs.
+    constraints {
+      table {
+        exprs {
+          vars: [ 7, 9 ]
+          coeffs: [ 1, 1 ]
+        }
+        exprs {
+          vars: [ 8 ]
+          coeffs: [ 1 ]
+        }
+        values: [ 5, 5, 6, 6 ]
+      }
+    }
+    # c11: kRoutes whose dimension expression uses var 7 (not in arc literals!).
+    constraints {
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 2, 3 ]
+        dimensions {
+          exprs {
+            vars: [ 7, 9 ]
+            coeffs: [ 1, 2 ]
+            offset: 1
+          }
+          exprs {
+            vars: [ 8 ]
+            coeffs: [ 1 ]
+          }
+        }
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  EXPECT_TRUE(context.NeedsCanonicalization());
+
+  // Initial sync canonicalizes unsorted inputs.
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  // Now mutate variable state:
+  // - Fix var 4 = 0 (makes c7 unperformed interval stub, drops 4 from
+  // c1/c3/c4).
+  // - Fix var 5 = 1 (flips parity in c5).
+  // - Fix var 9 = 3 (folds constant into c0, c6, c8, c9, c10, c11).
+  // - Link var 7 = 2 * var 6 + 1 (wakes up c0, c6, c8, c9, c10, and c11!).
+  // - Link literal 3 == literal 2 (wakes up c1, c2, c3, c4, c5, c11).
+  ASSERT_TRUE(context.SetLiteralToFalse(4));
+  ASSERT_TRUE(context.SetLiteralToTrue(5));
+  ASSERT_TRUE(context.IntersectDomainWith(9, Domain(3)));
+  ASSERT_TRUE(context.StoreAffineRelation(7, 6, 2, 1));
+  ASSERT_TRUE(context.StoreBooleanEqualityRelation(3, 2));
+
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+
+  // Verify unperformed kInterval stub (c7) kept kInterval active with cleared
+  // start/size/end and a single false enforcement literal.
+  const ConstraintProto& itv_stub = context.Constraint(7);
+  EXPECT_EQ(itv_stub.constraint_case(), ConstraintProto::kInterval);
+  ASSERT_EQ(itv_stub.enforcement_literal_size(), 1);
+  EXPECT_TRUE(context.LiteralIsFalse(itv_stub.enforcement_literal(0)));
+  EXPECT_FALSE(itv_stub.interval().has_start());
+  EXPECT_FALSE(itv_stub.interval().has_size());
+  EXPECT_FALSE(itv_stub.interval().has_end());
+
+  // Verify kRoutes dimension expression (c11) substituted var 7 -> 2*var 6 + 1
+  // and folded var 9 = 3 (offset = 1 + 1 + 2*3 = 8).
+  const LinearExpressionProto& route_expr0 =
+      context.Constraint(11).routes().dimensions(0).exprs(0);
+  EXPECT_THAT(route_expr0.vars(), testing::ElementsAre(6));
+  EXPECT_THAT(route_expr0.coeffs(), testing::ElementsAre(2));
+  EXPECT_EQ(route_expr0.offset(), 8);
+
+  // Verify kLinear (c0): originally 4*x8 - 2*x7 + 2*x9 in [0, 20].
+  // With x7 = 2*x6 + 1 (and x6 <= 4 from domain propagation) and x9 = 3:
+  // -4*x6 + 4*x8 + 4 in [0, 20] -> -4*x6 + 4*x8 in [-4, 16]
+  // -> divide by GCD 4: -x6 + x8 in [-1, 4]
+  // -> positive leading coeff: x6 - x8 in [-4, 1].
+  const LinearConstraintProto& lin0 = context.Constraint(0).linear();
+  EXPECT_THAT(lin0.vars(), testing::ElementsAre(6, 8));
+  EXPECT_THAT(lin0.coeffs(), testing::ElementsAre(1, -1));
+  EXPECT_THAT(lin0.domain(), testing::ElementsAre(-4, 1));
+
+  // Graph consistency holds after lazy sync.
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+}
+
+TEST(PresolveContextTest, CanonicalizeConstraintsLazilyCascadingPropagation) {
+  Model model;
+  // Variables:
+  // 0: a in [0, 1]
+  // 1: b in [0, 1]
+  // 2: x in [0, 10]
+  // 3: y in [0, 10]
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    # c0: ~a \/ b (so fixing a = 1 forces b = 1).
+    constraints { bool_or { literals: [ -1, 1 ] } }
+    # c1: b => x in [4, 4] (once b = 1, un-enforced unary linear fixes x = 4!).
+    constraints {
+      enforcement_literal: [ 1 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 4, 4 ]
+      }
+    }
+    # c2: interval with start = x + y (once x = 4, start becomes y + 4).
+    constraints {
+      interval {
+        start {
+          vars: [ 2, 3 ]
+          coeffs: [ 1, 1 ]
+        }
+        size { offset: 2 }
+        end {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+          offset: 6
+        }
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+
+  // Fix a = 1; a single CanonicalizeConstraintsLazily() call must cascade
+  // a=1 -> b=1 -> x=4 -> canonicalize interval c2.
+  ASSERT_TRUE(context.SetLiteralToTrue(0));
+  context.CanonicalizeConstraintsLazily();
+
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_TRUE(context.LiteralIsTrue(1));
+  EXPECT_TRUE(context.IsFixed(2));
+  EXPECT_EQ(context.FixedValue(2), 4);
+  EXPECT_EQ(context.Constraint(0).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_EQ(context.Constraint(1).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_THAT(context.Constraint(2).interval().start().vars(),
+              testing::ElementsAre(3));
+  EXPECT_EQ(context.Constraint(2).interval().start().offset(), 4);
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+}
+
+TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
+  google::protobuf::Arena arena;
+  CpModelProto* working_model =
+      google::protobuf::Arena::Create<CpModelProto>(&arena);
+  *working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints { bool_or { literals: [ 1, 0 ] } }
+    constraints {
+      linear {
+        vars: [ 3, 2 ]
+        coeffs: [ 2, 2 ]
+        domain: [ 2, 12 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  PresolveContext context(&model, working_model, nullptr);
+
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+
+  // Re-running CanonicalizeConstraint on already-canonical constraints is a
+  // pure read-only no-op returning false.
+  for (int c = 0; c < context.NumConstraints(); ++c) {
+    ConstraintProto copy = context.Constraint(c);
+    EXPECT_FALSE(context.CanonicalizeConstraint(&copy));
+  }
+
+  const uint64_t space_after_first_sync = arena.SpaceUsed();
+  for (int iter = 0; iter < 10; ++iter) {
+    context.CanonicalizeConstraintsLazily();
+  }
+  EXPECT_EQ(arena.SpaceUsed(), space_after_first_sync);
+
+  // Force a full detach -> CanonicalizeConstraint -> reattach Swap cycle on
+  // both constraints and verify zero Arena allocation (O(1) pointer swap).
+  context.MarkConstraintForCanonicalization(0);
+  context.MarkConstraintForCanonicalization(1);
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_EQ(arena.SpaceUsed(), space_after_first_sync);
+
+  // Test AddConstraint + RemoveLastConstraint watermark handling.
+  ConstraintProto* temp = context.AddConstraint();
+  temp->mutable_bool_or()->add_literals(0);
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  context.RemoveLastConstraint();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+
+  // Non-fixing bound tightening does not invalidate lazy canonicality.
+  ASSERT_TRUE(context.IntersectDomainWith(2, Domain(0, 2)));
+  ASSERT_TRUE(context.IntersectDomainWith(3, Domain(0, 2)));
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeConstraintsLazilyRemovesSubstitutedVarWithFixedRep) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 1, 3 ]
+      }
+    }
+    constraints { at_most_one { literals: [ 1, 2, 3 ] } }
+  )pb");
+  CpModelProto mapping_model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_TRUE(context.AllConstraintsAreCanonical());
+
+  // Map var 4 -> var 0 while both are unfixed, then fix var 0 (the
+  // representative) before CanonicalizeConstraintsLazily() runs. Note that
+  // var 4's own domain in domains_ remains [0, 1] because
+  // IntersectDomainWith(0, ...) does not eagerly push down to
+  // non-representative variables.
+  ASSERT_TRUE(context.StoreBooleanEqualityRelation(4, 0));
+  ASSERT_TRUE(context.SetLiteralToTrue(0));
+  EXPECT_FALSE(context.IsFixed(4));
+  EXPECT_TRUE(context.IsFixed(0));
+
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
+                vars: [ 1, 2, 3 ]
+                coeffs: [ 1, 1, 1 ]
+                domain: [ 0, 2 ]
+              )pb"));
 }
 
 }  // namespace

@@ -816,8 +816,9 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
               target.vars(0), target.coeffs(0), gcd, -target.offset())) {
         return false;
       }
-      context_->CanonicalizeLinMax(ct);
+      context_->CanonicalizeConstraint(ct);
       context_->UpdateConstraintVariableUsage(c);
+      if (ct->constraint_case() != ConstraintProto::kLinMax) return true;
       CHECK_EQ(LinearExpressionGcd(target, gcd), gcd);
     } else {
       context_->UpdateRuleStats(
@@ -8608,7 +8609,7 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::kLinMax:
-      if (context_->CanonicalizeLinMax(ct)) {
+      if (context_->CanonicalizeConstraint(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (ct->constraint_case() != ConstraintProto::kLinMax) return true;
