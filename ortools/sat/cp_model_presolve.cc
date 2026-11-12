@@ -111,21 +111,6 @@ LinearExpression2 GetLinearExpression2FromProto(int a, int64_t coeff_a, int b,
   return result;
 }
 
-// TODO(user): Just make sure this invariant is enforced in all our linear
-// constraint after copy, and simplify the code!
-bool LinearConstraintIsClean(const LinearConstraintProto& linear) {
-  const int num_vars = linear.vars().size();
-  for (int i = 0; i < num_vars; ++i) {
-    if (!RefIsPositive(linear.vars(i))) return false;
-    if (linear.coeffs(i) == 0) return false;
-  }
-  return true;
-}
-
-}  // namespace
-
-namespace {
-
 int FixLiteralFromSet(const absl::flat_hash_set<int>& literals_at_true,
                       LinearConstraintProto* linear) {
   int new_size = 0;
@@ -163,6 +148,7 @@ void CpModelPresolver::ProcessAtMostOneAndLinear() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   ActivityBoundHelper amo_in_linear;
@@ -290,6 +276,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
           }
         }
         FillDomainInProto(Domain(shift, shift + 1), ct->mutable_linear());
+        context_->MarkConstraintForCanonicalization(ct_index);
         return;
       }
     }
@@ -383,8 +370,8 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
     for (const int lit : must_be_true) {
       if (!context_->SetLiteralToTrue(lit)) return;
     }
-    bool changed = false;
-    if (!constraint_presolver_->CanonicalizeLinear(ct, &changed)) return;
+    (void)context_->CanonicalizeConstraint(ct);
+    if (context_->ModelIsUnsat()) return;
     context_->UpdateConstraintVariableUsage(ct_index);
     return;
   }
@@ -440,14 +427,14 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
       context_->UpdateRuleStats(
           "linear + amo: fixed literal implied by enforcement");
     }
-    if (num_fixed > 0) {
+    if (num_fixed > 0 || !new_enforcement.empty()) {
       context_->UpdateConstraintVariableUsage(ct_index);
     }
   }
 
   if (ct->linear().vars().empty()) {
     context_->UpdateRuleStats("linear + amo: empty after processing");
-    constraint_presolver_->PresolveEmptyLinearConstraint(ct);
+    (void)constraint_presolver_->PresolveSmallLinear(ct);
     context_->UpdateConstraintVariableUsage(ct_index);
     return;
   }
@@ -552,10 +539,12 @@ void AddImplicationWithMerging(int lhs, int rhs, PresolveContext* context,
   if (ref_to_bool_and->contains(lhs)) {
     const int ct_index = (*ref_to_bool_and)[lhs];
     context->MutableConstraint(ct_index)->mutable_bool_and()->add_literals(rhs);
+    context->MarkConstraintForCanonicalization(ct_index);
   } else if (ref_to_bool_and->contains(NegatedRef(rhs))) {
     const int ct_index = (*ref_to_bool_and)[NegatedRef(rhs)];
     context->MutableConstraint(ct_index)->mutable_bool_and()->add_literals(
         NegatedRef(lhs));
+    context->MarkConstraintForCanonicalization(ct_index);
   } else {
     (*ref_to_bool_and)[lhs] = context->NumConstraints();
     ConstraintProto* ct = context->AddConstraint();
@@ -761,6 +750,7 @@ bool ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
 // global place during all the presolve, and just output them at the end
 // rather than modifying more than once the proto.
 void CpModelPresolver::ConvertToBoolAnd() {
+  if (!CanonicalizeConstraintsLazily()) return;
   DeterministicTimer2<{.scale1 = 1.1e-08, .scale2 = 7.2e-08, .offset = 5.4e-09}>
       timer(time_limit_);
   absl::flat_hash_map<int, int> ref_to_bool_and;
@@ -802,6 +792,7 @@ void CpModelPresolver::ConvertToBoolAnd() {
 // TODO(user): It might make sense to run this in parallel. The same apply for
 // other expansive and self-contains steps like symmetry detection, etc...
 void CpModelPresolver::Probe() {
+  if (!CanonicalizeConstraintsLazily()) return;
   auto probing_logger =
       std::make_unique<ScopedTimeLogger>(__FUNCTION__, logger_, time_limit_);
 
@@ -1081,6 +1072,8 @@ void CpModelPresolver::Probe() {
   // Display info.
   probing_logger.reset();
 
+  if (!CanonicalizeConstraintsLazily()) return;
+
   // Run clique merging using detected implications from probing.
   if (context_->params().merge_at_most_one_work_limit() > 0.0) {
     ScopedTimeLogger max_clique_logger("MaxClique", logger_, time_limit_);
@@ -1171,8 +1164,7 @@ void CpModelPresolver::Probe() {
         //
         // Tricky: note that it is important to not use dual reduction here as
         // not all constraints are in the proto during the loop.
-        constraint_presolver_->PresolveAtMostOne(ct,
-                                                 /*use_dual_reduction=*/false);
+        (void)context_->CanonicalizeConstraint(ct);
       }
       timer.Advance(num_literals_after);
     }
@@ -1220,6 +1212,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // keep_all_feasible_solutions set to true.
   if (context_->ModelIsUnsat()) return true;
   if (context_->params().keep_all_feasible_solutions_in_presolve()) return true;
+  if (!CanonicalizeConstraintsLazily()) return false;
 
   // Compute a dense re-indexing for the Booleans of the problem.
   int num_variables = 0;
@@ -1862,6 +1855,7 @@ bool CpModelPresolver::PresolvePureSatProblem() {
 
 void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
 
   // The objective is already loaded in the context, but we re-canonicalize
   // it with the latest information.
@@ -2019,6 +2013,7 @@ bool IsLinearEqualityConstraint(const ConstraintProto& ct) {
 void CpModelPresolver::ExpandObjective() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // The objective is already loaded in the context, but we re-canonicalize
@@ -2065,10 +2060,10 @@ void CpModelPresolver::ExpandObjective() {
     // one. We thus make sure the constraint is re-presolved if for some reason
     // we didn't reach the fixed point before calling this code.
     if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
-      if (constraint_presolver_->PresolveExactlyOne(
-              context_->MutableConstraint(c))) {
+      if (constraint_presolver_->PresolveOneConstraint(c)) {
         context_->UpdateConstraintVariableUsage(c);
       }
+      if (context_->ModelIsUnsat()) return;
     }
     if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
       const int num_terms = ct.exactly_one().literals().size();
@@ -2303,6 +2298,7 @@ void CpModelPresolver::ExpandLinMaxInObjective() {
   if (!context_->WorkingModel().has_objective()) return;
   if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
   if (context_->ObjectiveDomainIsConstraining()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   if (!context_->CanonicalizeObjective()) return;
@@ -2441,6 +2437,7 @@ bool CpModelPresolver::MergeNoOverlapConstraints() {
   ScopedTimeLogger logger("MergeNoOverlap", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return false;
   if (time_limit_->LimitReached()) return true;
+  if (!CanonicalizeConstraintsLazily()) return false;
 
   const int num_constraints = context_->NumConstraints();
   // Extract the no-overlap constraints with no enforcement literals.
@@ -2488,6 +2485,7 @@ bool CpModelPresolver::MergeNoOverlap2DConstraints() {
   ScopedTimeLogger logger("MergeNoOverlap2D", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return false;
   if (time_limit_->LimitReached()) return true;
+  if (!CanonicalizeConstraintsLazily()) return false;
 
   const int num_constraints = context_->NumConstraints();
   // Extract the no-overlap constraints with no enforcement literals.
@@ -2544,6 +2542,7 @@ void CpModelPresolver::DetectEncodedComplexDomains(PresolveContext* context) {
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
   if (context->ModelIsUnsat()) return;
   if (time_limit_->LimitReached()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
 
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(context);
@@ -2563,6 +2562,7 @@ void CpModelPresolver::DetectEncodedComplexDomains(PresolveContext* context) {
 void CpModelPresolver::TransformIntoMaxCliques() {
   if (context_->ModelIsUnsat()) return;
   if (context_->params().merge_at_most_one_work_limit() <= 0.0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
 
   auto convert = [](int ref) {
     if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
@@ -2655,7 +2655,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     //
     // Tricky: note that it is important to not use dual reduction here as not
     // all constraints are in the proto during the loop.
-    constraint_presolver_->PresolveAtMostOne(ct, /*use_dual_reduction=*/false);
+    (void)context_->CanonicalizeConstraint(ct);
   }
   if (num_new_cliques != num_old_cliques) {
     context_->UpdateRuleStats("at_most_one: transformed into max clique");
@@ -2672,6 +2672,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
   std::vector<int> all_no_overlap_intervals;
   std::vector<int> all_no_overlap_or_cumulative_constraints;
@@ -2800,6 +2801,7 @@ void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
 void CpModelPresolver::TransformClausesToExactlyOne() {
   if (context_->ModelIsUnsat()) return;
   if (!context_->params().find_clauses_that_are_exactly_one()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   auto convert = [](int ref) {
@@ -2955,6 +2957,7 @@ void CpModelPresolver::TransformClausesToExactlyOne() {
       *(context_->MutableConstraint(clause_indices[i])
             ->mutable_exactly_one()
             ->mutable_literals()) = tmp;
+      context_->MarkConstraintForCanonicalization(clause_indices[i]);
     }
     if (logger.WorkLimitIsReached()) break;
   }
@@ -3005,6 +3008,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
       ConstraintProto copy = *superset_ct;
       (*superset_ct->mutable_exactly_one()->mutable_literals()) =
           copy.at_most_one().literals();
+      context_->MarkConstraintForCanonicalization(superset_c);
     }
 
     *remove_subset = true;
@@ -3168,6 +3172,7 @@ void CpModelPresolver::ProcessSetPPC() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   DeterministicTimer2<{.scale1 = 8.1e-08, .scale2 = 4.0e-09, .offset = 4.3e-10}>
       timer(time_limit_);
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
@@ -3187,14 +3192,6 @@ void CpModelPresolver::ProcessSetPPC() {
     if (type == ConstraintProto::kBoolOr ||
         type == ConstraintProto::kAtMostOne ||
         type == ConstraintProto::kExactlyOne) {
-      // Because TransformIntoMaxCliques() can detect literal equivalence
-      // relation, we make sure the constraints are presolved before being
-      // inspected.
-      if (constraint_presolver_->PresolveOneConstraint(c)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-      if (context_->ModelIsUnsat()) return;
-
       temp_literals.clear();
       for (const int ref :
            type == ConstraintProto::kAtMostOne ? ct->at_most_one().literals()
@@ -3582,6 +3579,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const int num_vars = context_->NumVariables();
@@ -3860,6 +3858,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
 void CpModelPresolver::DetectDuplicateConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We need the objective written for this.
@@ -3918,6 +3917,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         }
         FillDomainInProto(rhs,
                           context_->MutableConstraint(rep)->mutable_linear());
+        context_->MarkConstraintForCanonicalization(rep);
       }
     }
 
@@ -3986,11 +3986,8 @@ void CpModelPresolver::DetectDuplicateConstraints() {
           context_->UpdateConstraintVariableUsage(rep);
         }
 
-        bool changed = false;
-        if (!constraint_presolver_->CanonicalizeLinear(new_ct, &changed)) {
-          return;
-        }
-        constraint_presolver_->DivideLinearByGcd(new_ct);
+        (void)context_->CanonicalizeConstraint(new_ct);
+        if (context_->ModelIsUnsat()) return;
         constraint_presolver_->PresolveSmallLinear(new_ct);
         context_->UpdateConstraintVariableUsage(new_ct_index);
       }
@@ -4028,6 +4025,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
 void CpModelPresolver::DetectComplementaryLinMaxConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   using ExprKey = std::tuple<std::vector<int>, std::vector<int64_t>, int64_t>;
@@ -4092,16 +4090,20 @@ void CpModelPresolver::DetectComplementaryLinMaxConstraints() {
                                 rep_ct.lin_max().exprs(0), -1, lin) ||
                             !SafeAddLinearExpressionToLinearConstraint(
                                 rep_ct.lin_max().exprs(1), -1, lin);
-      bool changed = false;
-      if (overflow ||
-          !constraint_presolver_->CanonicalizeLinear(new_ct, &changed) ||
-          PossibleIntegerOverflow(context_->WorkingModel(), lin->vars(),
-                                  lin->coeffs(), lin->domain(0))) {
-        if (context_->ModelIsUnsat()) return;
+      // Note that we must not canonicalize (which can have side effects on the
+      // model) a constraint whose construction overflowed.
+      if (overflow) {
         context_->RemoveLastConstraint();
         continue;
       }
-      constraint_presolver_->DivideLinearByGcd(new_ct);
+      (void)context_->CanonicalizeConstraint(new_ct);
+      if (context_->ModelIsUnsat()) return;
+      if (new_ct->constraint_case() == ConstraintProto::kLinear &&
+          PossibleIntegerOverflow(context_->WorkingModel(), lin->vars(),
+                                  lin->coeffs(), lin->domain(0))) {
+        context_->RemoveLastConstraint();
+        continue;
+      }
       constraint_presolver_->PresolveSmallLinear(new_ct);
       context_->UpdateConstraintVariableUsage(context_->NumConstraints() - 1);
       context_->ClearConstraint(c);
@@ -4119,6 +4121,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     Trail* trail) {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We need the objective written for this.
@@ -4152,22 +4155,19 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     }
 
     // Make sure our enforcement list are up to date: nothing fixed and that
-    // its uses the literal representatives.
-    bool changed = false;
-    if (!constraint_presolver_->PresolveEnforcementLiteral(dup_ct, &changed)) {
-      return;
-    }
-    if (changed) {
-      context_->UpdateConstraintVariableUsage(dup);
-    }
-    if (!constraint_presolver_->PresolveEnforcementLiteral(rep_ct, &changed)) {
-      return;
-    }
-    if (changed) {
-      context_->UpdateConstraintVariableUsage(rep);
-    }
+    // its uses the literal representatives. Note that canonicalization can
+    // also change the constraint body (e.g. when an enforcement literal also
+    // appears in a linear expression), in which case the two constraints might
+    // no longer be duplicates of each other, so we skip this pair.
+    const bool dup_changed = context_->CanonicalizeConstraint(dup_ct);
+    if (dup_changed) context_->UpdateConstraintVariableUsage(dup);
+    if (context_->ModelIsUnsat()) return;
+    const bool rep_changed = context_->CanonicalizeConstraint(rep_ct);
+    if (rep_changed) context_->UpdateConstraintVariableUsage(rep);
+    if (context_->ModelIsUnsat()) return;
+    if (dup_changed || rep_changed) continue;
 
-    // Skip this pair if one of the constraint was simplified
+    // Skip this pair if one of the constraint was removed.
     if (rep_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET ||
         dup_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       continue;
@@ -4406,6 +4406,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
 void CpModelPresolver::DetectDifferentVariables() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // Try to find identical linear constraint with incompatible domains.
@@ -4555,14 +4556,13 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   DeterministicTimer2<{.scale1 = 1.3e-08, .scale2 = 1.0e-08, .offset = 9.2e-10}>
       timer(time_limit_);
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
-  // Because we only deal with linear constraint and we want to ignore the
+  // Because we only deal with linear constraints and we want to ignore the
   // enforcement part, we reuse the variable list in the inclusion detector.
-  // Note that we ignore "unclean" constraint, so we only have positive
-  // reference there.
   class Storage {
    public:
     explicit Storage(CpModelProto const* proto) : proto_(*proto) {}
@@ -4595,13 +4595,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     // one or two which can be numerous.
     if (!ct.enforcement_literal().empty()) {
       if (ct.linear().vars().size() < 3) continue;
-    }
-
-    if (!LinearConstraintIsClean(ct.linear())) {
-      // This shouldn't happen except in potential corner cases where the
-      // constraints were not canonicalized before this point. We just skip
-      // such constraints.
-      continue;
     }
 
     detector.AddPotentialSet(c);
@@ -4829,16 +4822,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
 
 namespace {
 
-bool LinearConstraintIsCanonical(const LinearConstraintProto& linear) {
-  const int num_vars = linear.vars().size();
-  for (int i = 0; i < num_vars; ++i) {
-    if (!RefIsPositive(linear.vars(i))) return false;
-    if (linear.coeffs(i) == 0) return false;
-    if (i > 0 && linear.vars(i) <= linear.vars(i - 1)) return false;
-  }
-  return true;
-}
-
 // A variable of C that also appears in the knapsack D, and whose move from its
 // C-optimal bound toward its other bound reduces the knapsack activity by
 // `knapsack_coeff` per unit while reducing the activity of C by `c_coeff` per
@@ -4949,6 +4932,7 @@ void CpModelPresolver::DetectLinearRedundantUnderKnapsack() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
   DeterministicTimer2<{.scale1 = 1.0e-08, .scale2 = 0.0, .offset = 1.0e-09}>
       timer(time_limit_);
@@ -4976,7 +4960,6 @@ void CpModelPresolver::DetectLinearRedundantUnderKnapsack() {
     const LinearConstraintProto& lin = ct.linear();
     const int num_terms = lin.vars().size();
     if (num_terms < 2) continue;
-    if (!LinearConstraintIsCanonical(lin)) continue;
 
     const auto [min_activity, max_activity] =
         context_->ComputeMinMaxActivity(lin);
@@ -5028,7 +5011,6 @@ void CpModelPresolver::DetectLinearRedundantUnderKnapsack() {
         const int d_size = ct_d.linear().vars().size();
         if (d_size < kMinKnapsackSize) continue;
         if (2 * d_size < num_terms) continue;
-        if (!LinearConstraintIsCanonical(ct_d.linear())) continue;
         knapsack_indices.push_back(d);
       }
     }
@@ -5439,6 +5421,7 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   int64_t num_blocks = 0;
@@ -5759,6 +5742,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(ActivityBoundHelper* helper,
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // The current common part is stored in a dense vector (var -> coeff, zero if
@@ -6113,6 +6097,7 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const int num_constraints = context_->NumConstraints();
@@ -6277,6 +6262,7 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
 void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
 
   // Work tracking is required, since in the worst case (n identical
   // constraints), we are in O(n^3). In practice we are way faster though. And
@@ -6379,7 +6365,6 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
                 "linear: advanced affine relation from 2 constraints");
 
             // We should stop processing c1 since it should be empty afterward.
-            constraint_presolver_->DivideLinearByGcd(to_modify);
             constraint_presolver_->PresolveSmallLinear(to_modify);
             context_->UpdateConstraintVariableUsage(c1);
             skip = true;
@@ -6399,6 +6384,7 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // TODO(user): compute on the fly instead of temporary storing variables?
@@ -6931,8 +6917,8 @@ void CpModelPresolver::PresolveVarOnlyInLinMaxAndLinear(int var,
 
   // There is a good chance that the linear constraint is trivial now. Let's
   // handle it here instead of waiting for the fixpoint.
-  bool changed = false;
-  if (!constraint_presolver_->CanonicalizeLinear(mut_lin, &changed)) return;
+  (void)context_->CanonicalizeConstraint(mut_lin);
+  if (context_->ModelIsUnsat()) return;
 
   context_->UpdateConstraintVariableUsage(lin_max_ct_index);
   context_->UpdateConstraintVariableUsage(linear_ct_index);
@@ -7126,12 +7112,8 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
       "at_most_one: resolved two constraints with opposite literal");
   context_->MarkVariableAsRemoved(var);
 
-  // TODO(user): If the merged list contains duplicates or literal that are
-  // negation of other, we need to deal with that right away. For some reason
-  // something is not robust to that it seems. Investigate & fix!
   DCHECK_NE(new_ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
-  if (constraint_presolver_->PresolveAtMostOrExactlyOne(
-          new_ct, /*use_dual_reduction=*/true)) {
+  if (constraint_presolver_->PresolveOneConstraint(new_ct_index)) {
     context_->UpdateConstraintVariableUsage(new_ct_index);
   }
 }
@@ -7234,7 +7216,9 @@ void CpModelPresolver::ProcessVariablesOnlyUsedInEncoding() {
 
 // Adds all affine relations to our model for the variables that are still used.
 void CpModelPresolver::EncodeAllAffineRelations() {
-  int64_t num_added = 0;
+  if (!CanonicalizeConstraintsLazily()) return;
+
+  std::vector<int> vars_to_encode;
   for (int var = 0; var < context_->NumVariables(); ++var) {
     if (context_->IsFixed(var)) continue;
 
@@ -7248,6 +7232,19 @@ void CpModelPresolver::EncodeAllAffineRelations() {
     if (!constraint_presolver_->PresolveAffineRelationIfAny(var)) break;
     if (context_->VariableIsNotUsedAnymore(var)) continue;
     if (context_->IsFixed(var)) continue;
+    vars_to_encode.push_back(var);
+  }
+
+  // If PresolveAffineRelationIfAny() fixed any variable, canonicalize all
+  // existing constraints before encoding the remaining affine relations.
+  if (!CanonicalizeConstraintsLazily()) return;
+
+  int64_t num_added = 0;
+  for (const int var : vars_to_encode) {
+    if (context_->IsFixed(var)) continue;
+    const AffineRelation::Relation r = context_->GetAffineRelation(var);
+    if (r.representative == var) continue;
+    if (context_->VariableIsNotUsedAnymore(var)) continue;
 
     ++num_added;
     ConstraintProto* ct = context_->AddConstraint();
@@ -7313,6 +7310,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
 void CpModelPresolver::PresolveToFixPoint() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We do at most 2 tests per PresolveToFixPoint() call since this can be slow.
@@ -7469,6 +7467,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     DCHECK(!context_->HasUnusedAffineVariable());
 
     // Deal with integer variable only appearing in an encoding.
+    if (!CanonicalizeConstraintsLazily()) return;
     if (!context_->CanonicalizeObjective()) return;
     ProcessVariablesOnlyUsedInEncoding();
     if (ProcessChangedVariables(&in_queue, &queue)) continue;
@@ -7485,6 +7484,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     // one direction.
     for (int i = 0; i < 10; ++i) {
       if (context_->ModelIsUnsat()) return;
+      if (!CanonicalizeConstraintsLazily()) return;
       ++num_dual_strengthening;
       DualBoundStrengthening dual_bound_strengthening;
       ScanModelForDualBoundStrengthening(*context_, &dual_bound_strengthening);
@@ -7513,6 +7513,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     // TODO(user): This can be slow, remove from fix-point loop?
     if (num_dominance_tests++ < 2) {
       if (context_->ModelIsUnsat()) return;
+      if (!CanonicalizeConstraintsLazily()) return;
       ScopedTimeLogger logger("DetectDominanceRelations", logger_, time_limit_);
       VarDomination var_dom;
       ScanModelForDominanceDetection(*context_, &var_dom);
@@ -7522,6 +7523,7 @@ void CpModelPresolver::PresolveToFixPoint() {
   }
 
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
 
   // Second "pass" for transformation better done after all of the above and
   // that do not need a fix-point loop.
@@ -7603,6 +7605,7 @@ void CpModelPresolver::PresolveToFixPoint() {
 // x for other enforcement list if the rhs literals are shared.
 void CpModelPresolver::MergeClauses() {
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // Constraint index that changed.
@@ -7652,6 +7655,8 @@ void CpModelPresolver::MergeClauses() {
                 ct->bool_and().literals().end());
             ct->Clear();
             context_->UpdateConstraintVariableUsage(c);
+          } else {
+            context_->MarkConstraintForCanonicalization(c);
           }
         }
       }
@@ -7678,8 +7683,6 @@ void CpModelPresolver::MergeClauses() {
     if (!ct->enforcement_literal().empty()) continue;
     if (ct->bool_or().literals().size() <= 2) continue;
 
-    std::sort(ct->mutable_bool_or()->mutable_literals()->begin(),
-              ct->mutable_bool_or()->mutable_literals()->end());
     hasher.RegisterClause(c, ct->bool_or().literals());
     bool_or_indices.push_back(c);
   }
@@ -7760,6 +7763,7 @@ void CpModelPresolver::MergeClauses() {
     ct->Clear();
     ct->mutable_bool_or()->mutable_literals()->Assign(
         context_->tmp_literals.begin(), context_->tmp_literals.end());
+    context_->MarkConstraintForCanonicalization(c);
   }
 
   logger.AddCounter("num_collisions", num_collisions);
@@ -7839,110 +7843,15 @@ void InitializeMappingModelVariables(absl::Span<const Domain> domains,
 }  // namespace
 
 void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
-  const int num_constraints_before_expansion = context_->NumConstraints();
+  if (!CanonicalizeConstraintsLazily()) return;
   ExpandCpModel(context_);
-  if (context_->ModelIsUnsat()) return;
-
-  // TODO(user): Make sure we can't have duplicates in these constraints.
-  // These are due to ExpandCpModel() where we create such constraints with
-  // duplicates. The problem is that some code assumes these are presolved
-  // before being called.
-  const int num_constraints = context_->NumConstraints();
-  for (int c = num_constraints_before_expansion; c < num_constraints; ++c) {
-    const auto type = context_->Constraint(c).constraint_case();
-    if (type == ConstraintProto::kAtMostOne ||
-        type == ConstraintProto::kExactlyOne) {
-      if (constraint_presolver_->PresolveOneConstraint(c)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-      if (context_->ModelIsUnsat()) return;
-    } else if (type == ConstraintProto::kLinear) {
-      bool changed = false;
-      if (!constraint_presolver_->CanonicalizeLinear(
-              context_->MutableConstraint(c), &changed)) {
-        return;
-      }
-      if (changed) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-    }
-  }
+  (void)CanonicalizeConstraintsLazily();
 }
 
-namespace {
-
-// Canonicalizes the routes constraints node expressions. In particular,
-// replaces the variables in these expressions with their representative.
-void CanonicalizeRoutesConstraintNodeExpressions(PresolveContext* context) {
-  const int num_constraints = context->NumConstraints();
-  for (int c = 0; c < num_constraints; ++c) {
-    if (context->Constraint(c).constraint_case() != ConstraintProto::kRoutes) {
-      continue;
-    }
-    for (RoutesConstraintProto::NodeExpressions& node_exprs :
-         *context->MutableConstraint(c)
-              ->mutable_routes()
-              ->mutable_dimensions()) {
-      for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
-        context->CanonicalizeLinearExpression({}, &expr);
-      }
-    }
-  }
-}
-
-}  // namespace
-
-bool CpModelPresolver::CanonicalizeAllLinears() {
+bool CpModelPresolver::CanonicalizeConstraintsLazily() {
+  context_->CanonicalizeConstraintsLazily();
   if (context_->ModelIsUnsat()) return false;
-  std::queue<int> constraints_to_process;
-  absl::flat_hash_set<int> queued;
-  for (int c = 0; c < context_->NumConstraints(); ++c) {
-    ConstraintProto& ct = *context_->MutableConstraint(c);
-    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-    for (const int v : ct.linear().vars()) {
-      if (context_->IsFixed(v)) {
-        constraints_to_process.push(c);
-        queued.insert(c);
-        break;
-      }
-    }
-  }
-  std::vector<int> non_fixed_vars;
-  while (!constraints_to_process.empty()) {
-    const int c = constraints_to_process.front();
-    constraints_to_process.pop();
-    queued.erase(c);
-
-    ConstraintProto& ct = *context_->MutableConstraint(c);
-    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-
-    bool has_fixed_vars = false;
-    non_fixed_vars.clear();
-    for (const int v : UsedVariables(ct)) {
-      if (context_->IsFixed(v)) {
-        has_fixed_vars = true;
-      } else {
-        non_fixed_vars.push_back(v);
-      }
-    }
-    if (!has_fixed_vars) continue;
-    bool changed = false;
-    if (!constraint_presolver_->CanonicalizeLinear(&ct, &changed)) {
-      return false;
-    }
-    DCHECK(changed);  // It should change, since it has fixed variables.
-    context_->UpdateConstraintVariableUsage(c);
-    for (const int v : non_fixed_vars) {
-      if (context_->IsFixed(v)) {
-        // Canonicalizing the linear fixed something!
-        for (const int c : context_->VarToConstraints(v)) {
-          if (c > 0 && queued.insert(c).second) {
-            constraints_to_process.push(c);
-          }
-        }
-      }
-    }
-  }
+  DCHECK(context_->AllConstraintsAreCanonical());
   return true;
 }
 
@@ -8110,7 +8019,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // If presolve is false, just run expansion.
   if (!context_->params().cp_model_presolve()) {
     ExpandCpModelAndCanonicalizeConstraints();
-    if (!CanonicalizeAllLinears()) return InfeasibleStatus();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
     context_->WriteHintToProto();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
@@ -8188,10 +8097,17 @@ CpSolverStatus CpModelPresolver::Presolve() {
       ExpandCpModelAndCanonicalizeConstraints();
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
-      // We need to re-evaluate the degree because some presolve rule only
-      // run after expansion.
+      // Propagate and clean up affine relations created during expansion (such
+      // as singleton value-element equivalences whose encoding constraints were
+      // canonicalized to their representative), and re-evaluate variable
+      // degrees because some presolve rules only run after expansion.
       const int num_vars = context_->NumVariables();
       for (int var = 0; var < num_vars; ++var) {
+        if (context_->VariableIsNotUsedAnymore(var)) continue;
+        if (!constraint_presolver_->PresolveAffineRelationIfAny(var)) {
+          return InfeasibleStatus();
+        }
+        if (context_->VariableIsNotUsedAnymore(var)) continue;
         if (context_->VarToConstraints(var).size() <= 3) {
           context_->MutableVarWithReducedSmallDegree()->Set(var);
         }
@@ -8214,6 +8130,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       // want to do that before we even compute them.
       DetectDuplicateColumns();
       DetectDuplicateConstraints();
+      if (!CanonicalizeConstraintsLazily()) return InfeasibleStatus();
       if (context_->params().keep_symmetry_in_presolve()) {
         // If the presolve always keep symmetry, we compute it once and for all.
         //
@@ -8254,6 +8171,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // and add them to bool_and clauses? this is some sort of small scale
     // probing, but good for sat presolve and clique later?
     if (!context_->ModelIsUnsat() && iter == 0) {
+      if (!CanonicalizeConstraintsLazily()) return InfeasibleStatus();
       const int old_size = context_->NumConstraints();
       for (int c = 0; c < old_size; ++c) {
         ConstraintProto* ct = context_->MutableConstraint(c);
@@ -8285,6 +8203,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // important for.
     if (context_->params().find_big_linear_overlap() &&
         !context_->params().keep_symmetry_in_presolve()) {
+      if (!CanonicalizeConstraintsLazily()) return InfeasibleStatus();
       ActivityBoundHelper activity_amo_helper;
       activity_amo_helper.AddAllAtMostOnes(context_->WorkingModel());
       FindBigAtMostOneAndLinearOverlap(&activity_amo_helper);
@@ -8313,6 +8232,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (context_->params().find_big_linear_overlap() &&
         !context_->params().keep_symmetry_in_presolve()) {
       FindAlmostIdenticalLinearConstraints();
+      if (!CanonicalizeConstraintsLazily()) return InfeasibleStatus();
 
       ActivityBoundHelper activity_amo_helper;
       activity_amo_helper.AddAllAtMostOnes(context_->WorkingModel());
@@ -8372,9 +8292,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
     }
   }
 
-  // Now that everything that could possibly be fixed was fixed, make sure we
-  // don't leave any linear constraint with fixed variables.
-  if (!CanonicalizeAllLinears()) return InfeasibleStatus();
+  // Now that everything that could possibly be fixed was fixed, make sure all
+  // constraints are canonicalized before final expansion and affine encoding.
+  if (!CanonicalizeConstraintsLazily()) return InfeasibleStatus();
 
   // Take care of linear constraints with a complex rhs.
   FinalExpansionForLinearConstraint(context_);
@@ -8504,7 +8424,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
   MaybePermuteVariablesRandomly(mapping);
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
-  CanonicalizeRoutesConstraintNodeExpressions(context_);
   context_->WriteHintToProto();
 
   // Context shouldn't really be used after this since everything was remapped.
@@ -9029,6 +8948,7 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
+  if (!CanonicalizeConstraintsLazily()) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const CpModelProto& model_proto = context_->WorkingModel();
@@ -9115,6 +9035,7 @@ void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
             "duplicate: tightened enforced constraint domain");
         FillDomainInProto(new_rhs,
                           context_->MutableConstraint(c)->mutable_linear());
+        context_->MarkConstraintForCanonicalization(c);
       }
     }
     timer.Advance(num_constraints, num_changes);

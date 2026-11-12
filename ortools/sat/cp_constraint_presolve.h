@@ -70,28 +70,17 @@ class CpConstraintPresolver {
 
   bool PresolveOneConstraint(int c);
 
-  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct, bool use_dual_reduction);
-  bool PresolveAtMostOne(ConstraintProto* ct, bool use_dual_reduction = true);
-  bool PresolveExactlyOne(ConstraintProto* ct);
-  bool PresolveEnforcementLiteral(ConstraintProto* ct, bool* changed);
-
   // Regroups terms and substitutes affine relations.
   // Returns true if the set of variables in the expression changed.
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
 
-  ABSL_MUST_USE_RESULT bool CanonicalizeLinear(ConstraintProto* ct,
-                                               bool* changed);
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
-  bool PresolveSmallLinear(ConstraintProto* ct, bool canonicalize = true);
-  bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
+  bool PresolveSmallLinear(ConstraintProto* ct);
 
   bool PresolveCumulative(ConstraintProto* ct);
   bool PresolveNoOverlap(ConstraintProto* ct);
   bool PresolveNoOverlap2D(int c, ConstraintProto* ct);
-
-  // Returns true if the constraint changed.
-  bool DivideLinearByGcd(ConstraintProto* ct);
 
   // Detects if a 2-term linear constraint (or constraint with 2 distinct
   // coefficient magnitudes) can be tilted to strictly smaller integer
@@ -149,12 +138,13 @@ class CpConstraintPresolver {
   bool PresolveCircuit(ConstraintProto* ct);
   bool PresolveRoutes(ConstraintProto* ct);
 
+  bool PresolveEnforcementLiteral(ConstraintProto* ct);
+  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct);
+  bool PresolveAtMostOne(ConstraintProto* ct);
+  bool PresolveExactlyOne(ConstraintProto* ct);
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
-
-  bool CanonicalizeLinearArgument(const ConstraintProto& ct,
-                                  LinearArgumentProto* proto);
 
   // For the linear constraints, we have more than one function.
   bool RemoveSingletonInLinear(ConstraintProto* ct);
@@ -241,14 +231,13 @@ class CpConstraintPresolver {
   // at least 3 distinct coefficient magnitudes) when large terms force all
   // other terms to their bounds (a "partial at-most-one" structure), or fixes
   // variables whose coefficient exceeds the slack on unenforced constraints.
-  // Updates `*canonical` in place if `ct` or variable domains are modified.
-  void LowerThanCoeffStrengthening(
+  // Updates `*canonical` in place and returns true if `ct` or variable domains
+  // are modified.
+  bool LowerThanCoeffStrengthening(
       ConstraintProto* ct,
       PresolveContext::MergedCanonicalLinearConstraint* canonical);
 
   void RunPropagatorsForConstraint(const ConstraintProto& ct);
-
-  bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool MarkOptionalIntervalAsFalse(ConstraintProto* ct);
 

@@ -2328,6 +2328,45 @@ TEST(PresolveCpModelTest,
               )pb"));
 }
 
+TEST(PresolveCpModelTest,
+     PresolveLinearOfSizeOnePreservesSimplifiedRhsOnGappedDomain) {
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 2, 2, 4, 4, 6, 6, 8, 8 ] }
+    constraints {
+      enforcement_literal: [ 0 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 0, 4, 8 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ -1 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 2, 2 ]
+      }
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+
+  EXPECT_FALSE(presolver.PresolveOneConstraint(0));
+  EXPECT_FALSE(presolver.PresolveOneConstraint(1));
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_THAT(working_model.constraints(0).linear().domain(),
+              ElementsAre(0, 0, 4, 8));
+  EXPECT_TRUE(context.HasVarValueEncoding(1, 2, nullptr));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

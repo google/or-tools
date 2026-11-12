@@ -172,6 +172,7 @@ class MPModelProtoWrapper {
   // WARNING: This do not see "enforcement" and the model should be manipulated
   // with care. It is forbidden to change the number of variable or constraint.
   MPModelProto* mutable_underlying_model() { return &mp_model_; }
+  const MPModelProto& underlying_model() const { return mp_model_; }
 
  private:
   double objective_scaling_;

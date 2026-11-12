@@ -873,6 +873,87 @@ TEST(FindCpModelSymmetries, ReservoirLevelChangeAsymmetry) {
   EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
 }
 
+TEST(DetectAndExploitSymmetriesInPresolveTest,
+     SkipsUnusedNonRepresentativeAffineVariables) {
+  // 3 symmetric columns j in {0, 1, 2}:
+  // - vars 0..2: integer objective variables p_j in [0, 10]
+  // - vars 3..5: Boolean indicator variables x_j in [0, 1] with x_j => p_j >= 5
+  // - vars 6..8 and 9..11: two unused Boolean variables u_j, v_j per column
+  //   that are affine-equal to x_j (u_j == x_j, v_j == x_j) and no longer
+  //   appear in any working_model constraint.
+  // Adding temporary affine equalities for u_j and v_j would attach twin
+  // dangling leaves (u_j, v_j) to x_j and break 3-column orbitope extraction.
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_or { literals: [ 3, 4, 5 ] } }
+    constraints {
+      enforcement_literal: [ 3 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 4 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 5 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2 ]
+      coeffs: [ 1, 1, 1 ]
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.CanonicalizeConstraintsLazily();
+
+  for (int j = 0; j < 3; ++j) {
+    ASSERT_TRUE(context.StoreBooleanEqualityRelation(6 + j, 3 + j));
+    ASSERT_TRUE(context.StoreBooleanEqualityRelation(9 + j, 3 + j));
+  }
+
+  ASSERT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
+  // The 4 x 3 orbitope should be detected and order the objective row:
+  // p_0 - p_1 >= 0 and p_1 - p_2 >= 0 (adding 2 linear constraints).
+  ASSERT_EQ(working_model.constraints_size(), 6);
+  EXPECT_THAT(working_model.constraints(4).linear().vars(),
+              testing::ElementsAre(0, 1));
+  EXPECT_THAT(working_model.constraints(4).linear().coeffs(),
+              testing::ElementsAre(1, -1));
+  EXPECT_EQ(working_model.constraints(4).linear().domain(0), 0);
+  EXPECT_THAT(working_model.constraints(5).linear().vars(),
+              testing::ElementsAre(1, 2));
+  EXPECT_THAT(working_model.constraints(5).linear().coeffs(),
+              testing::ElementsAre(1, -1));
+  EXPECT_EQ(working_model.constraints(5).linear().domain(0), 0);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

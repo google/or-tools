@@ -69,6 +69,14 @@ struct ValueLiteralCtIndex {
   }
 };
 
+// All var == value (stored in model_proto_.constraints(ct_index)) for a given
+// literal.
+struct VarValueCtIndex {
+  int var;
+  int64_t value;
+  int ct_index;
+};
+
 }  // namespace
 
 LinearModel::LinearModel(const CpModelProto& model_proto)
@@ -80,6 +88,8 @@ LinearModel::LinearModel(const CpModelProto& model_proto)
   absl::flat_hash_set<LinearConstraintProto> encoding_cache;
   std::vector<std::vector<EqualityDetectionHelper>> var_to_equalities(
       model_proto_.variables_size());
+  absl::flat_hash_map<int, std::vector<VarValueCtIndex>>
+      literal_to_var_value_ct_indices;
 
   // Loop over all constraints and fill var_to_equalities.
   for (int c = 0; c < model_proto_.constraints_size(); ++c) {
@@ -121,6 +131,8 @@ LinearModel::LinearModel(const CpModelProto& model_proto)
       if (!inter.IsEmpty() && inter.IsFixed()) {
         var_to_equalities[var].push_back(
             {c, enforcement_literal, inter.FixedValue(), true});
+        literal_to_var_value_ct_indices[enforcement_literal].push_back(
+            {var, inter.FixedValue(), c});
       }
     }
     {

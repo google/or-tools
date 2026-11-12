@@ -3004,7 +3004,6 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
     case ConstraintProto::ConstraintCase::kNoOverlap:
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
     case ConstraintProto::ConstraintCase::kCircuit:
-    case ConstraintProto::ConstraintCase::kInverse:
       break;
     case ConstraintProto::ConstraintCase::kBoolOr:
       CanonicalizeBoolOr();
@@ -3027,14 +3026,6 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
     case ConstraintProto::ConstraintCase::kLinear:
       CanonicalizeLinear();
       break;
-    case ConstraintProto::ConstraintCase::kAllDiff:
-    case ConstraintProto::ConstraintCase::kAutomaton:
-    case ConstraintProto::ConstraintCase::kCumulative:
-    case ConstraintProto::ConstraintCase::kReservoir:
-      // TODO(user): Canonicalize expressions unconditionally on all
-      // constraints.
-      if (!HasEnforcementLiteral(*ct_)) CanonicalizeAllExprs();
-      break;
     case ConstraintProto::ConstraintCase::kIntProd:
     case ConstraintProto::ConstraintCase::kIntDiv:
     case ConstraintProto::ConstraintCase::kIntMod:
@@ -3042,6 +3033,11 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
     case ConstraintProto::ConstraintCase::kElement:
     case ConstraintProto::ConstraintCase::kTable:
     case ConstraintProto::ConstraintCase::kRoutes:
+    case ConstraintProto::ConstraintCase::kAllDiff:
+    case ConstraintProto::ConstraintCase::kAutomaton:
+    case ConstraintProto::ConstraintCase::kCumulative:
+    case ConstraintProto::ConstraintCase::kReservoir:
+    case ConstraintProto::ConstraintCase::kInverse:
       CanonicalizeAllExprs();
       break;
   }
@@ -3122,9 +3118,10 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
 
   const int var = ct_->linear().vars(0);
   const Domain var_domain = context_->DomainOf(var);
-  const Domain rhs = ReadDomainFromProto(ct_->linear())
-                         .InverseMultiplicationBy(ct_->linear().coeffs(0))
-                         .IntersectionWith(var_domain);
+  const Domain proto_rhs =
+      ReadDomainFromProto(ct_->linear())
+          .InverseMultiplicationBy(ct_->linear().coeffs(0));
+  const Domain rhs = proto_rhs.IntersectionWith(var_domain);
   if (rhs.IsEmpty()) {
     MarkConstraintAsFalse("linear1: infeasible");
     return;
@@ -3140,7 +3137,6 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
   if (ct_->linear().coeffs(0) != 1) {
     context_->UpdateRuleStats("linear1: canonicalized");
     ct_->mutable_linear()->set_coeffs(0, 1);
-    FillDomainInProto(rhs, ct_->mutable_linear());
     changed_ = true;
   }
 
@@ -3152,8 +3148,10 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
     return;
   }
 
-  if (!DomainMatchesProto(rhs, ct_->linear())) {
-    FillDomainInProto(rhs, ct_->mutable_linear());
+  const Domain simplified_rhs =
+      proto_rhs.SimplifyUsingImpliedDomain(var_domain);
+  if (!DomainMatchesProto(simplified_rhs, ct_->linear())) {
+    FillDomainInProto(simplified_rhs, ct_->mutable_linear());
     changed_ = true;
   }
 }
@@ -3869,14 +3867,9 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       return all_exprs_canonical() &&
              literals_are_resolved(ct.routes().literals());
     case ConstraintProto::ConstraintCase::kReservoir:
-      return (HasEnforcementLiteral(ct) || all_exprs_canonical()) &&
+      return all_exprs_canonical() &&
              literals_are_resolved(ct.reservoir().active_literals());
-    case ConstraintProto::ConstraintCase::kAllDiff:
-    case ConstraintProto::ConstraintCase::kAutomaton:
-    case ConstraintProto::ConstraintCase::kCumulative:
-      return HasEnforcementLiteral(ct) || all_exprs_canonical();
     case ConstraintProto::ConstraintCase::kDummyConstraint:
-    case ConstraintProto::ConstraintCase::kInverse:
     case ConstraintProto::ConstraintCase::kNoOverlap:
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       return true;
@@ -3886,6 +3879,10 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
     case ConstraintProto::ConstraintCase::kElement:
     case ConstraintProto::ConstraintCase::kTable:
     case ConstraintProto::ConstraintCase::kInterval:
+    case ConstraintProto::ConstraintCase::kAllDiff:
+    case ConstraintProto::ConstraintCase::kAutomaton:
+    case ConstraintProto::ConstraintCase::kCumulative:
+    case ConstraintProto::ConstraintCase::kInverse:
       return all_exprs_canonical();
   }
   return true;
