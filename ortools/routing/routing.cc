@@ -5833,11 +5833,27 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
   //       account.
   std::vector<LocalSearchFilterManager::FilterEvent> filter_events;
 
-  // VehicleAmortizedCostFilter can have a negative value, so it must be first.
   int priority = 0;
+  const PathState* path_state_reference = nullptr;
+  {
+    std::vector<int> path_starts;
+    std::vector<int> path_ends;
+    ConvertVectorInt64ToVectorInt(paths_metadata_.Starts(), &path_starts);
+    ConvertVectorInt64ToVectorInt(paths_metadata_.Ends(), &path_ends);
+    auto path_state = std::make_unique<PathState>(
+        Size() + vehicles(), std::move(path_starts), std::move(path_ends));
+    path_state_reference = path_state.get();
+    filter_events.push_back(
+        {MakePathStateFilter(solver_.get(), std::move(path_state), Nexts()),
+         kRelax, priority});
+  }
+
+  // VehicleAmortizedCostFilter can have a negative value, so it must be first.
+  ++priority;
   if (options.filter_objective && vehicle_amortized_cost_factors_set_) {
     filter_events.push_back(
-        {MakeVehicleAmortizedCostFilter(*this), kAccept, priority});
+        {MakeVehicleAmortizedCostFilter(*this, path_state_reference), kAccept,
+         priority});
   }
 
   // The SumObjectiveFilter has the best reject/second ratio in practice,
@@ -5859,19 +5875,6 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
           Solver::LE);
       filter_events.push_back({sum, kAccept, priority});
     }
-  }
-  const PathState* path_state_reference = nullptr;
-  {
-    std::vector<int> path_starts;
-    std::vector<int> path_ends;
-    ConvertVectorInt64ToVectorInt(paths_metadata_.Starts(), &path_starts);
-    ConvertVectorInt64ToVectorInt(paths_metadata_.Ends(), &path_ends);
-    auto path_state = std::make_unique<PathState>(
-        Size() + vehicles(), std::move(path_starts), std::move(path_ends));
-    path_state_reference = path_state.get();
-    filter_events.push_back(
-        {MakePathStateFilter(solver_.get(), std::move(path_state), Nexts()),
-         kRelax, priority});
   }
 
   {
