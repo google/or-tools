@@ -32,13 +32,9 @@ ORToolsConfigureCopts.cmake.
 ################################################################################
 
 ORTOOLS_GCC_FLAGS = [
-    # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
+    # go/keep-sorted start prefix_order=['"-D', '"-f', '"-W', '"-Wno-']
     "-DNOMINMAX",  # Don't define min and max macros (Build on Windows using gcc)
     "-ffp-contract=off",  # Disable automatic fused-multiply-add insertion
-    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
-    "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
-    "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
-    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wall",  # Enables a core set of warnings about questionable constructs
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
     "-Wconversion-null",  # Warns for conversions between NULL and non-pointer types
@@ -54,21 +50,25 @@ ORTOOLS_GCC_FLAGS = [
     "-Wvarargs",  # Warns for questionable usage of the macros used to retrieve variable arguments
     "-Wvla",  # Warns if a variable-length array is used
     "-Wwrite-strings",  # Gives string constants the type const char[length] so copying their address into a non-const char* produces a warning
+    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
+    "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
+    "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members, it triggers on types with default ctor like std::vector.
+    "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
+    "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
+    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     # go/keep-sorted end
 ] + [
     # This is a burndown list that will eventually disappear, it helps in
     # keeping the warnings low on the CI but they all need to be either removed
     # or adopted as an official flag.
-    # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
-    "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
-    "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
+    # go/keep-sorted start prefix_order=['"-D', '"-f', '"-W', '"-Wno-']
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
     "-Wno-undef",  # Disables warnings when an undefined identifier is evaluated in an #if directive
     # go/keep-sorted end
 ]
 
 ORTOOLS_GCC_TEST_ADDITIONAL_FLAGS = [
-    # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
+    # go/keep-sorted start prefix_order=['"-D', '"-f', '"-W', '"-Wno-']
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-unused-function",  # Disables warnings whenever a static or inline function is declared but not used
@@ -86,17 +86,9 @@ ORTOOLS_GCC_TEST_ADDITIONAL_FLAGS = [
 # behavior. On most other platforms, -Wall is just a set of very good
 # default flags.
 ORTOOLS_LLVM_BASE_FLAGS = [
-    # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
+    # go/keep-sorted start prefix_order=['"-D', '"-f', '"-W', '"-Wno-']
     "-DNOMINMAX",  # Don't define min and max macros (Build on Windows using clang)
     "-ffp-contract=off",  # Disable automatic fused-multiply-add insertion
-    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
-    "-Wno-float-conversion",  # Warnings that are enabled by group warning flags like -Wall that we explicitly disable.
-    "-Wno-implicit-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision or convert float to integer
-    "-Wno-implicit-int-float-conversion",  # Disables warnings for implicit conversions from integer types to floating-point types that may lose precision
-    "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
-    "-Wno-unknown-warning-option",  # Disable warnings on unknown warning flags (when warning flags are unknown on older compiler versions)
-    "-Wno-unused-command-line-argument",  # Disables warnings when a command-line argument is not used by the compiler
-    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wc++98-compat-extra-semi",  # Warns about redundant semicolons outside of a function (incompatible with C++98)
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
     "-Wconversion",  # Warns for implicit conversions that may alter a value
@@ -131,6 +123,14 @@ ORTOOLS_LLVM_BASE_FLAGS = [
     "-Wunused-result",  # Warns if a caller of a function marked with warn_unused_result/[[nodiscard]] does not use its return value
     "-Wvla",  # Warns if a variable-length array is used
     "-Wwrite-strings",  # Gives string constants the type const char[length] so copying their address into a non-const char* produces a warning
+    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
+    "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
+    "-Wno-implicit-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision or convert float to integer
+    "-Wno-implicit-int-float-conversion",  # Disables warnings for implicit conversions from integer types to floating-point types that may lose precision
+    "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
+    "-Wno-unknown-warning-option",  # Disable warnings on unknown warning flags (when warning flags are unknown on older compiler versions)
+    "-Wno-unused-command-line-argument",  # Disables warnings when a command-line argument is not used by the compiler
+    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     # go/keep-sorted end
 ]
 
@@ -139,7 +139,7 @@ ORTOOLS_LLVM_FLAGS = [
 ] + ORTOOLS_LLVM_BASE_FLAGS
 
 ORTOOLS_LLVM_TEST_ADDITIONAL_FLAGS = [
-    # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
+    # go/keep-sorted start prefix_order=['"-D', '"-f', '"-W', '"-Wno-']
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-gnu-zero-variadic-macro-arguments",  # gtest depends on this GNU extension being offered.
     "-Wno-implicit-int-conversion",  # Disables warnings for implicit integer conversions that reduce precision
