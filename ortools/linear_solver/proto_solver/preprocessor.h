@@ -257,43 +257,47 @@ inline std::function<double(const MPVariableProto& mp_var)> IntegerShifts() {
 //
 // After this, all "fixed" variable should be fixed at exactly zero for
 // instance. And our scaler correctly just skip these.
+inline double FinalCpSatShiftValue(double lb, double ub, bool is_integer,
+                                   double tolerance) {
+  if (!is_integer) {
+    // Case 1/
+    if (std::floor(ub) < std::ceil(lb)) {
+      if (std::isfinite(lb) && lb > 0.0) return lb;
+      if (std::isfinite(ub) && ub < 0.0) return ub;
+    }
+  }
+
+  // Case 2/
+  if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
+  if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
+
+  return 0.0;
+}
 inline std::function<double(const MPVariableProto& mp_var)> FinalCpSatShift(
     double tolerance) {
   return [tolerance](const MPVariableProto& var) {
-    const double lb = var.lower_bound();
-    const double ub = var.upper_bound();
-    if (!var.is_integer()) {
-      // Case 1/
-      if (std::floor(ub) < std::ceil(lb)) {
-        if (std::isfinite(lb) && lb > 0.0) return lb;
-        if (std::isfinite(ub) && ub < 0.0) return ub;
-      }
-    }
-
-    // Case 2/
-    if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
-    if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
-
-    return 0.0;
+    return FinalCpSatShiftValue(var.lower_bound(), var.upper_bound(),
+                                var.is_integer(), tolerance);
   };
 }
 
 // When we are going to scale floating point variables, it makes sense to shift
 // one bound to 0.0 if the domain does not contain zero.
+inline double ShiftBeforeScalingValue(double lb, double ub, bool is_integer) {
+  if (!is_integer) {
+    if (std::isfinite(lb) && lb > 0.0) return lb;
+    if (std::isfinite(ub) && ub < 0.0) return ub;
+  } else {
+    if (std::isfinite(lb) && lb > 0.0) return std::ceil(lb);
+    if (std::isfinite(ub) && ub < 0.0) return std::floor(ub);
+  }
+  return 0.0;
+}
 inline std::function<double(const MPVariableProto& mp_var)>
 ShiftBeforeScaling() {
   return [](const MPVariableProto& var) {
-    const double lb = var.lower_bound();
-    const double ub = var.upper_bound();
-    if (!var.is_integer()) {
-      if (std::isfinite(lb) && lb > 0.0) return lb;
-      if (std::isfinite(ub) && ub < 0.0) return ub;
-    } else {
-      if (std::isfinite(lb) && lb > 0.0) return std::ceil(lb);
-      if (std::isfinite(ub) && ub < 0.0) return std::floor(ub);
-    }
-
-    return 0.0;
+    return ShiftBeforeScalingValue(var.lower_bound(), var.upper_bound(),
+                                   var.is_integer());
   };
 }
 
