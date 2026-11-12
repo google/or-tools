@@ -47,7 +47,6 @@ enum ModelKind {
 
 struct PlantedModel {
   CpModelProto proto;
-  ModelStats model_stats;
   std::vector<int64_t> planted_sol;
   std::vector<int> bool_vars;  // domain [0, 1]
   std::vector<int> int_vars;   // initial domain width >= 2 (ub - lb >= 2)
@@ -1038,13 +1037,41 @@ PlantedModel BuildReferenceModel(ModelKind kind, int target_num_vars,
                   &sat_model));
   CHECK_EQ(copied_proto.variables_size(), model.proto.variables_size());
   model.proto.Swap(&copied_proto);
-  model.model_stats = *sat_model.GetOrCreate<ModelStats>();
   return model;
 }
 
 std::string FormatCopyDtime(const ModelStats& s) {
   return absl::StrFormat("dtime=%.3fms",
                          1e3 * EstimateCopyDeterministicTime(s));
+}
+
+void BM_EmptyModelCopy(benchmark::State& state) {
+  const CpModelProto empty;
+  for (auto _ : state) {
+    google::protobuf::Arena arena;
+    CpModelProto* copied =
+        google::protobuf::Arena::Create<CpModelProto>(&arena);
+    Model sat_model;
+    CHECK(
+        CopyModel(empty, /*clear_internal_fields=*/false, copied, &sat_model));
+    benchmark::DoNotOptimize(copied);
+  }
+  state.SetLabel(absl::StrFormat(
+      "dtime=%.3fus", 1e6 * EstimateCopyDeterministicTime(ModelStats{})));
+}
+
+void BM_EmptyModelRebuild(benchmark::State& state) {
+  const CpModelProto empty;
+  for (auto _ : state) {
+    DenseModelCopy copy("ls", empty, /*shared_bounds=*/nullptr,
+                        /*shared_clauses=*/nullptr, [](int) { return true; });
+    bool updated = false;
+    CHECK(copy.MaybeUpdate(updated));
+    CHECK(updated);
+    benchmark::DoNotOptimize(&copy.proto());
+  }
+  state.SetLabel(absl::StrFormat(
+      "dtime=%.3fus", 1e6 * EstimateCopyDeterministicTime(ModelStats{})));
 }
 
 template <ModelKind kKind>
@@ -1054,6 +1081,7 @@ void BM_InitialCopy(benchmark::State& state) {
   const PlantedModel raw = BuildRawReferenceModel(kKind, num_vars, rng);
 
   ModelStats stats;
+  bool has_stats = false;
   for (auto _ : state) {
     google::protobuf::Arena arena;
     CpModelProto* copied =
@@ -1061,7 +1089,12 @@ void BM_InitialCopy(benchmark::State& state) {
     Model sat_model;
     CHECK(CopyModel(raw.proto, /*clear_internal_fields=*/false, copied,
                     &sat_model));
-    stats = *sat_model.GetOrCreate<ModelStats>();
+    if (!has_stats) {
+      state.PauseTiming();
+      stats = ComputeModelStats(*copied);
+      has_stats = true;
+      state.ResumeTiming();
+    }
     benchmark::DoNotOptimize(copied);
   }
   state.SetLabel(FormatCopyDtime(stats));
@@ -1081,7 +1114,7 @@ void BM_ModelReduction(benchmark::State& state) {
                                                       : 50;
 
   CpModelProto stage_proto = model.proto;
-  ModelStats stage_stats = model.model_stats;
+  ModelStats stage_stats;
   std::vector<int64_t> stage_sol = model.planted_sol;
 
   if (prev_fixed_pct > 0) {
@@ -1096,8 +1129,7 @@ void BM_ModelReduction(benchmark::State& state) {
 
     SharedBoundsManager prep_bounds(model.proto);
     DenseModelCopy prep_copy("prep", model.proto, &prep_bounds,
-                             /*shared_clauses=*/nullptr,
-                             /*active_constraints=*/nullptr, model.model_stats);
+                             /*shared_clauses=*/nullptr);
     bool updated = false;
     CHECK(prep_copy.MaybeUpdate(updated));
     prep_bounds.ReportPotentialNewBounds("sat", vars, vals, vals);
@@ -1109,6 +1141,8 @@ void BM_ModelReduction(benchmark::State& state) {
     stage_proto = prep_copy.proto();
     stage_stats = prep_copy.model_stats();
     stage_sol = prep_copy.MapSolution(model.planted_sol);
+  } else {
+    stage_stats = ComputeModelStats(stage_proto);
   }
 
   const int stage_num_vars = stage_proto.variables_size();
@@ -1138,10 +1172,9 @@ void BM_ModelReduction(benchmark::State& state) {
   for (auto _ : state) {
     state.PauseTiming();
     std::optional<SharedBoundsManager> shared_bounds(stage_proto);
-    std::optional<DenseModelCopy> copy(
-        std::in_place, "ls", stage_proto, &*shared_bounds,
-        /*shared_clauses=*/nullptr, /*active_constraints=*/nullptr,
-        stage_stats);
+    std::optional<DenseModelCopy> copy(std::in_place, "ls", stage_proto,
+                                       &*shared_bounds,
+                                       /*shared_clauses=*/nullptr);
     shared_bounds->ReportPotentialNewBounds("sat", batch.vars, batch.lbs,
                                             batch.ubs);
     shared_bounds->Synchronize();
@@ -1225,8 +1258,7 @@ void BM_DomainReductions(benchmark::State& state) {
   for (auto _ : state) {
     SharedBoundsManager shared_bounds(model.proto);
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
-                        /*shared_clauses=*/nullptr,
-                        /*active_constraints=*/nullptr, model.model_stats);
+                        /*shared_clauses=*/nullptr);
     bool updated = false;
     CHECK(copy.MaybeUpdate(updated));
     int64_t iter_rebuilds = updated ? 1 : 0;
@@ -1285,8 +1317,7 @@ void BM_FixedVariables(benchmark::State& state) {
   for (auto _ : state) {
     SharedBoundsManager shared_bounds(model.proto);
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
-                        /*shared_clauses=*/nullptr,
-                        /*active_constraints=*/nullptr, model.model_stats);
+                        /*shared_clauses=*/nullptr);
     bool updated = false;
     double pre_dtime = copy.estimated_copy_dtime();
     CHECK(copy.MaybeUpdate(updated));
@@ -1413,8 +1444,7 @@ void BM_MixedUpdates(benchmark::State& state) {
     SharedClausesManager shared_clauses(/*always_synchronize=*/true);
     const int sat_id =
         shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
-    DenseModelCopy copy("ls", model.proto, &shared_bounds, &shared_clauses,
-                        /*active_constraints=*/nullptr, model.model_stats);
+    DenseModelCopy copy("ls", model.proto, &shared_bounds, &shared_clauses);
     bool updated = false;
     double pre_dtime = copy.estimated_copy_dtime();
     CHECK(copy.MaybeUpdate(updated));
@@ -1479,6 +1509,9 @@ void BM_MixedUpdates(benchmark::State& state) {
       ->Args({1000, 15})                                                      \
       ->Args({8000, 15})                                                      \
       ->Args({32000, 15})
+
+BENCHMARK(BM_EmptyModelCopy);
+BENCHMARK(BM_EmptyModelRebuild);
 
 REGISTER_MODEL_BENCHMARKS(kBooleanHeavy);
 REGISTER_MODEL_BENCHMARKS(kLinearHeavy);

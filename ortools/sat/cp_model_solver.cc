@@ -2381,9 +2381,6 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     };
   }
 
-  const ModelStats& input_model_stats =
-      *global_model_->GetOrCreate<ModelStats>();
-
   // Add violation LS workers.
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
@@ -2429,7 +2426,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
                 ls_name, SubSolver::INCOMPLETE, shared->model_proto,
                 local_params, states, shared->time_limit, shared->response,
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints, input_model_stats));
+                shared->stat_tables, active_constraints));
       }
     }
 
@@ -2456,7 +2453,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
                 lin_ls_name, SubSolver::INCOMPLETE, shared->model_proto,
                 local_params, lin_states, shared->time_limit, shared->response,
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints, input_model_stats));
+                shared->stat_tables, active_constraints));
       }
     }
   }
@@ -2517,8 +2514,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
                 local_params.name(), SubSolver::FIRST_SOLUTION,
                 shared->model_proto, local_params, states, shared->time_limit,
                 shared->response, shared->bounds.get(), shared->clauses.get(),
-                shared->ls_hints, shared->stat_tables, active_constraints,
-                input_model_stats));
+                shared->ls_hints, shared->stat_tables, active_constraints));
       } else {
         first_solution_full_subsolvers.push_back(
             std::make_unique<FullProblemSolver>(
@@ -3682,8 +3678,6 @@ class DirectSolverThread : public CpModelSolver {
     // modified by the presolve in DefaultCpModelSolver, upon return of this
     // constructor.
     *presolved_model_proto_ = model_copy_proto;
-    *model_->GetOrCreate<ModelStats>() =
-        *global_model_->GetOrCreate<ModelStats>();
     num_variables_before_expansion_ = model_copy_proto.variables_size();
     CHECK(Initialize());
     thread_pool_ = std::make_unique<ThreadPool>(/*num_threads=*/1);

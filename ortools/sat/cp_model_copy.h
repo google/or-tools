@@ -70,6 +70,7 @@ struct ModelStats {
   bool operator==(const ModelStats& other) const = default;
 };
 
+ModelStats ComputeModelStats(const CpModelProto& model_proto);
 double EstimateCopyDeterministicTime(const ModelStats& stats);
 
 // A simpler version of PresolveContext with just a few helpers to query and
@@ -512,8 +513,7 @@ class DenseModelCopy {
   DenseModelCopy(absl::string_view name, const CpModelProto& input_model_proto,
                  SharedBoundsManager* shared_bounds,
                  SharedClausesManager* shared_clauses,
-                 std::function<bool(int)> active_constraints = nullptr,
-                 ModelStats input_model_stats = {});
+                 std::function<bool(int)> active_constraints = nullptr);
 
   // The timestamps of the shared bounds and equivalences used at the last full
   // model build. Incremental domain updates do not change these timestamps.
@@ -539,9 +539,14 @@ class DenseModelCopy {
       search_dtime_since_rebuild_ += dtime;
     }
   }
-  const ModelStats& model_stats() const { return model_stats_; }
+  const ModelStats& model_stats() const {
+    if (!model_stats_.has_value()) {
+      model_stats_ = ComputeModelStats(input_model_proto_);
+    }
+    return *model_stats_;
+  }
   double estimated_copy_dtime() const {
-    return EstimateCopyDeterministicTime(model_stats_);
+    return EstimateCopyDeterministicTime(model_stats());
   }
   double search_dtime_since_rebuild() const {
     return search_dtime_since_rebuild_;
@@ -585,7 +590,7 @@ class DenseModelCopy {
   SharedBoundsManager* const shared_bounds_;
   const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
-  ModelStats model_stats_;
+  mutable std::optional<ModelStats> model_stats_;
 
   bool first_update_ = true;
   bool is_unsat_ = false;

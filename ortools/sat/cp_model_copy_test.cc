@@ -27,6 +27,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -917,6 +918,39 @@ TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
+TEST(ModelCopyTest, CopyModelAdvancesDeterministicTime) {
+  CpModelProto proto;
+  for (int i = 0; i < 30; ++i) {
+    auto* var = proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(10);
+  }
+  auto* ct = proto.add_constraints()->mutable_linear();
+  for (int i = 0; i < 30; ++i) {
+    ct->add_vars(i);
+    ct->add_coeffs(i + 1);
+  }
+  ct->add_domain(0);
+  ct->add_domain(100);
+
+  CpModelProto copied_proto;
+  Model model;
+  ASSERT_TRUE(
+      CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto, &model));
+  EXPECT_DOUBLE_EQ(
+      model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
+      EstimateCopyDeterministicTime(ComputeModelStats(copied_proto)));
+
+  // Even if initial copy proves the model infeasible, deterministic time for
+  // the scanned prefix is still recorded.
+  proto.add_constraints()->mutable_bool_or();  // Empty clause -> UNSAT.
+  Model unsat_model;
+  EXPECT_FALSE(CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto,
+                         &unsat_model));
+  EXPECT_GT(unsat_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
+            1e-6);
+}
+
 TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
   const CpModelProto proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -996,13 +1030,11 @@ TEST(DenseModelCopyTest,
   SharedBoundsManager shared_bounds_manager(proto);
   SharedClausesManager shared_clauses_manager(true);
 
-  CpModelProto copied_proto;
-  Model sat_model;
-  ASSERT_TRUE(CopyModel(proto, /*clear_internal_fields=*/false, &copied_proto,
-                        &sat_model));
-  DenseModelCopy copy("test", copied_proto, &shared_bounds_manager,
-                      &shared_clauses_manager, /*active_constraints=*/nullptr,
-                      *sat_model.GetOrCreate<ModelStats>());
+  DenseModelCopy copy("test", proto, &shared_bounds_manager,
+                      &shared_clauses_manager);
+  EXPECT_EQ(copy.model_stats().num_variables, 20);
+  EXPECT_EQ(copy.model_stats().num_constraints, 1);
+  EXPECT_EQ(copy.model_stats().num_linear_terms, 22);
   const double initial_estimated_dtime = copy.estimated_copy_dtime();
   EXPECT_GT(initial_estimated_dtime, 1e-6);
 
@@ -1209,7 +1241,7 @@ TEST(DenseModelCopyTest,
   Model sat_model;
   ASSERT_TRUE(CopyModel(proto, /*clear_internal_fields=*/false, &copied_proto,
                         &sat_model));
-  const ModelStats initial_stats = *sat_model.GetOrCreate<ModelStats>();
+  const ModelStats initial_stats = ComputeModelStats(copied_proto);
   EXPECT_EQ(initial_stats.num_variables, 10);
   EXPECT_EQ(initial_stats.num_intervals, 2);
   EXPECT_EQ(initial_stats.num_interval_references, 4);
@@ -1220,8 +1252,7 @@ TEST(DenseModelCopyTest,
 
   SharedBoundsManager shared_bounds(copied_proto);
   DenseModelCopy copy("test", copied_proto, &shared_bounds,
-                      /*shared_clauses=*/nullptr,
-                      /*active_constraints=*/nullptr, initial_stats);
+                      /*shared_clauses=*/nullptr);
   EXPECT_EQ(copy.model_stats(), initial_stats);
   EXPECT_DOUBLE_EQ(copy.estimated_copy_dtime(),
                    EstimateCopyDeterministicTime(initial_stats));

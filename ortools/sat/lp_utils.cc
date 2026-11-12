@@ -1641,21 +1641,22 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
   };
 
   const auto compute_max_multiplier = [&](const MPVariableProto& var_proto) {
+    double max_magnitude = 1.0;
+    if (std::isfinite(var_proto.lower_bound())) {
+      max_magnitude =
+          std::max(max_magnitude, std::abs(var_proto.lower_bound()));
+    }
+    if (std::isfinite(var_proto.upper_bound())) {
+      max_magnitude =
+          std::max(max_magnitude, std::abs(var_proto.upper_bound()));
+    }
+    const double max_multiplier = params.mip_max_bound() / max_magnitude;
     if (params.mip_scale_to_max_bound() || params.mip_scale_for_precision()) {
-      double max_magnitude = 1.0;
-      if (std::isfinite(var_proto.lower_bound())) {
-        max_magnitude =
-            std::max(max_magnitude, std::abs(var_proto.lower_bound()));
-      }
-      if (std::isfinite(var_proto.upper_bound())) {
-        max_magnitude =
-            std::max(max_magnitude, std::abs(var_proto.upper_bound()));
-      }
-      return params.mip_max_bound() / max_magnitude;
+      return max_multiplier;
     } else {
       // TODO(user): This is the old behavior and changing it broke some
       // golden test. Fix.
-      return 1e4;
+      return std::min(1e4, max_multiplier);
     }
   };
 

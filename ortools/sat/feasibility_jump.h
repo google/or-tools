@@ -409,12 +409,11 @@ class FeasibilityJumpSolver : public SubSolver {
       SharedResponseManager* shared_response,
       SharedBoundsManager* shared_bounds, SharedClausesManager* shared_clauses,
       SharedLsSolutionRepository* shared_hints, SharedStatTables* stat_tables,
-      std::function<bool(int)> active_constraints = nullptr,
-      ModelStats input_model_stats = {})
+      std::function<bool(int)> active_constraints = nullptr)
       : SubSolver(name, type),
         input_model_proto_(input_model_proto),
         dense_model_(name, input_model_proto, shared_bounds, shared_clauses,
-                     std::move(active_constraints), input_model_stats),
+                     std::move(active_constraints)),
         params_(std::move(params)),
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
