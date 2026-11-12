@@ -1929,12 +1929,6 @@ message SatParameters {
   optional bool mip_automatically_scale_variables = 166 [default = true];
 
   // If true, both mip_var_scaling and mip_scale_large_domain are ignored.
-  // Instead, we scale any floating point variable by a power of two so that
-  // its domain is the largest that fit in [-mip_max_bound, mip_max_bound].
-  // Note that any domain already larger than this is ignored.
-  optional bool mip_scale_to_max_bound = 358 [default = false];
-
-  // If true, both mip_var_scaling and mip_scale_large_domain are ignored.
   // Instead, we scale any floating point variable by the largest power of two
   // that still allows every constraint containing it to satisfy
   // mip_wanted_precision within mip_max_activity_exponent.

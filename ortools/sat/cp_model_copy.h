@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -30,7 +29,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "google/protobuf/arena.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -52,26 +50,6 @@ namespace sat {
 // A variable which is removed from the model during copy.
 // This can only be done if the variable is fixed.
 constexpr int kNoVariableMapping = kint32min;
-
-// Compact size summary of a CpModelProto, populated on the fly during ModelCopy
-// so copy deterministic time can be estimated without rescanning the model.
-struct ModelStats {
-  int64_t num_variables = 0;
-  int64_t num_constraints = 0;
-  int64_t num_enforcement_literals = 0;
-  int64_t num_literals = 0;
-  int64_t num_linear_expressions = 0;
-  int64_t num_linear_terms = 0;
-  int64_t num_intervals = 0;
-  int64_t num_interval_references = 0;
-  int64_t num_table_values = 0;
-  int64_t num_automaton_transitions = 0;
-
-  bool operator==(const ModelStats& other) const = default;
-};
-
-ModelStats ComputeModelStats(const CpModelProto& model_proto);
-double EstimateCopyDeterministicTime(const ModelStats& stats);
 
 // A simpler version of PresolveContext with just a few helpers to query and
 // manipulate variable domains during the copy and handle remapping.
@@ -266,7 +244,6 @@ class ModelCopy {
   absl::Span<const int64_t> InternalIntervalMapping() const {
     return interval_mapping_;
   }
-  const ModelStats& model_stats() const { return model_stats_; }
 
  private:
   // Write a summary of what happens to the logger_.
@@ -418,7 +395,6 @@ class ModelCopy {
   const SatParameters& params_;
   SolverLogger* logger_;
   CpModelProto* working_model_;
-  ModelStats model_stats_;
 
   absl::Span<const int> variable_mapping_;
 
@@ -500,57 +476,28 @@ class VariableDomains {
 
 // A CpModelProto copy where fixed and non-representative variables are removed,
 // which can be dynamically updated when new bounds or equivalences are found.
-//
-// Non-fixing bound updates are applied incrementally in place to
-// `var_domains()`, while full model rebuilds (`ModelCopy`) are triggered once
-// `reduction_ratio * search_dtime_since_rebuild() >= estimated_copy_dtime()`,
-// where `reduction_ratio` is the fraction of unfixed variables newly fixed or
-// merged by equivalences since the last rebuild.
 class DenseModelCopy {
  public:
-  // active_constraints() will be used when copying input_model_proto into the
-  // dense model.
+  // active_constraints() will be used in the initial copy of the
+  // input_model_proto into the dense model.
   DenseModelCopy(absl::string_view name, const CpModelProto& input_model_proto,
                  SharedBoundsManager* shared_bounds,
                  SharedClausesManager* shared_clauses,
                  std::function<bool(int)> active_constraints = nullptr);
 
-  // The timestamps of the shared bounds and equivalences used at the last full
-  // model build. Incremental domain updates do not change these timestamps.
+  // The timestamp of the shared bounds and equivalences used to compute this
+  // dense model copy.
   int64_t bounds_timestamp() const { return bounds_timestamp_; }
   int64_t equivalences_timestamp() const { return equivalences_timestamp_; }
 
   // The dense model proto and the domains of its variables.
-  const CpModelProto& proto() const {
-    return model_proto_ != nullptr ? *model_proto_ : input_model_proto_;
-  }
+  const CpModelProto& proto() const { return model_proto_; }
   const VariableDomains& var_domains() const { return var_domains_; }
 
-  // Updates `var_domains()` incrementally with the latest shared bounds and,
-  // when warranted by the rate limiter, rebuilds `proto()` to remove fixed and
-  // equivalent variables. Returns false if the model is proven infeasible. Sets
-  // `updated` to true iff `proto()` and the variable mapping were rebuilt.
+  // Updates the model with the latest bounds and equivalences from the
+  // SharedBoundsManager and SharedClausesManager. Returns false if the model is
+  // proven infeasible. Sets `updated` to true if the model was updated.
   bool MaybeUpdate(bool& updated);
-
-  // Records search deterministic time spent evaluating moves on this dense
-  // model so full rebuilds can be amortized against search work.
-  void AddSearchDeterministicTime(double dtime) {
-    if (dtime > 0.0) {
-      search_dtime_since_rebuild_ += dtime;
-    }
-  }
-  const ModelStats& model_stats() const {
-    if (!model_stats_.has_value()) {
-      model_stats_ = ComputeModelStats(input_model_proto_);
-    }
-    return *model_stats_;
-  }
-  double estimated_copy_dtime() const {
-    return EstimateCopyDeterministicTime(model_stats());
-  }
-  double search_dtime_since_rebuild() const {
-    return search_dtime_since_rebuild_;
-  }
 
   // Maps a solution from the input model to the dense model, and vice versa.
   std::vector<int64_t> MapSolution(
@@ -562,82 +509,48 @@ class DenseModelCopy {
   int64_t MapInnerObjectiveValue(int64_t input_inner_objective_value) const;
 
  private:
-  // Updates `input_var_domains_` and `var_domains_` in place from
-  // `shared_bounds_`. Returns false if any domain becomes empty (UNSAT).
-  bool UpdateFromSharedBounds();
-  bool ShouldRebuild() const;
+  // Return false if one of the domains becomes empty (UNSAT). This might happen
+  // while we are cleaning up all workers at the end of a search.
+  bool UpdateFromSharedBounds(int64_t& timestamp);
 
-  // Propagates tightened `var_domains_` back into the active input variables'
-  // `input_var_domains_`. Returns false if UNSAT.
-  bool SyncDenseDomainsToInputDomains(bool only_multi_var_classes = false);
-
-  // Propagates fixedness from `input_var_representatives` across
-  // `input_var_domains_` and intersects into active `var_domains_`. Returns
-  // false if UNSAT.
-  bool PropagateInputEquivalences(
-      absl::Span<const int> input_var_representatives);
-
-  // Computes and applies an incremental mapping from the current dense
-  // variables in `proto()` to the next compacted dense model, removing fixed
+  // Computes and applies a dense mapping of the variables which removes fixed
   // and non-representative variables. Returns false if UNSAT.
-  void ComputeStepVariableMapping(
-      absl::Span<const int> input_var_representatives);
-  bool ApplyStepVariableMapping();
+  bool ComputeVariableMapping(absl::Span<const int> input_var_representatives);
+  bool ApplyVariableMapping();
   void ResetVarDomains();
 
   const CpModelProto& input_model_proto_;
-  SharedClausesManager* const shared_clauses_;
-  SharedBoundsManager* const shared_bounds_;
+  SharedClausesManager* shared_clauses_;
+  SharedBoundsManager* shared_bounds_;
   const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
-  mutable std::optional<ModelStats> model_stats_;
 
-  bool first_update_ = true;
-  bool is_unsat_ = false;
-
-  // Timestamps of the data used at the last full model rebuild.
+  // Timestamps of the data used to compute the fields below.
   int64_t bounds_timestamp_ = -1;
-  int64_t latest_bounds_timestamp_ = -1;
   int64_t equivalences_timestamp_ = -1;
-  int64_t latest_equivalences_timestamp_ = -1;
-  int64_t fixed_vars_at_last_rebuild_ = 0;
-  double search_dtime_since_rebuild_ = 0.0;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
-  // variables removed. Allocated lazily on `arena_` once the first rebuild
-  // occurs. Unless stated otherwise with an explicit mention to the 'input'
-  // model, the fields, methods, and method parameters in this class operate on
-  // the variables and constraints of `proto()`.
-  std::unique_ptr<google::protobuf::Arena> arena_;
-  CpModelProto* model_proto_ = nullptr;
+  // variables removed. Unless stated otherwise with an explicit mention to the
+  // 'input' model, the fields, methods, and method parameters in this class
+  // operate on the variables and constraints of this model.
+  CpModelProto model_proto_;
 
-  // A mapping from the `input_model_proto_` to `proto()` variables, which
-  // removes the fixed and non-representative variables. Removed variables are
-  // "mapped" to `kNoVariableMapping`.
+  // A mapping from the `input_model_proto_` to the `model_proto_` variables,
+  // which removes the fixed and non-representative variables. Removed variables
+  // are "mapped" to `kNoVariableMapping`.
   std::vector<int> input_var_mapping_;
-  // The reverse mapping from the dense to the input variables. Each entry's
-  // positive variable is also the head of an intrusive singly-linked list (via
-  // `next_equivalent_input_var_`, terminated at `tail_input_var_`) of all
-  // active input variables currently mapped to that dense variable.
+  // The reverse mapping from the dense to the input variables.
   std::vector<int> reverse_mapping_;
-  std::vector<int> next_equivalent_input_var_;
-  std::vector<int> tail_input_var_;
 
   // The domains of the `input_model_proto_` variables.
   std::vector<Domain> input_var_domains_;
-  // The domains of the `proto()` variables.
+  // The domains of the `model_proto_` variables.
   VariableDomains var_domains_;
 
   // Temporary data for UpdateFromSharedBounds().
   std::vector<int> tmp_variables_;
   std::vector<int64_t> tmp_new_lower_bounds_;
   std::vector<int64_t> tmp_new_upper_bounds_;
-
-  // Scratch buffers reused across chained rebuilds.
-  std::vector<int> step_var_mapping_;
-  std::vector<int> next_reverse_mapping_;
-  std::vector<int> next_tail_input_var_;
-  std::vector<int> rep_to_new_dense_ref_;
 };
 
 }  // namespace sat

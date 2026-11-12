@@ -300,6 +300,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
           ref_to_linear1.erase(ref);
         } else {
           FillDomainInProto(new_domain, old_ct_proto->mutable_linear());
+          context->MarkConstraintForCanonicalization(it->second);
           context->UpdateRuleStats(
               "variables: merged two linear1 with same variable and "
               "enforcement");
@@ -450,6 +451,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
             ->mutable_literals()
             ->Add(new_enforcement_literals.begin(),
                   new_enforcement_literals.end());
+        context->MarkConstraintForCanonicalization(ct);
         *changed = true;
       }
       // Reinforce any negated encodings that might exist
@@ -489,6 +491,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
           *changed = true;
           FillDomainInProto(potential_new_domain,
                             negated_linear1_ct.mutable_linear());
+          context->MarkConstraintForCanonicalization(it->second);
           context->UpdateRuleStats(
               "variables: reinforced negated encodings for fully encoded "
               "domain");

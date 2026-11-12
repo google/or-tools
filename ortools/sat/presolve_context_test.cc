@@ -1907,6 +1907,211 @@ TEST(PresolveContextTest,
               )pb"));
 }
 
+TEST(PresolveContextTest,
+     CanonicalizeLinearOfSizeOneSimplifiesHolesUsingVarDomain) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0, 2, 2, 4, 4, 6, 6, 8, 8 ] }
+    constraints {
+      enforcement_literal: [ 0 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 0, 4, 4, 6, 6, 8, 8 ]
+      }
+    }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 1 ]
+                domain: [ 0, 0, 4, 8 ]
+              )pb"));
+
+  // Re-canonicalizing is a no-op and preserves the simplified 2-interval RHS.
+  ConstraintProto copy = working_model.constraints(0);
+  EXPECT_FALSE(context.CanonicalizeConstraint(&copy));
+  EXPECT_THAT(copy.linear().domain(), testing::ElementsAre(0, 0, 4, 8));
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeConstraintsLazilyEnforcedExprsAndInverse) {
+  Model model;
+  // Variables:
+  // 0: b in [0, 1] (enforcement literal)
+  // 1: x in [0, 10] (affine representative)
+  // 2: y in [0, 25] (will get affine relation y = 2 * x + 1)
+  // 3: z in [0, 10] (will get fixed z = 3)
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 25 ] }
+    variables { domain: [ 0, 10 ] }
+    # c0: fixed interval [0, 2] referenced by c3.
+    constraints {
+      interval {
+        start { offset: 0 }
+        size { offset: 2 }
+        end { offset: 2 }
+      }
+    }
+    # c1: enforced kAllDiff (b => all_diff(y + z + b, x)).
+    constraints {
+      enforcement_literal: [ 0 ]
+      all_diff {
+        exprs {
+          vars: [ 2, 3, 0 ]
+          coeffs: [ 1, 1, 1 ]
+        }
+        exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    # c2: enforced kAutomaton (~b => automaton(y - z + 2*b)).
+    constraints {
+      enforcement_literal: [ -1 ]
+      automaton {
+        starting_state: 0
+        final_states: [ 1 ]
+        transition_tail: [ 0 ]
+        transition_head: [ 1 ]
+        transition_label: [ 0 ]
+        exprs {
+          vars: [ 2, 3, 0 ]
+          coeffs: [ 1, -1, 2 ]
+        }
+      }
+    }
+    # c3: enforced kCumulative (b => cumulative).
+    constraints {
+      enforcement_literal: [ 0 ]
+      cumulative {
+        intervals: [ 0 ]
+        demands {
+          vars: [ 2, 0 ]
+          coeffs: [ 1, 3 ]
+        }
+        capacity {
+          vars: [ 3, 1 ]
+          coeffs: [ 2, 1 ]
+        }
+      }
+    }
+    # c4: enforced kReservoir (b => reservoir).
+    constraints {
+      enforcement_literal: [ 0 ]
+      reservoir {
+        min_level: 0
+        max_level: 20
+        time_exprs {
+          vars: [ 2, 3 ]
+          coeffs: [ 1, 1 ]
+        }
+        level_changes {
+          vars: [ 0, 1 ]
+          coeffs: [ 2, 1 ]
+        }
+        active_literals: [ 0 ]
+      }
+    }
+    # c5: kInverse with affine and fixed expressions.
+    constraints {
+      inverse {
+        f_expr_direct {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+        f_expr_direct {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+        f_expr_inverse {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+        }
+        f_expr_inverse {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+
+  // Fix z = 3 and link y = 2 * x + 1.
+  ASSERT_TRUE(context.IntersectDomainWith(3, Domain(3)));
+  ASSERT_TRUE(context.StoreAffineRelation(2, 1, 2, 1));
+  EXPECT_TRUE(context.NeedsCanonicalization());
+
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+
+  // c1 (b = 1): y + z + b = (2*x + 1) + 3 + 1 = 2*x + 5.
+  EXPECT_THAT(context.Constraint(1).all_diff().exprs(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 2 ]
+                offset: 5
+              )pb"));
+  // c2 (b = 0): y - z + 2*b = (2*x + 1) - 3 + 0 = 2*x - 2.
+  EXPECT_THAT(context.Constraint(2).automaton().exprs(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 2 ]
+                offset: -2
+              )pb"));
+  // c3 (b = 1): demand = (2*x + 1) + 3 = 2*x + 4; capacity = 2*3 + x = x + 6.
+  EXPECT_THAT(context.Constraint(3).cumulative().demands(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 2 ]
+                offset: 4
+              )pb"));
+  EXPECT_THAT(context.Constraint(3).cumulative().capacity(),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 1 ]
+                offset: 6
+              )pb"));
+  // c4 (b = 1): time = (2*x + 1) + 3 = 2*x + 4; level_change = 2 + x = x + 2.
+  EXPECT_THAT(context.Constraint(4).reservoir().time_exprs(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 2 ]
+                offset: 4
+              )pb"));
+  EXPECT_THAT(context.Constraint(4).reservoir().level_changes(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 1 ]
+                offset: 2
+              )pb"));
+  // c5: f_expr_direct[0] = 2*x + 1; f_expr_inverse[0] = 3.
+  EXPECT_THAT(context.Constraint(5).inverse().f_expr_direct(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 2 ]
+                offset: 1
+              )pb"));
+  EXPECT_THAT(context.Constraint(5).inverse().f_expr_inverse(0),
+              testing::EqualsProto(R"pb(offset: 3)pb"));
+
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

@@ -1895,6 +1895,57 @@ TEST(FixedDivisionConstraintTest,
   EXPECT_BOUNDS_EQ(div, 1, 5);
 }
 
+TEST(FixedDivisionConstraintTest,
+     AlwaysFalseWithUnassignedEnforcementLiteralOverflow) {
+  {
+    Model model;
+    const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+    const IntegerVariable num = model.Add(NewIntegerVariable(0, 1));
+    const IntegerVariable div = model.Add(
+        NewIntegerVariable(-(int64_t{1} << 60), -863070048154603223LL));
+    AddFixedDivisionConstraint(
+        {b}, AffineExpression(num, 1, IntegerValue(int64_t{1} << 60)),
+        IntegerValue((int64_t{1} << 62) - 1), div, &model);
+    EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+    EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  }
+  {
+    Model model;
+    const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+    const IntegerVariable num = model.Add(NewIntegerVariable(-1, 0));
+    const IntegerVariable div =
+        model.Add(NewIntegerVariable(863070048154603223LL, int64_t{1} << 60));
+    AddFixedDivisionConstraint(
+        {b}, AffineExpression(num, 1, IntegerValue(-(int64_t{1} << 60))),
+        IntegerValue((int64_t{1} << 62) - 1), div, &model);
+    EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+    EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  }
+}
+
+TEST(FixedDivisionConstraintTest, EnforcedConflictOverflow) {
+  {
+    Model model;
+    const IntegerVariable num = model.Add(NewIntegerVariable(0, 1));
+    const IntegerVariable div = model.Add(
+        NewIntegerVariable(-(int64_t{1} << 60), -863070048154603223LL));
+    AddFixedDivisionConstraint({}, AffineExpression(num, 1, IntegerValue(1)),
+                               IntegerValue((int64_t{1} << 62) - 1), div,
+                               &model);
+    EXPECT_FALSE(model.GetOrCreate<SatSolver>()->Propagate());
+  }
+  {
+    Model model;
+    const IntegerVariable num = model.Add(NewIntegerVariable(-1, 0));
+    const IntegerVariable div =
+        model.Add(NewIntegerVariable(863070048154603223LL, int64_t{1} << 60));
+    AddFixedDivisionConstraint({}, AffineExpression(num, 1, IntegerValue(-1)),
+                               IntegerValue((int64_t{1} << 62) - 1), div,
+                               &model);
+    EXPECT_FALSE(model.GetOrCreate<SatSolver>()->Propagate());
+  }
+}
+
 TEST(ModuloConstraintTest, CheckAllSolutions) {
   absl::BitGen random;
   const int kMaxValue = 50;

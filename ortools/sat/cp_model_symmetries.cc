@@ -1120,6 +1120,17 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const AffineRelation::Relation r = context->GetAffineRelation(var);
     if (r.representative == var) continue;
 
+    // Skip non-representative variables whose only remaining usage is
+    // kAffineRelationConstraint (appearing nowhere in the working model,
+    // objective, or assumptions). Adding temporary equality constraints for
+    // them attaches dangling leaves to r.representative that can introduce
+    // spurious twin-leaf symmetries and disrupt orbitope extraction.
+    if (context->VariableIsUnique(var)) {
+      DCHECK(
+          context->VarToConstraints(var).contains(kAffineRelationConstraint));
+      continue;
+    }
+
     to_add.push_back({var, r});
   }
 
