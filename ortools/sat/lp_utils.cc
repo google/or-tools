@@ -327,22 +327,17 @@ struct ComponentPrecisionScalingBounds {
   // Largest power of two keeping the variable domain within the target bound.
   std::vector<double> max_var_scaling;
   // Scaling needed to reach the wanted precision on the activities of all the
-  // constraints (and objective) containing the variable.
+  // constraints containing the variable.
   std::vector<double> max_scaling_needed;
-  // Same as max_scaling_needed, but considering the constraints only. This is
-  // only used to report how many variables are scaled more because of the
-  // objective.
-  std::vector<double> constraint_scaling_needed;
-  // Largest power-of-two scaling that still allows all the constraints (and
-  // objective) containing the variable to be scaled to integers.
+  // Largest power-of-two scaling that still allows all the constraints
+  // containing the variable to be scaled to integers.
   std::vector<double> min_headroom;
 };
 
 ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
     const SatParameters& params, const MPModelProtoWrapper& mp_model,
     const ResidualContinuousComponent& compo,
-    absl::Span<const MipVariableState> states, double max_target_bound,
-    GlobalObjectivePrecision* global_obj_precision) {
+    absl::Span<const MipVariableState> states, double max_target_bound) {
   absl::Span<const int> compo_vars = compo.continuous_vars;
   absl::Span<const int> var_to_local_col = compo.var_to_local_col;
   CHECK(!var_to_local_col.empty());
@@ -363,14 +358,13 @@ ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
 
   // If continuous variables were already scaled by a power of two > 1 (e.g.
   // TUM components scaled with a common factor), unscale their coefficients and
-  // bounds when computing row/objective headroom so their power-of-two
-  // denominator does not artificially reduce headroom for other continuous
-  // variables sharing that expression.
+  // bounds when computing row headroom so their power-of-two denominator does
+  // not artificially reduce headroom for other continuous variables sharing
+  // that constraint.
   const bool use_proper_relaxation = params.mip_proper_relaxation();
   std::vector<double> var_err_lb(local_num_vars, 0.0);
   std::vector<double> var_err_ub(local_num_vars, 0.0);
   std::vector<double> existing_pow2_scaling(local_num_vars, 1.0);
-  bool has_scalable_var_in_obj = false;
   for (int local_col = 0; local_col < local_num_vars; ++local_col) {
     const int var = compo_vars[local_col];
     const MipVariableState& state = states[var];
@@ -400,15 +394,12 @@ ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
         MaxPowerOfTwoExponentWithinBound(bound_magnitude, max_domain_bound);
     if (max_exp > 0) {
       result.max_var_scaling[local_col] = std::ldexp(1.0, max_exp);
-      if (obj_coeff != 0.0) has_scalable_var_in_obj = true;
     }
   }
 
-  // We only want "discretization_precision" on the constraint/objective
-  // activity, if a variable only appears with really small coefficients, we
-  // don't need to scale it too much. Note that the objective is processed with
-  // a potentially larger precision than the constraints (see
-  // GlobalObjectivePrecision).
+  // We only want "discretization_precision" on the constraint activity; if a
+  // variable only appears with really small coefficients, we don't need to
+  // scale it too much.
   std::vector<int> local_cols;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
@@ -530,147 +521,10 @@ ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
     }
   }
 
-  // Also take the objective into account.
-  //
-  // Note that a discretization error on the objective is not a feasibility
-  // issue but an optimality one, so we use a precision in line with the gap
-  // limit. We keep track of the scaling needed by the constraints alone in
-  // order to report how many variables are scaled more because of the
-  // objective.
-  result.constraint_scaling_needed = result.max_scaling_needed;
-  if (has_scalable_var_in_obj && global_obj_precision != nullptr) {
-    const GlobalObjectivePrecision::Bounds obj_bounds =
-        global_obj_precision->GetBounds(mp_model.underlying_model(), states);
-    const double discretization_precision = obj_bounds.precision / 2.0;
-    for (int local_col = 0; local_col < local_num_vars; ++local_col) {
-      const int var = compo_vars[local_col];
-      const MipVariableState& state = states[var];
-      if (state.is_integer) continue;
-      if (state.lb == 0.0 && state.ub == 0.0) continue;
-      const double coeff =
-          mp_model.variables(var).objective_coefficient() / state.scaling;
-      if (coeff == 0.0) continue;
-
-      result.min_headroom[local_col] =
-          std::min(result.min_headroom[local_col], obj_bounds.headroom);
-      if (result.max_var_scaling[local_col] > 1.0) {
-        const double s = existing_pow2_scaling[local_col];
-        const auto [lb_err, unused_ub_err] =
-            term_discretization_errors(local_col, coeff * s);
-        result.max_scaling_needed[local_col] =
-            std::max(result.max_scaling_needed[local_col],
-                     static_cast<double>(obj_bounds.num_lb_floats) * lb_err /
-                         discretization_precision);
-      }
-    }
-  }
-
   return result;
 }
 
 }  // namespace
-
-GlobalObjectivePrecision::GlobalObjectivePrecision(const SatParameters& params,
-                                                   const MPModelProto& mp_model)
-    : scaling_target_(int64_t{1} << params.mip_max_activity_exponent()),
-      obj_precision_(std::max(params.mip_wanted_precision(),
-                              params.absolute_gap_limit())) {
-  CHECK(!mp_model.maximize());
-  const int num_variables = mp_model.variable_size();
-  for (int var = 0; var < num_variables; ++var) {
-    if (mp_model.variable(var).objective_coefficient() != 0.0) {
-      obj_vars_.push_back(var);
-    }
-  }
-}
-
-GlobalObjectivePrecision::Bounds GlobalObjectivePrecision::GetBounds(
-    const MPModelProto& mp_model, absl::Span<const MipVariableState> states) {
-  if (dirty_) {
-    Recompute(mp_model, states);
-  }
-  if (!has_continuous_obj_var_) {
-    return {kInfinity, 0, obj_precision_};
-  }
-  double headroom = 1.0;
-  if (scaling_factor_ != 0.0 &&
-      max_existing_pow2_scaling_ * scaling_factor_ <= max_scaling_factor_) {
-    headroom = std::ldexp(
-        1.0, HighestPowerOfTwoAtOrBelow(max_scaling_factor_ / scaling_factor_));
-  }
-  return {headroom, num_lb_floats_, obj_precision_};
-}
-
-void GlobalObjectivePrecision::Recompute(
-    const MPModelProto& mp_model, absl::Span<const MipVariableState> states) {
-  coeffs_.clear();
-  lbs_.clear();
-  ubs_.clear();
-  num_lb_floats_ = 0;
-  max_existing_pow2_scaling_ = 1.0;
-  has_continuous_obj_var_ = false;
-  for (const int var : obj_vars_) {
-    const MipVariableState& state = states[var];
-    const double lb = state.lb;
-    const double ub = state.ub;
-    if (lb == 0.0 && ub == 0.0) continue;
-    const double coeff =
-        mp_model.variable(var).objective_coefficient() / state.scaling;
-    if (coeff == 0.0) continue;
-
-    // Continuous variables already scaled by a power of two are considered in
-    // their unscaled form, see ComputeComponentPrecisionScalingBounds().
-    double s = 1.0;
-    if (!state.is_integer) {
-      has_continuous_obj_var_ = true;
-      ++num_lb_floats_;
-      const double cur = state.scaling;
-      int exp = 0;
-      if (cur > 1.0 && std::isfinite(cur) && std::frexp(cur, &exp) == 0.5) {
-        s = cur;
-        max_existing_pow2_scaling_ = std::max(max_existing_pow2_scaling_, s);
-      }
-    }
-    coeffs_.push_back(coeff * s);
-    lbs_.push_back(lb / s);
-    ubs_.push_back(ub / s);
-  }
-  scaling_factor_ = 1.0;
-  max_scaling_factor_ = kInfinity;
-  if (!coeffs_.empty()) {
-    double relative_coeff_error;
-    double scaled_sum_error;
-    scaling_factor_ = FindBestScalingAndComputeErrors(
-        coeffs_, lbs_, ubs_, scaling_target_, obj_precision_,
-        &relative_coeff_error, &scaled_sum_error, &max_scaling_factor_);
-  }
-  dirty_ = false;
-}
-
-bool GlobalObjectivePrecision::KeepsObjectiveScalable(
-    const MPModelProto& mp_model, absl::Span<const MipVariableState> states,
-    int var, double scaling, double reserved_headroom) {
-  const double obj_coeff = mp_model.variable(var).objective_coefficient();
-  if (obj_coeff == 0.0) return true;
-  if (dirty_) Recompute(mp_model, states);
-  if (scaling_factor_ == 0.0) return false;
-
-  // The current factor makes the other coefficients integer, find the extra
-  // factor needed by the new coefficient of var, see GetIntegralityMultiplier()
-  // for the tolerance.
-  const double coeff = obj_coeff / scaling;
-  const double limit = max_scaling_factor_ /
-                       (scaling_factor_ * std::max(1.0, reserved_headroom));
-  if (limit < 1.0) return false;
-  const int64_t int_limit =
-      limit >= static_cast<double>(kint64max)
-          ? kint64max
-          : CapAdd(static_cast<int64_t>(std::floor(limit)), 1);
-  const int64_t extra_factor = FindRationalFactor(
-      scaling_factor_ * coeff, int_limit,
-      scaling_factor_ * obj_precision_ * std::min(1.0, std::abs(coeff)));
-  return extra_factor != 0 && static_cast<double>(extra_factor) <= limit;
-}
 
 void LogPrecisionScalingStats(const SatParameters& params,
                               const MPModelProto& mp_model,
@@ -693,21 +547,18 @@ void LogPrecisionScalingStats(const SatParameters& params,
 
   SOLVER_LOG(logger, "[ScaleForPrecision] Scaled ", stats.num_scaled,
              " continuous variables, power of two scaling in [",
-             stats.min_exponent, ",", stats.max_exponent, "], ",
-             stats.num_objective_driven,
-             " scaled more than needed by the constraints because of the "
-             "objective. Worst case objective discretization error: ",
+             stats.min_exponent, ",", stats.max_exponent,
+             "]. Worst case objective discretization error: ",
              objective_discretization_error);
 }
 
 void ScaleComponentContinuousVariablesForGivenPrecision(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision,
     PrecisionScalingStats* stats) {
   const ComponentPrecisionScalingBounds bounds =
       ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
-                                             kInfinity, global_obj_precision);
+                                             kInfinity);
 
   absl::Span<const int> compo_vars = compo.continuous_vars;
   const int local_num_vars = compo_vars.size();
@@ -733,23 +584,9 @@ void ScaleComponentContinuousVariablesForGivenPrecision(
     stats->min_exponent = std::min(stats->min_exponent, exp);
     stats->max_exponent = std::max(stats->max_exponent, exp);
 
-    // Would the constraints alone have resulted in a smaller scaling?
-    const double needed_for_constraints =
-        std::ldexp(1.0, LowestPowerOfTwoAtOrAbove(std::max(
-                            1.0, bounds.constraint_scaling_needed[local_col])));
-    const double constraint_scaling =
-        std::min({bounds.max_var_scaling[local_col],
-                  bounds.min_headroom[local_col], needed_for_constraints});
-    if (constraint_scaling < scaling) ++stats->num_objective_driven;
-
     const int var = compo_vars[local_col];
     MipVariableState& state = states[var];
     CHECK_EQ(state.scaling, 1.0);
-    if (global_obj_precision != nullptr &&
-        mp_model.variables(var).objective_coefficient() != 0.0 &&
-        !(state.lb == 0.0 && state.ub == 0.0)) {
-      global_obj_precision->NotifyContinuousPow2Scaling(scaling);
-    }
     ScaleVariableState(scaling, &state);
   }
 }
@@ -1927,11 +1764,11 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
   return var_scaling;
 }
 
-void ScaleOneVariableResidualMatrix(
-    const SatParameters& params, const ResidualContinuousComponent& compo,
-    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision,
-    OneVariableComponentStats* stats) {
+void ScaleOneVariableResidualMatrix(const SatParameters& params,
+                                    const ResidualContinuousComponent& compo,
+                                    const MPModelProtoWrapper& mp_model,
+                                    absl::Span<MipVariableState> states,
+                                    OneVariableComponentStats* stats) {
   CHECK_EQ(compo.continuous_vars.size(), 1);
   const int var = compo.continuous_vars[0];
   MipVariableState& state = states[var];
@@ -2080,7 +1917,7 @@ void ScaleOneVariableResidualMatrix(
   if (params.mip_scale_for_precision()) {
     const ComponentPrecisionScalingBounds bounds =
         ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
-                                               kInfinity, global_obj_precision);
+                                               kInfinity);
     double pow2_scaling = 1.0;
     if (bounds.max_var_scaling[0] > 1.0 &&
         bounds.min_headroom[0] != kInfinity &&
@@ -2089,22 +1926,6 @@ void ScaleOneVariableResidualMatrix(
           {bounds.max_var_scaling[0], bounds.min_headroom[0],
            std::ldexp(
                1.0, LowestPowerOfTwoAtOrAbove(bounds.max_scaling_needed[0]))});
-    }
-
-    // A rational scaling that is not a power of two also changes the objective
-    // coefficient of var to a less "nice" value. We refuse it if the objective
-    // can then no longer be scaled to integers with enough headroom left for
-    // the other continuous variables, for which we reserve a scaling similar
-    // to the power of two one of var. Note that the power of two scalings are
-    // all absorbed by a single factor, see GlobalObjectivePrecision.
-    int exp = 0;
-    const bool is_power_of_two = std::frexp(scaling, &exp) == 0.5;
-    if (!is_power_of_two && global_obj_precision != nullptr &&
-        !global_obj_precision->KeepsObjectiveScalable(
-            mp_model.underlying_model(), states, var, scaling,
-            /*reserved_headroom=*/pow2_scaling)) {
-      ++stats->num_objective_limited;
-      return;
     }
     const auto [pow2_err_lb, pow2_err_ub] =
         GetContinuousVarDiscretizationErrorBounds(
@@ -2122,9 +1943,6 @@ void ScaleOneVariableResidualMatrix(
   state.error_ub = max_err;
   state.is_integer = true;
   ScaleVariableState(scaling, &state);
-  if (obj_coeff != 0.0 && global_obj_precision != nullptr) {
-    global_obj_precision->MarkDirty();
-  }
 }
 
 void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
@@ -2134,8 +1952,7 @@ void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
              " components: ", stats.num_integers,
              " marked as integer (max scaling ", stats.max_scaling, "), ",
              stats.num_fixed, " fixed, ", stats.num_pow2_preferred,
-             " better scaled by a power of two, ", stats.num_objective_limited,
-             " kept continuous for the objective, ", stats.num_missed,
+             " better scaled by a power of two, ", stats.num_missed,
              " without integrality multiplier.");
 }
 
@@ -4571,11 +4388,12 @@ bool TryScaleModularComponent(
 // Scales a continuous TUM component (with unit column scaling and finite
 // non-zero max bound) by a common power-of-two factor when
 // mip_scale_for_precision is enabled.
-void ApplyTumCommonPrecisionScaling(
-    const SatParameters& params, const ResidualContinuousComponent& compo,
-    double compo_max_bound, const MPModelProtoWrapper& mp_model,
-    absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision, TumStats* stats) {
+void ApplyTumCommonPrecisionScaling(const SatParameters& params,
+                                    const ResidualContinuousComponent& compo,
+                                    double compo_max_bound,
+                                    const MPModelProtoWrapper& mp_model,
+                                    absl::Span<MipVariableState> states,
+                                    TumStats* stats) {
   absl::Span<const int> compo_vars = compo.continuous_vars;
   // Use a higher target bound than mip_max_bound (1e7) so components with
   // large or clamped bounds can still be scaled together, while keeping scaled
@@ -4592,8 +4410,7 @@ void ApplyTumCommonPrecisionScaling(
 
   const ComponentPrecisionScalingBounds bounds =
       ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
-                                             max_domain_bound,
-                                             global_obj_precision);
+                                             max_domain_bound);
 
   double compo_min_headroom = kInfinity;
   double compo_max_needed = 0.0;
@@ -4615,11 +4432,6 @@ void ApplyTumCommonPrecisionScaling(
     MipVariableState& state = states[var];
     CHECK_EQ(state.scaling, 1.0);
     ++stats->num_common_scaled;
-    if (global_obj_precision != nullptr &&
-        mp_model.variables(var).objective_coefficient() != 0.0 &&
-        !(state.lb == 0.0 && state.ub == 0.0)) {
-      global_obj_precision->NotifyContinuousPow2Scaling(scaling);
-    }
     ScaleVariableState(scaling, &state);
   }
   stats->min_common_scaling = std::min(stats->min_common_scaling, scaling);
@@ -4651,8 +4463,8 @@ bool TryProcessTumComponent(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     bool only_tighten_bounds, bool include_large_integers,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision, TumStats* stats,
-    TumComponentScratch* scratch, double* common_precision_max_bound,
+    TumStats* stats, TumComponentScratch* scratch,
+    double* common_precision_max_bound,
     std::vector<ModularConstraintScaling>* row_scalings) {
   absl::Span<const int> compo_vars = compo.continuous_vars;
   absl::Span<const int> compo_rows = compo.constraints;
@@ -4823,14 +4635,6 @@ bool TryProcessTumComponent(
     } else {
       stats->num_new_2_modular_integers += compo_vars.size();
     }
-    if (global_obj_precision != nullptr) {
-      for (const int var : compo_vars) {
-        if (mp_model.variables(var).objective_coefficient() != 0.0) {
-          global_obj_precision->MarkDirty();
-          break;
-        }
-      }
-    }
     return false;
   }
 
@@ -4953,7 +4757,7 @@ void LogTumStats(const TumStats& stats, SolverLogger* logger) {
 std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision, TumStats* stats) {
+    TumStats* stats) {
   DCHECK(mp_model.underlying_model().general_constraint().empty());
   CHECK_EQ(compo.var_to_local_col.size(), mp_model.num_variables());
   CHECK_EQ(states.size(), mp_model.num_variables());
@@ -4965,11 +4769,10 @@ std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
   double common_precision_max_bound = 0.0;
   if (TryProcessTumComponent(params, compo, /*only_tighten_bounds=*/false,
                              /*include_large_integers=*/false, mp_model, states,
-                             global_obj_precision, stats, &scratch,
-                             &common_precision_max_bound, &row_scalings)) {
+                             stats, &scratch, &common_precision_max_bound,
+                             &row_scalings)) {
     ApplyTumCommonPrecisionScaling(params, compo, common_precision_max_bound,
-                                   mp_model, states, global_obj_precision,
-                                   stats);
+                                   mp_model, states, stats);
   }
   return row_scalings;
 }
@@ -5069,8 +4872,7 @@ void TightenResidualTotallyUnimodularVariableBounds(
       double unused_common_precision_max_bound = 0.0;
       TryProcessTumComponent(params, compo, /*only_tighten_bounds=*/true,
                              include_large_integers, *mp_model,
-                             absl::MakeSpan(states),
-                             /*global_obj_precision=*/nullptr, &stats, &scratch,
+                             absl::MakeSpan(states), &stats, &scratch,
                              &unused_common_precision_max_bound,
                              /*row_scalings=*/nullptr);
     }

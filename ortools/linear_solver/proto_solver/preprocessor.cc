@@ -715,6 +715,84 @@ std::vector<double> ShiftToZeroAndMarkAsIntegerUnusedVariables(
 }
 
 // --------------------------------------------------------
+// ClearTrivialConstraints
+// --------------------------------------------------------
+
+void ClearTrivialConstraints(sat::MPModelProtoWrapper* model,
+                             SolverLogger* logger) {
+  int64_t num_relaxed_bounds = 0;
+  int64_t num_trivial_constraints = 0;
+  TightSum min_activity;
+  TightSum max_activity;
+  const int num_constraints = model->num_constraints();
+  for (int c = 0; c < num_constraints; ++c) {
+    sat::EnforcedLinearConstraint* ct = model->mutable_constraints(c);
+    const double ct_lb = ct->lower_bound();
+    const double ct_ub = ct->upper_bound();
+    bool check_lb = ct_lb > -kInfinity;
+    bool check_ub = ct_ub < kInfinity;
+    if (!check_lb && !check_ub) {
+      if (ct->num_terms() > 0 || ct->IsEnforced()) {
+        ct->Clear();
+        ++num_trivial_constraints;
+      }
+      continue;
+    }
+
+    if (check_lb) min_activity.Clear();
+    if (check_ub) max_activity.Clear();
+    const int num_terms = ct->num_terms();
+    bool invalid_var_bounds = false;
+    for (int i = 0; i < num_terms; ++i) {
+      const double coeff = ct->coeffs(i);
+      if (coeff == 0.0) continue;
+      const MPVariableProto& var = model->variables(ct->vars(i));
+      double lb = var.lower_bound();
+      double ub = var.upper_bound();
+      if (lb > ub) {
+        invalid_var_bounds = true;
+        break;
+      }
+      if (coeff < 0.0) std::swap(lb, ub);
+      if (check_lb) {
+        if (!std::isfinite(lb)) {
+          check_lb = false;
+        } else if (lb != 0.0) {
+          min_activity.AddProd(coeff, lb);
+        }
+      }
+      if (check_ub) {
+        if (!std::isfinite(ub)) {
+          check_ub = false;
+        } else if (ub != 0.0) {
+          max_activity.AddProd(coeff, ub);
+        }
+      }
+      if (!check_lb && !check_ub) break;
+    }
+    if (invalid_var_bounds) continue;
+
+    const bool relaxed_lb = check_lb && min_activity.TightLowerBound() >= ct_lb;
+    const bool relaxed_ub = check_ub && max_activity.TightUpperBound() <= ct_ub;
+    if (relaxed_lb) ct->set_lower_bound(-kInfinity);
+    if (relaxed_ub) ct->set_upper_bound(kInfinity);
+    if (ct->lower_bound() == -kInfinity && ct->upper_bound() == kInfinity) {
+      ct->Clear();
+      ++num_trivial_constraints;
+    } else if (relaxed_lb || relaxed_ub) {
+      ++num_relaxed_bounds;
+    }
+  }
+  if (logger != nullptr &&
+      (num_trivial_constraints > 0 || num_relaxed_bounds > 0)) {
+    SOLVER_LOG(logger, "[TrivialConstraints] Cleared ",
+               FormatCounter(num_trivial_constraints),
+               " trivial constraints and relaxed ",
+               FormatCounter(num_relaxed_bounds), " constraint bounds.");
+  }
+}
+
+// --------------------------------------------------------
 // ExactPresolve
 // --------------------------------------------------------
 
@@ -756,6 +834,8 @@ bool ExactPresolve(const sat::SatParameters& params,
       return false;
     }
   }
+
+  ClearTrivialConstraints(mp_model_wrapper, logger);
 
   // Save the constraint bounds, and enlarge the current ones by tolerance. We
   // will restore them at the end. This allows not worrying about tolerance in
@@ -838,11 +918,14 @@ bool ExactPresolve(const sat::SatParameters& params,
     min_of_all_domains = std::min(min_of_all_domains, var_proto->lower_bound());
     max_of_all_domains = std::max(max_of_all_domains, var_proto->upper_bound());
   }
-  if (num_changed > 0 && logger != nullptr) {
-    SOLVER_LOG(logger, "[ExactPresolve] ", FormatCounter(num_changed),
-               " bounds were tightened. Max change ",
-               RoundTripDoubleFormat(max_change), ". All variables in [",
-               min_of_all_domains, ",", max_of_all_domains, "].");
+  if (num_changed > 0) {
+    if (logger != nullptr) {
+      SOLVER_LOG(logger, "[ExactPresolve] ", FormatCounter(num_changed),
+                 " bounds were tightened. Max change ",
+                 RoundTripDoubleFormat(max_change), ". All variables in [",
+                 min_of_all_domains, ",", max_of_all_domains, "].");
+    }
+    ClearTrivialConstraints(mp_model_wrapper, logger);
   }
 
   return true;

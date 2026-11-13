@@ -272,27 +272,9 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
                                 "Failed to convert model into CP-SAT model");
   }
 
-  std::optional<sat::GlobalObjectivePrecision> global_obj_precision;
-  if (params.mip_scale_for_precision()) {
-    global_obj_precision.emplace(params, mp_model);
-  }
   std::vector<int> var_to_local_col_buffer(num_variables, -1);
   for (sat::ResidualContinuousComponent& compo : components.components) {
     const sat::ScopedVarToLocalCol scoped(&compo, &var_to_local_col_buffer);
-    bool compo_has_obj_var = false;
-    for (const int var : compo.continuous_vars) {
-      if (mp_model.variable(var).objective_coefficient() != 0.0) {
-        compo_has_obj_var = true;
-        break;
-      }
-    }
-    const auto mark_objective_dirty_if_changed = [&](int64_t before,
-                                                     int64_t after) {
-      if (global_obj_precision.has_value() && compo_has_obj_var &&
-          after > before) {
-        global_obj_precision->MarkDirty();
-      }
-    };
 
     // Detects if at optimality some variables could always be made integer.
     // Ignoring constraint enforcement is still valid after
@@ -300,27 +282,20 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     // are integer and therefore external here.
     std::vector<sat::ModularConstraintScaling> modular_scalings;
     if (compo.continuous_vars.size() == 1) {
-      sat::ScaleOneVariableResidualMatrix(
-          params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-          global_obj_precision.has_value() ? &*global_obj_precision : nullptr,
-          &one_var_stats);
+      sat::ScaleOneVariableResidualMatrix(params, compo, mp_model_wrapper,
+                                          absl::MakeSpan(*states),
+                                          &one_var_stats);
     } else {
       modular_scalings = sat::MarkComponentTotallyUnimodularAsInteger(
-          params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-          global_obj_precision.has_value() ? &*global_obj_precision : nullptr,
-          &tum_stats);
+          params, compo, mp_model_wrapper, absl::MakeSpan(*states), &tum_stats);
     }
 
     // Same as MakeBoundsInteger() for the newly detected integers.
-    {
-      const int64_t before = num_int_bound_changes;
-      if (!sat::MakeBoundsOfIntegerVariablesInteger(
-              params, compo.continuous_vars, absl::MakeSpan(*states),
-              &num_int_bound_changes, logger)) {
-        return InfeasibleResponse(
-            *logger, "A detected integer variable has an empty domain");
-      }
-      mark_objective_dirty_if_changed(before, num_int_bound_changes);
+    if (!sat::MakeBoundsOfIntegerVariablesInteger(
+            params, compo.continuous_vars, absl::MakeSpan(*states),
+            &num_int_bound_changes, logger)) {
+      return InfeasibleResponse(
+          *logger, "A detected integer variable has an empty domain");
     }
 
     bool compo_has_continuous = false;
@@ -340,17 +315,14 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
 
     if (params.mip_scale_for_precision()) {
-      const int64_t before = before_scaling_shift_stats.num_shifted;
       sat::ShiftVariables(shift_before_scaling, compo.continuous_vars,
                           absl::MakeSpan(*states), &before_scaling_shift_stats);
-      mark_objective_dirty_if_changed(before,
-                                      before_scaling_shift_stats.num_shifted);
     }
     if (compo_has_continuous) {
       if (params.mip_scale_for_precision()) {
         sat::ScaleComponentContinuousVariablesForGivenPrecision(
             params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-            &*global_obj_precision, &precision_scaling_stats);
+            &precision_scaling_stats);
       } else if (params.mip_var_scaling() != 1.0) {
         sat::ScaleComponentContinuousVariables(params, compo,
                                                absl::MakeSpan(*states));
@@ -366,12 +338,8 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
 
     // Final shift before the conversion.
-    {
-      const int64_t before = final_shift_stats.num_shifted;
-      sat::ShiftVariables(final_shift, compo.continuous_vars,
-                          absl::MakeSpan(*states), &final_shift_stats);
-      mark_objective_dirty_if_changed(before, final_shift_stats.num_shifted);
-    }
+    sat::ShiftVariables(final_shift, compo.continuous_vars,
+                        absl::MakeSpan(*states), &final_shift_stats);
 
     if (!convert_variables(compo.continuous_vars) ||
         !convert_constraints(compo.constraints, modular_scalings)) {
