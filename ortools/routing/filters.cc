@@ -1130,275 +1130,165 @@ IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model) {
 
 namespace {
 
-class TypeRegulationsFilter : public BasePathFilter {
+class TypeRegulationsFilter : public LocalSearchFilter {
  public:
-  explicit TypeRegulationsFilter(const Model& model);
+  TypeRegulationsFilter(const Model& model, const PathState* path_state);
   ~TypeRegulationsFilter() override = default;
   std::string DebugString() const override { return "TypeRegulationsFilter"; }
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override;
 
  private:
-  void OnSynchronizePathFromStart(int64_t start) override;
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override;
-
-  bool HardIncompatibilitiesRespected(int vehicle, int64_t chain_start,
-                                      int64_t chain_end);
+  bool HardIncompatibilitiesRespected(int path);
 
   const Model& routing_model_;
-  std::vector<int> start_to_vehicle_;
-  // The following vector is used to keep track of the type counts for hard
+  const PathState* path_state_;
+  std::vector<int> nexts_;
+  // The following vectors are used to keep track of the type counts for hard
   // incompatibilities.
-  std::vector<std::vector<int>> hard_incompatibility_type_counts_per_vehicle_;
+  std::vector<std::vector<int>> hard_incompatibility_type_index_;
+  std::vector<std::vector<int>> hard_incompatibility_types_;
+  std::vector<std::vector<int>> hard_incompatibility_type_counts_;
   // Used to verify the temporal incompatibilities and requirements.
   TypeIncompatibilityChecker temporal_incompatibility_checker_;
   TypeRequirementChecker requirement_checker_;
+  // Temporary storage for type counts.
+  std::vector<int> type_indices_;
+  std::vector<int> type_counts_;
+  absl::flat_hash_set<int> types_to_check_;
 };
 
-TypeRegulationsFilter::TypeRegulationsFilter(const Model& model)
-    : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(),
-                     model.GetPathsMetadata()),
-      routing_model_(model),
-      start_to_vehicle_(model.Size(), -1),
+TypeRegulationsFilter::TypeRegulationsFilter(const Model& model,
+                                             const PathState* path_state)
+    : routing_model_(model),
+      path_state_(path_state),
+      nexts_(path_state_->NumNodes(), -1),
+      hard_incompatibility_type_index_(path_state_->NumPaths()),
+      hard_incompatibility_types_(path_state_->NumPaths()),
+      hard_incompatibility_type_counts_(path_state_->NumNodes()),
       temporal_incompatibility_checker_(model,
                                         /*check_hard_incompatibilities*/ false),
       requirement_checker_(model) {
   const int num_vehicles = model.vehicles();
   const bool has_hard_type_incompatibilities =
       model.HasHardTypeIncompatibilities();
-  if (has_hard_type_incompatibilities) {
-    hard_incompatibility_type_counts_per_vehicle_.resize(num_vehicles);
-  }
   const int num_visit_types = model.GetNumberOfVisitTypes();
   for (int vehicle = 0; vehicle < num_vehicles; vehicle++) {
-    const int64_t start = model.Start(vehicle);
-    start_to_vehicle_[start] = vehicle;
     if (has_hard_type_incompatibilities) {
-      hard_incompatibility_type_counts_per_vehicle_[vehicle].resize(
-          num_visit_types, 0);
+      hard_incompatibility_type_index_[vehicle].resize(num_visit_types, -1);
     }
   }
 }
 
-void TypeRegulationsFilter::OnSynchronizePathFromStart(int64_t start) {
+void TypeRegulationsFilter::Synchronize(const Assignment* /*assignment*/,
+                                        const Assignment* /*delta*/) {
   if (!routing_model_.HasHardTypeIncompatibilities()) return;
-
-  const int vehicle = start_to_vehicle_[start];
-  CHECK_GE(vehicle, 0);
-  std::vector<int>& type_counts =
-      hard_incompatibility_type_counts_per_vehicle_[vehicle];
-  std::fill(type_counts.begin(), type_counts.end(), 0);
-  const int num_types = type_counts.size();
-
-  int64_t node = start;
-  while (node < Size()) {
-    DCHECK(IsVarSynced(node));
-    const int type = routing_model_.GetVisitType(node);
-    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
-                         Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-      CHECK_LT(type, num_types);
-      type_counts[type]++;
-    }
-    node = Value(node);
-  }
-}
-
-bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
-                                                           int64_t chain_start,
-                                                           int64_t chain_end) {
-  if (!routing_model_.HasHardTypeIncompatibilities()) return true;
-
-  const std::vector<int>& previous_type_counts =
-      hard_incompatibility_type_counts_per_vehicle_[vehicle];
-
-  absl::flat_hash_map</*type*/ int, /*new_count*/ int> new_type_counts;
-  absl::flat_hash_set<int> types_to_check;
-
-  // Go through the new nodes on the path and increment their type counts.
-  int64_t node = GetNext(chain_start);
-  while (node != chain_end) {
-    const int type = routing_model_.GetVisitType(node);
-    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
-                         Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-      DCHECK_LT(type, previous_type_counts.size());
-      int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
-                                            previous_type_counts[type]);
-      if (type_count++ == 0) {
-        // New type on the route, mark to check its incompatibilities.
-        types_to_check.insert(type);
-      }
-    }
-    node = GetNext(node);
-  }
-
-  // Update new_type_counts by decrementing the occurrence of the types of the
-  // nodes no longer on the route.
-  if (IsVarSynced(chain_start)) {
-    node = Value(chain_start);
-    while (node != chain_end) {
+  for (int path : path_state_->ChangedPaths()) {
+    hard_incompatibility_type_index_[path].assign(
+        hard_incompatibility_type_index_[path].size(), -1);
+    hard_incompatibility_types_[path].clear();
+    std::vector<int> last_type_counts;
+    for (int node : path_state_->Nodes(path)) {
+      hard_incompatibility_type_counts_[node] = last_type_counts;
       const int type = routing_model_.GetVisitType(node);
       if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
                            Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-        DCHECK_LT(type, previous_type_counts.size());
-        int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
-                                              previous_type_counts[type]);
-        CHECK_GE(type_count, 1);
-        type_count--;
+        int type_index = hard_incompatibility_type_index_[path][type];
+        if (type_index == -1) {
+          type_index = hard_incompatibility_types_[path].size();
+          hard_incompatibility_type_index_[path][type] = type_index;
+          hard_incompatibility_types_[path].push_back(type);
+          hard_incompatibility_type_counts_[node].emplace_back(0);
+        }
+        hard_incompatibility_type_counts_[node][type_index]++;
+        last_type_counts = hard_incompatibility_type_counts_[node];
       }
-      node = Value(node);
     }
   }
+}
 
-  // Check the incompatibilities for types in types_to_check.
-  for (int type : types_to_check) {
-    for (int incompatible_type :
-         routing_model_.GetHardTypeIncompatibilitiesOfType(type)) {
-      if (gtl::FindWithDefault(new_type_counts, incompatible_type,
-                               previous_type_counts[incompatible_type]) > 0) {
-        return false;
-      }
+bool TypeRegulationsFilter::Accept(const Assignment* /*delta*/,
+                                   const Assignment* /*deltadelta*/,
+                                   int64_t /*objective_min*/,
+                                   int64_t /*objective_max*/) {
+  if (path_state_->IsInvalid()) return true;
+  for (int path : path_state_->ChangedPaths()) {
+    if (!HardIncompatibilitiesRespected(path)) {
+      return false;
+    }
+    int prev_node = -1;
+    for (int node : path_state_->Nodes(path)) {
+      if (prev_node != -1) nexts_[prev_node] = node;
+      prev_node = node;
+    }
+    const auto next_accessor = [this](int64_t node) { return nexts_[node]; };
+    if (!temporal_incompatibility_checker_.CheckVehicle(path, next_accessor) ||
+        !requirement_checker_.CheckVehicle(path, next_accessor)) {
+      return false;
     }
   }
   return true;
 }
 
-bool TypeRegulationsFilter::AcceptPath(int64_t path_start, int64_t chain_start,
-                                       int64_t chain_end) {
-  const int vehicle = start_to_vehicle_[path_start];
-  CHECK_GE(vehicle, 0);
-  const auto next_accessor = [this](int64_t node) { return GetNext(node); };
-  return HardIncompatibilitiesRespected(vehicle, chain_start, chain_end) &&
-         temporal_incompatibility_checker_.CheckVehicle(vehicle,
-                                                        next_accessor) &&
-         requirement_checker_.CheckVehicle(vehicle, next_accessor);
-}
+bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int path) {
+  if (!routing_model_.HasHardTypeIncompatibilities()) return true;
 
-}  // namespace
-
-IntVarLocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model) {
-  return routing_model.solver()->RevAlloc(
-      new TypeRegulationsFilter(routing_model));
-}
-
-namespace {
-
-// ChainCumul filter. Version of dimension path filter which is O(delta) rather
-// than O(length of touched paths). Currently only supports dimensions without
-// costs (global and local span cost, soft bounds) and with unconstrained
-// cumul variables except overall capacity and cumul variables of path ends.
-
-class ChainCumulFilter : public BasePathFilter {
- public:
-  ChainCumulFilter(const Model& routing_model, const Dimension& dimension);
-  ~ChainCumulFilter() override = default;
-  std::string DebugString() const override {
-    return "ChainCumulFilter(" + name_ + ")";
-  }
-
- private:
-  void OnSynchronizePathFromStart(int64_t start) override;
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override;
-
-  const std::vector<IntVar*> cumuls_;
-  std::vector<int64_t> start_to_vehicle_;
-  std::vector<int64_t> start_to_end_;
-  std::vector<const TransitCallback2*> evaluators_;
-  const std::vector<int64_t> vehicle_capacities_;
-  std::vector<int64_t> current_path_cumul_mins_;
-  std::vector<int64_t> current_max_of_path_end_cumul_mins_;
-  std::vector<int64_t> old_nexts_;
-  std::vector<int> old_vehicles_;
-  std::vector<int64_t> current_transits_;
-  const std::string name_;
-};
-
-ChainCumulFilter::ChainCumulFilter(const Model& routing_model,
-                                   const Dimension& dimension)
-    : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
-                     routing_model.GetPathsMetadata()),
-      cumuls_(dimension.cumuls()),
-      evaluators_(routing_model.vehicles(), nullptr),
-      vehicle_capacities_(dimension.vehicle_capacities()),
-      current_path_cumul_mins_(dimension.cumuls().size(), 0),
-      current_max_of_path_end_cumul_mins_(dimension.cumuls().size(), 0),
-      old_nexts_(routing_model.Size(), kUnassigned),
-      old_vehicles_(routing_model.Size(), kUnassigned),
-      current_transits_(routing_model.Size(), 0),
-      name_(dimension.name()) {
-  start_to_vehicle_.resize(Size(), -1);
-  start_to_end_.resize(Size(), -1);
-  for (int i = 0; i < routing_model.vehicles(); ++i) {
-    start_to_vehicle_[routing_model.Start(i)] = i;
-    start_to_end_[routing_model.Start(i)] = routing_model.End(i);
-    evaluators_[i] = &dimension.transit_evaluator(i);
-  }
-}
-
-// On synchronization, maintain "propagated" cumul mins and max level of cumul
-// from each node to the end of the path; to be used by AcceptPath to
-// incrementally check feasibility.
-void ChainCumulFilter::OnSynchronizePathFromStart(int64_t start) {
-  const int vehicle = start_to_vehicle_[start];
-  std::vector<int64_t> path_nodes;
-  int64_t node = start;
-  int64_t cumul = cumuls_[node]->Min();
-  while (node < Size()) {
-    path_nodes.push_back(node);
-    current_path_cumul_mins_[node] = cumul;
-    const int64_t next = Value(node);
-    if (next != old_nexts_[node] || vehicle != old_vehicles_[node]) {
-      old_nexts_[node] = next;
-      old_vehicles_[node] = vehicle;
-      current_transits_[node] = (*evaluators_[vehicle])(node, next);
-    }
-    CapAddTo(current_transits_[node], &cumul);
-    cumul = std::max(cumuls_[next]->Min(), cumul);
-    node = next;
-  }
-  path_nodes.push_back(node);
-  current_path_cumul_mins_[node] = cumul;
-  int64_t max_cumuls = cumul;
-  for (int i = path_nodes.size() - 1; i >= 0; --i) {
-    const int64_t node = path_nodes[i];
-    max_cumuls = std::max(max_cumuls, current_path_cumul_mins_[node]);
-    current_max_of_path_end_cumul_mins_[node] = max_cumuls;
-  }
-}
-
-// The complexity of the method is O(size of chain (chain_start...chain_end).
-bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
-                                  int64_t chain_end) {
-  const int vehicle = start_to_vehicle_[path_start];
-  const int64_t capacity = vehicle_capacities_[vehicle];
-  int64_t node = chain_start;
-  int64_t cumul = current_path_cumul_mins_[node];
-  while (node != chain_end) {
-    const int64_t next = GetNext(node);
-    if (IsVarSynced(node) && next == Value(node) &&
-        vehicle == old_vehicles_[node]) {
-      CapAddTo(current_transits_[node], &cumul);
+  type_indices_ = hard_incompatibility_type_index_[path];
+  type_counts_.assign(hard_incompatibility_types_[path].size(), 0);
+  types_to_check_.clear();
+  auto add_type_count = [&](int type, int count) {
+    const int type_index = type_indices_[type];
+    if (type_index != -1) {
+      type_counts_[type_index] += count;
     } else {
-      CapAddTo((*evaluators_[vehicle])(node, next), &cumul);
+      type_indices_[type] = type_counts_.size();
+      type_counts_.emplace_back(count);
+      types_to_check_.insert(type);
     }
-    cumul = std::max(cumuls_[next]->Min(), cumul);
-    if (cumul > capacity) return false;
-    node = next;
-  }
-  const int64_t end = start_to_end_[path_start];
-  const int64_t end_cumul_delta =
-      CapSub(current_path_cumul_mins_[end], current_path_cumul_mins_[node]);
-  const int64_t after_chain_cumul_delta =
-      CapSub(current_max_of_path_end_cumul_mins_[node],
-             current_path_cumul_mins_[node]);
-  return CapAdd(cumul, after_chain_cumul_delta) <= capacity &&
-         CapAdd(cumul, end_cumul_delta) <= cumuls_[end]->Max();
-}
+  };
 
+  for (PathState::Chain chain : path_state_->Chains(path)) {
+    const int first_type = routing_model_.GetVisitType(chain.First());
+    if (first_type >= 0 && routing_model_.GetVisitTypePolicy(chain.First()) !=
+                               Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
+      add_type_count(first_type, 1);
+    }
+    const int chain_path = path_state_->Path(chain.First());
+    if (chain_path < 0) continue;
+    const std::vector<int>& first_counts =
+        hard_incompatibility_type_counts_[chain.First()];
+    const std::vector<int>& last_counts =
+        hard_incompatibility_type_counts_[chain.Last()];
+    const std::vector<int>& chain_types =
+        hard_incompatibility_types_[chain_path];
+    for (int i = 0; i < last_counts.size(); ++i) {
+      const int count =
+          last_counts[i] - (i < first_counts.size() ? first_counts[i] : 0);
+      if (count > 0) {
+        add_type_count(chain_types[i], count);
+      }
+    }
+  }
+
+  // Check the incompatibilities for types in types_to_check.
+  for (int type : types_to_check_) {
+    for (int incompatible_type :
+         routing_model_.GetHardTypeIncompatibilitiesOfType(type)) {
+      const int incompatible_type_index = type_indices_[incompatible_type];
+      if (incompatible_type_index == -1) continue;
+      if (type_counts_[incompatible_type_index] > 0) return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
-IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension) {
-  Model& model = *dimension.model();
-  return model.solver()->RevAlloc(new ChainCumulFilter(model, dimension));
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model,
+                                             const PathState* path_state) {
+  return routing_model.solver()->RevAlloc(
+      new TypeRegulationsFilter(routing_model, path_state));
 }
 
 bool FillDimensionValuesFromDimension(
@@ -2880,87 +2770,86 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
 
 }  // namespace
 
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension,
+                                       const PathState* path_state) {
+  using Interval = DimensionChecker::Interval;
+  // Fill path capacities and classes.
+  const int num_vehicles = dimension.model()->vehicles();
+  std::vector<Interval> path_capacity(num_vehicles);
+  std::vector<int> path_class(num_vehicles);
+  for (int v = 0; v < num_vehicles; ++v) {
+    const auto& vehicle_capacities = dimension.vehicle_capacities();
+    path_capacity[v] = {0, vehicle_capacities[v]};
+    path_class[v] = dimension.vehicle_to_class(v);
+  }
+  // For each class, retrieve the demands of each node.
+  // Dimension store evaluators with a double indirection for compacity:
+  // vehicle -> vehicle_class -> evaluator_index.
+  // We replicate this in DimensionChecker,
+  // except we expand evaluator_index to an array of values for all nodes.
+  const int num_vehicle_classes =
+      1 + *std::max_element(path_class.begin(), path_class.end());
+  const int num_cumuls = dimension.cumuls().size();
+  const int num_slacks = dimension.slacks().size();
+  std::vector<std::function<Interval(int64_t, int64_t)>> transits(
+      num_vehicle_classes, nullptr);
+  for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
+    const int vehicle_class = path_class[vehicle];
+    if (transits[vehicle_class] != nullptr) continue;
+    const auto& unary_evaluator = dimension.GetUnaryTransitEvaluator(vehicle);
+    if (unary_evaluator != nullptr) {
+      transits[vehicle_class] = [&unary_evaluator, &dimension, num_slacks](
+                                    int64_t node, int64_t) -> Interval {
+        if (node >= num_slacks) return {0, 0};
+        const int64_t min_transit = unary_evaluator(node);
+        const int64_t max_transit =
+            CapAdd(min_transit, dimension.SlackVar(node)->Max());
+        return {min_transit, max_transit};
+      };
+    } else {
+      const auto& binary_evaluator =
+          dimension.GetBinaryTransitEvaluator(vehicle);
+
+      transits[vehicle_class] = [&binary_evaluator, &dimension, num_slacks](
+                                    int64_t node, int64_t next) -> Interval {
+        if (node >= num_slacks) return {0, 0};
+        const int64_t min_transit = binary_evaluator(node, next);
+        const int64_t max_transit =
+            CapAdd(min_transit, dimension.SlackVar(node)->Max());
+        return {min_transit, max_transit};
+      };
+    }
+  }
+  // Fill node capacities.
+  std::vector<Interval> node_capacity(num_cumuls);
+  for (int node = 0; node < num_cumuls; ++node) {
+    const IntVar* cumul = dimension.CumulVar(node);
+    node_capacity[node] = {cumul->Min(), cumul->Max()};
+  }
+  // Make the dimension checker and pass ownership to the filter.
+  auto checker = std::make_unique<DimensionChecker>(
+      path_state, std::move(path_capacity), std::move(path_class),
+      std::move(transits), std::move(node_capacity));
+  return MakeDimensionFilter(dimension.model()->solver(), std::move(checker),
+                             dimension.name());
+}
+
 void AppendLightWeightDimensionFilters(
     const PathState* path_state, const std::vector<Dimension*>& dimensions,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
-  using Interval = DimensionChecker::Interval;
-  // For every dimension that fits, add a DimensionChecker.
+  const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
   // Add a DimensionChecker for every dimension.
   for (const Dimension* dimension : dimensions) {
-    // Fill path capacities and classes.
-    const int num_vehicles = dimension->model()->vehicles();
-    std::vector<Interval> path_capacity(num_vehicles);
-    std::vector<int> path_class(num_vehicles);
-    for (int v = 0; v < num_vehicles; ++v) {
-      const auto& vehicle_capacities = dimension->vehicle_capacities();
-      path_capacity[v] = {0, vehicle_capacities[v]};
-      path_class[v] = dimension->vehicle_to_class(v);
-    }
-    // For each class, retrieve the demands of each node.
-    // Dimension store evaluators with a double indirection for compacity:
-    // vehicle -> vehicle_class -> evaluator_index.
-    // We replicate this in DimensionChecker,
-    // except we expand evaluator_index to an array of values for all nodes.
-    const int num_vehicle_classes =
-        1 + *std::max_element(path_class.begin(), path_class.end());
-    const int num_cumuls = dimension->cumuls().size();
-    const int num_slacks = dimension->slacks().size();
-    std::vector<std::function<Interval(int64_t, int64_t)>> transits(
-        num_vehicle_classes, nullptr);
-    for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
-      const int vehicle_class = path_class[vehicle];
-      if (transits[vehicle_class] != nullptr) continue;
-      const auto& unary_evaluator =
-          dimension->GetUnaryTransitEvaluator(vehicle);
-      if (unary_evaluator != nullptr) {
-        transits[vehicle_class] = [&unary_evaluator, dimension, num_slacks](
-                                      int64_t node, int64_t) -> Interval {
-          if (node >= num_slacks) return {0, 0};
-          const int64_t min_transit = unary_evaluator(node);
-          const int64_t max_transit =
-              CapAdd(min_transit, dimension->SlackVar(node)->Max());
-          return {min_transit, max_transit};
-        };
-      } else {
-        const auto& binary_evaluator =
-            dimension->GetBinaryTransitEvaluator(vehicle);
-
-        transits[vehicle_class] = [&binary_evaluator, dimension, num_slacks](
-                                      int64_t node, int64_t next) -> Interval {
-          if (node >= num_slacks) return {0, 0};
-          const int64_t min_transit = binary_evaluator(node, next);
-          const int64_t max_transit =
-              CapAdd(min_transit, dimension->SlackVar(node)->Max());
-          return {min_transit, max_transit};
-        };
-      }
-    }
-    // Fill node capacities.
-    std::vector<Interval> node_capacity(num_cumuls);
-    for (int node = 0; node < num_cumuls; ++node) {
-      const IntVar* cumul = dimension->CumulVar(node);
-      node_capacity[node] = {cumul->Min(), cumul->Max()};
-    }
-    // Make the dimension checker and pass ownership to the filter.
-    auto checker = std::make_unique<DimensionChecker>(
-        path_state, std::move(path_capacity), std::move(path_class),
-        std::move(transits), std::move(node_capacity));
-    const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
-    LocalSearchFilter* filter = MakeDimensionFilter(
-        dimension->model()->solver(), std::move(checker), dimension->name());
-    filters->push_back({filter, kAccept});
+    filters->push_back({MakeDimensionFilter(*dimension, path_state), kAccept});
   }
 }
 
 void AppendDimensionCumulFilters(
     const PathState* path_state, const std::vector<Dimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
   const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
   // Filter priority depth increases with complexity of filtering.
-  // - Dimensions without any cumul-related costs or constraints will have a
-  //   ChainCumulFilter, lowest priority depth.
   // - Dimensions with cumul costs or constraints, but no global span cost
   //   and/or precedences will have a PathCumulFilter.
   // - Dimensions with a global span cost coefficient and/or precedences will
@@ -3003,7 +2892,7 @@ void AppendDimensionCumulFilters(
   for (int d = 0; d < num_dimensions; d++) {
     const Dimension& dimension = *dimensions[d];
     const Model& model = *dimension.model();
-    // NOTE: We always add the [Chain|Path]CumulFilter to filter each route's
+    // NOTE: We always add the PathCumulFilter to filter each route's
     // feasibility separately to try and cut bad decisions earlier in the
     // search, but we don't propagate the computed cost if the LPCumulFilter is
     // already doing it.
@@ -3017,10 +2906,6 @@ void AppendDimensionCumulFilters(
           filter_objective_cost, has_dimension_optimizers));
       const int priority = filter->UsesDimensionOptimizers() ? 1 : 0;
       filters->push_back({filter, kAccept, priority});
-    } else if (use_chain_cumul_filter) {
-      filters->push_back(
-          {model.solver()->RevAlloc(new ChainCumulFilter(model, dimension)),
-           kAccept, /*priority*/ 0});
     }
 
     if (use_cumul_bounds_propagator_filter[d]) {

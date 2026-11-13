@@ -93,13 +93,8 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(const Model& routing_model,
 IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
-IntVarLocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model);
-
-/// Version of dimension path filter in O(length of moved chains). Currently
-/// only supports dimensions without costs (global and local span cost, soft
-/// bounds) and with unconstrained cumul variables except overall capacity and
-/// cumul variables of path ends.
-IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension);
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model,
+                                             const PathState* path_state);
 
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
@@ -271,6 +266,9 @@ class DimensionChecker {
 LocalSearchFilter* MakeDimensionFilter(
     Solver* solver, std::unique_ptr<DimensionChecker> checker,
     absl::string_view dimension_name);
+
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension,
+                                       const PathState* path_state);
 #endif  // !defined(SWIG)
 
 class LightVehicleBreaksChecker {
@@ -622,7 +620,6 @@ void AppendLightWeightDimensionFilters(
 void AppendDimensionCumulFilters(
     const PathState* path_state, const std::vector<Dimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
 /// Generic path-based filter class.
