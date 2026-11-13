@@ -331,6 +331,118 @@ TEST(BoundPropagationPreprocessorTest, ExactPresolveDualRestrictionOnIntegers) {
   EXPECT_EQ(wrapper.variables(1).upper_bound(), 3.0);
 }
 
+TEST(BoundPropagationPreprocessorTest, ExactPresolveClearsTrivialConstraints) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("min: -x - y - z;"
+              "0 <= b <= 1;"
+              "0 <= x <= 2;"
+              "y >= 0;"
+              "0 <= z <= 0.101;"
+              "int b, x, y;"
+              "r_tighten: x + y <= 3;"
+              "r_trivial: y + z <= 3.5;"
+              "r_enforced_trivial: y + z >= 0;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  // Variables: x = 0, y = 1, z = 2, b = 3.
+  wrapper.mutable_constraints(2)->AddEnforcement(3, 1);
+
+  ASSERT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
+  // Propagation tightens y to [0, 3]. r_tighten remains active (max activity
+  // 2 + 3 = 5 > 3), whereas using the exact z upper bound 0.101 (rather than
+  // ceil(0.101) = 1), y + z <= 3.5 has max activity 3.101 <= 3.5 and becomes
+  // trivial, as does the enforced constraint y + z >= 0.
+  EXPECT_EQ(wrapper.variables(1).lower_bound(), 0.0);
+  EXPECT_EQ(wrapper.variables(1).upper_bound(), 3.0);
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), 3.0);
+  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+  for (const int c : {1, 2}) {
+    SCOPED_TRACE(c);
+    EXPECT_EQ(wrapper.constraints(c).lower_bound(), -kInfinity);
+    EXPECT_EQ(wrapper.constraints(c).upper_bound(), kInfinity);
+    EXPECT_EQ(wrapper.constraints(c).num_terms(), 0);
+    EXPECT_FALSE(wrapper.constraints(c).IsEnforced());
+  }
+
+  // Both z and b are now unused and fixed by
+  // ShiftToZeroAndMarkAsIntegerUnusedVariables().
+  EXPECT_THAT(ShiftToZeroAndMarkAsIntegerUnusedVariables(sat::SatParameters(),
+                                                         &wrapper),
+              ElementsAre(0.0, 0.0, 0.101, 0.0));
+  EXPECT_TRUE(wrapper.variables(2).is_integer());
+  EXPECT_EQ(wrapper.variables(2).lower_bound(), 0.0);
+  EXPECT_EQ(wrapper.variables(2).upper_bound(), 0.0);
+}
+
+TEST(BoundPropagationPreprocessorTest,
+     ExactPresolveClearsInitiallyTrivialEnforcedConstraintBeforeDualPass) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("min: b - x;"
+              "0 <= b <= 1;"
+              "0 <= x <= 2;"
+              "int b;"
+              "r1: x <= 5;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  // Variables: b = 0, x = 1. Enforcing b == 0 => x <= 5 would block dual
+  // restriction from decreasing b to 0 unless cleared at the start of
+  // ExactPresolve().
+  wrapper.mutable_constraints(0)->AddEnforcement(0, 0);
+
+  ASSERT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
+  EXPECT_EQ(wrapper.constraints(0).lower_bound(), -kInfinity);
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), kInfinity);
+  EXPECT_EQ(wrapper.constraints(0).num_terms(), 0);
+  EXPECT_FALSE(wrapper.constraints(0).IsEnforced());
+  EXPECT_EQ(wrapper.variables(0).lower_bound(), 0.0);
+  EXPECT_EQ(wrapper.variables(0).upper_bound(), 0.0);
+}
+
+TEST(ClearTrivialConstraintsTest, RelaxesSingleTrivialSideOfRangedConstraint) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("0 <= x <= 3;"
+              "0 <= y <= 3;"
+              "r1: -1 <= x + y <= 5;"
+              "r2: 1 <= x + y <= 10;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  ClearTrivialConstraints(&wrapper);
+  EXPECT_EQ(wrapper.constraints(0).lower_bound(), -kInfinity);
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), 5.0);
+  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+
+  EXPECT_EQ(wrapper.constraints(1).lower_bound(), 1.0);
+  EXPECT_EQ(wrapper.constraints(1).upper_bound(), kInfinity);
+  EXPECT_EQ(wrapper.constraints(1).num_terms(), 2);
+}
+
+TEST(ClearTrivialConstraintsTest, KeepsConstraintSideWithUnboundedDirection) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("0 <= x <= 5;"
+              "w >= 0;"
+              "r1: -1 <= x - w <= 10;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  ClearTrivialConstraints(&wrapper);
+  EXPECT_EQ(wrapper.constraints(0).lower_bound(), -1.0);
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), kInfinity);
+  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+}
+
 TEST(BoundPropagationPreprocessorTest, BasicPropagation) {
   const std::string kLinearProgram =
       "0 <= x + y + z <= 10;"
