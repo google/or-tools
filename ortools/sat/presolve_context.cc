@@ -2888,9 +2888,8 @@ bool DomainMatchesProto(const Domain& domain,
 }  // namespace
 
 bool PresolveContext::LiteralsAreCanonical(
-    absl::Span<const int> lits, int min_size,
+    absl::Span<const int> lits,
     const absl::flat_hash_set<int>& enforcements) const {
-  if (lits.size() < min_size) return false;
   int prev = std::numeric_limits<int>::min();
   for (const int lit : lits) {
     const int var = PositiveRef(lit);
@@ -2903,27 +2902,6 @@ bool PresolveContext::LiteralsAreCanonical(
     prev = lit;
   }
   return !SortedLiteralsHaveOppositePair(lits);
-}
-
-bool PresolveContext::BoolXorLiteralsAreCanonical(absl::Span<const int> lits,
-                                                  int min_active_size) const {
-  int num_active = 0;
-  for (int i = 0; i < lits.size(); ++i) {
-    const int lit = lits[i];
-    if (LiteralIsFalse(lit)) return false;
-    if (GetLiteralRepresentative(lit) != lit) return false;
-    if (LiteralIsTrue(lit)) {
-      if (i + 1 != lits.size()) return false;
-      continue;
-    }
-    ++num_active;
-  }
-  if (num_active < min_active_size) return false;
-  if (num_active == 2 &&
-      (lits[0] == lits[1] || lits[0] == NegatedRef(lits[1]))) {
-    return false;
-  }
-  return true;
 }
 
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
@@ -3466,89 +3444,134 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeExactlyOne() {
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
   if (context_->ModelIsUnsat()) return;
 
+  auto* literals = ct_->mutable_bool_xor()->mutable_literals();
+  const int old_size = literals->size();
   int new_size = 0;
   bool changed = false;
-  int num_true_literals = 0;
-  int true_literal = kint32min;
-  int true_literal_index = -1;
-  for (int i = 0; i < ct_->bool_xor().literals_size(); ++i) {
-    const int literal = ct_->bool_xor().literals(i);
+  bool odd_parity = false;
+  for (int i = 0; i < old_size; ++i) {
+    int literal = literals->Get(i);
     if (context_->LiteralIsFalse(literal)) {
       context_->UpdateRuleStats("bool_xor: remove false literal");
       changed = true;
       continue;
-    } else if (context_->LiteralIsTrue(literal)) {
-      true_literal = literal;  // Keep if we need to put one back.
-      true_literal_index = i;
-      num_true_literals++;
+    }
+    if (context_->LiteralIsTrue(literal)) {
+      context_->UpdateRuleStats("bool_xor: remove true literal");
+      odd_parity = !odd_parity;
+      changed = true;
       continue;
     }
+    if (!RefIsPositive(literal)) {
+      literal = NegatedRef(literal);
+      odd_parity = !odd_parity;
+      if (i > 0) changed = true;
+    }
+    literals->Set(new_size++, literal);
+  }
+  if (new_size != old_size) {
+    literals->Truncate(new_size);
+    changed = true;
+  }
 
-    ct_->mutable_bool_xor()->set_literals(new_size++, literal);
+  if (!absl::c_is_sorted(*literals)) {
+    absl::c_sort(*literals);
+    changed = true;
+  }
+
+  // Cancel pairs of identical positive literals (x ^ x == 0).
+  int write = 0;
+  for (int i = 0; i < new_size; ++i) {
+    const int lit = literals->Get(i);
+    if (write > 0 && literals->Get(write - 1) == lit) {
+      --write;
+    } else {
+      literals->Set(write++, lit);
+    }
+  }
+  if (write != new_size) {
+    new_size = write;
+    literals->Truncate(new_size);
+    changed = true;
+    if (new_size > 0) {
+      context_->UpdateRuleStats("bool_xor: cancel duplicate literal pairs");
+    }
+  }
+
+  // Filter out variables appearing in `enforcement_literal` in O(n + m) time:
+  // `literals` is strictly increasing in positive `var`, while `enforcements`
+  // has negated literals in descending `var` order followed by positive
+  // literals in ascending `var` order.
+  const absl::Span<const int> enforcements = ct_->enforcement_literal();
+  DCHECK(absl::c_is_sorted(enforcements));
+  if (!enforcements.empty() && new_size > 0) {
+    const int first_pos =
+        std::lower_bound(enforcements.begin(), enforcements.end(), 0) -
+        enforcements.begin();
+    int neg_idx = first_pos - 1;
+    int pos_idx = first_pos;
+    write = 0;
+    for (int i = 0; i < new_size; ++i) {
+      const int var = literals->Get(i);
+      while (neg_idx >= 0 && PositiveRef(enforcements[neg_idx]) < var) {
+        --neg_idx;
+      }
+      if (neg_idx >= 0 && PositiveRef(enforcements[neg_idx]) == var) {
+        context_->UpdateRuleStats("bool_xor: remove enforcement literal");
+        changed = true;
+        continue;
+      }
+      while (pos_idx < enforcements.size() && enforcements[pos_idx] < var) {
+        ++pos_idx;
+      }
+      if (pos_idx < enforcements.size() && enforcements[pos_idx] == var) {
+        context_->UpdateRuleStats("bool_xor: remove enforcement literal");
+        odd_parity = !odd_parity;
+        changed = true;
+        continue;
+      }
+      literals->Set(write++, var);
+    }
+    if (write != new_size) {
+      new_size = write;
+      literals->Truncate(new_size);
+    }
   }
 
   if (new_size == 0) {
-    if (num_true_literals % 2 == 0) {
+    if (!odd_parity) {
       MarkConstraintAsFalse("bool_xor: always false");
     } else {
       context_->UpdateRuleStats("bool_xor: always true");
       RemoveConstraint();
     }
     return;
-  } else if (new_size == 1 && !HasEnforcementLiteral(*ct_)) {
-    // We can fix the only active literal.
-    if (num_true_literals % 2 == 0) {
-      if (!context_->SetLiteralToTrue(ct_->bool_xor().literals(0))) {
-        (void)context_->NotifyThatModelIsUnsat(
-            "bool_xor: cannot fix last literal");
-        return;
-      }
-    } else {
-      if (!context_->SetLiteralToFalse(ct_->bool_xor().literals(0))) {
-        (void)context_->NotifyThatModelIsUnsat(
-            "bool_xor: cannot fix last literal");
-        return;
-      }
-    }
-    context_->UpdateRuleStats("bool_xor: one active literal");
-    RemoveConstraint();
-    return;
-  } else if (new_size == 2) {  // We can simplify the bool_xor.
-    const int a = ct_->bool_xor().literals(0);
-    const int b = ct_->bool_xor().literals(1);
-    if (a == b) {
-      if (num_true_literals % 2 == 0) {
-        MarkConstraintAsFalse("bool_xor: always false");
-      } else {
-        context_->UpdateRuleStats("bool_xor: always true");
-        RemoveConstraint();
-      }
-      return;
-    }
-    if (a == NegatedRef(b)) {
-      if (num_true_literals % 2 == 1) {
-        MarkConstraintAsFalse("bool_xor: always false");
-      } else {
-        context_->UpdateRuleStats("bool_xor: always true");
-        RemoveConstraint();
-      }
-      return;
-    }
   }
 
-  if (num_true_literals % 2 == 1) {
-    CHECK_NE(true_literal, kint32min);
-    if (true_literal_index != new_size) changed = true;
-    ct_->mutable_bool_xor()->set_literals(new_size++, true_literal);
+  if (odd_parity) {
+    literals->Set(0, NegatedRef(literals->Get(0)));
   }
-  if (num_true_literals > 1) {
-    context_->UpdateRuleStats("bool_xor: remove even number of true literals");
-    changed = true;
+
+  if (new_size == 1) {
+    const int single_lit = literals->Get(0);
+    context_->UpdateRuleStats("bool_xor: one active literal");
+    if (!HasEnforcementLiteral(*ct_)) {
+      if (!context_->SetLiteralToTrue(single_lit)) {
+        (void)context_->NotifyThatModelIsUnsat(
+            "bool_xor: cannot fix last literal");
+        return;
+      }
+      RemoveConstraint();
+    } else {
+      ct_->mutable_bool_or()->clear_literals();
+      ct_->mutable_bool_or()->add_literals(single_lit);
+      changed_ = true;
+      CanonicalizeBoolOr();
+    }
+    return;
   }
-  if (changed) {
-    ct_->mutable_bool_xor()->mutable_literals()->Truncate(new_size);
-    changed_ = true;
-  }
+
+  changed_ |= changed;
 }
 
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinMax() {
@@ -3871,20 +3894,37 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       if (lrat_proof_handler != nullptr && !params_.cp_model_presolve()) {
         return true;
       }
-      return LiteralsAreCanonical(ct.bool_or().literals(), /*min_size=*/2);
+      return ct.bool_or().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.bool_or().literals());
     case ConstraintProto::ConstraintCase::kBoolAnd:
-      return HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.bool_and().literals(), /*min_size=*/1,
-                                  enf_set);
+      return HasEnforcementLiteral(ct) && !ct.bool_and().literals().empty() &&
+             LiteralsAreCanonical(ct.bool_and().literals(), enf_set);
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return !HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.at_most_one().literals(), /*min_size=*/2);
+             ct.at_most_one().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.at_most_one().literals());
     case ConstraintProto::ConstraintCase::kExactlyOne:
       return !HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.exactly_one().literals(), /*min_size=*/2);
-    case ConstraintProto::ConstraintCase::kBoolXor:
-      return BoolXorLiteralsAreCanonical(ct.bool_xor().literals(),
-                                         HasEnforcementLiteral(ct) ? 1 : 2);
+             ct.exactly_one().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.exactly_one().literals());
+    case ConstraintProto::ConstraintCase::kBoolXor: {
+      const auto& lits = ct.bool_xor().literals();
+      if (lits.size() < 2) return false;
+      int prev_var = -1;
+      for (int i = 0; i < lits.size(); ++i) {
+        const int lit = lits[i];
+        const int var = PositiveRef(lit);
+        if ((i > 0 && !RefIsPositive(lit)) || var <= prev_var || IsFixed(lit) ||
+            GetLiteralRepresentative(lit) != lit) {
+          return false;
+        }
+        if (enf_set.contains(var) || enf_set.contains(NegatedRef(var))) {
+          return false;
+        }
+        prev_var = var;
+      }
+      return true;
+    }
     case ConstraintProto::ConstraintCase::kLinMax:
       return LinMaxIsCanonical(ct) && all_exprs_canonical();
     case ConstraintProto::ConstraintCase::kCircuit:

@@ -189,7 +189,6 @@ bool CpConstraintPresolver::PresolveBoolXor(ConstraintProto* ct) {
       time_limit_, ct->bool_xor().literals_size());
 
   for (const int literal : ct->bool_xor().literals()) {
-    if (context_->IsFixed(literal)) continue;
     // TODO(user): More generally, if a variable appear in only bool xor
     // constraints, we can simply eliminate it using linear algebra on Z/2Z.
     // This should solve in polynomial time the parity-learning*.fzn problems
@@ -201,26 +200,14 @@ bool CpConstraintPresolver::PresolveBoolXor(ConstraintProto* ct) {
     }
   }
 
-  if (!HasEnforcementLiteral(*ct)) {
-    const int size = ct->bool_xor().literals_size();
-    const bool has_true_literal =
-        size > 0 && context_->LiteralIsTrue(ct->bool_xor().literals(size - 1));
-    const int num_active = has_true_literal ? size - 1 : size;
-    if (num_active == 2) {
-      const int a = ct->bool_xor().literals(0);
-      const int b = ct->bool_xor().literals(1);
-      if (!has_true_literal) {  // a == not(b).
-        if (!context_->StoreBooleanEqualityRelation(a, NegatedRef(b))) {
-          return false;
-        }
-      } else {  // a == b.
-        if (!context_->StoreBooleanEqualityRelation(a, b)) {
-          return false;
-        }
-      }
-      context_->UpdateRuleStats("bool_xor: two active literals");
-      return RemoveConstraint(ct);
+  if (ct->bool_xor().literals_size() == 2 && !HasEnforcementLiteral(*ct)) {
+    const int a = ct->bool_xor().literals(0);
+    const int b = ct->bool_xor().literals(1);
+    if (!context_->StoreBooleanEqualityRelation(a, NegatedRef(b))) {
+      return false;
     }
+    context_->UpdateRuleStats("bool_xor: two active literals");
+    return RemoveConstraint(ct);
   }  // TODO(user): maybe replace the enforced XOR by an enforced equality?
   return false;
 }
