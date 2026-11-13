@@ -181,6 +181,16 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
                      SolverLogger* logger = nullptr);
 
 // --------------------------------------------------------
+// ClearTrivialConstraints (work on the MPModelProtoWrapper)
+// --------------------------------------------------------
+
+// Relaxes constraint bounds that are always satisfied within the variable
+// bounds to +/-infinity, and clears constraints whose lower and upper bounds
+// are both infinite.
+void ClearTrivialConstraints(sat::MPModelProtoWrapper* model,
+                             SolverLogger* logger = nullptr);
+
+// --------------------------------------------------------
 // ExactPresolve (work on the MPModelProtoWrapper)
 // --------------------------------------------------------
 
@@ -190,7 +200,7 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
 // before propagation, so it will never cut solutions that were feasible up
 // to that tolerance and not dominated via dual reasoning.
 //
-// Currently this just combines PropagateBounds() and
+// Currently this combines ClearTrivialConstraints(), PropagateBounds(), and
 // RestrictBoundsWithDualReasoning().
 //
 // TODO(user): Add more like enforcement extraction, but this is a bit trickier

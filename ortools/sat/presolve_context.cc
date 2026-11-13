@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -36,6 +37,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -2325,7 +2327,7 @@ bool PresolveContext::SubstituteVariableInObjective(
     for (const auto& entry : objective_map_) {
       tmp_entries_.push_back(entry);
     }
-    std::sort(tmp_entries_.begin(), tmp_entries_.end());
+    absl::c_sort(tmp_entries_);
     for (const auto& entry : tmp_entries_) {
       const int var = entry.first;
       const int64_t coeff = entry.second;
@@ -2482,9 +2484,10 @@ void PresolveContext::WriteObjectiveToProto() const {
   for (const auto& entry : objective_map_) {
     tmp_entries_.push_back(entry);
   }
-  std::sort(tmp_entries_.begin(), tmp_entries_.end(),
-            [](const std::pair<int, int64_t>& a,
-               const std::pair<int, int64_t>& b) { return a.first < b.first; });
+  absl::c_sort(tmp_entries_, [](const std::pair<int, int64_t>& a,
+                                const std::pair<int, int64_t>& b) {
+    return a.first < b.first;
+  });
 
   CpObjectiveProto* mutable_obj = working_model_->mutable_objective();
   mutable_obj->set_offset(objective_offset_);
@@ -2738,10 +2741,9 @@ PresolveContext::BuildMergedCanonicalLinearConstraint(
     }
   }
   if (terms.size() > 1) {
-    std::sort(terms.begin(), terms.end(),
-              [](const CanonicalTerm& a, const CanonicalTerm& b) {
-                return a.magnitude < b.magnitude;
-              });
+    absl::c_sort(terms, [](const CanonicalTerm& a, const CanonicalTerm& b) {
+      return a.magnitude < b.magnitude;
+    });
 
     int new_size = 1;
     for (int i = 1; i < terms.size(); ++i) {
@@ -2839,7 +2841,7 @@ bool CanonicalizeLinearExpressionInternal(
   }
   proto->clear_vars();
   proto->clear_coeffs();
-  std::sort(tmp_terms->begin(), tmp_terms->end());
+  absl::c_sort(*tmp_terms);
   int current_var = 0;
   int64_t current_coeff = 0;
   for (const auto& entry : *tmp_terms) {
@@ -2886,47 +2888,20 @@ bool DomainMatchesProto(const Domain& domain,
 }  // namespace
 
 bool PresolveContext::LiteralsAreCanonical(
-    absl::Span<const int> lits, int min_size, bool check_sorted,
+    absl::Span<const int> lits,
     const absl::flat_hash_set<int>& enforcements) const {
-  if (lits.size() < min_size) return false;
-  absl::flat_hash_set<int> seen;
   int prev = std::numeric_limits<int>::min();
   for (const int lit : lits) {
     const int var = PositiveRef(lit);
-    if ((check_sorted && lit <= prev) || IsFixed(lit) ||
-        GetLiteralRepresentative(lit) != lit) {
+    if (lit <= prev || IsFixed(lit) || GetLiteralRepresentative(lit) != lit) {
       return false;
     }
     if (enforcements.contains(var) || enforcements.contains(NegatedRef(var))) {
       return false;
     }
-    if (!seen.insert(lit).second || seen.contains(NegatedRef(lit))) {
-      return false;
-    }
     prev = lit;
   }
-  return true;
-}
-
-bool PresolveContext::BoolXorLiteralsAreCanonical(absl::Span<const int> lits,
-                                                  int min_active_size) const {
-  int num_active = 0;
-  for (int i = 0; i < lits.size(); ++i) {
-    const int lit = lits[i];
-    if (LiteralIsFalse(lit)) return false;
-    if (GetLiteralRepresentative(lit) != lit) return false;
-    if (LiteralIsTrue(lit)) {
-      if (i + 1 != lits.size()) return false;
-      continue;
-    }
-    ++num_active;
-  }
-  if (num_active < min_active_size) return false;
-  if (num_active == 2 &&
-      (lits[0] == lits[1] || lits[0] == NegatedRef(lits[1]))) {
-    return false;
-  }
-  return true;
+  return !SortedLiteralsHaveOppositePair(lits);
 }
 
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
@@ -3027,13 +3002,19 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
       CanonicalizeLinear();
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
+      CanonicalizeAllExprs();
+      SortExpressions(ct_->mutable_int_prod()->mutable_exprs());
+      break;
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      CanonicalizeAllExprs();
+      SortExpressions(ct_->mutable_all_diff()->mutable_exprs());
+      break;
     case ConstraintProto::ConstraintCase::kIntDiv:
     case ConstraintProto::ConstraintCase::kIntMod:
     case ConstraintProto::ConstraintCase::kInterval:
     case ConstraintProto::ConstraintCase::kElement:
     case ConstraintProto::ConstraintCase::kTable:
     case ConstraintProto::ConstraintCase::kRoutes:
-    case ConstraintProto::ConstraintCase::kAllDiff:
     case ConstraintProto::ConstraintCase::kAutomaton:
     case ConstraintProto::ConstraintCase::kCumulative:
     case ConstraintProto::ConstraintCase::kReservoir:
@@ -3174,17 +3155,15 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
     return;
   }
 
-  // Inspects the literals and deal with fixed ones.
-  //
-  // TODO(user): Because we remove literal on the first copy, maybe we can get
-  // rid of the set here. However we still need to be careful when remapping
-  // literals to their representatives.
+  // Inspects the literals, removes fixed ones, sorts, and handles duplicates
+  // and complementary pairs using the sorted order.
   bool changed = false;
+  bool removed_fixed_or_dup = false;
   context_->tmp_literals.clear();
-  context_->tmp_literal_set.clear();
   for (const int literal : ct_->bool_or().literals()) {
     if (context_->LiteralIsFalse(literal)) {
       changed = true;
+      removed_fixed_or_dup = true;
       continue;
     }
     if (context_->LiteralIsTrue(literal)) {
@@ -3192,19 +3171,29 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
       RemoveConstraint();
       return;
     }
-    if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
-      context_->UpdateRuleStats("bool_or: always true");
-      RemoveConstraint();
-      return;
-    }
-
-    if (!context_->tmp_literal_set.insert(literal).second) {
-      changed = true;
-    } else {
-      context_->tmp_literals.push_back(literal);
-    }
+    context_->tmp_literals.push_back(literal);
   }
-  context_->tmp_literal_set.clear();
+
+  if (!absl::c_is_sorted(context_->tmp_literals)) {
+    absl::c_sort(context_->tmp_literals);
+    changed = true;
+  }
+  int write = 0;
+  for (const int literal : context_->tmp_literals) {
+    if (write > 0 && context_->tmp_literals[write - 1] == literal) {
+      changed = true;
+      removed_fixed_or_dup = true;
+      continue;
+    }
+    context_->tmp_literals[write++] = literal;
+  }
+  context_->tmp_literals.resize(write);
+
+  if (SortedLiteralsHaveOppositePair(context_->tmp_literals)) {
+    context_->UpdateRuleStats("bool_or: always true");
+    RemoveConstraint();
+    return;
+  }
 
   if (context_->tmp_literals.empty()) {
     context_->UpdateRuleStats("bool_or: empty");
@@ -3218,12 +3207,12 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
     return;
   }
 
-  if (changed) {
+  if (removed_fixed_or_dup) {
     context_->UpdateRuleStats("bool_or: fixed literals");
-    ct_->mutable_bool_or()->mutable_literals()->Clear();
-    for (const int lit : context_->tmp_literals) {
-      ct_->mutable_bool_or()->add_literals(lit);
-    }
+  }
+  if (changed) {
+    ct_->mutable_bool_or()->mutable_literals()->Assign(
+        context_->tmp_literals.begin(), context_->tmp_literals.end());
     changed_ = true;
   }
 }
@@ -3241,10 +3230,8 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   }
 
   bool changed = false;
+  bool removed_fixed_or_dup = false;
   context_->tmp_literals.clear();
-  context_->tmp_literal_set.clear();
-  const absl::flat_hash_set<int> enforcement_literals_set(
-      ct_->enforcement_literal().begin(), ct_->enforcement_literal().end());
   for (const int literal : ct_->bool_and().literals()) {
     if (context_->LiteralIsFalse(literal)) {
       MarkConstraintAsFalse("bool_and: always false");
@@ -3252,30 +3239,58 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
     }
     if (context_->LiteralIsTrue(literal)) {
       changed = true;
+      removed_fixed_or_dup = true;
       continue;
     }
-    if (enforcement_literals_set.contains(literal)) {
-      context_->UpdateRuleStats("bool_and: x => x");
-      changed = true;
-      continue;
-    }
-    if (enforcement_literals_set.contains(NegatedRef(literal))) {
-      MarkConstraintAsFalse("bool_and: x => not x");
-      return;
-    }
+    context_->tmp_literals.push_back(literal);
+  }
 
-    if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
-      MarkConstraintAsFalse("bool_and: cannot be enforced");
-      return;
+  if (!absl::c_is_sorted(context_->tmp_literals)) {
+    absl::c_sort(context_->tmp_literals);
+    changed = true;
+  }
+  {
+    int new_size = 0;
+    for (const int literal : context_->tmp_literals) {
+      if (new_size > 0 && context_->tmp_literals[new_size - 1] == literal) {
+        changed = true;
+        removed_fixed_or_dup = true;
+        context_->UpdateRuleStats("bool_and: removed duplicate literal");
+        continue;
+      }
+      context_->tmp_literals[new_size++] = literal;
     }
+    context_->tmp_literals.resize(new_size);
+  }
 
-    const auto [_, inserted] = context_->tmp_literal_set.insert(literal);
-    if (inserted) {
-      context_->tmp_literals.push_back(literal);
-    } else {
-      changed = true;
-      context_->UpdateRuleStats("bool_and: removed duplicate literal");
+  const absl::Span<const int> enforcements = ct_->enforcement_literal();
+  DCHECK(absl::c_is_sorted(enforcements));
+  if (SortedLiteralsHaveOppositeAcross(enforcements, context_->tmp_literals)) {
+    MarkConstraintAsFalse("bool_and: x => not x");
+    return;
+  }
+
+  {
+    int new_size = 0;
+    int enf_idx = 0;
+    for (const int literal : context_->tmp_literals) {
+      while (enf_idx < enforcements.size() && enforcements[enf_idx] < literal) {
+        ++enf_idx;
+      }
+      if (enf_idx < enforcements.size() && enforcements[enf_idx] == literal) {
+        context_->UpdateRuleStats("bool_and: x => x");
+        changed = true;
+        removed_fixed_or_dup = true;
+        continue;
+      }
+      context_->tmp_literals[new_size++] = literal;
     }
+    context_->tmp_literals.resize(new_size);
+  }
+
+  if (SortedLiteralsHaveOppositePair(context_->tmp_literals)) {
+    MarkConstraintAsFalse("bool_and: cannot be enforced");
+    return;
   }
 
   // Note that this is not the same behavior as a bool_or:
@@ -3286,12 +3301,12 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
     return;
   }
 
-  if (changed) {
-    ct_->mutable_bool_and()->mutable_literals()->Clear();
-    for (const int lit : context_->tmp_literals) {
-      ct_->mutable_bool_and()->add_literals(lit);
-    }
+  if (removed_fixed_or_dup) {
     context_->UpdateRuleStats("bool_and: fixed literals");
+  }
+  if (changed) {
+    ct_->mutable_bool_and()->mutable_literals()->Assign(
+        context_->tmp_literals.begin(), context_->tmp_literals.end());
     changed_ = true;
   }
 }
@@ -3307,45 +3322,43 @@ void PresolveContext::ConstraintCanonicalizer::
 
   // Having a canonical constraint is needed for duplicate detection.
   // This also change how we regroup bool_and.
-  if (!std::is_sorted(literals->begin(), literals->end())) {
-    std::sort(literals->begin(), literals->end());
+  if (!absl::c_is_sorted(*literals)) {
+    absl::c_sort(*literals);
     changed_ = true;
   }
 
-  // Deal with duplicate variable reference.
-  context_->tmp_literal_set.clear();
-  for (const int literal : *literals) {
-    const auto [_, inserted] = context_->tmp_literal_set.insert(literal);
-    if (!inserted) {
-      if (!context_->SetLiteralToFalse(literal)) return;
-      context_->UpdateRuleStats(absl::StrCat(name, "duplicate literals"));
+  // Deal with complementary and duplicate variable references using the sorted
+  // order.
+  const int comp_var = FindComplementaryVarInSortedLiterals(*literals);
+  if (comp_var != -1) {
+    int num_positive = 0;
+    int num_negative = 0;
+    for (const int other : *literals) {
+      if (PositiveRef(other) != comp_var) {
+        if (!context_->SetLiteralToFalse(other)) return;
+        context_->UpdateRuleStats(absl::StrCat(name, "x and not(x)"));
+      } else if (other == comp_var) {
+        ++num_positive;
+      } else {
+        ++num_negative;
+      }
     }
-    if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
-      int num_positive = 0;
-      int num_negative = 0;
-      for (const int other : *literals) {
-        if (PositiveRef(other) != PositiveRef(literal)) {
-          if (!context_->SetLiteralToFalse(other)) return;
-          context_->UpdateRuleStats(absl::StrCat(name, "x and not(x)"));
-        } else {
-          if (other == literal) {
-            ++num_positive;
-          } else {
-            ++num_negative;
-          }
-        }
-      }
 
-      // This is tricky for the case where the at most one reduce to (lit,
-      // not(lit), not(lit)) for instance.
-      if (num_positive > 1 && !context_->SetLiteralToFalse(literal)) {
-        return;
-      }
-      if (num_negative > 1 && !context_->SetLiteralToTrue(literal)) {
-        return;
-      }
-      RemoveConstraint();
+    // This is tricky for the case where the at most one reduce to (lit,
+    // not(lit), not(lit)) for instance.
+    if (num_positive > 1 && !context_->SetLiteralToFalse(comp_var)) {
       return;
+    }
+    if (num_negative > 1 && !context_->SetLiteralToTrue(comp_var)) {
+      return;
+    }
+    RemoveConstraint();
+    return;
+  }
+  for (int i = 1; i < literals->size(); ++i) {
+    if (literals->Get(i) == literals->Get(i - 1)) {
+      if (!context_->SetLiteralToFalse(literals->Get(i))) return;
+      context_->UpdateRuleStats(absl::StrCat(name, "duplicate literals"));
     }
   }
 
@@ -3431,115 +3444,148 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeExactlyOne() {
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
   if (context_->ModelIsUnsat()) return;
 
+  auto* literals = ct_->mutable_bool_xor()->mutable_literals();
+  const int old_size = literals->size();
   int new_size = 0;
   bool changed = false;
-  int num_true_literals = 0;
-  int true_literal = kint32min;
-  int true_literal_index = -1;
-  for (int i = 0; i < ct_->bool_xor().literals_size(); ++i) {
-    const int literal = ct_->bool_xor().literals(i);
+  bool odd_parity = false;
+  for (int i = 0; i < old_size; ++i) {
+    int literal = literals->Get(i);
     if (context_->LiteralIsFalse(literal)) {
       context_->UpdateRuleStats("bool_xor: remove false literal");
       changed = true;
       continue;
-    } else if (context_->LiteralIsTrue(literal)) {
-      true_literal = literal;  // Keep if we need to put one back.
-      true_literal_index = i;
-      num_true_literals++;
+    }
+    if (context_->LiteralIsTrue(literal)) {
+      context_->UpdateRuleStats("bool_xor: remove true literal");
+      odd_parity = !odd_parity;
+      changed = true;
       continue;
     }
+    if (!RefIsPositive(literal)) {
+      literal = NegatedRef(literal);
+      odd_parity = !odd_parity;
+      if (i > 0) changed = true;
+    }
+    literals->Set(new_size++, literal);
+  }
+  if (new_size != old_size) {
+    literals->Truncate(new_size);
+    changed = true;
+  }
 
-    ct_->mutable_bool_xor()->set_literals(new_size++, literal);
+  if (!absl::c_is_sorted(*literals)) {
+    absl::c_sort(*literals);
+    changed = true;
+  }
+
+  // Cancel pairs of identical positive literals (x ^ x == 0).
+  int write = 0;
+  for (int i = 0; i < new_size; ++i) {
+    const int lit = literals->Get(i);
+    if (write > 0 && literals->Get(write - 1) == lit) {
+      --write;
+    } else {
+      literals->Set(write++, lit);
+    }
+  }
+  if (write != new_size) {
+    new_size = write;
+    literals->Truncate(new_size);
+    changed = true;
+    if (new_size > 0) {
+      context_->UpdateRuleStats("bool_xor: cancel duplicate literal pairs");
+    }
+  }
+
+  // Filter out variables appearing in `enforcement_literal` in O(n + m) time:
+  // `literals` is strictly increasing in positive `var`, while `enforcements`
+  // has negated literals in descending `var` order followed by positive
+  // literals in ascending `var` order.
+  const absl::Span<const int> enforcements = ct_->enforcement_literal();
+  DCHECK(absl::c_is_sorted(enforcements));
+  if (!enforcements.empty() && new_size > 0) {
+    const int first_pos =
+        std::lower_bound(enforcements.begin(), enforcements.end(), 0) -
+        enforcements.begin();
+    int neg_idx = first_pos - 1;
+    int pos_idx = first_pos;
+    write = 0;
+    for (int i = 0; i < new_size; ++i) {
+      const int var = literals->Get(i);
+      while (neg_idx >= 0 && PositiveRef(enforcements[neg_idx]) < var) {
+        --neg_idx;
+      }
+      if (neg_idx >= 0 && PositiveRef(enforcements[neg_idx]) == var) {
+        context_->UpdateRuleStats("bool_xor: remove enforcement literal");
+        changed = true;
+        continue;
+      }
+      while (pos_idx < enforcements.size() && enforcements[pos_idx] < var) {
+        ++pos_idx;
+      }
+      if (pos_idx < enforcements.size() && enforcements[pos_idx] == var) {
+        context_->UpdateRuleStats("bool_xor: remove enforcement literal");
+        odd_parity = !odd_parity;
+        changed = true;
+        continue;
+      }
+      literals->Set(write++, var);
+    }
+    if (write != new_size) {
+      new_size = write;
+      literals->Truncate(new_size);
+    }
   }
 
   if (new_size == 0) {
-    if (num_true_literals % 2 == 0) {
+    if (!odd_parity) {
       MarkConstraintAsFalse("bool_xor: always false");
     } else {
       context_->UpdateRuleStats("bool_xor: always true");
       RemoveConstraint();
     }
     return;
-  } else if (new_size == 1 && !HasEnforcementLiteral(*ct_)) {
-    // We can fix the only active literal.
-    if (num_true_literals % 2 == 0) {
-      if (!context_->SetLiteralToTrue(ct_->bool_xor().literals(0))) {
-        (void)context_->NotifyThatModelIsUnsat(
-            "bool_xor: cannot fix last literal");
-        return;
-      }
-    } else {
-      if (!context_->SetLiteralToFalse(ct_->bool_xor().literals(0))) {
-        (void)context_->NotifyThatModelIsUnsat(
-            "bool_xor: cannot fix last literal");
-        return;
-      }
-    }
-    context_->UpdateRuleStats("bool_xor: one active literal");
-    RemoveConstraint();
-    return;
-  } else if (new_size == 2) {  // We can simplify the bool_xor.
-    const int a = ct_->bool_xor().literals(0);
-    const int b = ct_->bool_xor().literals(1);
-    if (a == b) {
-      if (num_true_literals % 2 == 0) {
-        MarkConstraintAsFalse("bool_xor: always false");
-      } else {
-        context_->UpdateRuleStats("bool_xor: always true");
-        RemoveConstraint();
-      }
-      return;
-    }
-    if (a == NegatedRef(b)) {
-      if (num_true_literals % 2 == 1) {
-        MarkConstraintAsFalse("bool_xor: always false");
-      } else {
-        context_->UpdateRuleStats("bool_xor: always true");
-        RemoveConstraint();
-      }
-      return;
-    }
   }
 
-  if (num_true_literals % 2 == 1) {
-    CHECK_NE(true_literal, kint32min);
-    if (true_literal_index != new_size) changed = true;
-    ct_->mutable_bool_xor()->set_literals(new_size++, true_literal);
+  if (odd_parity) {
+    literals->Set(0, NegatedRef(literals->Get(0)));
   }
-  if (num_true_literals > 1) {
-    context_->UpdateRuleStats("bool_xor: remove even number of true literals");
-    changed = true;
+
+  if (new_size == 1) {
+    const int single_lit = literals->Get(0);
+    context_->UpdateRuleStats("bool_xor: one active literal");
+    if (!HasEnforcementLiteral(*ct_)) {
+      if (!context_->SetLiteralToTrue(single_lit)) {
+        (void)context_->NotifyThatModelIsUnsat(
+            "bool_xor: cannot fix last literal");
+        return;
+      }
+      RemoveConstraint();
+    } else {
+      ct_->mutable_bool_or()->clear_literals();
+      ct_->mutable_bool_or()->add_literals(single_lit);
+      changed_ = true;
+      CanonicalizeBoolOr();
+    }
+    return;
   }
-  if (changed) {
-    ct_->mutable_bool_xor()->mutable_literals()->Truncate(new_size);
-    changed_ = true;
-  }
+
+  changed_ |= changed;
 }
 
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinMax() {
-  if (!std::is_sorted(ct_->enforcement_literal().begin(),
-                      ct_->enforcement_literal().end())) {
-    std::sort(ct_->mutable_enforcement_literal()->begin(),
-              ct_->mutable_enforcement_literal()->end());
-    changed_ = true;
-  }
-  // Canonicalize all involved expressions.
-  const absl::Span<const int> enf = ct_->enforcement_literal();
-  LinearArgumentProto* proto = ct_->mutable_lin_max();
-  if (proto->has_target()) {
-    changed_ |=
-        context_->CanonicalizeLinearExpression(enf, proto->mutable_target());
-  }
-  for (LinearExpressionProto& exp : *proto->mutable_exprs()) {
-    changed_ |= context_->CanonicalizeLinearExpression(enf, &exp);
-  }
-  if (!std::is_sorted(proto->exprs().begin(), proto->exprs().end(),
-                      LinearExpressionProtoLessThan)) {
-    std::sort(proto->mutable_exprs()->begin(), proto->mutable_exprs()->end(),
-              LinearExpressionProtoLessThan);
-    changed_ = true;
-  }
+  CanonicalizeAllExprs();
+  SortExpressions(ct_->mutable_lin_max()->mutable_exprs());
   DCHECK(LinMaxIsCanonical(*ct_));
+}
+
+void PresolveContext::ConstraintCanonicalizer::SortExpressions(
+    google::protobuf::RepeatedPtrField<LinearExpressionProto>* exprs) {
+  if (!absl::c_is_sorted(*exprs, LinearExpressionProtoLessThan)) {
+    absl::c_sort(*exprs, LinearExpressionProtoLessThan);
+    changed_ = true;
+  }
 }
 
 void PresolveContext::ConstraintCanonicalizer::ExploitEquivalenceRelations() {
@@ -3570,9 +3616,9 @@ bool PresolveContext::ConstraintCanonicalizer::
   };
 
   int new_size = 0;
-  const int old_size = ct_->enforcement_literal().size();
-  if (old_size > 1) context_->tmp_literal_set.clear();
-  for (const int literal : ct_->enforcement_literal()) {
+  auto* enforcements = ct_->mutable_enforcement_literal();
+  const int old_size = enforcements->size();
+  for (const int literal : *enforcements) {
     if (context_->LiteralIsTrue(literal)) {
       // We can remove a literal at true.
       context_->UpdateRuleStats("enforcement: true literal");
@@ -3588,27 +3634,33 @@ bool PresolveContext::ConstraintCanonicalizer::
       return remove_if_not_interval();
     }
 
-    // Deals with duplicate literals.
-    //
-    // TODO(user): Ideally we could do that just once during the first copy,
-    // and later never create such constraint.
-    if (old_size > 1) {
-      const auto [_, inserted] = context_->tmp_literal_set.insert(literal);
-      if (!inserted) {
-        context_->UpdateRuleStats("enforcement: removed duplicate literal");
-        continue;
-      }
-      if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
-        context_->UpdateRuleStats("enforcement: can never be true");
-        return remove_if_not_interval();
-      }
-    }
-
-    ct_->set_enforcement_literal(new_size++, literal);
+    enforcements->Set(new_size++, literal);
   }
   if (new_size != old_size) {
     changed_ = true;
-    ct_->mutable_enforcement_literal()->Truncate(new_size);
+    enforcements->Truncate(new_size);
+  }
+  if (new_size > 1) {
+    if (!absl::c_is_sorted(*enforcements)) {
+      absl::c_sort(*enforcements);
+      changed_ = true;
+    }
+    int dedup_size = 1;
+    for (int i = 1; i < new_size; ++i) {
+      if (enforcements->Get(i) == enforcements->Get(dedup_size - 1)) {
+        context_->UpdateRuleStats("enforcement: removed duplicate literal");
+        continue;
+      }
+      enforcements->Set(dedup_size++, enforcements->Get(i));
+    }
+    if (dedup_size != new_size) {
+      enforcements->Truncate(dedup_size);
+      changed_ = true;
+    }
+    if (SortedLiteralsHaveOppositePair(*enforcements)) {
+      context_->UpdateRuleStats("enforcement: can never be true");
+      return remove_if_not_interval();
+    }
   }
   return true;
 }
@@ -3716,8 +3768,7 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
             .begin(),
         canonicalization_.constraints_to_canonicalize.PositionsSetAtLeastOnce()
             .end());
-    std::sort(canonicalization_.tmp_dirty_constraints.begin(),
-              canonicalization_.tmp_dirty_constraints.end());
+    absl::c_sort(canonicalization_.tmp_dirty_constraints);
     canonicalization_.constraints_to_canonicalize.ResetAllToFalse();
 
     // 4. Arena-safe detach -> canonicalize -> reattach.
@@ -3843,22 +3894,37 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       if (lrat_proof_handler != nullptr && !params_.cp_model_presolve()) {
         return true;
       }
-      return LiteralsAreCanonical(ct.bool_or().literals(), /*min_size=*/2);
+      return ct.bool_or().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.bool_or().literals());
     case ConstraintProto::ConstraintCase::kBoolAnd:
-      return HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.bool_and().literals(), /*min_size=*/1,
-                                  /*check_sorted=*/false, enf_set);
+      return HasEnforcementLiteral(ct) && !ct.bool_and().literals().empty() &&
+             LiteralsAreCanonical(ct.bool_and().literals(), enf_set);
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return !HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.at_most_one().literals(), /*min_size=*/2,
-                                  /*check_sorted=*/true);
+             ct.at_most_one().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.at_most_one().literals());
     case ConstraintProto::ConstraintCase::kExactlyOne:
       return !HasEnforcementLiteral(ct) &&
-             LiteralsAreCanonical(ct.exactly_one().literals(), /*min_size=*/2,
-                                  /*check_sorted=*/true);
-    case ConstraintProto::ConstraintCase::kBoolXor:
-      return BoolXorLiteralsAreCanonical(ct.bool_xor().literals(),
-                                         HasEnforcementLiteral(ct) ? 1 : 2);
+             ct.exactly_one().literals_size() >= 2 &&
+             LiteralsAreCanonical(ct.exactly_one().literals());
+    case ConstraintProto::ConstraintCase::kBoolXor: {
+      const auto& lits = ct.bool_xor().literals();
+      if (lits.size() < 2) return false;
+      int prev_var = -1;
+      for (int i = 0; i < lits.size(); ++i) {
+        const int lit = lits[i];
+        const int var = PositiveRef(lit);
+        if ((i > 0 && !RefIsPositive(lit)) || var <= prev_var || IsFixed(lit) ||
+            GetLiteralRepresentative(lit) != lit) {
+          return false;
+        }
+        if (enf_set.contains(var) || enf_set.contains(NegatedRef(var))) {
+          return false;
+        }
+        prev_var = var;
+      }
+      return true;
+    }
     case ConstraintProto::ConstraintCase::kLinMax:
       return LinMaxIsCanonical(ct) && all_exprs_canonical();
     case ConstraintProto::ConstraintCase::kCircuit:
@@ -3873,13 +3939,19 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
     case ConstraintProto::ConstraintCase::kNoOverlap:
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       return true;
+    case ConstraintProto::ConstraintCase::kIntProd:
+      return all_exprs_canonical() &&
+             absl::c_is_sorted(ct.int_prod().exprs(),
+                               LinearExpressionProtoLessThan);
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      return all_exprs_canonical() &&
+             absl::c_is_sorted(ct.all_diff().exprs(),
+                               LinearExpressionProtoLessThan);
     case ConstraintProto::ConstraintCase::kIntDiv:
     case ConstraintProto::ConstraintCase::kIntMod:
-    case ConstraintProto::ConstraintCase::kIntProd:
     case ConstraintProto::ConstraintCase::kElement:
     case ConstraintProto::ConstraintCase::kTable:
     case ConstraintProto::ConstraintCase::kInterval:
-    case ConstraintProto::ConstraintCase::kAllDiff:
     case ConstraintProto::ConstraintCase::kAutomaton:
     case ConstraintProto::ConstraintCase::kCumulative:
     case ConstraintProto::ConstraintCase::kInverse:

@@ -606,8 +606,17 @@ TEST(PresolveCpModelTest, BoolXorNotPresolvedIfEnforcementUnknown) {
       bool_xor { literals: [ 0, 1 ] }
     }
   )pb");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      bool_and { literals: [ -1 ] }
+    }
+  )pb");
   const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(initial_model));
+  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
 TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced) {
@@ -625,7 +634,7 @@ TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
+    constraints { bool_or { literals: [ -3, -2, -1 ] } }
   )pb");
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -645,7 +654,7 @@ TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced2) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
+    constraints { bool_or { literals: [ -3, -2, -1 ] } }
   )pb");
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -667,7 +676,7 @@ TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced3) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 1, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
+    constraints { bool_or { literals: [ -3, -2, -1 ] } }
   )pb");
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }

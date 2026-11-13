@@ -328,7 +328,6 @@ struct OneVariableComponentStats {
   int num_integers = 0;
   int num_fixed = 0;
   int num_pow2_preferred = 0;
-  int num_objective_limited = 0;
   int num_missed = 0;
   double max_scaling = 0.0;
 };
@@ -337,7 +336,6 @@ void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
 
 struct PrecisionScalingStats {
   int num_scaled = 0;
-  int num_objective_driven = 0;
   int min_exponent = std::numeric_limits<int>::max();
   int max_exponent = 0;
 };
@@ -352,59 +350,6 @@ struct ShiftStats {
   double max_shift = 0.0;
 };
 void LogShiftStats(const ShiftStats& stats, SolverLogger* logger);
-
-// The objective is shared by all the components, so when scaling the continuous
-// variables of a component for a given precision we need to know the headroom
-// left by the whole objective. This class caches it and only recomputes it in
-// O(num_objective_terms) when MarkDirty() was called. Continuous power of two
-// scalings are tracked in O(1) via NotifyContinuousPow2Scaling().
-class GlobalObjectivePrecision {
- public:
-  GlobalObjectivePrecision(const SatParameters& params,
-                           const MPModelProto& mp_model);
-
-  void MarkDirty() { dirty_ = true; }
-
-  void NotifyContinuousPow2Scaling(double pow2_scaling) {
-    max_existing_pow2_scaling_ =
-        std::max(max_existing_pow2_scaling_, pow2_scaling);
-  }
-
-  struct Bounds {
-    double headroom;
-    int num_lb_floats;
-    double precision;
-  };
-  Bounds GetBounds(const MPModelProto& mp_model,
-                   absl::Span<const MipVariableState> states);
-
-  // Returns false if marking `var` as integer with the given rational scaling
-  // would prevent the objective from being scaled to integers within the
-  // activity target while keeping a headroom of at least `reserved_headroom`
-  // for the continuous variables that will later be scaled by a power of two.
-  bool KeepsObjectiveScalable(const MPModelProto& mp_model,
-                              absl::Span<const MipVariableState> states,
-                              int var, double scaling,
-                              double reserved_headroom);
-
- private:
-  void Recompute(const MPModelProto& mp_model,
-                 absl::Span<const MipVariableState> states);
-
-  int64_t scaling_target_ = 0;
-  double obj_precision_ = 0.0;
-  std::vector<int> obj_vars_;
-  std::vector<double> coeffs_;
-  std::vector<double> lbs_;
-  std::vector<double> ubs_;
-
-  bool dirty_ = true;
-  bool has_continuous_obj_var_ = false;
-  int num_lb_floats_ = 0;
-  double max_existing_pow2_scaling_ = 1.0;
-  double scaling_factor_ = 0.0;
-  double max_scaling_factor_ = 0.0;
-};
 
 // Once all integer variables have a value, we can split the model into separate
 // components. If a given component is totally unimodular, then there exists a
@@ -457,7 +402,7 @@ class GlobalObjectivePrecision {
 std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision, TumStats* stats);
+    TumStats* stats);
 
 // Processes a residual continuous component with a single continuous variable
 // x, which is thus the unique non-integer of all its constraints.
@@ -482,11 +427,11 @@ std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
 // relevant bound instead.
 //
 // This only updates `states`, `compo.var_to_local_col` must be set.
-void ScaleOneVariableResidualMatrix(
-    const SatParameters& params, const ResidualContinuousComponent& compo,
-    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision,
-    OneVariableComponentStats* stats);
+void ScaleOneVariableResidualMatrix(const SatParameters& params,
+                                    const ResidualContinuousComponent& compo,
+                                    const MPModelProtoWrapper& mp_model,
+                                    absl::Span<MipVariableState> states,
+                                    OneVariableComponentStats* stats);
 
 // Uses the same TUM detection on the whole model, before it is split into
 // components, to only tighten the bounds of the variables with a large domain
@@ -505,16 +450,15 @@ void ScaleComponentContinuousVariables(const SatParameters& params,
                                        const ResidualContinuousComponent& compo,
                                        absl::Span<MipVariableState> states);
 
-// For each constraint and the objective, computes the scaling factor that
-// allows to satisfy mip_wanted_precision and records the power-of-two headroom
-// left up to mip_max_activity_exponent. Then scales each continuous variable by
-// the minimum headroom across all constraints (and the objective) in which it
-// appears, capped by the maximum scaling needed for mip_wanted_precision and
-// the maximum valid CP-SAT variable domain.
+// For each constraint, computes the scaling factor that allows to satisfy
+// mip_wanted_precision and records the power-of-two headroom left up to
+// mip_max_activity_exponent. Then scales each continuous variable by the
+// minimum headroom across all constraints in which it appears, capped by the
+// maximum scaling needed for mip_wanted_precision and the maximum valid CP-SAT
+// variable domain.
 void ScaleComponentContinuousVariablesForGivenPrecision(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    GlobalObjectivePrecision* global_obj_precision,
     PrecisionScalingStats* stats);
 
 // Shifts the domain of each variable in `vars` by `get_shift(state)` (expressed

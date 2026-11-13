@@ -1783,6 +1783,13 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 // In that case, there are no offset to compute.
 // Overflows are caught by the robust ClosedIntervalNoLargerThan() method.
 class SmallBitSet : public DomainIntVar::BitSet {
+  static uint64_t OneRange64(uint64_t s, uint64_t e) {
+    DCHECK_LE(s, 63);
+    DCHECK_LE(e, 63);
+    DCHECK_LE(s, e);
+    return (~uint64_t{0} << s) & (~uint64_t{0} >> (63 - e));
+  }
+
  public:
   SmallBitSet(Solver* s, int64_t vmin, int64_t vmax)
       : BitSet(s),

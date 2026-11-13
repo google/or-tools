@@ -205,7 +205,6 @@ or_cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:cp",
-        "//ortools/util:bitset",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

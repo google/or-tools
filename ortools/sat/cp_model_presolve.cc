@@ -1673,21 +1673,9 @@ bool CpModelPresolver::PresolvePureSatPart() {
       }
       gtl::STLSortAndRemoveDuplicates(&rhs_literals);
 
-      bool rhs_contradiction = false;
-      std::vector<int> filtered_rhs;
-      filtered_rhs.reserve(rhs_literals.size());
-      for (const int rhs : rhs_literals) {
-        if ((rhs >= 0 &&
-             absl::c_binary_search(rhs_literals, NegatedRef(rhs))) ||
-            absl::c_binary_search(enforcements, NegatedRef(rhs))) {
-          rhs_contradiction = true;
-          break;
-        }
-        if (!absl::c_binary_search(enforcements, rhs)) {
-          filtered_rhs.push_back(rhs);
-        }
-      }
-
+      const bool rhs_contradiction =
+          SortedLiteralsHaveOppositePair(rhs_literals) ||
+          SortedLiteralsHaveOppositeAcross(enforcements, rhs_literals);
       if (rhs_contradiction) {
         if (enforcements.empty()) return false;
         if (enforcements.size() == 1) {
@@ -1697,6 +1685,18 @@ bool CpModelPresolver::PresolvePureSatPart() {
           extra_clauses.push_back(std::move(enforcements));
         }
         continue;
+      }
+
+      std::vector<int> filtered_rhs;
+      filtered_rhs.reserve(rhs_literals.size());
+      int enf_idx = 0;
+      for (const int rhs : rhs_literals) {
+        while (enf_idx < enforcements.size() && enforcements[enf_idx] < rhs) {
+          ++enf_idx;
+        }
+        if (enf_idx >= enforcements.size() || enforcements[enf_idx] != rhs) {
+          filtered_rhs.push_back(rhs);
+        }
       }
 
       if (filtered_rhs.empty()) continue;
@@ -8736,6 +8736,21 @@ struct ConstraintHashForDuplicateDetection {
                                 ignore_enforcement
                                     ? absl::Span<const int>()
                                     : absl::MakeSpan(ct.enforcement_literal())};
+    const auto hash_expr = [](size_t h, const LinearExpressionProto& expr) {
+      return absl::HashOf(h, absl::MakeSpan(expr.vars()),
+                          absl::MakeSpan(expr.coeffs()), expr.offset());
+    };
+    const auto hash_linear_argument = [&](const LinearArgumentProto& arg) {
+      size_t h = absl::HashOf(type_and_enforcement);
+      if (!ignore_target_of_expression) {
+        h = hash_expr(h, arg.target());
+      }
+      h = absl::HashOf(h, arg.exprs_size());
+      for (const LinearExpressionProto& expr : arg.exprs()) {
+        h = hash_expr(h, expr);
+      }
+      return h;
+    };
     switch (ct.constraint_case()) {
       case ConstraintProto::kLinear:
         if (ignore_linear_domain) {
@@ -8762,6 +8777,9 @@ struct ConstraintHashForDuplicateDetection {
       case ConstraintProto::kExactlyOne:
         return absl::HashOf(type_and_enforcement,
                             absl::MakeSpan(ct.exactly_one().literals()));
+      case ConstraintProto::kBoolXor:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.bool_xor().literals()));
       case ConstraintProto::kInterval:
         return absl::HashOf(type_and_enforcement,
                             absl::MakeSpan(ct.interval().start().vars()),
@@ -8773,6 +8791,22 @@ struct ConstraintHashForDuplicateDetection {
                             absl::MakeSpan(ct.interval().end().vars()),
                             absl::MakeSpan(ct.interval().end().coeffs()),
                             ct.interval().end().offset());
+      case ConstraintProto::kIntProd:
+        return hash_linear_argument(ct.int_prod());
+      case ConstraintProto::kLinMax:
+        return hash_linear_argument(ct.lin_max());
+      case ConstraintProto::kIntDiv:
+        return hash_linear_argument(ct.int_div());
+      case ConstraintProto::kIntMod:
+        return hash_linear_argument(ct.int_mod());
+      case ConstraintProto::kAllDiff: {
+        size_t h =
+            absl::HashOf(type_and_enforcement, ct.all_diff().exprs_size());
+        for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+          h = hash_expr(h, expr);
+        }
+        return h;
+      }
       default:
         ConstraintProto copy = ct;
         copy.clear_name();
@@ -8780,17 +8814,6 @@ struct ConstraintHashForDuplicateDetection {
           copy.mutable_enforcement_literal()->Clear();
         }
         // TODO(user): Hash directly.
-        if (ignore_target_of_expression) {
-          if (ct.constraint_case() == ConstraintProto::kIntProd) {
-            copy.mutable_int_prod()->clear_target();
-          } else if (ct.constraint_case() == ConstraintProto::kLinMax) {
-            copy.mutable_lin_max()->clear_target();
-          } else if (ct.constraint_case() == ConstraintProto::kIntDiv) {
-            copy.mutable_int_div()->clear_target();
-          } else if (ct.constraint_case() == ConstraintProto::kIntMod) {
-            copy.mutable_int_mod()->clear_target();
-          }
-        }
         return absl::HashOf(copy.SerializeAsString());
     }
   }
@@ -8872,6 +8895,9 @@ struct ConstraintEqForDuplicateDetection {
       case ConstraintProto::kExactlyOne:
         return absl::MakeSpan(ct_a.exactly_one().literals()) ==
                absl::MakeSpan(ct_b.exactly_one().literals());
+      case ConstraintProto::kBoolXor:
+        return absl::MakeSpan(ct_a.bool_xor().literals()) ==
+               absl::MakeSpan(ct_b.bool_xor().literals());
       case ConstraintProto::kInterval: {
         return LinearExpressionProtosAreExactlyEqual(ct_a.interval().start(),
                                                      ct_b.interval().start()) &&
@@ -8888,6 +8914,17 @@ struct ConstraintEqForDuplicateDetection {
         return compare_linear_argument(ct_a.int_div(), ct_b.int_div());
       case ConstraintProto::kIntMod:
         return compare_linear_argument(ct_a.int_mod(), ct_b.int_mod());
+      case ConstraintProto::kAllDiff:
+        if (ct_a.all_diff().exprs_size() != ct_b.all_diff().exprs_size()) {
+          return false;
+        }
+        for (int i = 0; i < ct_a.all_diff().exprs_size(); ++i) {
+          if (!LinearExpressionProtosAreExactlyEqual(
+                  ct_a.all_diff().exprs(i), ct_b.all_diff().exprs(i))) {
+            return false;
+          }
+        }
+        return true;
       default:
         // Slow (hopefully comparably rare) path.
         ConstraintProto copy_a = ct_a;

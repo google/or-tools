@@ -738,6 +738,7 @@ or_cc_library(
         "//ortools/util:full_precision_inequalities",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -1501,8 +1502,6 @@ or_cc_library(
         ":solution_crush_cc_proto",
         ":util",
         "//ortools/base:base_export",
-        "//ortools/base:log_severity",
-        "//ortools/base:stl_util",
         "//ortools/base:types",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
@@ -1511,7 +1510,7 @@ or_cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -1523,6 +1522,7 @@ or_cc_library(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 

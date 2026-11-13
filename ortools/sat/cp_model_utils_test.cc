@@ -778,6 +778,24 @@ TEST(CpModelUtilsTest, CanonicalizeLinearConstraintProto) {
   EXPECT_THAT(lin, testing::EqualsProto(expected));
 }
 
+TEST(CpModelUtilsTest, SortedLiteralComplementaryHelpers) {
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-3, -1}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({0, 2}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-4, -2, 0, 2}), -1);
+  EXPECT_FALSE(SortedLiteralsHaveOppositePair({-4, -2, 0, 2}));
+
+  // NegatedRef(2) == -3, so {-5, -3, 0, 2, 5} has complementary var 2.
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-5, -3, 0, 2, 5}), 2);
+  EXPECT_TRUE(SortedLiteralsHaveOppositePair({-5, -3, 0, 2, 5}));
+
+  EXPECT_FALSE(SortedLiteralsHaveOppositeAcross({}, {0, 1}));
+  EXPECT_FALSE(SortedLiteralsHaveOppositeAcross({-4, -2, 0}, {-3, 2, 5}));
+  // NegatedRef(-3) == 2 and NegatedRef(2) == -3.
+  EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-5, -3, 0}, {-2, 2, 4}));
+  EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-2, 2, 4}, {-5, -3, 0}));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

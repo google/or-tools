@@ -6017,7 +6017,8 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
   if (HasTypeRegulations()) {
     ++priority;
     filter_events.push_back(
-        {MakeTypeRegulationsFilter(*this), kAccept, priority});
+        {MakeTypeRegulationsFilter(*this, path_state_reference), kAccept,
+         priority});
   }
 
   {
@@ -6025,7 +6026,6 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
     const int first_dimension_filter_index = filter_events.size();
     AppendDimensionCumulFilters(path_state_reference, GetDimensions(),
                                 parameters, options.filter_objective,
-                                /* filter_light_weight_dimensions */ false,
                                 &filter_events);
     int max_priority = priority;
     for (int e = first_dimension_filter_index; e < filter_events.size(); ++e) {

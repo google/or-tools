@@ -217,26 +217,6 @@ inline int MostSignificantBitPosition32(uint32_t n) {
   return internal::MostSignificantBitPosition(n);
 }
 
-// Returns a word with bits from s to e set.
-inline uint64_t OneRange64(uint64_t s, uint64_t e) {
-  DCHECK_LE(s, 63);
-  DCHECK_LE(e, 63);
-  DCHECK_LE(s, e);
-  return (kAllBits64 << s) ^ ((kAllBits64 - 1) << e);
-}
-
-// Returns a word with s least significant bits unset.
-inline uint64_t IntervalUp64(uint64_t s) {
-  DCHECK_LE(s, 63);
-  return kAllBits64 << s;
-}
-
-// Returns a word with the s most significant bits unset.
-inline uint64_t IntervalDown64(uint64_t s) {
-  DCHECK_LE(s, 63);
-  return kAllBits64 >> (63 - s);
-}
-
 // ----- Bitset operators -----
 // Bitset: array of uint64_t words
 
@@ -330,10 +310,6 @@ class Bitset64 {
     }
     void Clear(IndexType index) { GetBucket(index) &= ~GetBitMask(index); }
     void Set(IndexType index) { GetBucket(index) |= GetBitMask(index); }
-    DataType& GetBucket(IndexType index) const {
-      bounds_checker_.Check(index);
-      return buckets_[BitOffset64(Value(index))];
-    }
 
    private:
     friend class Bitset64;
@@ -342,6 +318,11 @@ class Bitset64 {
 
     static DataType GetBitMask(IndexType index) {
       return OneBit64(BitPos64(Value(index)));
+    }
+
+    DataType& GetBucket(IndexType index) const {
+      bounds_checker_.Check(index);
+      return buckets_[BitOffset64(Value(index))];
     }
 
     DataType* const buckets_;
@@ -357,7 +338,7 @@ class Bitset64 {
 
   // Constructs a bitset of `size` bits, all initialized to `0`.
   explicit Bitset64(IndexType size)
-      : size_(CheckAndClampSize(size)), buckets_(BitLength64(Value(size_))) {}
+      : size_(size), buckets_(GetNumBuckets(size)) {}
 
   // Returns a read-only or mutable view caching the underlying bucket pointer.
   ConstView const_view() const { return ConstView(buckets_.data(), size_); }
@@ -369,19 +350,18 @@ class Bitset64 {
   // Resizes the Bitset64 to the given number of bits. New bits are sets to `0`.
   void resize(int size) { Resize(IndexType(size)); }
   void Resize(IndexType size) {
-    const IndexType new_size = CheckAndClampSize(size);
-    buckets_.resize(BitLength64(Value(new_size)));
-    if (const uint32_t bit_pos = BitPos64(Value(new_size));
-        new_size < size_ && bit_pos != 0) {
+    buckets_.resize(GetNumBuckets(size));
+    if (const uint32_t bit_pos = BitPos64(Value(size));
+        size < size_ && bit_pos != 0) {
       buckets_.back() &= OneBit64(bit_pos) - 1;
     }
-    size_ = new_size;
+    size_ = size;
   }
 
   // Resizes the bitset to `size` bits and clears all the bits.
   void ClearAndResize(IndexType size) {
-    size_ = CheckAndClampSize(size);
-    buckets_.resize(BitLength64(Value(size_)));
+    size_ = size;
+    buckets_.resize(GetNumBuckets(size));
     ClearAll();
   }
 
@@ -534,9 +514,9 @@ class Bitset64 {
   Iterator end() const { return Iterator::EndIterator(*this); }
 
  private:
-  static constexpr IndexType CheckAndClampSize(IndexType size) {
-    DCHECK_GE(size, IndexType(0));
-    return size > IndexType(0) ? size : IndexType(0);
+  static constexpr uint64_t GetNumBuckets(IndexType size) {
+    CHECK_GE(size, IndexType(0));
+    return BitLength64(Value(size));
   }
 
   // Returns the underlying integer value of `index` in its native width.
