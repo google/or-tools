@@ -585,6 +585,10 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
                 CHECK_EQ(words.size(), 2);
                 const int from = ParseInt(words[0]) - 1;
                 const int to = ParseInt(words[1]) - 1;
+                CHECK_GE(from, 0);
+                CHECK_LT(from, size_);
+                CHECK_GE(to, 0);
+                CHECK_LT(to, size_);
                 edges_[std::min(from, to)].push_back(std::max(from, to));
               }
               break;
@@ -594,6 +598,10 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
               for (int i = 1; i < words.size(); ++i) {
                 const int to = ParseInt(words[i]) - 1;
                 if (to != -2) {
+                  CHECK_GE(from, 0);
+                  CHECK_LT(from, size_);
+                  CHECK_GE(to, 0);
+                  CHECK_LT(to, size_);
                   edges_[std::min(from, to)].push_back(std::max(from, to));
                 } else {
                   CHECK_EQ(i, words.size() - 1);
@@ -683,6 +691,9 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
         }
         case DEMAND_SECTION: {
           const int64_t node = ParseInt(words[0]) - 1;
+          CHECK_GE(node, 0);
+          CHECK_LT(node, demands_.size());
+          CHECK_GE(words.size(), 2);
           demands_[node] = ParseInt(words[1]);
           --to_read_;
           break;

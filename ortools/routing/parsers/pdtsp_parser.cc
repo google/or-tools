@@ -71,7 +71,10 @@ void PdTspParser::ProcessNewLine(const std::string& line) {
         break;
       }
       case DEPOT_SECTION:
+        CHECK_GE(words.size(), 3);
         depot_ = ParseInt(words[0]) - 1;
+        CHECK_GE(depot_, 0);
+        CHECK_LT(depot_, x_.size());
         x_[depot_] = ParseInt(words[1]);
         y_[depot_] = ParseInt(words[2]);
         deliveries_[depot_] = -1;
@@ -83,10 +86,14 @@ void PdTspParser::ProcessNewLine(const std::string& line) {
         if (id + 1 == kEof) {
           section_ = EOF_SECTION;
         } else {
+          CHECK_GE(words.size(), 4);
+          CHECK_GE(id, 0);
+          CHECK_LT(id, x_.size());
           x_[id] = ParseInt(words[1]);
           y_[id] = ParseInt(words[2]);
           const bool is_pickup = ParseInt(words[3]) == 0;
           if (is_pickup) {
+            CHECK_GE(words.size(), 5);
             deliveries_[id] = ParseInt(words[4]) - 1;
           }
         }
