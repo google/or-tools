@@ -7467,16 +7467,18 @@ void FillPathEvaluation(absl::Span<const int64_t> path,
 TypeRegulationsChecker::TypeRegulationsChecker(const Model& model)
     : model_(model), occurrences_of_type_(model.GetNumberOfVisitTypes()) {}
 
-bool TypeRegulationsChecker::CheckVehicle(
-    int vehicle, const std::function<int64_t(int64_t)>& next_accessor) {
+template <typename NodeRange>
+bool TypeRegulationsChecker::CheckVehicle(const NodeRange& route_nodes) {
   if (!HasRegulationsToCheck()) {
     return true;
   }
 
-  InitializeCheck(vehicle, next_accessor);
+  InitializeCheck(route_nodes);
 
-  for (int pos = 0; pos < current_route_visits_.size(); pos++) {
-    const int64_t current_visit = current_route_visits_[pos];
+  int pos = 0;
+  for (int64_t current_visit : route_nodes) {
+    if (model_.IsEnd(current_visit)) break;
+    const int current_pos = pos++;
     const int type = model_.GetVisitType(current_visit);
     if (type < 0) {
       continue;
@@ -7495,7 +7497,7 @@ bool TypeRegulationsChecker::CheckVehicle(
       continue;
     }
 
-    if (!CheckTypeRegulations(type, policy, pos)) {
+    if (!CheckTypeRegulations(type, policy, current_pos)) {
       return false;
     }
     // Update count of type based on the visit policy.
@@ -7511,8 +7513,8 @@ bool TypeRegulationsChecker::CheckVehicle(
   return FinalizeCheck();
 }
 
-void TypeRegulationsChecker::InitializeCheck(
-    int vehicle, const std::function<int64_t(int64_t)>& next_accessor) {
+template <typename NodeRange>
+void TypeRegulationsChecker::InitializeCheck(const NodeRange& route_nodes) {
   // Accumulates the count of types before the current node.
   // {0, 0, -1} does not compile on or-tools.
   std::fill(occurrences_of_type_.begin(), occurrences_of_type_.end(),
@@ -7521,20 +7523,23 @@ void TypeRegulationsChecker::InitializeCheck(
   // TODO(user): Optimize the filter to avoid scanning the route an extra
   // time when there are no TYPE_ON_VEHICLE_UP_TO_VISIT policies on the route,
   // by passing a boolean to CheckVehicle() passed to InitializeCheck().
-  current_route_visits_.clear();
-  for (int64_t current = model_.Start(vehicle); !model_.IsEnd(current);
-       current = next_accessor(current)) {
+  int pos = 0;
+  for (int64_t current : route_nodes) {
+    if (model_.IsEnd(current)) break;
     const int type = model_.GetVisitType(current);
     if (type >= 0 && model_.GetVisitTypePolicy(current) ==
                          VisitTypePolicy::TYPE_ON_VEHICLE_UP_TO_VISIT) {
       occurrences_of_type_[type].position_of_last_type_on_vehicle_up_to_visit =
-          current_route_visits_.size();
+          pos;
     }
-    current_route_visits_.push_back(current);
+    pos++;
   }
 
   OnInitializeCheck();
 }
+
+template bool TypeRegulationsChecker::CheckVehicle<PathState::NodeRange>(
+    const PathState::NodeRange& route_nodes);
 
 bool TypeRegulationsChecker::TypeOccursOnRoute(int type) const {
   const TypePolicyOccurrence& occurrences = occurrences_of_type_[type];
@@ -7675,16 +7680,48 @@ void TypeRegulationsConstraint::PropagateNodeRegulations(int node) {
   EnqueueDelayedDemon(vehicle_demons_[vehicle]);
 }
 
-void TypeRegulationsConstraint::CheckRegulationsOnVehicle(int vehicle) {
-  const auto next_accessor = [this, vehicle](int64_t node) {
-    if (model_.NextVar(node)->Bound()) {
-      return model_.NextVar(node)->Value();
+namespace {
+class NextVarNodeRange {
+ public:
+  class Iterator {
+   public:
+    Iterator(const Model& model, int64_t current_node, int64_t end_node)
+        : model_(model), current_node_(current_node), end_node_(end_node) {}
+    Iterator& operator++() {
+      current_node_ = model_.NextVar(current_node_)->Bound()
+                          ? model_.NextVar(current_node_)->Value()
+                          : end_node_;
+      return *this;
     }
-    // Node not bound, skip to the end of the vehicle.
-    return model_.End(vehicle);
+    int64_t operator*() const { return current_node_; }
+    bool operator!=(Iterator other) const {
+      return current_node_ != other.current_node_;
+    }
+
+   private:
+    const Model& model_;
+    int64_t current_node_;
+    const int64_t end_node_;
   };
-  if (!incompatibility_checker_.CheckVehicle(vehicle, next_accessor) ||
-      !requirement_checker_.CheckVehicle(vehicle, next_accessor)) {
+
+  NextVarNodeRange(const Model& model, int vehicle)
+      : model_(model),
+        start_node_(model.Start(vehicle)),
+        end_node_(model.End(vehicle)) {}
+  Iterator begin() const { return {model_, start_node_, end_node_}; }
+  Iterator end() const { return {model_, end_node_, end_node_}; }
+
+ private:
+  const Model& model_;
+  const int64_t start_node_;
+  const int64_t end_node_;
+};
+}  // namespace
+
+void TypeRegulationsConstraint::CheckRegulationsOnVehicle(int vehicle) {
+  const NextVarNodeRange route_nodes(model_, vehicle);
+  if (!incompatibility_checker_.CheckVehicle(route_nodes) ||
+      !requirement_checker_.CheckVehicle(route_nodes)) {
     model_.solver()->Fail();
   }
 }

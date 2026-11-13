@@ -3022,8 +3022,10 @@ class TypeRegulationsChecker {
   explicit TypeRegulationsChecker(const Model& model);
   virtual ~TypeRegulationsChecker() = default;
 
-  bool CheckVehicle(int vehicle,
-                    const std::function<int64_t(int64_t)>& next_accessor);
+#if !defined(SWIG)
+  template <typename NodeRange>
+  bool CheckVehicle(const NodeRange& route_nodes);
+#endif  // !defined(SWIG)
 
  protected:
 #if !defined(SWIG)
@@ -3061,8 +3063,10 @@ class TypeRegulationsChecker {
   /// than 'pos'.
   bool TypeCurrentlyOnRoute(int type, int pos) const;
 
-  void InitializeCheck(int vehicle,
-                       const std::function<int64_t(int64_t)>& next_accessor);
+#if !defined(SWIG)
+  template <typename NodeRange>
+  void InitializeCheck(const NodeRange& route_nodes);
+#endif  // !defined(SWIG)
   virtual void OnInitializeCheck() {}
   virtual bool HasRegulationsToCheck() const = 0;
   virtual bool CheckTypeRegulations(int type, VisitTypePolicy policy,
@@ -3073,7 +3077,6 @@ class TypeRegulationsChecker {
 
  private:
   std::vector<TypePolicyOccurrence> occurrences_of_type_;
-  std::vector<int64_t> current_route_visits_;
 };
 
 /// Checker for type incompatibilities.
