@@ -13,7 +13,6 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -23,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/optimization.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -983,27 +982,22 @@ bool LinearExpressionIsCanonical(const LinearExpressionProto& expr) {
 
 bool LinMaxIsCanonical(const ConstraintProto& ct) {
   if (ct.constraint_case() != ConstraintProto::kLinMax) return false;
-  absl::flat_hash_set<int> enforcements;
-  for (int i = 0; i < ct.enforcement_literal_size(); ++i) {
-    const int lit = ct.enforcement_literal(i);
-    if (i > 0 && ct.enforcement_literal(i - 1) >= lit) return false;
-    if (enforcements.contains(NegatedRef(lit))) return false;
-    enforcements.insert(lit);
+  for (int i = 1; i < ct.enforcement_literal_size(); ++i) {
+    if (ct.enforcement_literal(i - 1) >= ct.enforcement_literal(i)) {
+      return false;
+    }
   }
+  if (SortedLiteralsHaveOppositePair(ct.enforcement_literal())) return false;
+  const absl::flat_hash_set<int> enforcements(ct.enforcement_literal().begin(),
+                                              ct.enforcement_literal().end());
   const LinearArgumentProto& lin_max = ct.lin_max();
   if (!LinearExpressionIsCanonical(enforcements, lin_max.target())) {
     return false;
   }
-  for (int i = 0; i < lin_max.exprs_size(); ++i) {
-    if (!LinearExpressionIsCanonical(enforcements, lin_max.exprs(i))) {
-      return false;
-    }
-    if (i > 0 &&
-        LinearExpressionProtoLessThan(lin_max.exprs(i), lin_max.exprs(i - 1))) {
-      return false;
-    }
+  for (const LinearExpressionProto& expr : lin_max.exprs()) {
+    if (!LinearExpressionIsCanonical(enforcements, expr)) return false;
   }
-  return true;
+  return absl::c_is_sorted(lin_max.exprs(), LinearExpressionProtoLessThan);
 }
 
 namespace {
@@ -1028,7 +1022,7 @@ int64_t CanonicalizeLinearTerms(const absl::flat_hash_set<int>& enforcements,
     }
     terms.push_back({var, coeff});
   }
-  std::sort(terms.begin(), terms.end());
+  absl::c_sort(terms);
   proto->clear_vars();
   proto->clear_coeffs();
   int current_var = 0;
@@ -1076,21 +1070,18 @@ void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
 void CanonicalizeLinMax(ConstraintProto* ct) {
   DCHECK_EQ(ct->constraint_case(), ConstraintProto::kLinMax);
   gtl::STLSortAndRemoveDuplicates(ct->mutable_enforcement_literal());
-  absl::flat_hash_set<int> enforcements;
-  for (const int lit : ct->enforcement_literal()) {
-    if (enforcements.contains(NegatedRef(lit))) {
-      ct->Clear();
-      return;
-    }
-    enforcements.insert(lit);
+  if (SortedLiteralsHaveOppositePair(ct->enforcement_literal())) {
+    ct->Clear();
+    return;
   }
+  const absl::flat_hash_set<int> enforcements(ct->enforcement_literal().begin(),
+                                              ct->enforcement_literal().end());
   LinearArgumentProto* lin_max = ct->mutable_lin_max();
   CanonicalizeLinearExpression(enforcements, lin_max->mutable_target());
   for (LinearExpressionProto& expr : *lin_max->mutable_exprs()) {
     CanonicalizeLinearExpression(enforcements, &expr);
   }
-  std::sort(lin_max->mutable_exprs()->begin(), lin_max->mutable_exprs()->end(),
-            LinearExpressionProtoLessThan);
+  absl::c_sort(*lin_max->mutable_exprs(), LinearExpressionProtoLessThan);
   DCHECK(LinMaxIsCanonical(*ct));
 }
 

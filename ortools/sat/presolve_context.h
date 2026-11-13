@@ -32,6 +32,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/base_export.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -1076,6 +1077,8 @@ class PresolveContext {
     void RemoveConstraint();
     void MarkConstraintAsFalse(absl::string_view reason);
     void CanonicalizeAllExprs();
+    void SortExpressions(
+        google::protobuf::RepeatedPtrField<LinearExpressionProto>* exprs);
 
     PresolveContext* const context_;
     ConstraintProto* const ct_;
@@ -1110,7 +1113,7 @@ class PresolveContext {
   // These methods are not fully optimized and must only be used for debug
   // checks (e.g., DCHECK) and tests.
   bool LiteralsAreCanonical(
-      absl::Span<const int> lits, int min_size = 0, bool check_sorted = false,
+      absl::Span<const int> lits, int min_size = 0,
       const absl::flat_hash_set<int>& enforcements = {}) const;
   bool BoolXorLiteralsAreCanonical(absl::Span<const int> lits,
                                    int min_active_size) const;

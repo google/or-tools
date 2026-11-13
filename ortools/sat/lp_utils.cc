@@ -32,7 +32,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/graph/connected_components.h"
@@ -2421,6 +2420,23 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
       tmp_discretization_lb.TightLowerBound();
   const double discretization_error_ub =
       tmp_discretization_ub.TightUpperBound();
+
+  // Since the activity of the discretized point is always within [min_activity,
+  // max_activity], a side cannot be off by more than its distance to these
+  // bounds. Note that this must be done before skipping trivial constraints,
+  // otherwise a side that is relaxed so much that it becomes trivial would not
+  // be accounted for.
+  if (std::isfinite(ct_lower_bound)) {
+    max_discretization_error = std::max(
+        max_discretization_error,
+        std::min(-discretization_error_lb, ct_lower_bound - min_activity));
+  }
+  if (std::isfinite(ct_upper_bound)) {
+    max_discretization_error = std::max(
+        max_discretization_error,
+        std::min(discretization_error_ub, max_activity - ct_upper_bound));
+  }
+
   if (use_proper_relaxation) {
     if (std::isfinite(ct_lower_bound) && discretization_error_lb != 0.0) {
       ct_lower_bound =
@@ -2478,14 +2494,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   min_scaling_factor = std::min(scaling_factor, min_scaling_factor);
   max_absolute_rhs_error =
       std::max(max_absolute_rhs_error, scaled_sum_error / scaling_factor);
-  if (ct_lower_bound != -kInfinity) {
-    max_discretization_error = std::max(
-        max_discretization_error, std::max(0.0, -discretization_error_lb));
-  }
-  if (ct_upper_bound != kInfinity) {
-    max_discretization_error = std::max(max_discretization_error,
-                                        std::max(0.0, discretization_error_ub));
-  }
 
   if (use_tight_bounds || use_proper_relaxation) {
     tight_error_helper.LoadUnscaledConstraint(coefficients, int_lower_bounds,
