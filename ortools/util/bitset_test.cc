@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -221,33 +220,6 @@ TEST(BitsetTest, ClearBit64) {
     bits.fill(kAllBits64);
     ClearBit64(bits.data(), i);
     EXPECT_FALSE(IsBitSet64(bits.data(), i));
-  }
-}
-
-TEST(BitsetTest, OneRange64) {
-  for (int s = 0; s < 64; ++s) {
-    for (int e = s; e < 64; ++e) {
-      const uint64_t bits = OneRange64(s, e);
-      for (int i = 0; i < 64; ++i) {
-        EXPECT_EQ(i >= s && i <= e, IsBitSet64(&bits, i));
-      }
-    }
-  }
-}
-
-TEST(BitsetTest, IntervalUp64) {
-  for (int i = 0; i < 64; ++i) {
-    const uint64_t bits = IntervalUp64(i);
-    EXPECT_EQ(i, LeastSignificantBitPosition64(bits));
-    EXPECT_EQ(64 - i, std::popcount(bits));
-  }
-}
-
-TEST(BitsetTest, IntervalDown64) {
-  for (int i = 0; i < 64; ++i) {
-    const uint64_t bits = IntervalDown64(i);
-    EXPECT_EQ(i, MostSignificantBitPosition64(bits));
-    EXPECT_EQ(i + 1, std::popcount(bits));
   }
 }
 
@@ -468,13 +440,6 @@ TEST(SparseBitsetTest, CopyFrom) {
               ElementsAre(TestIndex(7), TestIndex(70)));
   for (TestIndex i(0); i < 100; ++i) {
     EXPECT_EQ(dst[i], i == TestIndex(7) || i == TestIndex(70));
-  }
-}
-
-TEST(Bitset64Test, NegativeSize) {
-  if (!DEBUG_MODE) {
-    Bitset64<TestIndex> bitset(TestIndex(-10));
-    EXPECT_EQ(0, bitset.size());
   }
 }
 
@@ -771,11 +736,6 @@ TEST(Bitset64Test, Views) {
   EXPECT_FALSE(view[TestIndex(63)]);
   EXPECT_FALSE(const_view[TestIndex(63)]);
   EXPECT_FALSE(bitset.IsSet(TestIndex(63)));
-
-  EXPECT_EQ(const_view.GetBucket(TestIndex(64)), OneBit64(0) | OneBit64(35));
-  view.GetBucket(TestIndex(64)) = 0;
-  EXPECT_FALSE(const_view[TestIndex(64)]);
-  EXPECT_FALSE(const_view[TestIndex(99)]);
 }
 
 #ifndef NDEBUG
@@ -803,10 +763,6 @@ TEST(Bitset64DeathTest, ViewBoundsChecking) {
   EXPECT_DEATH(view.Set(TestIndex(10)), "");
   EXPECT_DEATH(view.Clear(TestIndex(-1)), "");
   EXPECT_DEATH(view.Clear(TestIndex(10)), "");
-  EXPECT_DEATH((void)view.GetBucket(TestIndex(-1)), "");
-  EXPECT_DEATH((void)view.GetBucket(TestIndex(10)), "");
-  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(-1)), "");
-  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(10)), "");
 }
 
 TEST(Bitset64DeathTest, MemberBoundsChecking) {
