@@ -194,7 +194,7 @@ TEST(PresolveCpModelTest, BoolAndWithDuplicate) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
-      enforcement_literal: [ 2, 1, 0 ]
+      enforcement_literal: [ 0, 1, 2 ]
       bool_and { literals: [ 3, 4 ] }
     }
   )pb");
@@ -223,7 +223,7 @@ TEST(PresolveCpModelTest, BoolAndWithNegatedDuplicate) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
+    constraints { bool_or { literals: [ -3, -2, -1 ] } }
   )pb");
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
@@ -640,8 +640,8 @@ TEST(PresolveCpModelTest,
     variables { domain: [ 0, 2 ] }
     constraints {
       name: "r0"
-      enforcement_literal: -1
       enforcement_literal: -2
+      enforcement_literal: -1
       linear {
         vars: 2
         coeffs: 1
@@ -3111,11 +3111,11 @@ TEST(PresolveCpModelTest, BooleanProduct) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
-      enforcement_literal: 5
       enforcement_literal: 0
-      bool_and { literals: [ 1, -3, 3, -5 ] }
+      enforcement_literal: 5
+      bool_and { literals: [ -5, -3, 1, 3 ] }
     }
-    constraints { bool_or { literals: [ 0, -2, 2, -4, 4, -6 ] } }
+    constraints { bool_or { literals: [ -6, -4, -2, 0, 2, 4 ] } }
   )pb");
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
@@ -3181,11 +3181,11 @@ TEST(PresolveCpModelTest, EnforcedAffineBooleanProduct) {
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
-      enforcement_literal: [ 3, -2 ]
+      enforcement_literal: [ -2, 3 ]
       linear { vars: 0 vars: 2 coeffs: 1 coeffs: -9 domain: 6 domain: 6 }
     }
     constraints {
-      enforcement_literal: [ 3, 1 ]
+      enforcement_literal: [ 1, 3 ]
       linear { vars: 0 vars: 2 coeffs: 1 coeffs: -15 domain: 10 domain: 10 }
     }
   )pb");
@@ -3485,8 +3485,8 @@ TEST(PresolveCpModelTest, IntModFixesTargetToZero) {
     constraints {
       int_prod {
         target { vars: 0 coeffs: 1 }
-        exprs { vars: 2 coeffs: 1 }
         exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
       }
     }
   )pb");
@@ -3524,8 +3524,8 @@ TEST(PresolveCpModelTest, IntModReduceTargetDomain) {
     constraints {
       int_prod {
         target { vars: 4 coeffs: 1 }
-        exprs { vars: 3 coeffs: 1 }
         exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
       }
     }
     constraints {
@@ -4329,11 +4329,11 @@ TEST(PresolveCpModelTest, AllDifferentWithExpressionsSharingVariable) {
     variables { domain: [ 1, 50 ] }
     constraints {
       all_diff {
+        exprs { vars: 0 coeffs: -1 }
         exprs { vars: 0 coeffs: 1 }
         exprs { vars: 1 coeffs: 1 }
-        exprs { vars: 2 coeffs: 1 }
-        exprs { vars: 0 coeffs: -1 }
         exprs { vars: 1 coeffs: 2 offset: -3 }
+        exprs { vars: 2 coeffs: 1 }
       }
     }
   )pb");
@@ -5469,7 +5469,7 @@ TEST(PresolveCpModelTest, ConversionToBoolOr) {
       scaling_factor: 1
     }
     constraints { bool_or { literals: [ 0, 1, 2 ] } }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
+    constraints { bool_or { literals: [ -3, -2, -1 ] } }
   )pb");
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
@@ -9762,11 +9762,175 @@ TEST(PresolveTest, EnforcedAllDiffCanonicalizesAffineAndFixedExpressions) {
   EXPECT_THAT(presolved_model.constraints(0), EqualsProto(R"pb(
                 enforcement_literal: [ 0 ]
                 all_diff {
-                  exprs { vars: 1 coeffs: 2 offset: 2 }
-                  exprs { vars: 1 coeffs: 1 }
                   exprs { offset: 5 }
+                  exprs { vars: 1 coeffs: 1 }
+                  exprs { vars: 1 coeffs: 2 offset: 2 }
                 }
               )pb"));
+}
+
+TEST(PresolveTest, DuplicateDetectionWithPermutedLiteralsAndEnforcements) {
+  // Duplicate kBoolOr, kBoolAnd, and multi-enforced kLinear constraints with
+  // permuted literals must canonicalize to the same sorted order so
+  // DetectDuplicateConstraints merges each pair into a single constraint.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints { bool_or { literals: [ 2, -2, 0 ] } }
+    constraints { bool_or { literals: [ 0, 2, -2 ] } }
+    constraints {
+      enforcement_literal: [ 1, 0 ]
+      bool_and { literals: [ 4, 3 ] }
+    }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      bool_and { literals: [ 3, 4 ] }
+    }
+    constraints {
+      enforcement_literal: [ 2, 1 ]
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 2, 8 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 1, 2 ]
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 4, 10 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints { bool_or { literals: [ -2, 0, 2 ] } }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      bool_and { literals: [ 3, 4 ] }
+    }
+    constraints {
+      enforcement_literal: [ 1, 2 ]
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 4, 8 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveTest, DuplicateCommutativeIntProdDeducesTargetEquality) {
+  // t1 = x * y and t2 = y * x must sort int_prod.exprs identically so
+  // DetectDuplicateConstraints deduces t1 == t2 and removes the duplicate
+  // kIntProd, tightening t1 + t2 in [10, 50] to t1 in [5, 25].
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 100 ] }
+    variables { domain: [ 1, 100 ] }
+    constraints {
+      int_prod {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+      }
+    }
+    constraints {
+      int_prod {
+        target { vars: 3 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 10, 50 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_symmetry_level(0);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 5, 25 ] }
+    constraints {
+      int_prod {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveTest, DuplicatePermutedAllDiffRemovedAndIntProdGcdStaysSorted) {
+  // Permuted all_diff(v2, v0, v1) and all_diff(v1, v2, v0) deduplicate to one
+  // kAllDiff, and lazy canonicalization re-sorts int_prod.exprs after
+  // PresolveIntProd divides (2*v0 + 2) by GCD 2 alongside (v0 + 5).
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 6 ] }
+    variables { domain: [ 1, 6 ] }
+    variables { domain: [ 1, 6 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+      }
+    }
+    constraints {
+      all_diff {
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+      }
+    }
+    constraints {
+      int_prod {
+        target { offset: 24 }
+        exprs { vars: 0 coeffs: 1 offset: 5 }
+        exprs { vars: 0 coeffs: 2 offset: 2 }
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_disable_constraint_expansion(true);
+  params.set_symmetry_level(0);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  int num_all_diffs = 0;
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) {
+      ++num_all_diffs;
+    }
+  }
+  EXPECT_EQ(num_all_diffs, 1);
 }
 
 }  // namespace

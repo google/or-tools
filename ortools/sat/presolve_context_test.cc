@@ -2059,8 +2059,13 @@ TEST(PresolveContextTest,
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.AllConstraintsAreCanonical());
 
-  // c1 (b = 1): y + z + b = (2*x + 1) + 3 + 1 = 2*x + 5.
+  // c1 (b = 1): y + z + b = (2*x + 1) + 3 + 1 = 2*x + 5, sorted after x.
   EXPECT_THAT(context.Constraint(1).all_diff().exprs(0),
+              testing::EqualsProto(R"pb(
+                vars: [ 1 ]
+                coeffs: [ 1 ]
+              )pb"));
+  EXPECT_THAT(context.Constraint(1).all_diff().exprs(1),
               testing::EqualsProto(R"pb(
                 vars: [ 1 ]
                 coeffs: [ 2 ]
@@ -2110,6 +2115,91 @@ TEST(PresolveContextTest,
               testing::EqualsProto(R"pb(offset: 3)pb"));
 
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+}
+
+TEST(PresolveContextTest,
+     CanonicalizesSortedLiteralsDuplicatesAndOppositePairsWithoutHashSet) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    # c0: enforcement [2, 0, -3] contains 2 and ~2 -> never enforced (removed).
+    constraints {
+      enforcement_literal: [ 2, 0, -3 ]
+      linear {
+        vars: [ 5 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 5 ]
+      }
+    }
+    # c1: enforcement [2, 0, 2] -> deduplicated and sorted to [0, 2].
+    constraints {
+      enforcement_literal: [ 2, 0, 2 ]
+      linear {
+        vars: [ 5 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 5 ]
+      }
+    }
+    # c2: kBoolOr [1, 2, -2, 1] contains 1 and ~1 -> tautology (removed).
+    constraints { bool_or { literals: [ 1, 2, -2, 1 ] } }
+    # c3: kBoolAnd [2, 0] => [3, -4, 3] contains 3 and ~3 -> negated
+    # enforcement clause [-3, -1].
+    constraints {
+      enforcement_literal: [ 2, 0 ]
+      bool_and { literals: [ 3, -4, 3 ] }
+    }
+    # c4: kBoolAnd [2, 1] => [3, -2] has ~1 vs enforcement 1 ("x => not x") ->
+    # negated enforcement clause [-3, -2].
+    constraints {
+      enforcement_literal: [ 2, 1 ]
+      bool_and { literals: [ 3, -2 ] }
+    }
+    # c5: kBoolAnd [2, 0] => [3, 2, 3, 1] drops redundant 2 ("x => x") and
+    # duplicate 3, sorting RHS to [1, 3].
+    constraints {
+      enforcement_literal: [ 2, 0 ]
+      bool_and { literals: [ 3, 2, 3, 1 ] }
+    }
+    # c6: kAtMostOne [4, 3, -4, -4] has 3 and ~3 with duplicate ~3 -> fixes
+    # var 4 = 0 and var 3 = 1, then removes c6 (which also wakes c3, c4, c5!).
+    constraints { at_most_one { literals: [ 4, 3, -4, -4 ] } }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  EXPECT_EQ(context.Constraint(0).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_THAT(context.Constraint(1).enforcement_literal(),
+              testing::ElementsAre(0, 2));
+  EXPECT_EQ(context.Constraint(2).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_THAT(context.Constraint(3), testing::EqualsProto(R"pb(
+                bool_or { literals: [ -3, -1 ] }
+              )pb"));
+  EXPECT_THAT(context.Constraint(4), testing::EqualsProto(R"pb(
+                bool_or { literals: [ -3, -2 ] }
+              )pb"));
+  // In c5, var 3 was fixed to 1 by c6, leaving [0, 2] => [1].
+  EXPECT_THAT(context.Constraint(5), testing::EqualsProto(R"pb(
+                enforcement_literal: [ 0, 2 ]
+                bool_and { literals: [ 1 ] }
+              )pb"));
+  EXPECT_EQ(context.Constraint(6).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_TRUE(context.LiteralIsTrue(3));
+  EXPECT_TRUE(context.LiteralIsFalse(4));
 }
 
 }  // namespace
