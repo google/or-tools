@@ -89,10 +89,6 @@ IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(const Model& routing_model,
                                                    bool filter_cost);
 
-/// Returns a filter computing vehicle amortized costs.
-IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const Model& routing_model);
-
 /// Returns a filter computing same vehicle costs.
 IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model);
 
@@ -156,6 +152,10 @@ LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
 /// Returns a filter tracking route constraints.
 LocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model,
                                              const PathState* path_state);
+
+/// Returns a filter computing vehicle amortized costs.
+LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& routing_model,
+                                                  const PathState* path_state);
 
 // This checker enforces dimension requirements.
 // A dimension requires that there is some valuation of

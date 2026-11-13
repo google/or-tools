@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -588,6 +589,8 @@ class FeasibilityJumpSolver : public SubSolver {
 
   // Used for tracking the deterministic time only. See DeterministicTime().
   TimeLimit dtime_;
+  std::optional<ModelStats> model_stats_;
+  double search_dtime_since_rebuild_ = 0.0;
 };
 
 // This class helps keep track of moves that change more than one variable.

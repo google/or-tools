@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -224,7 +225,6 @@ ModelCopy::ModelCopy(CpModelProto* out_proto, Model* model,
       lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
 bool ModelCopy::ImportVariables(const CpModelProto& in_model) {
-  model_stats_.num_variables = in_model.variables_size();
   std::vector<Domain> domains;
   domains.reserve(in_model.variables().size());
   for (const IntegerVariableProto& var_proto : in_model.variables()) {
@@ -296,7 +296,6 @@ bool ModelCopy::ImportAndSimplifyConstraints(
                            ->mutable_bool_or()
                            ->mutable_literals();
       const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
-      model_stats_.num_literals += lit_refs.size();
       literals->Reserve(lit_refs.size());
       for (const PositiveOnlyLitIndex idx : lit_refs) {
         literals->Add(GetRefFromPositiveIndex(idx));
@@ -579,7 +578,6 @@ bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
         strategy.clear_variables();
       }
       if (!variable_mapping_.empty()) {
-        const ModelStats saved_stats = model_stats_;
         google::protobuf::RepeatedPtrField<LinearExpressionProto> mapped_exprs;
         for (LinearExpressionProto& expr : *strategy.mutable_exprs()) {
           CopyLinearExpression(expr, mapped_exprs.Add());
@@ -589,7 +587,6 @@ bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
           }
         }
         strategy.mutable_exprs()->Swap(&mapped_exprs);
-        model_stats_ = saved_stats;
       }
     }
   }
@@ -648,9 +645,6 @@ bool ModelCopy::FinishCopy(const CpModelProto& in_model) {
     helper_.solution_crush()->StoreSolutionAsHint(*working_model_);
   }
 
-  model_stats_.num_variables = working_model_->variables_size();
-  model_stats_.num_constraints = working_model_->constraints_size();
-
   helper_.DisplaySummary(logger_);
   return true;
 }
@@ -699,7 +693,6 @@ bool ModelCopy::PrepareEnforcementCopyWithDup(const ConstraintProto& ct) {
 void ModelCopy::FinishEnforcementCopy(ConstraintProto* ct) {
   ct->mutable_enforcement_literal()->Add(temp_enforcement_literals_.begin(),
                                          temp_enforcement_literals_.end());
-  model_stats_.num_enforcement_literals += temp_enforcement_literals_.size();
 }
 
 bool ModelCopy::FinishBoolOrCopy() {
@@ -711,7 +704,6 @@ bool ModelCopy::FinishBoolOrCopy() {
     return helper_.SetMappedLiteralToTrue(GetRefFromPositiveIndex(lit_refs[0]));
   }
 
-  model_stats_.num_literals += lit_refs.size();
   auto* bool_or_lits =
       working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
   bool_or_lits->Reserve(lit_refs.size());
@@ -723,7 +715,6 @@ bool ModelCopy::FinishBoolOrCopy() {
 
 bool ModelCopy::CopyFalseConstraint() {
   if (temp_enforcement_literals_.empty()) return false;
-  model_stats_.num_literals += temp_enforcement_literals_.size();
   google::protobuf::RepeatedField<int>& literals =
       *working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
   literals.Reserve(temp_enforcement_literals_.size());
@@ -849,7 +840,6 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
   } else if (num_non_fixed_literals > 0) {
     ConstraintProto* new_ct = working_model_->add_constraints();
     FinishEnforcementCopy(new_ct);
-    model_stats_.num_literals += num_non_fixed_literals;
     BoolArgumentProto* bool_and = new_ct->mutable_bool_and();
     bool_and->mutable_literals()->Reserve(num_non_fixed_literals);
     for (const int lit : ct.bool_and().literals()) {
@@ -905,7 +895,6 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   // Copy.
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
-  model_stats_.num_literals += lit_refs.size();
   auto* bool_and_lits = new_ct->mutable_bool_and()->mutable_literals();
   bool_and_lits->Reserve(lit_refs.size());
   for (const PositiveOnlyLitIndex idx : lit_refs) {
@@ -936,8 +925,6 @@ bool ModelCopy::CopyLinearExpression(
   CanonicalizeLinearExpression(mapped_enforcement_literals, non_fixed_terms_,
                                offset);
 
-  ++model_stats_.num_linear_expressions;
-  model_stats_.num_linear_terms += non_fixed_terms_.size();
   dst->set_offset(offset);
   for (const auto& [var, coeff] : non_fixed_terms_) {
     dst->add_vars(var);
@@ -995,7 +982,6 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
 
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
-  model_stats_.num_linear_terms += non_fixed_terms_.size();
   LinearConstraintProto* linear = new_ct->mutable_linear();
   linear->mutable_vars()->Reserve(non_fixed_terms_.size());
   linear->mutable_coeffs()->Reserve(non_fixed_terms_.size());
@@ -1054,11 +1040,9 @@ void ModelCopy::CanonicalizeLinearExpression(
 
 void ModelCopy::ConvertSingleVarFormatToExpr(int var,
                                              LinearExpressionProto* expr) {
-  ++model_stats_.num_linear_expressions;
   if (helper_.InputIsFixed(var)) {
     expr->set_offset(helper_.InputFixedValue(var));
   } else {
-    ++model_stats_.num_linear_terms;
     DCHECK(RefIsPositive(var));
     expr->mutable_vars()->Reserve(1);
     expr->mutable_coeffs()->Reserve(1);
@@ -1103,9 +1087,6 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
 
 bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
-  model_stats_.num_automaton_transitions +=
-      ct.automaton().transition_tail_size() +
-      ct.automaton().final_states_size();
   new_ct->mutable_automaton()->set_starting_state(
       ct.automaton().starting_state());
   *new_ct->mutable_automaton()->mutable_final_states() =
@@ -1130,7 +1111,6 @@ bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
 
 bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
-  model_stats_.num_table_values += ct.table().values_size();
   if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
     // New format, just copy and remap variables.
     FinishEnforcementCopy(new_ct);
@@ -1235,7 +1215,6 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
     if (new_ct == nullptr) {
       new_ct = working_model_->add_constraints();
     }
-    ++model_stats_.num_linear_expressions;
     new_ct->mutable_lin_max()->add_exprs()->set_offset(max_of_fixed_terms);
   }
 
@@ -1247,10 +1226,7 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   absl::c_sort(*new_ct->mutable_lin_max()->mutable_exprs(),
                LinearExpressionProtoLessThan);
   FinishEnforcementCopy(new_ct);
-  const int num_enf_before = new_ct->enforcement_literal_size();
   gtl::STLSortAndRemoveDuplicates(new_ct->mutable_enforcement_literal());
-  model_stats_.num_enforcement_literals -=
-      num_enf_before - new_ct->enforcement_literal_size();
   DCHECK(LinMaxIsCanonical(*new_ct));
   return true;
 }
@@ -1260,7 +1236,6 @@ bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
 
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
-  model_stats_.num_literals += ct.circuit().literals_size();
   *new_ct->mutable_circuit()->mutable_tails() = ct.circuit().tails();
   *new_ct->mutable_circuit()->mutable_heads() = ct.circuit().heads();
   new_ct->mutable_circuit()->mutable_literals()->Reserve(
@@ -1274,7 +1249,6 @@ bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
 bool ModelCopy::CopyRoutes(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
-  model_stats_.num_literals += ct.routes().literals_size();
   *new_ct->mutable_routes()->mutable_tails() = ct.routes().tails();
   *new_ct->mutable_routes()->mutable_heads() = ct.routes().heads();
   new_ct->mutable_routes()->mutable_literals()->Reserve(
@@ -1341,7 +1315,6 @@ bool ModelCopy::CopyReservoir(const ConstraintProto& ct) {
     CopyLinearExpression(expr,
                          new_ct->mutable_reservoir()->add_level_changes());
   }
-  model_stats_.num_literals += ct.reservoir().active_literals_size();
   new_ct->mutable_reservoir()->mutable_active_literals()->Reserve(
       ct.reservoir().active_literals_size());
   for (const int lit : ct.reservoir().active_literals()) {
@@ -1354,6 +1327,7 @@ bool ModelCopy::CopyReservoir(const ConstraintProto& ct) {
 bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
+    FinishEnforcementCopy(&new_ct);
     LiteralsToLinear(ct.at_most_one().literals(), /*lb=*/0, /*ub=*/1,
                      new_ct.mutable_linear());
     return CopyLinear(new_ct, true);
@@ -1386,7 +1360,6 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   if (lit_refs.size() <= 1) return true;
 
   ConstraintProto* new_ct = working_model_->add_constraints();
-  model_stats_.num_literals += lit_refs.size();
   auto* amo_literals = new_ct->mutable_at_most_one()->mutable_literals();
   amo_literals->Reserve(lit_refs.size());
   for (const PositiveOnlyLitIndex idx : lit_refs) {
@@ -1398,6 +1371,7 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
 bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
+    FinishEnforcementCopy(&new_ct);
     LiteralsToLinear(ct.exactly_one().literals(), /*lb=*/1, /*ub=*/1,
                      new_ct.mutable_linear());
     return CopyLinear(new_ct, true);
@@ -1434,7 +1408,6 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   }
 
   ConstraintProto* new_ct = working_model_->add_constraints();
-  model_stats_.num_literals += lit_refs.size();
   auto* exo_literals = new_ct->mutable_exactly_one()->mutable_literals();
   exo_literals->Reserve(lit_refs.size());
   for (const PositiveOnlyLitIndex idx : lit_refs) {
@@ -1460,7 +1433,6 @@ bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
   if (num_true % 2 == 1) {
     xor_literals->Add(GetTrueMappedLiteral());
   }
-  model_stats_.num_literals += xor_literals->size();
   return true;
 }
 
@@ -1471,7 +1443,6 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
          "supported.";
   interval_mapping_[c] = working_model_->constraints_size();
   ConstraintProto* new_ct = working_model_->add_constraints();
-  ++model_stats_.num_intervals;
   if (!ignore_names) {
     new_ct->set_name(ct.name());
   }
@@ -1637,8 +1608,6 @@ int ModelCopy::GetOrCreateVariableForConjunction(std::vector<int>* literals) {
   ct2->add_enforcement_literal(new_var);
   *ct2->mutable_bool_and()->mutable_literals() = {literals->begin(),
                                                   literals->end()};
-  ++model_stats_.num_enforcement_literals;
-  model_stats_.num_literals += 2 * literals->size() + 1;
   return new_var;
 }
 
@@ -1654,7 +1623,6 @@ void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {
       no_overlap->add_intervals(new_index);
     }
   }
-  model_stats_.num_interval_references += no_overlap->intervals_size();
 }
 
 void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
@@ -1673,7 +1641,6 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
     no_overlap_2d->add_x_intervals(new_x);
     no_overlap_2d->add_y_intervals(new_y);
   }
-  model_stats_.num_interval_references += 2 * no_overlap_2d->x_intervals_size();
 }
 
 bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
@@ -1701,7 +1668,6 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
                            cumulative->add_demands());
     }
   }
-  model_stats_.num_interval_references += cumulative->intervals_size();
 
   return true;
 }
@@ -1713,7 +1679,6 @@ bool ModelCopy::CopyObjective(const CpObjectiveProto& objective,
                                non_fixed_terms_, offset);
 
   CpObjectiveProto& new_objective = *working_model_->mutable_objective();
-  model_stats_.num_linear_terms -= new_objective.vars_size();
   new_objective = objective;
   new_objective.clear_vars();
   new_objective.clear_coeffs();
@@ -1741,7 +1706,6 @@ bool ModelCopy::CopyObjective(const CpObjectiveProto& objective,
       max_activity += coeff * domain.Min();
     }
   }
-  model_stats_.num_linear_terms += new_objective.vars_size();
   new_objective.set_offset(new_objective.offset() +
                            static_cast<double>(offset));
   if (objective.domain_size() > 0) {
@@ -1773,7 +1737,6 @@ void ModelCopy::CopyFloatingPointObjective(
 
   FloatObjectiveProto& new_objective =
       *working_model_->mutable_floating_point_objective();
-  model_stats_.num_linear_terms -= new_objective.vars_size();
   new_objective = objective;
   new_objective.clear_vars();
   new_objective.clear_coeffs();
@@ -1781,13 +1744,10 @@ void ModelCopy::CopyFloatingPointObjective(
     new_objective.add_vars(ref);
     new_objective.add_coeffs(coeff);
   }
-  model_stats_.num_linear_terms += new_objective.vars_size();
   new_objective.set_offset(new_objective.offset() + offset);
 }
 
 bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
-  model_stats_.num_variables = helper_.MappedDomains().size();
-  model_stats_.num_constraints = working_model_->constraints_size();
   working_model_->mutable_constraints()->Clear();
   working_model_->add_constraints()->mutable_bool_or();
 
@@ -1902,9 +1862,8 @@ void ModelCopy::ExpandNonAffineExpressions() {
 // Replaces the expression sum a_i * x_i + c with gcd * y + c, where y is a new
 // variable defined with an additional constraint y = sum a_i / gcd * x_i.
 void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
-  const int old_size = expr->vars_size();
   int new_size = 0;
-  for (int i = 0; i < old_size; ++i) {
+  for (int i = 0; i < expr->vars().size(); ++i) {
     if (expr->coeffs(i) != 0) {
       expr->set_vars(new_size, expr->vars(i));
       expr->set_coeffs(new_size, expr->coeffs(i));
@@ -1913,7 +1872,6 @@ void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
   }
   expr->mutable_vars()->Truncate(new_size);
   expr->mutable_coeffs()->Truncate(new_size);
-  model_stats_.num_linear_terms -= old_size - new_size;
   if (expr->vars_size() < 2) return;
 
   // Variable mapping is only used to copy models where non affine expressions
@@ -1971,11 +1929,9 @@ void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
       }
       new_linear->add_domain(0);
       new_linear->add_domain(0);
-      model_stats_.num_linear_terms += 1 + definition.size();
       helper_.solution_crush()->SetVarToLinearExpression(new_var, definition);
     }
   }
-  model_stats_.num_linear_terms -= new_size - 1;
   expr->clear_vars();
   expr->clear_coeffs();
   expr->add_vars(new_var);
@@ -2039,11 +1995,12 @@ int ModelCopy::GetTrueMappedLiteral() {
 bool CopyModel(const CpModelProto& in_proto, const bool clear_internal_fields,
                CpModelProto* out_proto, Model* model) {
   out_proto->Clear();
-  ModelCopy copier(out_proto, model);
-  const auto advance_dtime = absl::MakeCleanup([&copier, model] {
+  const auto advance_dtime = absl::MakeCleanup([&in_proto, model] {
+    // TODO(user) to remove this and replace it with DeterministicTimer(s)?
     model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
-        EstimateCopyDeterministicTime(copier.model_stats()));
+        EstimateCopyDeterministicTime(ComputeModelStats(in_proto)));
   });
+  ModelCopy copier(out_proto, model);
   if (!copier.ImportVariables(in_proto)) return false;
   copier.ImportSolutionHint(in_proto);
   if (!copier.ImportAndSimplifyConstraints(in_proto, /*first_copy=*/true)) {
@@ -2056,7 +2013,6 @@ bool CopyModel(const CpModelProto& in_proto, const bool clear_internal_fields,
   if (!copier.FinishCopy(in_proto)) {
     return false;
   }
-  DCHECK(copier.model_stats() == ComputeModelStats(*out_proto));
 
   return true;
 }
@@ -2084,7 +2040,6 @@ bool CopyModelAdvanced(const CpModelProto& in_proto,
   if (!copier.FinishCopy(in_proto)) {
     return false;
   }
-  DCHECK(copier.model_stats() == ComputeModelStats(*out_proto));
 
   interval_mapping->assign(copier.InternalIntervalMapping().begin(),
                            copier.InternalIntervalMapping().end());
@@ -2295,13 +2250,14 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
   }
 }
 
-bool DenseModelCopy::MaybeUpdate(bool& updated) {
+bool DenseModelCopy::MaybeUpdate(bool& updated,
+                                 double min_variable_reduction_ratio) {
   updated = false;
   if (is_unsat_) return false;
   if (!UpdateFromSharedBounds()) {
     return false;
   }
-  if (!ShouldRebuild()) {
+  if (!ShouldRebuild(min_variable_reduction_ratio)) {
     first_update_ = false;
     return true;
   }
@@ -2347,7 +2303,6 @@ bool DenseModelCopy::MaybeUpdate(bool& updated) {
   equivalences_timestamp_ = new_equivalences_timestamp;
   latest_equivalences_timestamp_ = new_equivalences_timestamp;
   fixed_vars_at_last_rebuild_ = var_domains_.FixedVariables().size();
-  search_dtime_since_rebuild_ = 0.0;
   return true;
 }
 
@@ -2386,9 +2341,12 @@ bool DenseModelCopy::UpdateFromSharedBounds() {
   return true;
 }
 
-bool DenseModelCopy::ShouldRebuild() const {
+bool DenseModelCopy::ShouldRebuild(double min_variable_reduction_ratio) const {
   if (first_update_ && active_constraints_ != nullptr) {
     return true;
+  }
+  if (min_variable_reduction_ratio > 1.0) {
+    return false;
   }
   const int64_t num_unfixed_dense_vars =
       static_cast<int64_t>(var_domains_.size()) - fixed_vars_at_last_rebuild_;
@@ -2410,8 +2368,9 @@ bool DenseModelCopy::ShouldRebuild() const {
   if (num_reduced_vars <= 0) {
     return false;
   }
-  return static_cast<double>(num_reduced_vars) * search_dtime_since_rebuild_ >=
-         static_cast<double>(num_unfixed_dense_vars) * estimated_copy_dtime();
+  return static_cast<double>(num_reduced_vars) >=
+         min_variable_reduction_ratio *
+             static_cast<double>(num_unfixed_dense_vars);
 }
 
 bool DenseModelCopy::SyncDenseDomainsToInputDomains(
@@ -2643,8 +2602,6 @@ bool DenseModelCopy::ApplyStepVariableMapping() {
   tail_input_var_.swap(next_tail_input_var_);
   arena_ = std::move(next_arena);
   model_proto_ = next_proto;
-  DCHECK(copier.model_stats() == ComputeModelStats(*next_proto));
-  model_stats_ = copier.model_stats();
   ResetVarDomains();
   if (!SyncDenseDomainsToInputDomains()) {
     return false;

@@ -4011,6 +4011,7 @@ or_cc_library(
         ":mp_model_wrapper",
         ":sat_parameters_cc_proto",
         ":util",
+        "//ortools/base:accurate_sum",
         "//ortools/base:log_severity",
         "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",

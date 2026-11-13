@@ -22,6 +22,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -404,13 +405,26 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
+    double min_reduction_ratio = std::numeric_limits<double>::infinity();
+    if (model_stats_.has_value() && search_dtime_since_rebuild_ > 0.0) {
+      min_reduction_ratio = EstimateCopyDeterministicTime(*model_stats_) /
+                            search_dtime_since_rebuild_;
+    }
     bool updated = false;
-    if (!dense_model_.MaybeUpdate(updated)) {
+    if (!dense_model_.MaybeUpdate(updated, min_reduction_ratio)) {
       model_is_supported_ = false;
       return;
     }
     if (updated) {
-      dtime_.AdvanceDeterministicTime(dense_model_.estimated_copy_dtime());
+      if (!model_stats_.has_value()) {
+        model_stats_ = ComputeModelStats(input_model_proto_);
+      }
+      dtime_.AdvanceDeterministicTime(
+          EstimateCopyDeterministicTime(*model_stats_));
+      model_stats_ = ComputeModelStats(dense_model_.proto());
+      search_dtime_since_rebuild_ = 0.0;
+    } else if (!model_stats_.has_value()) {
+      model_stats_ = ComputeModelStats(dense_model_.proto());
     }
     if (updated || !is_initialized_) {
       if (!Initialize()) return;
@@ -592,8 +606,8 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     const double search_start_dtime = DeterministicTime();
     const bool feasible_found =
         DoSomeLinearIterations() && DoSomeGeneralIterations();
-    dense_model_.AddSearchDeterministicTime(DeterministicTime() -
-                                            search_start_dtime);
+    search_dtime_since_rebuild_ +=
+        std::max(0.0, DeterministicTime() - search_start_dtime);
     if (feasible_found) {
       const std::vector<int64_t> input_solution =
           dense_model_.ReverseMapSolution(state_->solution);

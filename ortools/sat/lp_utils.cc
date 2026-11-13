@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -30,7 +31,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/log_severity.h"
+#include "ortools/base/accurate_sum.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/graph/connected_components.h"
@@ -65,6 +66,11 @@ using operations_research::MPVariableProto;
 
 namespace {
 
+bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
+  return mp_constraint.lower_bound() == -kInfinity &&
+         mp_constraint.upper_bound() == kInfinity;
+}
+
 std::pair<double, double> DivInterval(double lb, double ub, double divisor) {
   if (divisor < 0.0) return DivInterval(-ub, -lb, -divisor);
   return {lb == 0.0 ? 0.0 : ExactScaledSumLb(lb, 0.0, divisor),
@@ -75,6 +81,23 @@ double MaxAbsScaledTightSum(const TightSum& sum, double pos_divisor = 1.0) {
   const auto [lb, ub] = sum.TightBounds();
   const auto [dlb, dub] = DivInterval(lb, ub, pos_divisor);
   return std::max(std::abs(dlb), std::abs(dub));
+}
+
+// Rounds a scaled lower bound `y` to an integer, given the allowed tolerance
+// `tol >= 0` in the same scaled space:
+// - Under `proper_relaxation`, enlarges downward to `floor(y)`, except when `y`
+//   is within `tol` below `round(y)` (snapping to `round(y)`).
+// - Otherwise, restricts inward to `ceil(y)`, except when `y` is within `tol`
+//   above `round(y)` (snapping to `round(y)`).
+// Upper bounds `w <= u` are handled symmetrically by passing `-u` and negating
+// the result (since `std::round(-u) == -std::round(u)`).
+double RoundScaledLowerBound(double y, double tol, bool proper_relaxation) {
+  if (!std::isfinite(y)) return y;
+  const double r = std::round(y);
+  const double w = proper_relaxation
+                       ? (TightSum().Add(r).Add(-y) <= tol ? r : std::floor(y))
+                       : (TightSum().Add(y).Add(-r) <= tol ? r : std::ceil(y));
+  return w == 0.0 ? 0.0 : w;
 }
 
 void ScaleConstraint(absl::Span<const double> var_scaling,
@@ -135,201 +158,144 @@ void ApplyVarScaling(absl::Span<const double> var_scaling,
   }
 }
 
+double ComputeContinuousVarScaling(const SatParameters& params,
+                                   const MipVariableState& state,
+                                   double max_bound) {
+  if (state.is_integer) return 1.0;
+  const double scaling = params.mip_var_scaling();
+  if (max_bound == std::numeric_limits<double>::infinity()) {
+    return scaling;
+  }
+  const double magnitude = std::max(std::abs(state.lb), std::abs(state.ub));
+  if (magnitude == 0 || magnitude > max_bound) return 1.0;
+  return std::min(scaling, max_bound / magnitude);
+}
+
+// Multiplies the current domain of `state` by `scaling`.
+void ScaleVariableState(double scaling, MipVariableState* state) {
+  if (scaling == 1.0) return;
+  state->lb *= scaling;
+  state->ub *= scaling;
+  state->scaling *= scaling;
+}
+
+// Fills the given constraint transformed according to `states`, see the
+// formula in MipVariableState. Terms with a zero coefficient are kept so that
+// the result is aligned with `ct.vars()`.
+void TransformConstraint(const MPConstraintProto& ct,
+                         absl::Span<const MipVariableState> states,
+                         std::vector<double>* coeffs, double* lb, double* ub) {
+  const int num_terms = ct.var_index_size();
+  coeffs->resize(num_terms);
+  TightSum neg_offset;
+  bool has_offset = false;
+  for (int i = 0; i < num_terms; ++i) {
+    const MipVariableState& state = states[ct.var_index(i)];
+    const double coeff = ct.coefficient(i);
+    (*coeffs)[i] = coeff / state.scaling;
+    if (coeff != 0.0 && state.shift != 0.0) {
+      neg_offset.AddProd(-coeff, state.shift);
+      has_offset = true;
+    }
+  }
+  *lb = has_offset && std::isfinite(ct.lower_bound())
+            ? TightSum(neg_offset).Add(ct.lower_bound()).TightLowerBound()
+            : ct.lower_bound();
+  *ub = has_offset && std::isfinite(ct.upper_bound())
+            ? TightSum(neg_offset).Add(ct.upper_bound()).TightUpperBound()
+            : ct.upper_bound();
+}
+
 }  // namespace
 
-std::vector<double> ScaleContinuousVariables(
-    const SatParameters& params, MPModelProto* mp_model,
-    absl::Span<const double> current_vars_scaling) {
-  const double scaling = params.mip_var_scaling();
+ScopedVarToLocalCol::ScopedVarToLocalCol(ResidualContinuousComponent* compo,
+                                         std::vector<int>* buffer)
+    : compo_(compo), buffer_(buffer) {
+  for (int local_col = 0; local_col < compo_->continuous_vars.size();
+       ++local_col) {
+    const int var = compo_->continuous_vars[local_col];
+    DCHECK_EQ((*buffer_)[var], -1);
+    (*buffer_)[var] = local_col;
+  }
+  compo_->var_to_local_col = *buffer_;
+}
+
+ScopedVarToLocalCol::~ScopedVarToLocalCol() {
+  for (const int var : compo_->continuous_vars) (*buffer_)[var] = -1;
+  compo_->var_to_local_col = {};
+}
+
+std::vector<MipVariableState> InitialVariableStates(
+    const MPModelProtoWrapper& mp_model) {
+  const int num_variables = mp_model.num_variables();
+  std::vector<MipVariableState> states(num_variables);
+  for (int var = 0; var < num_variables; ++var) {
+    const MPVariableProto& mp_var = mp_model.variables(var);
+    states[var].lb = mp_var.lower_bound();
+    states[var].ub = mp_var.upper_bound();
+    states[var].is_integer = mp_var.is_integer();
+  }
+  return states;
+}
+
+void ApplyVariableStatesToModel(absl::Span<const MipVariableState> states,
+                                MPModelProto* mp_model) {
+  const int num_variables = mp_model->variable_size();
+  CHECK_EQ(states.size(), num_variables);
+  CHECK(mp_model->general_constraint().empty());
+  AccurateSum<double> objective_offset;
+  for (int var = 0; var < num_variables; ++var) {
+    const MipVariableState& state = states[var];
+    MPVariableProto* mp_var = mp_model->mutable_variable(var);
+    mp_var->set_lower_bound(state.lb);
+    mp_var->set_upper_bound(state.ub);
+    mp_var->set_is_integer(state.is_integer);
+    const double obj = mp_var->objective_coefficient();
+    if (obj != 0.0) {
+      if (state.shift != 0.0) objective_offset.Add(obj * state.shift);
+      mp_var->set_objective_coefficient(obj / state.scaling);
+    }
+  }
+  if (objective_offset.Value() != 0.0) {
+    mp_model->set_objective_offset(mp_model->objective_offset() +
+                                   objective_offset.Value());
+  }
+  std::vector<double> coeffs;
+  for (MPConstraintProto& ct : *mp_model->mutable_constraint()) {
+    double lb;
+    double ub;
+    TransformConstraint(ct, states, &coeffs, &lb, &ub);
+    for (int i = 0; i < coeffs.size(); ++i) {
+      ct.set_coefficient(i, coeffs[i]);
+    }
+    ct.set_lower_bound(lb);
+    ct.set_upper_bound(ub);
+  }
+  if (mp_model->has_solution_hint()) {
+    ::operations_research::PartialVariableAssignment* hint =
+        mp_model->mutable_solution_hint();
+    for (int i = 0; i < hint->var_index_size(); ++i) {
+      const int var = hint->var_index(i);
+      if (var < 0 || var >= num_variables) continue;
+      const MipVariableState& state = states[var];
+      hint->set_var_value(i,
+                          (hint->var_value(i) - state.shift) * state.scaling);
+    }
+  }
+}
+
+void ScaleComponentContinuousVariables(const SatParameters& params,
+                                       const ResidualContinuousComponent& compo,
+                                       absl::Span<MipVariableState> states) {
   const double max_bound = params.mip_scale_large_domain()
                                ? std::numeric_limits<double>::infinity()
                                : params.mip_max_bound();
-
-  const int num_variables = mp_model->variable_size();
-  std::vector<double> var_scaling(num_variables, 1.0);
-  for (int i = 0; i < num_variables; ++i) {
-    if (mp_model->variable(i).is_integer()) continue;
-    if (!current_vars_scaling.empty() && current_vars_scaling[i] != 1.0)
-      continue;
-    if (max_bound == std::numeric_limits<double>::infinity()) {
-      var_scaling[i] = scaling;
-      continue;
-    }
-    const double lb = mp_model->variable(i).lower_bound();
-    const double ub = mp_model->variable(i).upper_bound();
-    const double magnitude = std::max(std::abs(lb), std::abs(ub));
-    if (magnitude == 0 || magnitude > max_bound) continue;
-    var_scaling[i] = std::min(scaling, max_bound / magnitude);
+  for (const int var : compo.continuous_vars) {
+    if (states[var].scaling != 1.0) continue;
+    ScaleVariableState(
+        ComputeContinuousVarScaling(params, states[var], max_bound),
+        &states[var]);
   }
-  ApplyVarScaling(var_scaling, mp_model);
-  return var_scaling;
-}
-
-std::vector<double> ScaleContinuousVariablesUpToMaxBound(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    absl::Span<const double> current_vars_scaling) {
-  const double wanted_precision = params.mip_tight_precision();
-  const double max_bound = params.mip_max_bound();
-
-  CHECK_GT(max_bound, 0);
-  CHECK_GT(wanted_precision, 0);
-  const int num_variables = mp_model->variable_size();
-
-  int num_too_large = 0;
-  std::vector<bool> is_integer(num_variables, false);
-  std::vector<int> var_to_col(num_variables, -1);
-  std::vector<int> scalable_vars;
-  std::vector<double> col_bound_magnitude;
-  for (int i = 0; i < num_variables; ++i) {
-    is_integer[i] = mp_model->variable(i).is_integer();
-    if (is_integer[i]) continue;
-    if (!current_vars_scaling.empty() && current_vars_scaling[i] != 1.0) {
-      continue;
-    }
-
-    const double lb = mp_model->variable(i).lower_bound();
-    const double ub = mp_model->variable(i).upper_bound();
-    const double bound_magnitude = std::max(std::abs(lb), std::abs(ub));
-    if (bound_magnitude == 0) continue;
-    if (bound_magnitude > max_bound) {
-      // TODO(user): we should probably still scale them a bit. Like we can
-      // assume |original variable| < 1e7 and scale to 1e10 or something.
-      // And scale all variables to 1e10 ?
-      ++num_too_large;
-      continue;
-    }
-    if (2 * bound_magnitude > max_bound) continue;
-
-    var_to_col[i] = scalable_vars.size();
-    scalable_vars.push_back(i);
-    col_bound_magnitude.push_back(bound_magnitude);
-  }
-
-  // Group scalable variables that share the same non-zero coefficient magnitude
-  // in a constraint into the same component so they receive a common scaling
-  // factor.
-  DenseConnectedComponentsFinder components;
-  components.SetNumberOfNodes(scalable_vars.size());
-  std::vector<std::pair<double, int>> terms_by_magnitude;
-
-  // Since we only want "wanted_precision" on the constraint activity, if
-  // a variable only appears with really small coefficients, we don't need to
-  // scale it too much. If there is a feasible solution, there will be one
-  // "integer" close by.
-  const double min_scaling_for_group = 1 << 10;
-  std::vector<double> max_scaling_needed(num_variables, 0.0);
-  for (const MPConstraintProto& mp_constraint : mp_model->constraint()) {
-    int num_floats = 0;
-    for (const int var : mp_constraint.var_index()) {
-      if (!is_integer[var]) ++num_floats;
-    }
-    if (num_floats == 0) continue;
-
-    terms_by_magnitude.clear();
-    const int num_terms = mp_constraint.var_index().size();
-    for (int i = 0; i < num_terms; ++i) {
-      const int var = mp_constraint.var_index(i);
-      if (is_integer[var]) continue;
-
-      // TODO(user): When the float is the unique non-integer in a constraint
-      // (num_floats == 1), we could maybe derive a tighter bound? especially if
-      // all coeffs are integer. This is a bit what is done in
-      // DetectImpliedIntegers() though.
-      const double coeff_magnitude = std::abs(mp_constraint.coefficient(i));
-      if (coeff_magnitude == 0.0) continue;
-
-      // We assume that we don't care if the activity changes by less than
-      // wanted_precision / coeff_magnitude / num_floats.
-      max_scaling_needed[var] = std::max(
-          max_scaling_needed[var],
-          static_cast<double>(num_floats) * coeff_magnitude / wanted_precision);
-
-      const int col = var_to_col[var];
-      if (col != -1 &&
-          min_scaling_for_group * col_bound_magnitude[col] <= max_bound) {
-        terms_by_magnitude.push_back({coeff_magnitude, col});
-      }
-    }
-
-    if (terms_by_magnitude.size() >= 2) {
-      std::sort(terms_by_magnitude.begin(), terms_by_magnitude.end());
-      for (int i = 1; i < terms_by_magnitude.size(); ++i) {
-        if (terms_by_magnitude[i].first == terms_by_magnitude[i - 1].first) {
-          components.AddEdge(terms_by_magnitude[i - 1].second,
-                             terms_by_magnitude[i].second);
-        }
-      }
-    }
-  }
-
-  const int num_components = components.GetNumberOfComponents();
-  const std::vector<int> col_to_component = components.GetComponentIds();
-  std::vector<double> compo_bound_magnitude(num_components, 0.0);
-  std::vector<double> compo_max_scaling_needed(num_components, 0.0);
-  for (int col = 0; col < scalable_vars.size(); ++col) {
-    const int compo = col_to_component[col];
-    const int var = scalable_vars[col];
-    compo_bound_magnitude[compo] =
-        std::max(compo_bound_magnitude[compo], col_bound_magnitude[col]);
-    compo_max_scaling_needed[compo] =
-        std::max(compo_max_scaling_needed[compo], max_scaling_needed[var]);
-  }
-
-  // For stats.
-  int num_scaled = 0;
-  int min_exponent = 100;
-  int max_exponent = 0;
-
-  std::vector<double> var_scaling(num_variables, 1.0);
-  for (int col = 0; col < scalable_vars.size(); ++col) {
-    const int var = scalable_vars[col];
-    const int compo = col_to_component[col];
-    const double bound_magnitude = compo_bound_magnitude[compo];
-    const double needed = compo_max_scaling_needed[compo];
-
-    // We prefer power of two scaling factors.
-    //
-    // This has nice properties. In particular if there is an integer solution
-    // without scaling, it should still be a solution of the scaled problem,
-    // this allows us to compare various scaling factors. As it turns out, we
-    // have more trouble finding solutions to highly scaled problems currently.
-    const int exp =
-        std::min(HighestPowerOfTwoAtOrBelow(max_bound / bound_magnitude),
-                 LowestPowerOfTwoAtOrAbove(needed));
-    const double scaling = std::ldexp(1.0, exp);
-
-    // This piece of code might be a bit clearer to understand compared to
-    // the O(1) formula above.
-    if (DEBUG_MODE) {
-      double test = 1.0;
-      while (test < needed && 2 * test * bound_magnitude <= max_bound) {
-        test *= 2;
-      }
-      CHECK_EQ(test, scaling);
-    }
-
-    ++num_scaled;
-    min_exponent = std::min(min_exponent, exp);
-    max_exponent = std::max(max_exponent, exp);
-
-    var_scaling[var] = scaling;
-    VLOG(2) << var << " [" << mp_model->variable(var).lower_bound() << ", "
-            << mp_model->variable(var).upper_bound() << "] scaling:" << scaling
-            << " max_needed:" << max_scaling_needed[var];
-  }
-
-  if (num_scaled > 0) {
-    SOLVER_LOG(logger, "[ScaleToMaxBound] Scaled ", num_scaled, " domains in ",
-               num_components, " components, power of two scaling in [",
-               min_exponent, ",", max_exponent, "]");
-  }
-  if (num_too_large > 0) {
-    SOLVER_LOG(logger, "[ScaleToMaxBound] ", num_too_large,
-               " variables with domain magnitude larger than mip_max_bound.");
-  }
-
-  ApplyVarScaling(var_scaling, mp_model);
-  return var_scaling;
 }
 
 namespace {
@@ -354,9 +320,10 @@ std::pair<double, double> GetContinuousVarDiscretizationErrorBounds(
   return {-0.5, 0.5};
 }
 
-// Per-variable limits used to pick power-of-two scaling factors for continuous
-// variables, see ComputePrecisionScalingBounds().
-struct PrecisionScalingBounds {
+// Per-variable limits (indexed by the position of the variable in the
+// component) used to pick power-of-two scaling factors for continuous
+// variables, see ComputeComponentPrecisionScalingBounds().
+struct ComponentPrecisionScalingBounds {
   // Largest power of two keeping the variable domain within the target bound.
   std::vector<double> max_var_scaling;
   // Scaling needed to reach the wanted precision on the activities of all the
@@ -371,10 +338,14 @@ struct PrecisionScalingBounds {
   std::vector<double> min_headroom;
 };
 
-PrecisionScalingBounds ComputePrecisionScalingBounds(
-    const SatParameters& params, const MPModelProto& mp_model,
-    absl::Span<const double> current_vars_scaling, double max_target_bound) {
-  CHECK(!mp_model.maximize());
+ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
+    const SatParameters& params, const MPModelProtoWrapper& mp_model,
+    const ResidualContinuousComponent& compo,
+    absl::Span<const MipVariableState> states, double max_target_bound,
+    GlobalObjectivePrecision* global_obj_precision) {
+  absl::Span<const int> compo_vars = compo.continuous_vars;
+  absl::Span<const int> var_to_local_col = compo.var_to_local_col;
+  CHECK(!var_to_local_col.empty());
   const double wanted_precision = params.mip_wanted_precision();
   const double tight_precision = params.mip_tight_precision();
   CHECK_GT(tight_precision, 0.0);
@@ -384,13 +355,11 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
       std::min(max_target_bound,
                std::nextafter(static_cast<double>(kint64max / 2), 0.0));
 
-  // Compute a max_scaling for each variable so that its domain satisfies
-  // max_domain_bound and the CpModelProto precondition.
-  const int num_variables = mp_model.variable_size();
-  PrecisionScalingBounds result;
-  result.max_var_scaling.assign(num_variables, 1.0);
-  result.max_scaling_needed.assign(num_variables, 0.0);
-  result.min_headroom.assign(num_variables, kInfinity);
+  const int local_num_vars = compo_vars.size();
+  ComponentPrecisionScalingBounds result;
+  result.max_var_scaling.assign(local_num_vars, 1.0);
+  result.max_scaling_needed.assign(local_num_vars, 0.0);
+  result.min_headroom.assign(local_num_vars, kInfinity);
 
   // If continuous variables were already scaled by a power of two > 1 (e.g.
   // TUM components scaled with a common factor), unscale their coefficients and
@@ -398,24 +367,27 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
   // denominator does not artificially reduce headroom for other continuous
   // variables sharing that expression.
   const bool use_proper_relaxation = params.mip_proper_relaxation();
-  std::vector<double> var_err_lb(num_variables, 0.0);
-  std::vector<double> var_err_ub(num_variables, 0.0);
-  std::vector<double> existing_pow2_scaling(num_variables, 1.0);
-  for (int i = 0; i < num_variables; ++i) {
-    if (mp_model.variable(i).is_integer()) continue;
-    const double lb = mp_model.variable(i).lower_bound();
-    const double ub = mp_model.variable(i).upper_bound();
+  std::vector<double> var_err_lb(local_num_vars, 0.0);
+  std::vector<double> var_err_ub(local_num_vars, 0.0);
+  std::vector<double> existing_pow2_scaling(local_num_vars, 1.0);
+  bool has_scalable_var_in_obj = false;
+  for (int local_col = 0; local_col < local_num_vars; ++local_col) {
+    const int var = compo_vars[local_col];
+    const MipVariableState& state = states[var];
+    if (state.is_integer) continue;
+    const double lb = state.lb;
+    const double ub = state.ub;
+    const double obj_coeff = mp_model.variables(var).objective_coefficient();
     if (lb != 0.0 || ub != 0.0) {
-      std::tie(var_err_lb[i], var_err_ub[i]) =
-          GetContinuousVarDiscretizationErrorBounds(
-              use_proper_relaxation,
-              mp_model.variable(i).objective_coefficient());
+      std::tie(var_err_lb[local_col], var_err_ub[local_col]) =
+          GetContinuousVarDiscretizationErrorBounds(use_proper_relaxation,
+                                                    obj_coeff);
     }
-    if (!current_vars_scaling.empty() && current_vars_scaling[i] != 1.0) {
-      const double s = current_vars_scaling[i];
+    if (state.scaling != 1.0) {
+      const double s = state.scaling;
       int exp = 0;
       if (s > 1.0 && std::isfinite(s) && std::frexp(s, &exp) == 0.5) {
-        existing_pow2_scaling[i] = s;
+        existing_pow2_scaling[local_col] = s;
       }
       continue;
     }
@@ -427,84 +399,38 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
     const int max_exp =
         MaxPowerOfTwoExponentWithinBound(bound_magnitude, max_domain_bound);
     if (max_exp > 0) {
-      result.max_var_scaling[i] = std::ldexp(1.0, max_exp);
+      result.max_var_scaling[local_col] = std::ldexp(1.0, max_exp);
+      if (obj_coeff != 0.0) has_scalable_var_in_obj = true;
     }
   }
 
   // We only want "discretization_precision" on the constraint/objective
   // activity, if a variable only appears with really small coefficients, we
-  // don't need to scale it too much.
-  //
-  // Note that the objective is processed with a potentially larger precision
-  // than the constraints (see below), so the discretization precision is
-  // derived from the precision passed to process_linear_expression().
-  std::vector<int> var_indices;
+  // don't need to scale it too much. Note that the objective is processed with
+  // a potentially larger precision than the constraints (see
+  // GlobalObjectivePrecision).
+  std::vector<int> local_cols;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
-  auto term_discretization_errors = [&](int var, double coeff) {
+  std::vector<double> transformed_coeffs;
+  auto term_discretization_errors = [&](int local_col, double coeff) {
+    if (local_col == -1) return std::make_pair(0.0, 0.0);
     if (coeff > 0.0) {
-      return std::make_pair(std::max(0.0, -coeff * var_err_lb[var]),
-                            std::max(0.0, coeff * var_err_ub[var]));
+      return std::make_pair(std::max(0.0, -coeff * var_err_lb[local_col]),
+                            std::max(0.0, coeff * var_err_ub[local_col]));
     }
-    return std::make_pair(std::max(0.0, -coeff * var_err_ub[var]),
-                          std::max(0.0, coeff * var_err_lb[var]));
-  };
-  auto process_linear_expression = [&](bool has_lb, bool has_ub,
-                                       double precision,
-                                       double max_existing_pow2_scaling) {
-    double relative_coeff_error;
-    double scaled_sum_error;
-    double max_scaling_factor;
-    const double scaling_factor = FindBestScalingAndComputeErrors(
-        coefficients, lower_bounds, upper_bounds, scaling_target, precision,
-        &relative_coeff_error, &scaled_sum_error, &max_scaling_factor);
-    if (scaling_factor == 0.0) {
-      // This expression cannot be scaled to integers within the activity
-      // limit, so do not make it any harder by scaling its variables.
-      for (const int var : var_indices) {
-        result.min_headroom[var] = 1.0;
-      }
-      return;
-    }
-
-    // The existing power-of-two scaling must fit in the headroom too, since it
-    // was unscaled above and will be re-applied on top of `scaling_factor`.
-    const double headroom =
-        max_existing_pow2_scaling * scaling_factor > max_scaling_factor
-            ? 1.0
-            : std::ldexp(1.0, HighestPowerOfTwoAtOrBelow(max_scaling_factor /
-                                                         scaling_factor));
-    int num_lb_floats = 0;
-    int num_ub_floats = 0;
-    for (int i = 0; i < var_indices.size(); ++i) {
-      const auto [lb_err, ub_err] =
-          term_discretization_errors(var_indices[i], coefficients[i]);
-      if (has_lb && lb_err > 0.0) ++num_lb_floats;
-      if (has_ub && ub_err > 0.0) ++num_ub_floats;
-    }
-
-    const double discretization_precision = precision / 2.0;
-    for (int i = 0; i < var_indices.size(); ++i) {
-      const int var = var_indices[i];
-      result.min_headroom[var] = std::min(result.min_headroom[var], headroom);
-      if (result.max_var_scaling[var] > 1.0) {
-        const auto [lb_err, ub_err] =
-            term_discretization_errors(var, coefficients[i]);
-        const double max_weighted_err = std::max(
-            has_lb ? static_cast<double>(num_lb_floats) * lb_err : 0.0,
-            has_ub ? static_cast<double>(num_ub_floats) * ub_err : 0.0);
-        result.max_scaling_needed[var] =
-            std::max(result.max_scaling_needed[var],
-                     max_weighted_err / discretization_precision);
-      }
-    }
+    return std::make_pair(std::max(0.0, -coeff * var_err_ub[local_col]),
+                          std::max(0.0, coeff * var_err_lb[local_col]));
   };
 
-  for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
-    double ct_lower_bound = mp_constraint.lower_bound();
-    double ct_upper_bound = mp_constraint.upper_bound();
-    if (ct_lower_bound == -kInfinity && ct_upper_bound == kInfinity) continue;
+  for (const int c : compo.constraints) {
+    const MPConstraintProto& mp_constraint = mp_model.constraints(c).proto();
+    if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
+    double ct_lower_bound;
+    double ct_upper_bound;
+    TransformConstraint(mp_constraint, states, &transformed_coeffs,
+                        &ct_lower_bound, &ct_upper_bound);
 
     if (params.mip_use_tight_bounds()) {
       ct_lower_bound -= tight_precision;
@@ -518,24 +444,28 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
     double max_activity = 0.0;
     double max_existing_pow2_scaling = 1.0;
     bool has_scalable_var = false;
-    var_indices.clear();
+    local_cols.clear();
     coefficients.clear();
     lower_bounds.clear();
     upper_bounds.clear();
     const int num_coeffs = mp_constraint.var_index_size();
     for (int i = 0; i < num_coeffs; ++i) {
       const int var = mp_constraint.var_index(i);
-      const double lb = mp_model.variable(var).lower_bound();
-      const double ub = mp_model.variable(var).upper_bound();
+      const double lb = states[var].lb;
+      const double ub = states[var].ub;
       if (lb == 0.0 && ub == 0.0) continue;
 
-      const double coeff = mp_constraint.coefficient(i);
+      const double coeff = transformed_coeffs[i];
       if (coeff == 0.0) continue;
 
-      if (result.max_var_scaling[var] > 1.0) has_scalable_var = true;
-      const double s = existing_pow2_scaling[var];
+      const int local_col = var_to_local_col[var];
+      double s = 1.0;
+      if (local_col != -1) {
+        if (result.max_var_scaling[local_col] > 1.0) has_scalable_var = true;
+        s = existing_pow2_scaling[local_col];
+      }
       max_existing_pow2_scaling = std::max(max_existing_pow2_scaling, s);
-      var_indices.push_back(var);
+      local_cols.push_back(local_col);
       coefficients.push_back(coeff * s);
       lower_bounds.push_back(lb / s);
       upper_bounds.push_back(ub / s);
@@ -553,8 +483,51 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
     const bool has_ub = max_activity > ct_upper_bound;
     if (!has_lb && !has_ub) continue;
 
-    process_linear_expression(has_lb, has_ub, wanted_precision,
-                              max_existing_pow2_scaling);
+    double relative_coeff_error;
+    double scaled_sum_error;
+    double max_scaling_factor;
+    const double scaling_factor = FindBestScalingAndComputeErrors(
+        coefficients, lower_bounds, upper_bounds, scaling_target,
+        wanted_precision, &relative_coeff_error, &scaled_sum_error,
+        &max_scaling_factor);
+    if (scaling_factor == 0.0) {
+      for (const int local_col : local_cols) {
+        if (local_col != -1) result.min_headroom[local_col] = 1.0;
+      }
+      continue;
+    }
+
+    const double headroom =
+        max_existing_pow2_scaling * scaling_factor > max_scaling_factor
+            ? 1.0
+            : std::ldexp(1.0, HighestPowerOfTwoAtOrBelow(max_scaling_factor /
+                                                         scaling_factor));
+    int num_lb_floats = 0;
+    int num_ub_floats = 0;
+    for (int i = 0; i < local_cols.size(); ++i) {
+      const auto [lb_err, ub_err] =
+          term_discretization_errors(local_cols[i], coefficients[i]);
+      if (has_lb && lb_err > 0.0) ++num_lb_floats;
+      if (has_ub && ub_err > 0.0) ++num_ub_floats;
+    }
+
+    const double discretization_precision = wanted_precision / 2.0;
+    for (int i = 0; i < local_cols.size(); ++i) {
+      const int local_col = local_cols[i];
+      if (local_col == -1) continue;
+      result.min_headroom[local_col] =
+          std::min(result.min_headroom[local_col], headroom);
+      if (result.max_var_scaling[local_col] > 1.0) {
+        const auto [lb_err, ub_err] =
+            term_discretization_errors(local_col, coefficients[i]);
+        const double max_weighted_err = std::max(
+            has_lb ? static_cast<double>(num_lb_floats) * lb_err : 0.0,
+            has_ub ? static_cast<double>(num_ub_floats) * ub_err : 0.0);
+        result.max_scaling_needed[local_col] =
+            std::max(result.max_scaling_needed[local_col],
+                     max_weighted_err / discretization_precision);
+      }
+    }
   }
 
   // Also take the objective into account.
@@ -565,34 +538,30 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
   // order to report how many variables are scaled more because of the
   // objective.
   result.constraint_scaling_needed = result.max_scaling_needed;
-  {
-    double max_existing_pow2_scaling = 1.0;
-    bool has_scalable_var = false;
-    var_indices.clear();
-    coefficients.clear();
-    lower_bounds.clear();
-    upper_bounds.clear();
-    for (int var = 0; var < num_variables; ++var) {
-      const double lb = mp_model.variable(var).lower_bound();
-      const double ub = mp_model.variable(var).upper_bound();
-      if (lb == 0.0 && ub == 0.0) continue;
-
-      const double coeff = mp_model.variable(var).objective_coefficient();
+  if (has_scalable_var_in_obj && global_obj_precision != nullptr) {
+    const GlobalObjectivePrecision::Bounds obj_bounds =
+        global_obj_precision->GetBounds(mp_model.underlying_model(), states);
+    const double discretization_precision = obj_bounds.precision / 2.0;
+    for (int local_col = 0; local_col < local_num_vars; ++local_col) {
+      const int var = compo_vars[local_col];
+      const MipVariableState& state = states[var];
+      if (state.is_integer) continue;
+      if (state.lb == 0.0 && state.ub == 0.0) continue;
+      const double coeff =
+          mp_model.variables(var).objective_coefficient() / state.scaling;
       if (coeff == 0.0) continue;
 
-      if (result.max_var_scaling[var] > 1.0) has_scalable_var = true;
-      const double s = existing_pow2_scaling[var];
-      max_existing_pow2_scaling = std::max(max_existing_pow2_scaling, s);
-      var_indices.push_back(var);
-      coefficients.push_back(coeff * s);
-      lower_bounds.push_back(lb / s);
-      upper_bounds.push_back(ub / s);
-    }
-    if (has_scalable_var) {
-      process_linear_expression(
-          /*has_lb=*/true, /*has_ub=*/false,
-          std::max(wanted_precision, params.absolute_gap_limit()),
-          max_existing_pow2_scaling);
+      result.min_headroom[local_col] =
+          std::min(result.min_headroom[local_col], obj_bounds.headroom);
+      if (result.max_var_scaling[local_col] > 1.0) {
+        const double s = existing_pow2_scaling[local_col];
+        const auto [lb_err, unused_ub_err] =
+            term_discretization_errors(local_col, coeff * s);
+        result.max_scaling_needed[local_col] =
+            std::max(result.max_scaling_needed[local_col],
+                     static_cast<double>(obj_bounds.num_lb_floats) * lb_err /
+                         discretization_precision);
+      }
     }
   }
 
@@ -601,28 +570,158 @@ PrecisionScalingBounds ComputePrecisionScalingBounds(
 
 }  // namespace
 
-std::vector<double> ScaleContinuousVariablesForGivenPrecision(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    absl::Span<const double> current_vars_scaling) {
-  const int num_variables = mp_model->variable_size();
-  const PrecisionScalingBounds bounds = ComputePrecisionScalingBounds(
-      params, *mp_model, current_vars_scaling, kInfinity);
-
-  int num_scaled = 0;
-  int num_objective_driven = 0;
-  int min_exponent = std::numeric_limits<int>::max();
-  int max_exponent = 0;
-  std::vector<double> var_scaling(num_variables, 1.0);
+GlobalObjectivePrecision::GlobalObjectivePrecision(const SatParameters& params,
+                                                   const MPModelProto& mp_model)
+    : scaling_target_(int64_t{1} << params.mip_max_activity_exponent()),
+      obj_precision_(std::max(params.mip_wanted_precision(),
+                              params.absolute_gap_limit())) {
+  CHECK(!mp_model.maximize());
+  const int num_variables = mp_model.variable_size();
   for (int var = 0; var < num_variables; ++var) {
-    if (bounds.max_var_scaling[var] <= 1.0 ||
-        bounds.min_headroom[var] == kInfinity ||
-        bounds.max_scaling_needed[var] <= 1.0) {
+    if (mp_model.variable(var).objective_coefficient() != 0.0) {
+      obj_vars_.push_back(var);
+    }
+  }
+}
+
+GlobalObjectivePrecision::Bounds GlobalObjectivePrecision::GetBounds(
+    const MPModelProto& mp_model, absl::Span<const MipVariableState> states) {
+  if (dirty_) {
+    Recompute(mp_model, states);
+  }
+  if (!has_continuous_obj_var_) {
+    return {kInfinity, 0, obj_precision_};
+  }
+  double headroom = 1.0;
+  if (scaling_factor_ != 0.0 &&
+      max_existing_pow2_scaling_ * scaling_factor_ <= max_scaling_factor_) {
+    headroom = std::ldexp(
+        1.0, HighestPowerOfTwoAtOrBelow(max_scaling_factor_ / scaling_factor_));
+  }
+  return {headroom, num_lb_floats_, obj_precision_};
+}
+
+void GlobalObjectivePrecision::Recompute(
+    const MPModelProto& mp_model, absl::Span<const MipVariableState> states) {
+  coeffs_.clear();
+  lbs_.clear();
+  ubs_.clear();
+  num_lb_floats_ = 0;
+  max_existing_pow2_scaling_ = 1.0;
+  has_continuous_obj_var_ = false;
+  for (const int var : obj_vars_) {
+    const MipVariableState& state = states[var];
+    const double lb = state.lb;
+    const double ub = state.ub;
+    if (lb == 0.0 && ub == 0.0) continue;
+    const double coeff =
+        mp_model.variable(var).objective_coefficient() / state.scaling;
+    if (coeff == 0.0) continue;
+
+    // Continuous variables already scaled by a power of two are considered in
+    // their unscaled form, see ComputeComponentPrecisionScalingBounds().
+    double s = 1.0;
+    if (!state.is_integer) {
+      has_continuous_obj_var_ = true;
+      ++num_lb_floats_;
+      const double cur = state.scaling;
+      int exp = 0;
+      if (cur > 1.0 && std::isfinite(cur) && std::frexp(cur, &exp) == 0.5) {
+        s = cur;
+        max_existing_pow2_scaling_ = std::max(max_existing_pow2_scaling_, s);
+      }
+    }
+    coeffs_.push_back(coeff * s);
+    lbs_.push_back(lb / s);
+    ubs_.push_back(ub / s);
+  }
+  scaling_factor_ = 1.0;
+  max_scaling_factor_ = kInfinity;
+  if (!coeffs_.empty()) {
+    double relative_coeff_error;
+    double scaled_sum_error;
+    scaling_factor_ = FindBestScalingAndComputeErrors(
+        coeffs_, lbs_, ubs_, scaling_target_, obj_precision_,
+        &relative_coeff_error, &scaled_sum_error, &max_scaling_factor_);
+  }
+  dirty_ = false;
+}
+
+bool GlobalObjectivePrecision::KeepsObjectiveScalable(
+    const MPModelProto& mp_model, absl::Span<const MipVariableState> states,
+    int var, double scaling, double reserved_headroom) {
+  const double obj_coeff = mp_model.variable(var).objective_coefficient();
+  if (obj_coeff == 0.0) return true;
+  if (dirty_) Recompute(mp_model, states);
+  if (scaling_factor_ == 0.0) return false;
+
+  // The current factor makes the other coefficients integer, find the extra
+  // factor needed by the new coefficient of var, see GetIntegralityMultiplier()
+  // for the tolerance.
+  const double coeff = obj_coeff / scaling;
+  const double limit = max_scaling_factor_ /
+                       (scaling_factor_ * std::max(1.0, reserved_headroom));
+  if (limit < 1.0) return false;
+  const int64_t int_limit =
+      limit >= static_cast<double>(kint64max)
+          ? kint64max
+          : CapAdd(static_cast<int64_t>(std::floor(limit)), 1);
+  const int64_t extra_factor = FindRationalFactor(
+      scaling_factor_ * coeff, int_limit,
+      scaling_factor_ * obj_precision_ * std::min(1.0, std::abs(coeff)));
+  return extra_factor != 0 && static_cast<double>(extra_factor) <= limit;
+}
+
+void LogPrecisionScalingStats(const SatParameters& params,
+                              const MPModelProto& mp_model,
+                              absl::Span<const MipVariableState> states,
+                              const PrecisionScalingStats& stats,
+                              SolverLogger* logger) {
+  if (stats.num_scaled == 0) return;
+
+  // Worst case objective error due to discretizing each continuous variable.
+  const double obj_error_factor = params.mip_proper_relaxation() ? 1.0 : 0.5;
+  double objective_discretization_error = 0.0;
+  const int num_variables = mp_model.variable_size();
+  for (int var = 0; var < num_variables; ++var) {
+    if (states[var].is_integer) continue;
+    const double coeff = mp_model.variable(var).objective_coefficient();
+    if (coeff == 0.0) continue;
+    objective_discretization_error +=
+        obj_error_factor * std::abs(coeff) / states[var].scaling;
+  }
+
+  SOLVER_LOG(logger, "[ScaleForPrecision] Scaled ", stats.num_scaled,
+             " continuous variables, power of two scaling in [",
+             stats.min_exponent, ",", stats.max_exponent, "], ",
+             stats.num_objective_driven,
+             " scaled more than needed by the constraints because of the "
+             "objective. Worst case objective discretization error: ",
+             objective_discretization_error);
+}
+
+void ScaleComponentContinuousVariablesForGivenPrecision(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    GlobalObjectivePrecision* global_obj_precision,
+    PrecisionScalingStats* stats) {
+  const ComponentPrecisionScalingBounds bounds =
+      ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
+                                             kInfinity, global_obj_precision);
+
+  absl::Span<const int> compo_vars = compo.continuous_vars;
+  const int local_num_vars = compo_vars.size();
+  for (int local_col = 0; local_col < local_num_vars; ++local_col) {
+    if (bounds.max_var_scaling[local_col] <= 1.0 ||
+        bounds.min_headroom[local_col] == kInfinity ||
+        bounds.max_scaling_needed[local_col] <= 1.0) {
       continue;
     }
     const double needed_scaling = std::ldexp(
-        1.0, LowestPowerOfTwoAtOrAbove(bounds.max_scaling_needed[var]));
-    const double scaling = std::min({bounds.max_var_scaling[var],
-                                     bounds.min_headroom[var], needed_scaling});
+        1.0, LowestPowerOfTwoAtOrAbove(bounds.max_scaling_needed[local_col]));
+    const double scaling =
+        std::min({bounds.max_var_scaling[local_col],
+                  bounds.min_headroom[local_col], needed_scaling});
     if (scaling <= 1.0) continue;
 
     int exp;
@@ -630,41 +729,29 @@ std::vector<double> ScaleContinuousVariablesForGivenPrecision(
     DCHECK_EQ(mantissa, 0.5);
     --exp;
 
-    ++num_scaled;
-    min_exponent = std::min(min_exponent, exp);
-    max_exponent = std::max(max_exponent, exp);
-    var_scaling[var] = scaling;
+    ++stats->num_scaled;
+    stats->min_exponent = std::min(stats->min_exponent, exp);
+    stats->max_exponent = std::max(stats->max_exponent, exp);
 
     // Would the constraints alone have resulted in a smaller scaling?
-    const double constraint_scaling = std::min(
-        {bounds.max_var_scaling[var], bounds.min_headroom[var],
-         std::ldexp(1.0, LowestPowerOfTwoAtOrAbove(std::max(
-                             1.0, bounds.constraint_scaling_needed[var])))});
-    if (constraint_scaling < scaling) ++num_objective_driven;
-  }
+    const double needed_for_constraints =
+        std::ldexp(1.0, LowestPowerOfTwoAtOrAbove(std::max(
+                            1.0, bounds.constraint_scaling_needed[local_col])));
+    const double constraint_scaling =
+        std::min({bounds.max_var_scaling[local_col],
+                  bounds.min_headroom[local_col], needed_for_constraints});
+    if (constraint_scaling < scaling) ++stats->num_objective_driven;
 
-  // Worst case objective error due to discretizing each continuous variable.
-  const double obj_error_factor = params.mip_proper_relaxation() ? 1.0 : 0.5;
-  double objective_discretization_error = 0.0;
-  for (int var = 0; var < num_variables; ++var) {
-    if (mp_model->variable(var).is_integer()) continue;
-    const double coeff = mp_model->variable(var).objective_coefficient();
-    if (coeff == 0.0) continue;
-    objective_discretization_error +=
-        obj_error_factor * std::abs(coeff) / var_scaling[var];
+    const int var = compo_vars[local_col];
+    MipVariableState& state = states[var];
+    CHECK_EQ(state.scaling, 1.0);
+    if (global_obj_precision != nullptr &&
+        mp_model.variables(var).objective_coefficient() != 0.0 &&
+        !(state.lb == 0.0 && state.ub == 0.0)) {
+      global_obj_precision->NotifyContinuousPow2Scaling(scaling);
+    }
+    ScaleVariableState(scaling, &state);
   }
-
-  if (num_scaled > 0) {
-    SOLVER_LOG(logger, "[ScaleForPrecision] Scaled ", num_scaled,
-               " continuous variables, power of two scaling in [", min_exponent,
-               ",", max_exponent, "], ", num_objective_driven,
-               " scaled more than needed by the constraints because of the "
-               "objective. Worst case objective discretization error: ",
-               objective_discretization_error);
-  }
-
-  ApplyVarScaling(var_scaling, mp_model);
-  return var_scaling;
 }
 
 // This uses the best rational approximation of x via continuous fractions.
@@ -699,24 +786,34 @@ int64_t FindRationalFactor(double x, int64_t limit, double tolerance) {
 
 namespace {
 
+// A linear row `lb <= sum coeffs[i] * vars[i] <= ub` expressed in the current
+// variable space, see TransformConstraint().
+struct LinearRow {
+  absl::Span<const int> vars;
+  absl::Span<const double> coeffs;
+  double lb;
+  double ub;
+};
+
+double GetVarCoeff(const LinearRow& row, int var) {
+  for (int i = 0; i < row.vars.size(); ++i) {
+    if (row.vars[i] == var) return row.coeffs[i];
+  }
+  return 0.0;
+}
+
 // For each side (>= and <=) return a factor such that factor * var only needs
 // to take integer values to satisfy this side.
 //
 // We return kInfinity if we failed, and 0.0 if this side is not constrained.
 //
-// Precondition: var must be the only non-integer in the given constraint.
-std::pair<double, double> GetIntegralityMultiplier(
-    const EnforcedLinearConstraint& ct, absl::Span<const double> var_scaling,
-    int var, double tolerance, double max_multiplier) {
+// Precondition: var must be the only non-integer in the given row.
+std::pair<double, double> GetIntegralityMultiplier(const LinearRow& row,
+                                                   int var, double tolerance,
+                                                   double max_multiplier) {
   const double kInfinity = std::numeric_limits<double>::infinity();
 
-  double var_coeff = 0.0;
-  for (int i = 0; i < ct.num_terms(); ++i) {
-    if (var == ct.vars(i)) {
-      var_coeff = ct.coeffs(i);
-      break;
-    }
-  }
+  const double var_coeff = GetVarCoeff(row, var);
   if (var_coeff == 0.0) return {0.0, 0.0};
   const double limit = max_multiplier / std::abs(var_coeff);
   if (limit < 1.0) return {kInfinity, kInfinity};
@@ -726,8 +823,8 @@ std::pair<double, double> GetIntegralityMultiplier(
           : CapAdd(static_cast<int64_t>(std::floor(limit)), 1);
 
   double multiplier = 1.0;
-  for (int i = 0; i < ct.num_terms(); ++i) {
-    if (var == ct.vars(i)) continue;
+  for (int i = 0; i < row.vars.size(); ++i) {
+    if (var == row.vars[i]) continue;
 
     // This actually computes the smallest multiplier to make all other
     // terms in the constraint integer.
@@ -737,10 +834,9 @@ std::pair<double, double> GetIntegralityMultiplier(
     // constraints with tiny coefficients (like 1.8e-5), we might accept a 3%
     // relative error (1.75e-5) which is clearly not a "nice" coefficient and
     // leads to huge scaling factors later on.
-    const double unscaled_coeff = ct.coeffs(i) / var_scaling[ct.vars(i)];
-    const double coeff = multiplier * unscaled_coeff;
+    const double coeff = multiplier * row.coeffs[i];
     const double local_tolerance =
-        multiplier * tolerance * std::min(1.0, std::abs(unscaled_coeff));
+        multiplier * tolerance * std::min(1.0, std::abs(row.coeffs[i]));
     multiplier *= FindRationalFactor(coeff, int_limit, local_tolerance);
     if (multiplier == 0 || multiplier > limit) {
       multiplier = kInfinity;
@@ -750,8 +846,8 @@ std::pair<double, double> GetIntegralityMultiplier(
   DCHECK_NE(var_coeff, 0.0);
 
   // Only the magnitude matter.
-  double ct_lb = std::abs(ct.lower_bound());
-  double ct_ub = std::abs(ct.upper_bound());
+  double ct_lb = std::abs(row.lb);
+  double ct_ub = std::abs(row.ub);
   if (var_coeff < 0.0) std::swap(ct_lb, ct_ub);
 
   // Now adjust for the bound. Same remark as above regarding the relative
@@ -788,6 +884,40 @@ std::pair<double, double> GetIntegralityMultiplier(
 
 }  // namespace
 
+namespace {
+
+// Snaps the bounds of an integer variable to integer values, allowing an extra
+// integer point if it is within tolerance (or within the integerization error
+// bound). Returns false if the resulting domain is empty.
+bool MakeIntegerVariableBoundsInteger(const SatParameters& params,
+                                      double scaling, double error_lb,
+                                      double error_ub, double* lb, double* ub,
+                                      int64_t* num_changes) {
+  // Note that we do not scale the tolerance! we want to interpret variable
+  // bounds as exact, but we just want to allow an extra integer point if
+  // it is within tolerance (or within the integerization error bound).
+  const double tolerance =
+      std::min(0.5, scaling * params.mip_wanted_precision());
+  const double lb_tol = std::max(tolerance, -error_lb);
+  const double ub_tol = std::max(tolerance, error_ub);
+
+  const double new_lb =
+      std::isfinite(*lb) ? std::ceil(ExactScaledSumLb(*lb, -lb_tol)) : *lb;
+  if (*lb != new_lb) {
+    ++*num_changes;
+    *lb = new_lb;
+  }
+  const double new_ub =
+      std::isfinite(*ub) ? std::floor(ExactScaledSumUb(*ub, ub_tol)) : *ub;
+  if (*ub != new_ub) {
+    ++*num_changes;
+    *ub = new_ub;
+  }
+  return new_lb <= new_ub;
+}
+
+}  // namespace
+
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger) {
@@ -809,41 +939,44 @@ bool MakeBoundsOfIntegerVariablesInteger(
   CHECK_EQ(integer_error_ub.size(), num_variables);
   int64_t num_changes = 0;
   for (int i = 0; i < num_variables; ++i) {
-    const MPVariableProto& mp_var = mp_model->variable(i);
-    if (!mp_var.is_integer()) continue;
-
-    // Make sure the bound of an integer variable is integer.
-    // Note that we do not scale the tolerance! we want to interpret variable
-    // bounds as exact, but we just want to allow an extra integer point if
-    // it is within tolerance (or within the integerization error bound).
-    const double tolerance =
-        std::min(0.5, var_scaling[i] * params.mip_wanted_precision());
-    const double lb_tol = std::max(tolerance, -integer_error_lb[i]);
-    const double ub_tol = std::max(tolerance, integer_error_ub[i]);
-
-    const double lb = mp_var.lower_bound();
-    const double new_lb = std::isfinite(lb) ? std::ceil(lb - lb_tol) : lb;
-    if (lb != new_lb) {
-      ++num_changes;
-      mp_model->mutable_variable(i)->set_lower_bound(new_lb);
-    }
-
-    const double ub = mp_var.upper_bound();
-    const double new_ub = std::isfinite(ub) ? std::floor(ub + ub_tol) : ub;
-    if (ub != new_ub) {
-      ++num_changes;
-      mp_model->mutable_variable(i)->set_upper_bound(new_ub);
-    }
-
-    if (new_ub < new_lb) {
-      SOLVER_LOG(logger, "Empty domain for integer variable #", i, ": [", lb,
-                 ",", ub, "]");
+    MPVariableProto* mp_var = mp_model->mutable_variable(i);
+    if (!mp_var->is_integer()) continue;
+    double lb = mp_var->lower_bound();
+    double ub = mp_var->upper_bound();
+    if (!MakeIntegerVariableBoundsInteger(
+            params, var_scaling[i], integer_error_lb[i], integer_error_ub[i],
+            &lb, &ub, &num_changes)) {
+      SOLVER_LOG(logger, "Empty domain for integer variable #", i, ": [",
+                 mp_var->lower_bound(), ",", mp_var->upper_bound(), "]");
       return false;
     }
+    mp_var->set_lower_bound(lb);
+    mp_var->set_upper_bound(ub);
   }
   if (num_changes > 0) {
     SOLVER_LOG(logger, "[IntegerBound] Snapped ", num_changes,
                " bound of an integer variable to an exact integer.");
+  }
+  return true;
+}
+
+bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
+                                         absl::Span<const int> vars,
+                                         absl::Span<MipVariableState> states,
+                                         int64_t* num_changes,
+                                         SolverLogger* logger) {
+  for (const int var : vars) {
+    MipVariableState& state = states[var];
+    if (!state.is_integer) continue;
+    const double lb = state.lb;
+    const double ub = state.ub;
+    if (!MakeIntegerVariableBoundsInteger(params, state.scaling, state.error_lb,
+                                          state.error_ub, &state.lb, &state.ub,
+                                          num_changes)) {
+      SOLVER_LOG(logger, "Empty domain for integer variable #", var, ": [", lb,
+                 ",", ub, "]");
+      return false;
+    }
   }
   return true;
 }
@@ -1196,6 +1329,18 @@ bool RestrictBoundsWithDualReasoning(const SatParameters& params,
   return max_change > params.mip_tight_precision();
 }
 
+namespace {
+
+void DisplayVariableStatisticsInternal(double min_lb, double max_ub,
+                                       int num_integers, int num_variables,
+                                       SolverLogger* logger) {
+  SOLVER_LOG(logger, "All variables in [", min_lb, ",", max_ub,
+             "], num_integers: ", num_integers, "/", num_variables,
+             (num_integers == num_variables ? " [IP] " : " [MIP] "));
+}
+
+}  // namespace
+
 void DisplayVariableStatistics(const MPModelProto& mp_model,
                                SolverLogger* logger) {
   const double kInfinity = std::numeric_limits<double>::infinity();
@@ -1207,11 +1352,23 @@ void DisplayVariableStatistics(const MPModelProto& mp_model,
     min_lb = std::min(min_lb, var.lower_bound());
     max_ub = std::max(max_ub, var.upper_bound());
   }
+  DisplayVariableStatisticsInternal(min_lb, max_ub, num_integers,
+                                    mp_model.variable().size(), logger);
+}
 
-  const int num_variables = mp_model.variable().size();
-  SOLVER_LOG(logger, "All variables in [", min_lb, ",", max_ub,
-             "], num_integers: ", num_integers, "/", num_variables,
-             (num_integers == num_variables ? " [IP] " : " [MIP] "));
+void DisplayVariableStatistics(absl::Span<const MipVariableState> states,
+                               SolverLogger* logger) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  double min_lb = +kInfinity;
+  double max_ub = -kInfinity;
+  int num_integers = 0;
+  for (const MipVariableState& state : states) {
+    if (state.is_integer) ++num_integers;
+    min_lb = std::min(min_lb, state.lb);
+    max_ub = std::max(max_ub, state.ub);
+  }
+  DisplayVariableStatisticsInternal(min_lb, max_ub, num_integers, states.size(),
+                                    logger);
 }
 
 void ChangeLargeBoundsToInfinity(double max_magnitude, MPModelProto* mp_model,
@@ -1487,23 +1644,15 @@ double GetDoubleLcm(absl::Span<const double> multipliers, double tolerance,
   return scaling;
 }
 
-double GetVarCoeff(const EnforcedLinearConstraint& ct, int var) {
-  for (int i = 0; i < ct.num_terms(); ++i) {
-    if (ct.vars(i) == var) return ct.coeffs(i);
-  }
-  return 0.0;
-}
-
 // Bounds [err_lb, err_ub] (with err_lb <= 0 <= err_ub) on
 // (discretized_var - scaling * var) when `var` is the unique non-integer in
-// `ct` and its scaled value is rounded from the constraint activity in
-// `[rhs_lb, rhs_ub]`.
+// `row` and its scaled value is rounded from the row activity in
+// `[rhs_lb, rhs_ub]`. The bounds and integerization errors of the other
+// (integer) variables are read from `states`.
 std::pair<double, double> ComputeSingleVarConstraintErrorBounds(
-    const MPModelProtoWrapper& mp_model, const EnforcedLinearConstraint& ct,
-    absl::Span<const double> var_scaling, absl::Span<const double> cur_err_lb,
-    absl::Span<const double> cur_err_ub, int var, double scaling, double rhs_lb,
-    double rhs_ub) {
-  const double var_coeff = GetVarCoeff(ct, var);
+    const LinearRow& row, absl::Span<const MipVariableState> states, int var,
+    double scaling, double rhs_lb, double rhs_ub) {
+  const double var_coeff = GetVarCoeff(row, var);
   if (var_coeff == 0.0) return {0.0, 0.0};
   if (!std::isfinite(rhs_lb) || !std::isfinite(rhs_ub)) return {-0.5, 0.5};
 
@@ -1525,30 +1674,27 @@ std::pair<double, double> ComputeSingleVarConstraintErrorBounds(
   total_lb.Add(std::min(b1_lb, b2_lb));
   total_ub.Add(std::max(b1_ub, b2_ub));
 
-  for (int i = 0; i < ct.num_terms(); ++i) {
-    const int j = ct.vars(i);
+  for (int i = 0; i < row.vars.size(); ++i) {
+    const int j = row.vars[i];
     if (j == var) continue;
-    const double a_j = ct.coeffs(i);
+    const double a_j = row.coeffs[i];
     if (a_j == 0.0) continue;
 
-    const double s_j = var_scaling[j];
-    const double k_j = std::round((scaling * a_j) / (var_coeff * s_j));
+    const double k_j = std::round((scaling * a_j) / var_coeff);
     if (k_j != 0.0) {
       const bool same_sign = (k_j < 0.0) == (var_coeff > 0.0);
-      const double e_lb = same_sign ? cur_err_lb[j] : cur_err_ub[j];
-      const double e_ub = same_sign ? cur_err_ub[j] : cur_err_lb[j];
+      const double e_lb = same_sign ? states[j].error_lb : states[j].error_ub;
+      const double e_ub = same_sign ? states[j].error_ub : states[j].error_lb;
       if (e_lb != 0.0) total_lb.AddProd(-k_j, var_coeff, e_lb);
       if (e_ub != 0.0) total_ub.AddProd(-k_j, var_coeff, e_ub);
     }
 
-    const auto [num_lb, num_ub] = TightSum()
-                                      .AddProd(scaling, a_j)
-                                      .AddProd(-k_j, s_j, var_coeff)
-                                      .TightBounds();
+    const auto [num_lb, num_ub] =
+        TightSum().AddProd(scaling, a_j).AddProd(-k_j, var_coeff).TightBounds();
     if (num_lb == 0.0 && num_ub == 0.0) continue;
 
-    const double l_j = mp_model.variables(j).lower_bound();
-    const double u_j = mp_model.variables(j).upper_bound();
+    const double l_j = states[j].lb;
+    const double u_j = states[j].ub;
     if (!std::isfinite(l_j) || !std::isfinite(u_j)) return {-0.5, 0.5};
     if (num_ub > 0.0) {
       total_lb.Add(ProdBounds(l_j < 0.0 ? num_ub : num_lb, l_j).first);
@@ -1564,6 +1710,23 @@ std::pair<double, double> ComputeSingleVarConstraintErrorBounds(
   return {std::min(0.0, err_lb), std::max(0.0, err_ub)};
 }
 
+// Maximum rational scaling factor allowed when marking a continuous variable
+// with the given bounds as integer. The smaller the domain, the more we allow
+// scaling.
+double MaxImpliedIntegerMultiplier(const SatParameters& params, double lb,
+                                   double ub) {
+  double max_magnitude = 1.0;
+  if (std::isfinite(lb)) max_magnitude = std::max(max_magnitude, std::abs(lb));
+  if (std::isfinite(ub)) max_magnitude = std::max(max_magnitude, std::abs(ub));
+  const double max_multiplier = params.mip_max_bound() / max_magnitude;
+  if (params.mip_scale_for_precision()) {
+    return max_multiplier;
+  }
+  // TODO(user): This is the old behavior and changing it broke some golden
+  // test. Fix.
+  return std::min(1e4, max_multiplier);
+}
+
 }  // namespace
 
 std::vector<double> DetectImpliedIntegers(const SatParameters& params,
@@ -1575,6 +1738,25 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
   CHECK_EQ(integer_error_lb.size(), num_variables);
   CHECK_EQ(integer_error_ub.size(), num_variables);
   std::vector<double> var_scaling(num_variables, 1.0);
+
+  // The states mirror the model with the pending scaling applied, so that the
+  // helper functions see the constraints in the scaled variable space.
+  std::vector<MipVariableState> states = InitialVariableStates(*mp_model);
+  for (int var = 0; var < num_variables; ++var) {
+    states[var].error_lb = integer_error_lb[var];
+    states[var].error_ub = integer_error_ub[var];
+  }
+  std::vector<double> row_coeffs;
+  const auto make_row = [&](const EnforcedLinearConstraint& ct) {
+    row_coeffs.resize(ct.num_terms());
+    for (int i = 0; i < ct.num_terms(); ++i) {
+      row_coeffs[i] = ct.coeffs(i) / states[ct.vars(i)].scaling;
+    }
+    return LinearRow{.vars = ct.vars(),
+                     .coeffs = row_coeffs,
+                     .lb = ct.lower_bound(),
+                     .ub = ct.upper_bound()};
+  };
 
   int initial_num_integers = 0;
   for (int i = 0; i < num_variables; ++i) {
@@ -1599,8 +1781,11 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
   std::vector<std::vector<int>> var_to_constraints(num_variables);
   for (int i = 0; i < num_constraints; ++i) {
     const EnforcedLinearConstraint& mp_constraint = mp_model->constraints(i);
+    if (ConstraintIsAlwaysTrue(mp_constraint.proto())) continue;
 
-    for (const int var : mp_constraint.vars()) {
+    for (int j = 0; j < mp_constraint.num_terms(); ++j) {
+      if (mp_constraint.coeffs(j) == 0.0) continue;
+      const int var = mp_constraint.vars(j);
       if (!mp_model->variables(var).is_integer()) {
         var_to_constraints[var].push_back(i);
         constraint_to_num_non_integer[i]++;
@@ -1630,6 +1815,8 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
     // Note that the constraints will be scaled later.
     var_scaling[var] = scaling;
     mp_model->mutable_variables(var)->set_is_integer(true);
+    states[var].is_integer = true;
+    ScaleVariableState(scaling, &states[var]);
 
     // Update the queue of constraints with a single non-integer.
     for (const int ct_index : var_to_constraints[var]) {
@@ -1637,26 +1824,6 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
       if (constraint_to_num_non_integer[ct_index] == 1) {
         constraint_queue.push_back(ct_index);
       }
-    }
-  };
-
-  const auto compute_max_multiplier = [&](const MPVariableProto& var_proto) {
-    double max_magnitude = 1.0;
-    if (std::isfinite(var_proto.lower_bound())) {
-      max_magnitude =
-          std::max(max_magnitude, std::abs(var_proto.lower_bound()));
-    }
-    if (std::isfinite(var_proto.upper_bound())) {
-      max_magnitude =
-          std::max(max_magnitude, std::abs(var_proto.upper_bound()));
-    }
-    const double max_multiplier = params.mip_max_bound() / max_magnitude;
-    if (params.mip_scale_to_max_bound() || params.mip_scale_for_precision()) {
-      return max_multiplier;
-    } else {
-      // TODO(user): This is the old behavior and changing it broke some
-      // golden test. Fix.
-      return std::min(1e4, max_multiplier);
     }
   };
 
@@ -1679,7 +1846,8 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
     // This will be set to the unique non-integer term of this constraint.
     int var = -1;
     for (int i = 0; i < ct.num_terms(); ++i) {
-      if (!mp_model->variables(ct.vars(i)).is_integer()) {
+      if (ct.coeffs(i) != 0.0 &&
+          !mp_model->variables(ct.vars(i)).is_integer()) {
         CHECK_EQ(var, -1);
         var = ct.vars(i);
       }
@@ -1687,8 +1855,8 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
     CHECK_NE(var, -1);
 
     // The smaller the domain, the more we allow scaling.
-    const MPVariableProto& var_proto = mp_model->variables(var);
-    const double max_multiplier = compute_max_multiplier(var_proto);
+    const double max_multiplier =
+        MaxImpliedIntegerMultiplier(params, states[var].lb, states[var].ub);
 
     // Inspect this constraint to see if we can find a small enough multiplier.
     // Note that if this is the case, we will inspect all constraints below to
@@ -1697,9 +1865,9 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
     // execute the loop below in all cases.
     ++num_processed_constraints;
     int best_ct_index = top_ct_index;
-    double best_scaling = GetIntegralityMultiplier(ct, var_scaling, var,
-                                                   tolerance, max_multiplier)
-                              .first;
+    double best_scaling =
+        GetIntegralityMultiplier(make_row(ct), var, tolerance, max_multiplier)
+            .first;
     if (best_scaling == 0.0) continue;  // coeff was 0.0 ??
     if (best_scaling == kInfinity) {
       ++num_fail_due_to_large_multiplier;
@@ -1721,7 +1889,7 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
 
       ++num_processed_constraints;
       const double multiplier =
-          GetIntegralityMultiplier(other_ct, var_scaling, var, tolerance,
+          GetIntegralityMultiplier(make_row(other_ct), var, tolerance,
                                    max_multiplier)
               .first;
       if (multiplier != 0.0 && multiplier < best_scaling) {
@@ -1730,259 +1898,296 @@ std::vector<double> DetectImpliedIntegers(const SatParameters& params,
       }
     }
 
-    const EnforcedLinearConstraint& best_ct =
-        mp_model->constraints(best_ct_index);
+    const LinearRow best_row = make_row(mp_model->constraints(best_ct_index));
     std::tie(integer_error_lb[var], integer_error_ub[var]) =
         ComputeSingleVarConstraintErrorBounds(
-            *mp_model, best_ct, var_scaling, integer_error_lb, integer_error_ub,
-            var, best_scaling, best_ct.lower_bound(), best_ct.upper_bound());
+            best_row, states, var, best_scaling, best_row.lb, best_row.ub);
+    states[var].error_lb = integer_error_lb[var];
+    states[var].error_ub = integer_error_ub[var];
     scale_and_mark_as_integer(var, best_scaling);
   }
 
-  // Process continuous variables that only appear as the unique non-integer
-  // in a set of non-equality constraints.
-  //
-  // Note that turning such a variable into an integer cannot in turn trigger
-  // new integer detection, so there is no point doing that in a loop.
-  int num_unused = 0;
-  int num_fixed = 0;
-  int num_in_inequalities = 0;
-  int num_inequality_fail_due_to_lcm = 0;
-  int num_inequality_fail_due_to_large_multiplier = 0;
-  int num_inequality_fail_due_to_domain = 0;
-  for (int var = 0; var < num_variables; ++var) {
-    const MPVariableProto& var_proto = mp_model->variables(var);
-    if (var_proto.is_integer()) continue;
-    if (params.keep_all_feasible_solutions_in_presolve()) break;
-
-    // The smaller the domain, the more we allow scaling.
-    const double max_multiplier = compute_max_multiplier(var_proto);
-
-    std::vector<double> var_multipliers_ge;
-    std::vector<double> var_multipliers_le;
-    double scaling_ge = 1.0;
-    double scaling_le = 1.0;
-    if (!var_to_constraints[var].empty()) {
-      // Check that var is the only non-integral variable in each constraint
-      // where it appears.
-      bool ok = true;
-      for (const int ct_index : var_to_constraints[var]) {
-        if (constraint_to_num_non_integer[ct_index] != 1) {
-          ok = false;
-          break;
-        }
-      }
-      if (!ok) continue;
-
-      // For each constraints in which `var` appears, stores a m such that the
-      // constraint is feasible if and only if it is feasible with m * var an
-      // integer. We actually separate the >= and the <= side for a tighter
-      // algorithm.
-      for (const int ct_index : var_to_constraints[var]) {
-        const EnforcedLinearConstraint& ct = mp_model->constraints(ct_index);
-        const auto [lb_mult, ub_mult] = GetIntegralityMultiplier(
-            ct, var_scaling, var, tolerance, max_multiplier);
-        if (lb_mult != 0.0) var_multipliers_ge.push_back(lb_mult);
-        if (ub_mult != 0.0) var_multipliers_le.push_back(ub_mult);
-      }
-
-      // Now, we have a bunch of multiplier that make each >= or <= constraint
-      // integer on var. We want to compute a kind of least common multiple so
-      // that scaling * var will always be lower or upper bounded by integer.
-      //
-      // If the variable has an objective, we will need the "good objective"
-      // bound to be integer. If not, just one of the two bounds work since we
-      // will always be able to "snap" the variable value to that one.
-      bool fail_because_of_single_constraint = false;
-      if (var_proto.objective_coefficient() > 0.0) {
-        for (const double m : var_multipliers_ge) {
-          if (m == kInfinity) fail_because_of_single_constraint = true;
-        }
-        scaling_ge =
-            GetDoubleLcm(var_multipliers_ge, tolerance, max_multiplier);
-        scaling_le = kInfinity;
-      } else if (var_proto.objective_coefficient() < 0.0) {
-        for (const double m : var_multipliers_le) {
-          if (m == kInfinity) fail_because_of_single_constraint = true;
-        }
-        scaling_ge = kInfinity;
-        scaling_le =
-            GetDoubleLcm(var_multipliers_le, tolerance, max_multiplier);
-      } else {
-        for (const double m : var_multipliers_ge) {
-          if (m == kInfinity) fail_because_of_single_constraint = true;
-        }
-        for (const double m : var_multipliers_le) {
-          if (m == kInfinity) fail_because_of_single_constraint = true;
-        }
-        scaling_le =
-            GetDoubleLcm(var_multipliers_le, tolerance, max_multiplier);
-        scaling_ge =
-            GetDoubleLcm(var_multipliers_ge, tolerance, max_multiplier);
-      }
-
-      if (scaling_ge == kInfinity && scaling_le == kInfinity) {
-        if (fail_because_of_single_constraint) {
-          ++num_inequality_fail_due_to_large_multiplier;
-        } else {
-          ++num_inequality_fail_due_to_lcm;
-        }
-        continue;
-      }
-    } else {
-      if (var_proto.objective_coefficient() > 0.0) scaling_le = kInfinity;
-      if (var_proto.objective_coefficient() < 0.0) scaling_ge = kInfinity;
-    }
-
-    // At this point, all constraints only ever enforce an [int_lb, ...] or
-    // [..., int_ub] interval on the SCALED variable. We still have a couple of
-    // corner cases to deal with.
-
-    // First corner case: If the scaled domain does not contain an integer
-    // point, then the domain of the variable will always be either fully
-    // feasible or fully infeasible on the snapped side! So we can just fix
-    // that variable to the corresponding bound in its domain. No need to scale
-    // at all.
-    //
-    // NOTE(user): This do not trigger on the miplib though.
-    const auto domain_has_no_integer = [&](double s) {
-      if (s == kInfinity) return false;
-      const Fractional scaled_var_lb =
-          (var_proto.lower_bound() - tolerance) * s;
-      const Fractional scaled_var_ub =
-          (var_proto.upper_bound() + tolerance) * s;
-      return std::ceil(scaled_var_lb) > std::floor(scaled_var_ub);
-    };
-    const bool fix_to_lb = domain_has_no_integer(scaling_ge);
-    const bool fix_to_ub = domain_has_no_integer(scaling_le);
-    if (fix_to_lb || fix_to_ub) {
-      double target =
-          fix_to_lb ? var_proto.lower_bound() : var_proto.upper_bound();
-      if (fix_to_lb && fix_to_ub &&
-          std::abs(var_proto.upper_bound()) < std::abs(target)) {
-        target = var_proto.upper_bound();
-      }
-      ++num_fixed;
-      mp_model->mutable_variables(var)->set_lower_bound(target);
-      mp_model->mutable_variables(var)->set_upper_bound(target);
-      continue;
-    }
-
-    // Second corner case: when snapping to the lower (or upper) bound, if
-    // there is an objective or opposite-side constraints, the variable's own
-    // lower (or upper) bound can be the active bound and must also be integer
-    // after scaling so we don't cut off the best/only feasible solution.
-    //
-    // TODO(user): There is a bad interaction with the bound propagator that
-    // propagates bound using tolerances, so that they are not exactly integer
-    // :( find a cleaner way ?
-    const auto scale_for_bound = [&](double s, double bound) {
-      if (s == kInfinity || !std::isfinite(bound) || max_multiplier < 1.0) {
-        return s == kInfinity || max_multiplier < 1.0 ? kInfinity : s;
-      }
-      const int64_t int_limit =
-          max_multiplier >= static_cast<double>(kint64max)
-              ? kint64max
-              : CapAdd(static_cast<int64_t>(std::floor(max_multiplier)), 1);
-      s *= FindRationalFactor(s * bound, int_limit, s * tolerance);
-      if (s == 0 || s > max_multiplier) return kInfinity;
-      const double scaled = bound * s;
-      if (std::abs(scaled - std::round(scaled)) >
-          params.mip_wanted_precision() * s) {
-        return kInfinity;
-      }
-      return s;
-    };
-    const bool need_lb =
-        var_proto.objective_coefficient() > 0.0 || !var_multipliers_le.empty();
-    const bool need_ub =
-        var_proto.objective_coefficient() < 0.0 || !var_multipliers_ge.empty();
-    if (need_lb) {
-      scaling_ge = scale_for_bound(scaling_ge, var_proto.lower_bound());
-    }
-    if (need_ub) {
-      scaling_le = scale_for_bound(scaling_le, var_proto.upper_bound());
-    }
-    const double scaling = std::min(scaling_ge, scaling_le);
-    if (scaling == kInfinity) {
-      ++num_inequality_fail_due_to_domain;
-      continue;
-    }
-
-    const bool snap_ge = (scaling == scaling_ge);
-    double max_ineq_err = 0.0;
-    for (const int ct_index : var_to_constraints[var]) {
-      const EnforcedLinearConstraint& ct = mp_model->constraints(ct_index);
-      const double var_coeff = GetVarCoeff(ct, var);
-      if (var_coeff == 0.0) continue;
-      const double active_rhs =
-          (snap_ge == (var_coeff > 0.0)) ? ct.lower_bound() : ct.upper_bound();
-      if (!std::isfinite(active_rhs)) continue;
-      const auto [e_lb, e_ub] = ComputeSingleVarConstraintErrorBounds(
-          *mp_model, ct, var_scaling, integer_error_lb, integer_error_ub, var,
-          scaling, active_rhs, active_rhs);
-      max_ineq_err = std::max({max_ineq_err, -e_lb, e_ub});
-    }
-    const double active_var_bound =
-        snap_ge ? var_proto.lower_bound() : var_proto.upper_bound();
-    if ((snap_ge ? need_lb : need_ub) && std::isfinite(active_var_bound)) {
-      const double r = std::round(scaling * active_var_bound);
-      max_ineq_err =
-          std::max(max_ineq_err, MaxAbsScaledTightSum(TightSum().Add(r).AddProd(
-                                     -scaling, active_var_bound)));
-    }
-    integer_error_lb[var] = -max_ineq_err;
-    integer_error_ub[var] = max_ineq_err;
-
-    if (var_to_constraints[var].empty()) {
-      ++num_unused;
-    } else {
-      ++num_in_inequalities;
-    }
-    scale_and_mark_as_integer(var, scaling);
-  }
-  const int num_missed =
-      num_fail_due_to_rhs + num_fail_due_to_large_multiplier +
-      num_inequality_fail_due_to_large_multiplier +
-      num_inequality_fail_due_to_lcm + num_inequality_fail_due_to_domain;
+  const int num_missed = num_fail_due_to_rhs + num_fail_due_to_large_multiplier;
   if (num_missed > 0) {
     VLOG(1) << "num_new_integer: " << num_implied_integers
             << "\n num_processed_constraints: " << num_processed_constraints
             << "\n num_rhs_fail: " << num_fail_due_to_rhs
-            << "\n num_multiplier_fail: " << num_fail_due_to_large_multiplier
-            << "\n num_inequality_multiplier_fail: "
-            << num_inequality_fail_due_to_large_multiplier
-            << "\n num_inequality_fail_due_to_lcm: "
-            << num_inequality_fail_due_to_lcm
-            << "\n num_inequality_fail_due_to_domain: "
-            << num_inequality_fail_due_to_domain;
+            << "\n num_multiplier_fail: " << num_fail_due_to_large_multiplier;
     SOLVER_LOG(logger, "Missed ", num_missed, " potential implied integer.");
   }
 
-  if (num_implied_integers > 0 || num_missed > 0 || num_fixed > 0) {
+  if (num_implied_integers > 0 || num_missed > 0) {
     const int num_integers = initial_num_integers + num_implied_integers;
     SOLVER_LOG(logger, "[ImpliedIntegers] Num integers: ", num_integers, "/",
                num_variables, " (implied:", num_implied_integers,
-               " in_inequalities:", num_in_inequalities, " unused:", num_unused,
-               " missed:", num_missed, " fixed:", num_fixed,
-               " max_scaling:", max_scaling, ")");
+               " missed:", num_missed, " max_scaling:", max_scaling, ")");
   }
 
   ApplyVarScaling(var_scaling, mp_model->mutable_underlying_model());
   return var_scaling;
 }
 
+void ScaleOneVariableResidualMatrix(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    GlobalObjectivePrecision* global_obj_precision,
+    OneVariableComponentStats* stats) {
+  CHECK_EQ(compo.continuous_vars.size(), 1);
+  const int var = compo.continuous_vars[0];
+  MipVariableState& state = states[var];
+  CHECK(!state.is_integer);
+  CHECK_EQ(state.scaling, 1.0);
+  ++stats->num_components;
+  if (params.keep_all_feasible_solutions_in_presolve()) return;
+
+  const double tolerance = params.mip_wanted_precision();
+  const double max_multiplier =
+      MaxImpliedIntegerMultiplier(params, state.lb, state.ub);
+
+  // The objective coefficient of var in the (minimization) problem.
+  const double obj_coeff = mp_model.variables(var).objective_coefficient();
+
+  // Transform the rows in the current variable space.
+  const int num_rows = compo.constraints.size();
+  std::vector<std::vector<double>> row_coeffs(num_rows);
+  std::vector<LinearRow> rows(num_rows);
+  for (int r = 0; r < num_rows; ++r) {
+    const EnforcedLinearConstraint& ct =
+        mp_model.constraints(compo.constraints[r]);
+    TransformConstraint(ct.proto(), states, &row_coeffs[r], &rows[r].lb,
+                        &rows[r].ub);
+    rows[r].vars = ct.vars();
+    rows[r].coeffs = row_coeffs[r];
+  }
+
+  // For each row, stores a multiplier m such that the row is feasible if and
+  // only if it is feasible with m * var an integer. We actually separate the
+  // >= and the <= side for a tighter algorithm.
+  //
+  // Then we compute a kind of least common multiple so that scaling * var will
+  // always be lower or upper bounded by integers. If the variable has an
+  // objective, we need the "good objective" bound to be integer. If not, just
+  // one of the two bounds work since we will always be able to "snap" the
+  // variable value to that one.
+  std::vector<double> var_multipliers_ge;
+  std::vector<double> var_multipliers_le;
+  for (const LinearRow& row : rows) {
+    const auto [lb_mult, ub_mult] =
+        GetIntegralityMultiplier(row, var, tolerance, max_multiplier);
+    if (lb_mult != 0.0) var_multipliers_ge.push_back(lb_mult);
+    if (ub_mult != 0.0) var_multipliers_le.push_back(ub_mult);
+  }
+  double scaling_ge = kInfinity;
+  double scaling_le = kInfinity;
+  if (obj_coeff <= 0.0) {
+    scaling_le = GetDoubleLcm(var_multipliers_le, tolerance, max_multiplier);
+  }
+  if (obj_coeff >= 0.0) {
+    scaling_ge = GetDoubleLcm(var_multipliers_ge, tolerance, max_multiplier);
+  }
+  if (scaling_ge == kInfinity && scaling_le == kInfinity) {
+    ++stats->num_missed;
+    return;
+  }
+
+  // At this point, all constraints only ever enforce an [int_lb, ...] or
+  // [..., int_ub] interval on the SCALED variable. We still have a couple of
+  // corner cases to deal with.
+
+  // First corner case: If the scaled domain does not contain an integer
+  // point, then the domain of the variable will always be either fully
+  // feasible or fully infeasible on the snapped side! So we can just fix
+  // that variable to the corresponding bound in its domain. No need to scale
+  // at all.
+  //
+  // NOTE(user): This do not trigger on the miplib though.
+  const auto domain_has_no_integer = [&](double s) {
+    if (s == kInfinity) return false;
+    const double scaled_var_lb = (state.lb - tolerance) * s;
+    const double scaled_var_ub = (state.ub + tolerance) * s;
+    return std::ceil(scaled_var_lb) > std::floor(scaled_var_ub);
+  };
+  const bool fix_to_lb = domain_has_no_integer(scaling_ge);
+  const bool fix_to_ub = domain_has_no_integer(scaling_le);
+  if (fix_to_lb || fix_to_ub) {
+    double target = fix_to_lb ? state.lb : state.ub;
+    if (fix_to_lb && fix_to_ub && std::abs(state.ub) < std::abs(target)) {
+      target = state.ub;
+    }
+    ++stats->num_fixed;
+    state.lb = target;
+    state.ub = target;
+    return;
+  }
+
+  // Second corner case: when snapping to the lower (or upper) bound, if
+  // there is an objective or opposite-side constraints, the variable's own
+  // lower (or upper) bound can be the active bound and must also be integer
+  // after scaling so we don't cut off the best/only feasible solution.
+  //
+  // TODO(user): There is a bad interaction with the bound propagator that
+  // propagates bound using tolerances, so that they are not exactly integer
+  // :( find a cleaner way ?
+  const auto scale_for_bound = [&](double s, double bound) {
+    if (s == kInfinity || !std::isfinite(bound) || max_multiplier < 1.0) {
+      return s == kInfinity || max_multiplier < 1.0 ? kInfinity : s;
+    }
+    const int64_t int_limit =
+        max_multiplier >= static_cast<double>(kint64max)
+            ? kint64max
+            : CapAdd(static_cast<int64_t>(std::floor(max_multiplier)), 1);
+    s *= FindRationalFactor(s * bound, int_limit, s * tolerance);
+    if (s == 0 || s > max_multiplier) return kInfinity;
+    const double scaled = bound * s;
+    if (std::abs(scaled - std::round(scaled)) > tolerance * s) {
+      return kInfinity;
+    }
+    return s;
+  };
+  const bool need_lb = obj_coeff > 0.0 || !var_multipliers_le.empty();
+  const bool need_ub = obj_coeff < 0.0 || !var_multipliers_ge.empty();
+  if (need_lb) scaling_ge = scale_for_bound(scaling_ge, state.lb);
+  if (need_ub) scaling_le = scale_for_bound(scaling_le, state.ub);
+  const double scaling = std::min(scaling_ge, scaling_le);
+  if (scaling == kInfinity) {
+    ++stats->num_missed;
+    return;
+  }
+
+  // Bound the error |discretized_var - scaling * var| when snapping var to the
+  // active side of its rows (or to its own bound).
+  const bool snap_ge = (scaling == scaling_ge);
+  double max_err = 0.0;
+  for (const LinearRow& row : rows) {
+    const double var_coeff = GetVarCoeff(row, var);
+    if (var_coeff == 0.0) continue;
+    const double active_rhs = (snap_ge == (var_coeff > 0.0)) ? row.lb : row.ub;
+    if (!std::isfinite(active_rhs)) continue;
+    const auto [e_lb, e_ub] = ComputeSingleVarConstraintErrorBounds(
+        row, states, var, scaling, active_rhs, active_rhs);
+    max_err = std::max({max_err, -e_lb, e_ub});
+  }
+  const double active_var_bound = snap_ge ? state.lb : state.ub;
+  if ((snap_ge ? need_lb : need_ub) && std::isfinite(active_var_bound)) {
+    const double r = std::round(scaling * active_var_bound);
+    max_err = std::max(max_err, MaxAbsScaledTightSum(TightSum().Add(r).AddProd(
+                                    -scaling, active_var_bound)));
+  }
+
+  // With mip_scale_for_precision, compare with the power of two scaling that
+  // ScaleComponentContinuousVariablesForGivenPrecision() would use, on the
+  // worst case error on var (in its original space).
+  if (params.mip_scale_for_precision()) {
+    const ComponentPrecisionScalingBounds bounds =
+        ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
+                                               kInfinity, global_obj_precision);
+    double pow2_scaling = 1.0;
+    if (bounds.max_var_scaling[0] > 1.0 &&
+        bounds.min_headroom[0] != kInfinity &&
+        bounds.max_scaling_needed[0] > 1.0) {
+      pow2_scaling = std::min(
+          {bounds.max_var_scaling[0], bounds.min_headroom[0],
+           std::ldexp(
+               1.0, LowestPowerOfTwoAtOrAbove(bounds.max_scaling_needed[0]))});
+    }
+
+    // A rational scaling that is not a power of two also changes the objective
+    // coefficient of var to a less "nice" value. We refuse it if the objective
+    // can then no longer be scaled to integers with enough headroom left for
+    // the other continuous variables, for which we reserve a scaling similar
+    // to the power of two one of var. Note that the power of two scalings are
+    // all absorbed by a single factor, see GlobalObjectivePrecision.
+    int exp = 0;
+    const bool is_power_of_two = std::frexp(scaling, &exp) == 0.5;
+    if (!is_power_of_two && global_obj_precision != nullptr &&
+        !global_obj_precision->KeepsObjectiveScalable(
+            mp_model.underlying_model(), states, var, scaling,
+            /*reserved_headroom=*/pow2_scaling)) {
+      ++stats->num_objective_limited;
+      return;
+    }
+    const auto [pow2_err_lb, pow2_err_ub] =
+        GetContinuousVarDiscretizationErrorBounds(
+            params.mip_proper_relaxation(), obj_coeff);
+    const double pow2_err = std::max(-pow2_err_lb, pow2_err_ub) / pow2_scaling;
+    if (max_err / scaling > pow2_err) {
+      ++stats->num_pow2_preferred;
+      return;
+    }
+  }
+
+  ++stats->num_integers;
+  stats->max_scaling = std::max(stats->max_scaling, scaling);
+  state.error_lb = -max_err;
+  state.error_ub = max_err;
+  state.is_integer = true;
+  ScaleVariableState(scaling, &state);
+  if (obj_coeff != 0.0 && global_obj_precision != nullptr) {
+    global_obj_precision->MarkDirty();
+  }
+}
+
+void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
+                                  SolverLogger* logger) {
+  if (stats.num_components == 0) return;
+  SOLVER_LOG(logger, "[OneVarComponents] ", stats.num_components,
+             " components: ", stats.num_integers,
+             " marked as integer (max scaling ", stats.max_scaling, "), ",
+             stats.num_fixed, " fixed, ", stats.num_pow2_preferred,
+             " better scaled by a power of two, ", stats.num_objective_limited,
+             " kept continuous for the objective, ", stats.num_missed,
+             " without integrality multiplier.");
+}
+
 absl::Status ConstraintScaler::ScaleAndAddConstraint(
-    const EnforcedLinearConstraint& mp_constraint, CpModelProto* cp_model) {
+    const EnforcedLinearConstraint& mp_constraint,
+    absl::Span<const MipVariableState> states, CpModelProto* cp_model,
+    std::optional<ModularConstraintScaling> modular) {
   absl::Span<const IntegerVariableProto* const> var_domains =
       absl::MakeSpan(cp_model->variables());
+  const int num_terms = mp_constraint.num_terms();
+
+  // Transform the constraint and refresh the discretization errors of its
+  // variables (they are lazily copied from the states).
+  double ct_lower_bound;
+  double ct_upper_bound;
+  TransformConstraint(mp_constraint.proto(), states, &tmp_transformed_coeffs,
+                      &ct_lower_bound, &ct_upper_bound);
+  if (var_discretization_error_lb.size() != states.size()) {
+    var_discretization_error_lb.assign(states.size(), 0.0);
+    var_discretization_error_ub.assign(states.size(), 0.0);
+  }
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = mp_constraint.vars(i);
+    var_discretization_error_lb[var] = states[var].error_lb;
+    var_discretization_error_ub[var] = states[var].error_ub;
+  }
+
+  // Enforcement values must be transformed too. This should only involve
+  // integer shifts of integer variables.
+  tmp_enforcement_values.clear();
+  for (int i = 0; i < mp_constraint.enforcement_vars().size(); ++i) {
+    const MipVariableState& state = states[mp_constraint.enforcement_vars()[i]];
+    TightSum transformed_value;
+    transformed_value.AddProd(state.scaling,
+                              mp_constraint.enforcement_values()[i]);
+    transformed_value.AddProd(-state.scaling, state.shift);
+    const auto [int_floor, int_ceil] = transformed_value.Int64Bounds();
+    if (!int_floor.has_value() || int_floor != int_ceil) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "[Scaling] Non-integer or overflowing transformed enforcement "
+          "value. MpConstraintProto: ",
+          ProtobufShortDebugString(mp_constraint.proto())));
+    }
+    tmp_enforcement_values.push_back(*int_floor);
+  }
 
   // Quick check to see if any enforcement is trivially false.
   // This can happen if we tightenned the bounds afterwards.
   const int num_enforcements = mp_constraint.enforcement_vars().size();
   for (int i = 0; i < num_enforcements; ++i) {
     const int var = mp_constraint.enforcement_vars()[i];
-    const int64_t value = mp_constraint.enforcement_values()[i];
+    const int64_t value = tmp_enforcement_values[i];
     const int64_t var_lb = var_domains[var]->domain(0);
     const int64_t var_ub =
         var_domains[var]->domain(var_domains[var]->domain_size() - 1);
@@ -1991,9 +2196,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 
   ConstraintProto* constraint = cp_model->add_constraints();
   const absl::Status status = ScaleAndAddConstraint(
-      mp_constraint.vars(), mp_constraint.coeffs(), mp_constraint.lower_bound(),
-      mp_constraint.upper_bound(), mp_constraint.name(), var_domains,
-      constraint);
+      mp_constraint.vars(), tmp_transformed_coeffs, ct_lower_bound,
+      ct_upper_bound, mp_constraint.name(), var_domains, constraint, modular);
   if (!status.ok()) {
     return absl::Status(
         status.code(),
@@ -2014,7 +2218,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   bool has_integer_enforcement = false;
   for (int i = 0; i < num_enforcements; ++i) {
     const int var = mp_constraint.enforcement_vars()[i];
-    const int64_t value = mp_constraint.enforcement_values()[i];
+    const int64_t value = tmp_enforcement_values[i];
     const int64_t var_lb = var_domains[var]->domain(0);
     const int64_t var_ub =
         var_domains[var]->domain(var_domains[var]->domain_size() - 1);
@@ -2079,7 +2283,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   auto* mutable_linear = constraint->mutable_linear();
   for (int i = 0; i < num_enforcements; ++i) {
     const int var = mp_constraint.enforcement_vars()[i];
-    const int64_t value = mp_constraint.enforcement_values()[i];
+    const int64_t value = tmp_enforcement_values[i];
     const int64_t var_lb = var_domains[var]->domain(0);
     const int64_t var_ub =
         var_domains[var]->domain(var_domains[var]->domain_size() - 1);
@@ -2130,7 +2334,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     absl::Span<const int> vars, absl::Span<const double> coeffs,
     double ct_lower_bound, double ct_upper_bound, absl::string_view name,
     absl::Span<const IntegerVariableProto* const> var_domains,
-    ConstraintProto* constraint) {
+    ConstraintProto* constraint,
+    std::optional<ModularConstraintScaling> modular) {
   if (keep_names && !name.empty()) constraint->set_name(name);
 
   // We relax the constraint bound by the wanted_precision before scaling. Note
@@ -2141,13 +2346,12 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // but absolute is usually what is used in the MIP world. Also if the problem
   // was a pure integer problem, and a user asked for sum == 10k, we want to
   // stay exact here.
-  if (use_tight_bounds) {
-    ct_lower_bound -= tight_precision;
-    ct_upper_bound += tight_precision;
-  } else {
-    ct_lower_bound -= wanted_precision;
-    ct_upper_bound += wanted_precision;
-  }
+  const double bound_tol =
+      use_tight_bounds ? tight_precision : wanted_precision;
+  const double unrelaxed_lower_bound = ct_lower_bound;
+  const double unrelaxed_upper_bound = ct_upper_bound;
+  ct_lower_bound = ExactScaledSumLb(ct_lower_bound, -bound_tol);
+  ct_upper_bound = ExactScaledSumUb(ct_upper_bound, bound_tol);
 
   // Constraint statistic used below.
   double min_activity = 0.0;
@@ -2200,6 +2404,10 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     max_activity += max_term;
   }
 
+  // The modular rounding is only needed if some component variable is not
+  // fixed to zero.
+  if (coefficients.empty()) modular.reset();
+
   // Given the bounds [discretization_error_lb, discretization_error_ub] on
   // sum_i coeff_i * (discretized_x_i - x_i), any feasible solution x of
   // ct_lower_bound <= sum_i coeff_i * x_i <= ct_upper_bound maps to a
@@ -2212,6 +2420,23 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
       tmp_discretization_lb.TightLowerBound();
   const double discretization_error_ub =
       tmp_discretization_ub.TightUpperBound();
+
+  // Since the activity of the discretized point is always within [min_activity,
+  // max_activity], a side cannot be off by more than its distance to these
+  // bounds. Note that this must be done before skipping trivial constraints,
+  // otherwise a side that is relaxed so much that it becomes trivial would not
+  // be accounted for.
+  if (std::isfinite(ct_lower_bound)) {
+    max_discretization_error = std::max(
+        max_discretization_error,
+        std::min(-discretization_error_lb, ct_lower_bound - min_activity));
+  }
+  if (std::isfinite(ct_upper_bound)) {
+    max_discretization_error = std::max(
+        max_discretization_error,
+        std::min(discretization_error_ub, max_activity - ct_upper_bound));
+  }
+
   if (use_proper_relaxation) {
     if (std::isfinite(ct_lower_bound) && discretization_error_lb != 0.0) {
       ct_lower_bound =
@@ -2247,9 +2472,17 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // the requested precision.
   double relative_coeff_error;
   double scaled_sum_error;
-  const double scaling_factor = FindBestScalingAndComputeErrors(
-      coefficients, lower_bounds, upper_bounds, scaling_target,
-      wanted_precision, &relative_coeff_error, &scaled_sum_error);
+  double scaling_factor;
+  if (modular.has_value()) {
+    scaling_factor = modular->scaling_factor;
+    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
+                         scaling_factor, &relative_coeff_error,
+                         &scaled_sum_error);
+  } else {
+    scaling_factor = FindBestScalingAndComputeErrors(
+        coefficients, lower_bounds, upper_bounds, scaling_target,
+        wanted_precision, &relative_coeff_error, &scaled_sum_error);
+  }
   if (scaling_factor == 0.0) {
     return absl::InvalidArgumentError(
         "Scaling factor of zero while scaling constraint");
@@ -2261,14 +2494,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   min_scaling_factor = std::min(scaling_factor, min_scaling_factor);
   max_absolute_rhs_error =
       std::max(max_absolute_rhs_error, scaled_sum_error / scaling_factor);
-  if (ct_lower_bound != -kInfinity) {
-    max_discretization_error = std::max(
-        max_discretization_error, std::max(0.0, -discretization_error_lb));
-  }
-  if (ct_upper_bound != kInfinity) {
-    max_discretization_error = std::max(max_discretization_error,
-                                        std::max(0.0, discretization_error_ub));
-  }
 
   if (use_tight_bounds || use_proper_relaxation) {
     tight_error_helper.LoadUnscaledConstraint(coefficients, int_lower_bounds,
@@ -2323,18 +2548,65 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     }
 
     max_rounding_error = std::max({max_rounding_error, lb_error1, ub_error1});
-    max_unrounding_error =
-        std::max({max_unrounding_error, lb_error2, ub_error2});
+    // The modular unrounding errors depend on the final bounds, see below.
+    if (!modular.has_value()) {
+      max_unrounding_error =
+          std::max({max_unrounding_error, lb_error2, ub_error2});
+    }
 
     // Relax the bound to never loose a feasible solution of the original
     // problem that is within tight_precision. However, we don't relax too much
     // if we are not precise, and just hope for the best
-    if (use_proper_relaxation) {
-      ct_lower_bound -= lb_error1;
-      ct_upper_bound += ub_error1;
-    } else {
-      ct_lower_bound -= std::min(wanted_precision, lb_error1);
-      ct_upper_bound += std::min(wanted_precision, ub_error1);
+    const double lb_relax = use_proper_relaxation
+                                ? lb_error1
+                                : std::min(wanted_precision, lb_error1);
+    const double ub_relax = use_proper_relaxation
+                                ? ub_error1
+                                : std::min(wanted_precision, ub_error1);
+    ct_lower_bound = ExactScaledSumLb(ct_lower_bound, -lb_relax);
+    ct_upper_bound = ExactScaledSumUb(ct_upper_bound, ub_relax);
+  }
+
+  Fractional scaled_lb = std::ceil(ct_lower_bound * scaling_factor);
+  Fractional scaled_ub = std::floor(ct_upper_bound * scaling_factor);
+  if (modular.has_value()) {
+    // In a TUM (resp. 2-modular) component, the LP extreme points are only
+    // integral if the scaled bounds are integer (resp. even). We thus round
+    // the bounds, before their relaxation by `bound_tol` (which is used as the
+    // snapping tolerance of RoundScaledLowerBound()), to multiples of
+    // `modular_factor`.
+    const double m = static_cast<double>(modular->modular_factor);
+    const double f = scaling_factor / m;
+    const double tol =
+        f * (use_proper_relaxation ? bound_tol : wanted_precision);
+    const auto round_lb = [&](double lb) {
+      return m * RoundScaledLowerBound(ProdBounds(lb, f).first, tol,
+                                       use_proper_relaxation);
+    };
+    const bool tight = use_tight_bounds || use_proper_relaxation;
+    if (std::isfinite(ct_lower_bound)) {
+      scaled_lb = round_lb(unrelaxed_lower_bound);
+      if (tight) {
+        // Since the bound might have been enlarged, we add its distance to the
+        // original bound.
+        const double lb = std::max(scaled_lb, min_activity * scaling_factor);
+        max_unrounding_error =
+            std::max(max_unrounding_error,
+                     tight_error_helper.GetLowerBoundUnroundingError(lb) /
+                             scaling_factor +
+                         std::max(0.0, ct_lower_bound - lb / scaling_factor));
+      }
+    }
+    if (std::isfinite(ct_upper_bound)) {
+      scaled_ub = -round_lb(-unrelaxed_upper_bound);
+      if (tight) {
+        const double ub = std::min(scaled_ub, max_activity * scaling_factor);
+        max_unrounding_error =
+            std::max(max_unrounding_error,
+                     tight_error_helper.GetUpperBoundUnroundingError(ub) /
+                             scaling_factor +
+                         std::max(0.0, ub / scaling_factor - ct_upper_bound));
+      }
     }
   }
 
@@ -2346,7 +2618,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // scaling_target (<< kint64max) it is okay to compare to kint64min/kint64max
   // casted to double.
   int64_t final_lb;
-  const Fractional scaled_lb = std::ceil(ct_lower_bound * scaling_factor);
   if (ct_lower_bound == kInfinity ||
       scaled_lb >= static_cast<double>(kint64max)) {
     // Corner case: infeasible model.
@@ -2361,7 +2632,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   }
 
   int64_t final_ub;
-  const Fractional scaled_ub = std::floor(ct_upper_bound * scaling_factor);
   if (ct_upper_bound == -kInfinity ||
       scaled_ub <= static_cast<double>(kint64min)) {
     // Corner case: infeasible model.
@@ -2392,11 +2662,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 }
 
 namespace {
-
-bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
-  return mp_constraint.lower_bound() == -kInfinity &&
-         mp_constraint.upper_bound() == kInfinity;
-}
 
 // Tries to find an odd rational multiplier for `coefficients` within
 // `fp_limit`, shifting any coefficient with `frexp` exponent `exp <
@@ -2550,6 +2815,32 @@ double FindBestScalingAndComputeErrors(
   return scaling_factor;
 }
 
+namespace {
+
+// Clamps [lb, ub] to [-max_bound, max_bound] and returns the number of bounds
+// that were truncated, or -1 if the domain does not intersect this interval.
+int ClampBounds(double max_bound, double* lb, double* ub) {
+  // Deal with the corner case of a domain far away from zero.
+  //
+  // TODO(user): We could avoid these cases by shifting the domain of
+  // all variables to contain zero. This should also lead to a better scaling,
+  // but it has some complications with integer variables and requires some
+  // post-solve.
+  if (*lb > max_bound || *ub < -max_bound) return -1;
+  int num_truncated_bounds = 0;
+  if (*lb < -max_bound) {
+    ++num_truncated_bounds;
+    *lb = -max_bound;
+  }
+  if (*ub > max_bound) {
+    ++num_truncated_bounds;
+    *ub = max_bound;
+  }
+  return num_truncated_bounds;
+}
+
+}  // namespace
+
 bool ClampVariableBounds(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger, int* num_clamped) {
   // To make sure we cannot have integer overflow, we use this bound for any
@@ -2568,31 +2859,18 @@ bool ClampVariableBounds(const SatParameters& params, MPModelProto* mp_model,
   CHECK_LT(kMaxVariableBound, static_cast<double>(kint64max));
 
   int num_truncated_bounds = 0;
-  const int num_variables = mp_model->variable_size();
-  for (int i = 0; i < num_variables; ++i) {
-    MPVariableProto* mp_var = mp_model->mutable_variable(i);
-
-    // Deal with the corner case of a domain far away from zero.
-    //
-    // TODO(user): We could avoid these cases by shifting the domain of
-    // all variables to contain zero. This should also lead to a better scaling,
-    // but it has some complications with integer variables and requires some
-    // post-solve.
-    if (mp_var->lower_bound() > kMaxVariableBound ||
-        mp_var->upper_bound() < -kMaxVariableBound) {
-      SOLVER_LOG(logger, "Error: variable ", *mp_var,
+  for (MPVariableProto& mp_var : *mp_model->mutable_variable()) {
+    double lb = mp_var.lower_bound();
+    double ub = mp_var.upper_bound();
+    const int num_truncated = ClampBounds(kMaxVariableBound, &lb, &ub);
+    if (num_truncated < 0) {
+      SOLVER_LOG(logger, "Error: variable ", mp_var,
                  " is outside [-mip_max_bound..mip_max_bound]");
       return false;
     }
-
-    if (mp_var->lower_bound() < -kMaxVariableBound) {
-      ++num_truncated_bounds;
-      mp_var->set_lower_bound(-kMaxVariableBound);
-    }
-    if (mp_var->upper_bound() > kMaxVariableBound) {
-      ++num_truncated_bounds;
-      mp_var->set_upper_bound(kMaxVariableBound);
-    }
+    num_truncated_bounds += num_truncated;
+    mp_var.set_lower_bound(lb);
+    mp_var.set_upper_bound(ub);
   }
 
   if (num_clamped != nullptr) *num_clamped = num_truncated_bounds;
@@ -2601,6 +2879,25 @@ bool ClampVariableBounds(const SatParameters& params, MPModelProto* mp_model,
                "[Clamping] Warning: ", FormatCounter(num_truncated_bounds),
                " bounds were truncated to ",
                static_cast<int64_t>(kMaxVariableBound), ".");
+  }
+  return true;
+}
+
+bool ClampVariableBounds(const SatParameters& params,
+                         absl::Span<const int> vars,
+                         absl::Span<MipVariableState> states,
+                         SolverLogger* logger, int* num_clamped) {
+  const double kMaxVariableBound = std::round(params.mip_max_bound());
+  for (const int var : vars) {
+    MipVariableState& state = states[var];
+    const int num_truncated =
+        ClampBounds(kMaxVariableBound, &state.lb, &state.ub);
+    if (num_truncated < 0) {
+      SOLVER_LOG(logger, "Error: variable #", var, " in [", state.lb, ", ",
+                 state.ub, "] is outside [-mip_max_bound..mip_max_bound]");
+      return false;
+    }
+    *num_clamped += num_truncated;
   }
   return true;
 }
@@ -2758,131 +3055,128 @@ void ExtractEnforcementLiterals(const SatParameters& params,
   }
 }
 
-bool ConvertMPModelProtoToCpModelProto(
-    const SatParameters& params, const MPModelProtoWrapper& mp_model,
-    int num_clamped, absl::Span<const double> integer_error_lb,
-    absl::Span<const double> integer_error_ub, CpModelProto* cp_model,
-    SolverLogger* logger) {
-  CHECK(cp_model != nullptr);
-  cp_model->Clear();
-  cp_model->set_name(mp_model.name());
+void LogShiftStats(const ShiftStats& stats, SolverLogger* logger) {
+  if (stats.num_shifted > 0) {
+    SOLVER_LOG(logger, "[Shifting] Shifted ", FormatCounter(stats.num_shifted),
+               " variable towards zero with max shift magnitude ",
+               stats.max_shift, ".");
+  }
+}
 
+void ShiftVariables(
+    const std::function<double(const MipVariableState&)>& get_shift,
+    absl::Span<const int> vars, absl::Span<MipVariableState> states,
+    ShiftStats* stats) {
+  for (const int var : vars) {
+    MipVariableState& state = states[var];
+    const double offset = get_shift(state);
+    if (offset == 0.0) continue;
+    // Currently no caller shifts an already-shifted variable (after
+    // ShiftBeforeScalingValue(), 0 is in [state.lb, state.ub] so
+    // FinalCpSatShiftValue() returns 0). Assert this and skip in opt builds so
+    // `state.shift` is never accumulated with rounding error.
+    DCHECK_EQ(state.shift, 0.0);
+    if (state.shift != 0.0) continue;
+    // We should never shift an integer variable by a non-integer value, this
+    // is not correct.
+    DCHECK(!state.is_integer || offset == std::round(offset));
+    ++stats->num_shifted;
+    stats->max_shift = std::max(stats->max_shift, std::abs(offset));
+    state.lb = ExactScaledSumLb(state.lb, -offset);
+    state.ub = ExactScaledSumUb(state.ub, -offset);
+    state.shift = offset / state.scaling;
+  }
+}
+
+bool ConvertVariableToCpVariable(const SatParameters& params, int var_index,
+                                 double objective_coefficient,
+                                 MipVariableState* state,
+                                 IntegerVariableProto* cp_var,
+                                 int* num_small_domains) {
   const double kMaxVariableBound =
       std::nextafter(static_cast<double>(kint64max / 2), 0.0);
-  int num_small_domains = 0;
   const int64_t kSmallDomainSize = 1000;
 
-  const int num_variables = mp_model.num_variables();
-  CHECK_EQ(integer_error_lb.size(), num_variables);
-  CHECK_EQ(integer_error_ub.size(), num_variables);
+  // Bounds must have been clamped by ClampVariableBounds() first.
+  const double var_lb = state->lb;
+  const double var_ub = state->ub;
+  CHECK_GE(var_lb, -kMaxVariableBound);
+  CHECK_LE(var_ub, kMaxVariableBound);
 
-  ConstraintScaler scaler;
-  scaler.var_discretization_error_lb.assign(integer_error_lb.begin(),
-                                            integer_error_lb.end());
-  scaler.var_discretization_error_ub.assign(integer_error_ub.begin(),
-                                            integer_error_ub.end());
-
-  // Add the variables.
-  const bool keep_names = !params.ignore_names();
-  for (int i = 0; i < num_variables; ++i) {
-    const MPVariableProto& mp_var = mp_model.variables(i);
-    IntegerVariableProto* cp_var = cp_model->add_variables();
-    if (keep_names) cp_var->set_name(mp_var.name());
-
-    // Bounds must have been clamped by ClampVariableBounds() first.
-    const double var_lb = mp_var.lower_bound();
-    const double var_ub = mp_var.upper_bound();
-    CHECK_GE(var_lb, -kMaxVariableBound);
-    CHECK_LE(var_ub, kMaxVariableBound);
-
-    // Note that the cast is "perfect" because we forbid large values.
-    if (params.mip_proper_relaxation() && !mp_var.is_integer()) {
-      // If we have a feasible floating-point solution, we want the discretized
-      // version where we always snap to the integer point with the best
-      // objective to remain feasible, and record tight bounds [err_lb, err_ub]
-      // on (snapped_var - var) for constraint relaxation.
-      double d_min;
-      double d_max;
-      double err_lb;
-      double err_ub;
-      if (mp_var.objective_coefficient() > 0.0) {
-        d_min = std::floor(var_lb);
-        d_max = std::floor(var_ub);
-        err_lb = -1.0;
-        err_ub = 0.0;
-      } else if (mp_var.objective_coefficient() < 0.0) {
-        d_min = std::ceil(var_lb);
-        d_max = std::ceil(var_ub);
-        err_lb = 0.0;
-        err_ub = 1.0;
-      } else {
-        d_min = std::round(var_lb);
-        d_max = std::round(var_ub);
-        err_lb = -0.5;
-        err_ub = 0.5;
-      }
-      if (d_min == d_max) {
-        err_lb = std::max(err_lb, ExactScaledSumLb(d_min, -var_ub));
-        err_ub = std::min(err_ub, ExactScaledSumUb(d_min, -var_lb));
-      }
-      cp_var->add_domain(static_cast<int64_t>(d_min));
-      cp_var->add_domain(static_cast<int64_t>(d_max));
-      scaler.var_discretization_error_lb[i] = err_lb;
-      scaler.var_discretization_error_ub[i] = err_ub;
+  // Note that the cast is "perfect" because we forbid large values.
+  if (params.mip_proper_relaxation() && !state->is_integer) {
+    // If we have a feasible floating-point solution, we want the discretized
+    // version where we always snap to the integer point with the best
+    // objective to remain feasible, and record tight bounds [err_lb, err_ub]
+    // on (snapped_var - var) for constraint relaxation.
+    double d_min;
+    double d_max;
+    double err_lb;
+    double err_ub;
+    if (objective_coefficient > 0.0) {
+      d_min = std::floor(var_lb);
+      d_max = std::floor(var_ub);
+      err_lb = -1.0;
+      err_ub = 0.0;
+    } else if (objective_coefficient < 0.0) {
+      d_min = std::ceil(var_lb);
+      d_max = std::ceil(var_ub);
+      err_lb = 0.0;
+      err_ub = 1.0;
     } else {
-      const double lb_tol = std::max(params.mip_wanted_precision(),
-                                     -scaler.var_discretization_error_lb[i]);
-      const double ub_tol = std::max(params.mip_wanted_precision(),
-                                     scaler.var_discretization_error_ub[i]);
-      cp_var->add_domain(static_cast<int64_t>(std::ceil(var_lb - lb_tol)));
-      cp_var->add_domain(static_cast<int64_t>(std::floor(var_ub + ub_tol)));
-      if (!mp_var.is_integer() && (var_lb != 0.0 || var_ub != 0.0)) {
-        scaler.var_discretization_error_lb[i] = -1.0;
-        scaler.var_discretization_error_ub[i] = 1.0;
-      }
+      d_min = std::round(var_lb);
+      d_max = std::round(var_ub);
+      err_lb = -0.5;
+      err_ub = 0.5;
     }
-
-    if (cp_var->domain(0) > cp_var->domain(1)) {
-      LOG(WARNING) << "Variable #" << i << " cannot take an integer value. "
-                   << ProtobufShortDebugString(mp_var);
-      return false;
+    if (d_min == d_max) {
+      err_lb = std::max(err_lb, ExactScaledSumLb(d_min, -var_ub));
+      err_ub = std::min(err_ub, ExactScaledSumUb(d_min, -var_lb));
     }
-
-    // Notify if a continuous variable has a small domain as this is likely to
-    // make an all integer solution far from a continuous one.
-    if (!mp_var.is_integer()) {
-      const double diff = var_ub - var_lb;
-      if (diff > params.mip_wanted_precision() && diff < kSmallDomainSize) {
-        ++num_small_domains;
-      }
+    cp_var->add_domain(static_cast<int64_t>(d_min));
+    cp_var->add_domain(static_cast<int64_t>(d_max));
+    state->error_lb = err_lb;
+    state->error_ub = err_ub;
+  } else {
+    const double lb_tol =
+        std::max(params.mip_wanted_precision(), -state->error_lb);
+    const double ub_tol =
+        std::max(params.mip_wanted_precision(), state->error_ub);
+    cp_var->add_domain(static_cast<int64_t>(std::ceil(var_lb - lb_tol)));
+    cp_var->add_domain(static_cast<int64_t>(std::floor(var_ub + ub_tol)));
+    if (!state->is_integer && (var_lb != 0.0 || var_ub != 0.0)) {
+      state->error_lb = -1.0;
+      state->error_ub = 1.0;
     }
   }
 
+  if (cp_var->domain(0) > cp_var->domain(1)) {
+    LOG(WARNING) << "Variable #" << var_index
+                 << " cannot take an integer value. [" << var_lb << ", "
+                 << var_ub << "] is_integer: " << state->is_integer;
+    return false;
+  }
+
+  // Notify if a continuous variable has a small domain as this is likely to
+  // make an all integer solution far from a continuous one.
+  if (!state->is_integer && num_small_domains != nullptr) {
+    const double diff = var_ub - var_lb;
+    if (diff > params.mip_wanted_precision() && diff < kSmallDomainSize) {
+      ++*num_small_domains;
+    }
+  }
+  return true;
+}
+
+void DisplayConstraintScalingStats(const SatParameters& params,
+                                   const ConstraintScaler& scaler,
+                                   int num_clamped, int num_small_domains,
+                                   SolverLogger* logger) {
+  const int64_t kSmallDomainSize = 1000;
   if (num_small_domains > 0) {
     SOLVER_LOG(logger, "[Scaling] Warning: ", FormatCounter(num_small_domains),
                " continuous variable domains with fewer than ",
                kSmallDomainSize, " values.");
-  }
-
-  scaler.wanted_precision = params.mip_wanted_precision();
-  scaler.use_tight_bounds = params.mip_use_tight_bounds();
-  scaler.use_proper_relaxation = params.mip_proper_relaxation();
-  scaler.tight_precision = params.mip_tight_precision();
-  scaler.scaling_target = int64_t{1} << params.mip_max_activity_exponent();
-  scaler.keep_names = keep_names;
-
-  // Add the constraints. We scale each of them individually.
-  const int num_constraints = mp_model.num_constraints();
-  for (int c = 0; c < num_constraints; ++c) {
-    const EnforcedLinearConstraint& mp_constraint = mp_model.constraints(c);
-    if (ConstraintIsAlwaysTrue(mp_constraint.proto())) continue;
-
-    const absl::Status status =
-        scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
-    if (!status.ok()) {
-      SOLVER_LOG(logger, status.message());
-      return false;
-    }
   }
 
   if (scaler.num_trivial_constraints > 0) {
@@ -2939,28 +3233,95 @@ bool ConvertMPModelProtoToCpModelProto(
                scaler.max_rounding_error + scaler.max_unrounding_error +
                    scaler.max_discretization_error);
   }
+}
 
+void PopulateCpModelFloatingPointObjective(
+    const MPModelProtoWrapper& mp_model,
+    absl::Span<const MipVariableState> states, CpModelProto* cp_model) {
   // Since cp_model supports a floating point objective, we use that. This will
   // allow us to scale the objective a bit later so we can potentially do more
   // domain reduction first.
   auto* float_objective = cp_model->mutable_floating_point_objective();
+  float_objective->Clear();
   const double scaling = mp_model.objective_scaling();
   float_objective->set_maximize(scaling < 0.0);
-  if (mp_model.objective_offset() != 0.0) {
-    float_objective->set_offset(mp_model.objective_offset() * scaling);
-  }
+  AccurateSum<double> offset;
+  offset.Add(mp_model.objective_offset());
+  const int num_variables = mp_model.num_variables();
   for (int i = 0; i < num_variables; ++i) {
-    const MPVariableProto& mp_var = mp_model.variables(i);
-    if (mp_var.objective_coefficient() != 0.0) {
-      float_objective->add_vars(i);
-      float_objective->add_coeffs(mp_var.objective_coefficient() * scaling);
-    }
+    const double coeff = mp_model.variables(i).objective_coefficient();
+    if (coeff == 0.0) continue;
+    const MipVariableState& state = states[i];
+    if (state.shift != 0.0) offset.Add(coeff * state.shift);
+    float_objective->add_vars(i);
+    float_objective->add_coeffs(coeff / state.scaling * scaling);
+  }
+  if (offset.Value() != 0.0) {
+    float_objective->set_offset(offset.Value() * scaling);
   }
 
   // If the objective is fixed to zero, we consider there is none.
   if (float_objective->offset() == 0 && float_objective->vars().empty()) {
     cp_model->clear_floating_point_objective();
   }
+}
+
+bool ConvertMPModelProtoToCpModelProto(
+    const SatParameters& params, const MPModelProtoWrapper& mp_model,
+    int num_clamped, absl::Span<const double> integer_error_lb,
+    absl::Span<const double> integer_error_ub, CpModelProto* cp_model,
+    SolverLogger* logger) {
+  CHECK(cp_model != nullptr);
+  cp_model->Clear();
+  cp_model->set_name(mp_model.name());
+
+  int num_small_domains = 0;
+  const int num_variables = mp_model.num_variables();
+  CHECK_EQ(integer_error_lb.size(), num_variables);
+  CHECK_EQ(integer_error_ub.size(), num_variables);
+  std::vector<MipVariableState> states = InitialVariableStates(mp_model);
+  for (int i = 0; i < num_variables; ++i) {
+    states[i].error_lb = integer_error_lb[i];
+    states[i].error_ub = integer_error_ub[i];
+  }
+
+  // Add the variables.
+  const bool keep_names = !params.ignore_names();
+  for (int i = 0; i < num_variables; ++i) {
+    IntegerVariableProto* cp_var = cp_model->add_variables();
+    if (keep_names) cp_var->set_name(mp_model.variables(i).name());
+    if (!ConvertVariableToCpVariable(
+            params, i, mp_model.variables(i).objective_coefficient(),
+            &states[i], cp_var, &num_small_domains)) {
+      return false;
+    }
+  }
+
+  ConstraintScaler scaler;
+  scaler.wanted_precision = params.mip_wanted_precision();
+  scaler.use_tight_bounds = params.mip_use_tight_bounds();
+  scaler.use_proper_relaxation = params.mip_proper_relaxation();
+  scaler.tight_precision = params.mip_tight_precision();
+  scaler.scaling_target = int64_t{1} << params.mip_max_activity_exponent();
+  scaler.keep_names = keep_names;
+
+  // Add the constraints. We scale each of them individually.
+  const int num_constraints = mp_model.num_constraints();
+  for (int c = 0; c < num_constraints; ++c) {
+    const EnforcedLinearConstraint& mp_constraint = mp_model.constraints(c);
+    if (ConstraintIsAlwaysTrue(mp_constraint.proto())) continue;
+
+    const absl::Status status =
+        scaler.ScaleAndAddConstraint(mp_constraint, states, cp_model);
+    if (!status.ok()) {
+      SOLVER_LOG(logger, status.message());
+      return false;
+    }
+  }
+
+  DisplayConstraintScalingStats(params, scaler, num_clamped, num_small_domains,
+                                logger);
+  PopulateCpModelFloatingPointObjective(mp_model, states, cp_model);
   return true;
 }
 
@@ -3606,6 +3967,14 @@ bool ComputeRowAndColScales(const glop::CompactSparseMatrix& col_matrix,
       if (r_scale <= 0.0 || !std::isfinite(r_scale)) return false;
     }
   }
+
+  // Fail if the bipartite graph was not connected.
+  for (const double c_scale : *col_scale) {
+    if (c_scale == 0.0) return false;
+  }
+  for (const double r_scale : *row_scale) {
+    if (r_scale == 0.0) return false;
+  }
   return true;
 }
 
@@ -3706,22 +4075,21 @@ ModularityStatus CheckComponentModularity(
 //   `b'_r = (b_r - A_{r, ext} z*) / row_scale[r]`, and `M_col(j')` is the
 //   maximum finite bound magnitude of variable `j'`. Since `|R_B| + |C_N| = n`,
 //   this is at most `base_factor` times the sum of the `n` largest magnitudes.
-struct BoundReductionStats {
-  int num_components = 0;
-  int num_tightened_bounds = 0;
-  double old_min = std::numeric_limits<double>::infinity();
-  double old_max = -std::numeric_limits<double>::infinity();
-  double new_min = std::numeric_limits<double>::infinity();
-  double new_max = -std::numeric_limits<double>::infinity();
-};
+// Bounds of a variable expressed in the wrapper space (see MipVariableState).
+// Used for the external variables of a component, whose coefficients are read
+// from the (untransformed) model. Note that this is exact for integer
+// variables, which are the only external variables we have in practice.
+std::pair<double, double> WrapperSpaceBounds(const MipVariableState& state) {
+  return {state.lb / state.scaling + state.shift,
+          state.ub / state.scaling + state.shift};
+}
 
-void TightenComponentBounds(absl::Span<const int> compo_vars,
-                            absl::Span<const int> compo_rows,
-                            absl::Span<const double> col_scale,
-                            absl::Span<const double> row_scale,
-                            absl::Span<const int> var_to_local_col,
-                            double base_factor, MPModelProto* mp_model,
-                            BoundReductionStats* stats) {
+void TightenComponentBounds(
+    absl::Span<const int> compo_vars, absl::Span<const int> compo_rows,
+    absl::Span<const double> col_scale, absl::Span<const double> row_scale,
+    absl::Span<const int> var_to_local_col, double base_factor,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    TumStats* stats) {
   if (compo_rows.empty()) return;
 
   // Some half-spaces (variable bounds or constraint sides) can be relaxed
@@ -3738,14 +4106,14 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
   // `|\tilde{v}^*_j| <= L_low`. As long as every dropped half-space contains
   // `[-L_low, +L_low]^n`, `v*` automatically satisfies it and is optimal for
   // the original polyhedron.
-  const double obj_sign = mp_model->maximize() ? -1.0 : 1.0;
+  //
+  // Note that the wrapper always holds a minimization problem.
   bool can_drop = true;
   for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
-    const MPVariableProto& var_proto =
-        mp_model->variable(compo_vars[local_col]);
-    const double obj = obj_sign * var_proto.objective_coefficient();
-    if ((obj > 0.0 && !std::isfinite(var_proto.lower_bound())) ||
-        (obj < 0.0 && !std::isfinite(var_proto.upper_bound()))) {
+    const int var = compo_vars[local_col];
+    const double obj = mp_model.variables(var).objective_coefficient();
+    if ((obj > 0.0 && !std::isfinite(states[var].lb)) ||
+        (obj < 0.0 && !std::isfinite(states[var].ub))) {
       can_drop = false;
       break;
     }
@@ -3783,7 +4151,7 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
   TightSum max_activity;
   for (int local_row = 0; local_row < compo_rows.size(); ++local_row) {
     const MPConstraintProto& constraint =
-        mp_model->constraint(compo_rows[local_row]);
+        mp_model.constraints(compo_rows[local_row]).proto();
     const double r_scale = row_scale[local_row];
     min_activity.Clear();
     max_activity.Clear();
@@ -3798,9 +4166,8 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
         ++row_nnz;
         continue;
       }
-      const MPVariableProto& external = mp_model->variable(var);
-      const double var_lb = external.lower_bound();
-      const double var_ub = external.upper_bound();
+      const MipVariableState& external = states[var];
+      const auto [var_lb, var_ub] = WrapperSpaceBounds(external);
       if (!std::isfinite(var_lb) || !std::isfinite(var_ub)) return;
       if (coeff > 0.0) {
         min_activity.AddProd(coeff, var_lb);
@@ -3809,7 +4176,7 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
         min_activity.AddProd(coeff, var_ub);
         max_activity.AddProd(coeff, var_lb);
       }
-      if (!external.is_integer()) all_external_integer = false;
+      if (!external.is_integer) all_external_integer = false;
       min_external_step = std::min(
           min_external_step, ExactScaledSumLb(std::abs(coeff), 0.0, r_scale));
     }
@@ -3908,14 +4275,13 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
   // 2. Variable bounds: `M_col(j)` is the kept bound magnitude, and large
   // bounds in the non-improving direction of each variable are droppable.
   for (int local_col = 0; local_col < num_cols; ++local_col) {
-    const MPVariableProto& var_proto =
-        mp_model->variable(compo_vars[local_col]);
+    const int var = compo_vars[local_col];
     const int item = compo_rows.size() + local_col;
     const double c_scale = col_scale[local_col];
-    const double raw_lb = var_proto.lower_bound();
-    const double raw_ub = var_proto.upper_bound();
+    const double raw_lb = states[var].lb;
+    const double raw_ub = states[var].ub;
     if (std::isfinite(raw_lb) && std::isfinite(raw_ub)) {
-      const double obj = obj_sign * var_proto.objective_coefficient();
+      const double obj = mp_model.variables(var).objective_coefficient();
       if (can_drop && obj >= 0.0 && raw_ub > std::abs(raw_lb)) {
         const double kept_unscaled = std::abs(raw_lb);
         magnitude[item] = ProdBounds(kept_unscaled, c_scale).second;
@@ -3991,28 +4357,27 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
     const double limit = std::ceil(
         ExactScaledSumUb(scaled_bound_limit, 0.0, col_scale[local_col]));
     if (!std::isfinite(limit)) continue;
-    MPVariableProto* var_proto =
-        mp_model->mutable_variable(compo_vars[local_col]);
-    const double lb = var_proto->lower_bound();
-    const double ub = var_proto->upper_bound();
+    MipVariableState& state = states[compo_vars[local_col]];
+    const double lb = state.lb;
+    const double ub = state.ub;
     if (lb < -limit || ub > limit) {
       component_touched = true;
       stats->old_min = std::min(stats->old_min, lb);
       stats->old_max = std::max(stats->old_max, ub);
       if (lb < -limit) {
-        var_proto->set_lower_bound(-limit);
+        state.lb = -limit;
         ++stats->num_tightened_bounds;
       }
       if (ub > limit) {
-        var_proto->set_upper_bound(limit);
+        state.ub = limit;
         ++stats->num_tightened_bounds;
       }
-      stats->new_min = std::min(stats->new_min, var_proto->lower_bound());
-      stats->new_max = std::max(stats->new_max, var_proto->upper_bound());
+      stats->new_min = std::min(stats->new_min, state.lb);
+      stats->new_max = std::max(stats->new_max, state.ub);
     }
   }
   if (component_touched) {
-    ++stats->num_components;
+    ++stats->num_bound_tightened_components;
   }
 }
 
@@ -4022,7 +4387,8 @@ void TightenComponentBounds(absl::Span<const int> compo_vars,
 // scaled vertices are the actual variable values, and all variable bounds,
 // scaled RHS and scaled external coefficients to be integer (so that the
 // effective RHS `(b_r - A_{r, ext} z*) / row_scale[r]` is integer).
-bool ComponentHasIntegralVertices(const MPModelProto& mp_model,
+bool ComponentHasIntegralVertices(const MPModelProtoWrapper& mp_model,
+                                  absl::Span<const MipVariableState> states,
                                   absl::Span<const int> compo_vars,
                                   absl::Span<const int> compo_rows,
                                   absl::Span<const double> col_scale,
@@ -4035,15 +4401,14 @@ bool ComponentHasIntegralVertices(const MPModelProto& mp_model,
   };
   for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
     if (std::abs(col_scale[local_col] - 1.0) > tolerance) return false;
-    const MPVariableProto& var_proto = mp_model.variable(compo_vars[local_col]);
-    if (!is_almost_integer(var_proto.lower_bound()) ||
-        !is_almost_integer(var_proto.upper_bound())) {
+    const MipVariableState& state = states[compo_vars[local_col]];
+    if (!is_almost_integer(state.lb) || !is_almost_integer(state.ub)) {
       return false;
     }
   }
   for (int local_row = 0; local_row < compo_rows.size(); ++local_row) {
     const MPConstraintProto& constraint =
-        mp_model.constraint(compo_rows[local_row]);
+        mp_model.constraints(compo_rows[local_row]).proto();
     const double r_scale = row_scale[local_row];
     if (!is_almost_integer(constraint.lower_bound() / r_scale) ||
         !is_almost_integer(constraint.upper_bound() / r_scale)) {
@@ -4054,575 +4419,670 @@ bool ComponentHasIntegralVertices(const MPModelProto& mp_model,
       if (coeff == 0.0) continue;
       const int var = constraint.var_index(i);
       if (var_to_local_col[var] != -1) continue;
-      if (!mp_model.variable(var).is_integer()) return false;
+      if (!states[var].is_integer) return false;
       if (!is_almost_integer(coeff / r_scale)) return false;
     }
   }
   return true;
 }
 
-// Bounds `|discretized_v - scaling_v * v|` for each variable `v` in a TUM
-// (`base_factor = 1.0`) or 2-modular (`base_factor = 2.0`) component marked as
-// integer with rational factor `chosen_s`.
-void ComputeComponentIntegerizationErrors(
-    const MPModelProto& mp_model, absl::Span<const int> compo_vars,
-    absl::Span<const int> compo_rows, absl::Span<const double> col_scale,
-    absl::Span<const double> row_scale, absl::Span<const int> var_to_local_col,
-    absl::Span<const double> var_scaling, double base_factor, double chosen_s,
-    absl::Span<double> integer_error_lb, absl::Span<double> integer_error_ub) {
-  // By Cramer's rule on a TUM / 2-modular basis B, entries of B^{-1} have
-  // magnitude <= 1 and entries of B^{-1} A_N have magnitude <= base_factor, so
-  // in `base_factor * chosen_s * col_scale * x` coordinates each vertex
-  // coordinate residual is bounded by `base_factor` times the sum of at most
-  // `n_cols` active `base_factor * col_err` or `row_err` residuals.
-  const int n_cols = compo_vars.size();
-  const int n_rows = compo_rows.size();
-  std::vector<double> item_errors;
-  item_errors.reserve(n_cols + n_rows);
-  bool finite_errors = true;
+// Tries to make a TUM (`modular_factor = 1`) or 2-modular (`modular_factor =
+// 2`) component integral with the rational factor `chosen_s`: each variable is
+// scaled by `modular_factor * round(chosen_s * col_scale)` and its bounds are
+// rounded to multiples of `modular_factor`, see RoundScaledLowerBound(). Each
+// constraint is then scaled by `modular_factor * chosen_s / row_scale`, which
+// gives +/-1 coefficients on the component variables and multiples of
+// `modular_factor` on the external ones.
+//
+// Returns false, without changing `states`, if this does not hold, or if the
+// scaled constraints could overflow or are not precise enough. Otherwise
+// updates `states` and fills the scaling of each constraint.
+bool TryScaleModularComponent(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<const double> col_scale,
+    absl::Span<const double> row_scale, int64_t modular_factor, double chosen_s,
+    absl::Span<MipVariableState> states, TumStats* stats,
+    std::vector<ModularConstraintScaling>* row_scalings) {
+  const double kMaxVarBound =
+      std::nextafter(static_cast<double>(kint64max / 2), 0.0);
+  const int64_t scaling_target = int64_t{1}
+                                 << params.mip_max_activity_exponent();
+  const bool proper_relaxation = params.mip_proper_relaxation();
+  const double wanted_tol = params.mip_wanted_precision();
+  // Same tolerances as in ConstraintScaler::ScaleAndAddConstraint().
+  const double bound_tol =
+      params.mip_use_tight_bounds() ? params.mip_tight_precision() : wanted_tol;
+  const double round_tol = proper_relaxation ? bound_tol : wanted_tol;
+  const double m = static_cast<double>(modular_factor);
 
-  for (int local_col = 0; local_col < n_cols; ++local_col) {
-    const MPVariableProto& vp = mp_model.variable(compo_vars[local_col]);
-    const double c_scale = col_scale[local_col];
-    double col_err = 0.0;
-    for (const double b : {vp.lower_bound(), vp.upper_bound()}) {
-      if (!std::isfinite(b)) continue;
-      const double r = std::round(b * chosen_s * c_scale);
-      col_err =
-          std::max(col_err, MaxAbsScaledTightSum(TightSum().Add(r).AddProd(
-                                -b, chosen_s, c_scale)));
+  // Scale the variables, the states are only updated on success.
+  absl::Span<const int> compo_vars = compo.continuous_vars;
+  std::vector<MipVariableState> new_states(compo_vars.size());
+  double max_bound_error = 0.0;
+  const auto is_too_large = [kMaxVarBound](double b) {
+    return std::isfinite(b) && std::abs(b) > kMaxVarBound;
+  };
+  for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
+    const MipVariableState& state = states[compo_vars[local_col]];
+    const double s = std::round(chosen_s * col_scale[local_col]);
+    if (!(s >= 1.0)) return false;
+    const auto round_lb = [&](double lb) {
+      if (!std::isfinite(lb)) return lb;
+      const double w = RoundScaledLowerBound(ProdBounds(s, lb).first,
+                                             s * round_tol, proper_relaxation);
+      const double error =
+          MaxAbsScaledTightSum(TightSum().Add(w).AddProd(-s, lb), s);
+      if (error > bound_tol) max_bound_error = std::max(max_bound_error, error);
+      return m * w;
+    };
+    MipVariableState& new_state = new_states[local_col];
+    new_state = state;
+    new_state.lb = round_lb(state.lb);
+    new_state.ub = -round_lb(-state.ub);
+    new_state.is_integer = true;
+    new_state.scaling *= m * s;
+    new_state.error_lb = 0.0;
+    new_state.error_ub = 0.0;
+    if (new_state.lb > new_state.ub || new_state.lb == kInfinity ||
+        new_state.ub == -kInfinity || is_too_large(new_state.lb) ||
+        is_too_large(new_state.ub) || !(new_state.scaling <= kMaxVarBound)) {
+      return false;
     }
-    item_errors.push_back(ProdBounds(base_factor, col_err).second);
   }
 
-  for (int local_row = 0; local_row < n_rows && finite_errors; ++local_row) {
-    const MPConstraintProto& ct = mp_model.constraint(compo_rows[local_row]);
-    const double r_scale = row_scale[local_row];
-    double rhs_err = 0.0;
-    for (const double bound : {ct.lower_bound(), ct.upper_bound()}) {
-      if (!std::isfinite(bound)) continue;
-      const double r = std::round((bound * chosen_s) / r_scale);
-      rhs_err = std::max(
-          rhs_err,
-          MaxAbsScaledTightSum(
-              TightSum().AddProd(r, r_scale).AddProd(-bound, chosen_s)));
-    }
-    TightSum unscaled_row_err;
-    unscaled_row_err.Add(rhs_err);
+  // Check the scaled constraints.
+  std::vector<ModularConstraintScaling> scalings;
+  std::vector<double> coeffs;
+  std::vector<double> lbs;
+  std::vector<double> ubs;
+  for (int local_row = 0; local_row < compo.constraints.size(); ++local_row) {
+    const EnforcedLinearConstraint& ct =
+        mp_model.constraints(compo.constraints[local_row]);
+    const double factor = m * chosen_s / row_scale[local_row];
+    if (!(factor > 0.0 && std::isfinite(factor))) return false;
+    coeffs.clear();
+    lbs.clear();
+    ubs.clear();
+    LinearOverflowChecker checker;
+    for (int i = 0; i < ct.num_terms(); ++i) {
+      if (ct.coeffs(i) == 0.0) continue;
+      const int local_col = compo.var_to_local_col[ct.vars(i)];
+      const MipVariableState& state =
+          local_col == -1 ? states[ct.vars(i)] : new_states[local_col];
 
-    for (int i = 0; i < ct.var_index_size(); ++i) {
-      const double coeff = ct.coefficient(i);
-      if (coeff == 0.0) continue;
-      const int v = ct.var_index(i);
-      const int local_col = var_to_local_col[v];
-      TightSum coeff_diff;
-      if (local_col != -1) {
-        const double c_scale = col_scale[local_col];
-        const double r = std::round(coeff / (r_scale * c_scale));
-        coeff_diff.AddProd(r, r_scale, c_scale, chosen_s)
-            .AddProd(-coeff, chosen_s);
-      } else {
-        const double k = std::round((coeff * chosen_s) / r_scale);
-        const double ext_err =
-            std::max(-integer_error_lb[v], integer_error_ub[v]);
-        if (k != 0.0 && ext_err > 0.0) {
-          unscaled_row_err.AddProd(std::abs(k), ext_err, r_scale);
+      // The CP-SAT domain of the variable after the final shift, see
+      // FinalCpSatShiftValue() and ConvertVariableToCpVariable(). Note that the
+      // external variables are already shifted.
+      const double shift =
+          state.lb > 0.0 ? state.lb : (state.ub < 0.0 ? state.ub : 0.0);
+      const double lb =
+          std::ceil(state.lb - shift - std::max(wanted_tol, -state.error_lb));
+      const double ub =
+          std::floor(state.ub - shift + std::max(wanted_tol, state.error_ub));
+      if (lb == 0.0 && ub == 0.0) continue;
+
+      const double coeff = ct.coeffs(i) / state.scaling;
+      const double scaled_coeff = coeff * factor;
+      if (!(std::abs(scaled_coeff) < static_cast<double>(kint64max))) {
+        return false;
+      }
+      const int64_t int_coeff = std::llround(scaled_coeff);
+      if (local_col == -1 ? int_coeff % modular_factor != 0
+                          : std::abs(int_coeff) != 1) {
+        return false;
+      }
+      if (!std::isfinite(lb) || !std::isfinite(ub)) {
+        // The coefficient of an unbounded variable must be exact.
+        if (std::abs(scaled_coeff - static_cast<double>(int_coeff)) >
+            1e-12 * std::max(1.0, std::abs(scaled_coeff))) {
+          return false;
         }
-        coeff_diff.AddProd(k, r_scale).AddProd(-coeff, chosen_s);
+        continue;
       }
-      const double err = MaxAbsScaledTightSum(coeff_diff);
-      if (err > 0.0) {
-        const double v_lb = mp_model.variable(v).lower_bound();
-        const double v_ub = mp_model.variable(v).upper_bound();
-        if (!std::isfinite(v_lb) || !std::isfinite(v_ub)) {
-          finite_errors = false;
-          break;
-        }
-        unscaled_row_err.AddProd(err, std::max(std::abs(v_lb), std::abs(v_ub)));
+      if (!checker.AddTerm(int_coeff, static_cast<int64_t>(lb),
+                           static_cast<int64_t>(ub)) ||
+          -checker.sum_min > scaling_target ||
+          checker.sum_max > scaling_target) {
+        return false;
       }
+      coeffs.push_back(coeff);
+      lbs.push_back(lb);
+      ubs.push_back(ub);
     }
-    const double raw_ub = unscaled_row_err.TightUpperBound();
-    item_errors.push_back(
-        raw_ub == 0.0 ? 0.0 : ExactScaledSumUb(raw_ub, 0.0, r_scale));
+    double relative_coeff_error;
+    double scaled_sum_error;
+    ComputeScalingErrors(coeffs, lbs, ubs, factor, &relative_coeff_error,
+                         &scaled_sum_error);
+    if (scaled_sum_error > params.mip_check_precision() * factor) return false;
+    scalings.push_back(
+        {.scaling_factor = factor, .modular_factor = modular_factor});
   }
 
-  double vertex_err = 0.5 * base_factor;
-  if (finite_errors) {
-    if (item_errors.size() > n_cols) {
-      std::nth_element(item_errors.begin(), item_errors.begin() + n_cols,
-                       item_errors.end(), std::greater<double>());
-      item_errors.resize(n_cols);
-    }
-    TightSum top_sum;
-    for (const double e : item_errors) top_sum.Add(e);
-    vertex_err = ProdBounds(base_factor, top_sum.TightUpperBound()).second;
+  for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
+    states[compo_vars[local_col]] = new_states[local_col];
   }
-
-  for (int local_col = 0; local_col < n_cols; ++local_col) {
-    const int var = compo_vars[local_col];
-    double var_err = vertex_err;
-    const double c_err = MaxAbsScaledTightSum(
-        TightSum()
-            .Add(var_scaling[var])
-            .AddProd(-base_factor, chosen_s, col_scale[local_col]));
-    if (c_err > 0.0) {
-      const double v_lb = mp_model.variable(var).lower_bound();
-      const double v_ub = mp_model.variable(var).upper_bound();
-      TightSum total;
-      total.Add(var_err);
-      if (!std::isfinite(v_lb) || !std::isfinite(v_ub)) {
-        total.Add(0.5);
-      } else {
-        total.AddProd(c_err, std::max(std::abs(v_lb), std::abs(v_ub)));
-      }
-      var_err = total.TightUpperBound();
-    }
-    integer_error_lb[var] = -var_err;
-    integer_error_ub[var] = var_err;
-  }
+  stats->num_modular_constraints += scalings.size();
+  stats->max_var_bound_error =
+      std::max(stats->max_var_bound_error, max_bound_error);
+  *row_scalings = std::move(scalings);
+  return true;
 }
 
-// Implementation of MarkResidualTotallyUnimodularVariableAsInteger().
-//
-// When `only_tighten_bounds` is true, `include_large_integers` controls whether
-// integer variables with a large domain are also part of the residual matrix.
-// In this case, we only tighten the bounds of components whose LP vertices are
-// guaranteed to be integral for any integer assignment of the external
-// variables (Hoffman-Kruskal).
-std::vector<double> MarkResidualTotallyUnimodularVariableAsIntegerImpl(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
-    bool only_tighten_bounds, bool include_large_integers,
-    BoundReductionStats* bound_reduction_stats,
-    absl::Span<double> integer_error_lb, absl::Span<double> integer_error_ub) {
-  // 1. Identify and re-index residual variables.
-  //
-  // Note: When `only_tighten_bounds` is true, rather than considering only
-  // integer variable as external, we also mark as external any variable that
-  // have a "small" domain. This should allow to split the problem into more
-  // component, increasing the chance that some of them are TUM and allow to
-  // restrict their large bounds via TightenComponentBounds().
-  const int num_vars = mp_model->variable_size();
-  std::vector<int> to_dense_index(num_vars, -1);
-  std::vector<int> residual_var_indices;
-  const double tighten_split = 0.1 * params.mip_max_bound();
-  for (int var = 0; var < num_vars; ++var) {
-    if (only_tighten_bounds) {
-      const double lb = mp_model->variable(var).lower_bound();
-      const double ub = mp_model->variable(var).upper_bound();
-      if (std::abs(lb) <= tighten_split && std::abs(ub) <= tighten_split) {
-        continue;
-      }
-      if (!include_large_integers && mp_model->variable(var).is_integer()) {
-        continue;
-      }
-    } else if (mp_model->variable(var).is_integer()) {
-      continue;
+// Scales a continuous TUM component (with unit column scaling and finite
+// non-zero max bound) by a common power-of-two factor when
+// mip_scale_for_precision is enabled.
+void ApplyTumCommonPrecisionScaling(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    double compo_max_bound, const MPModelProtoWrapper& mp_model,
+    absl::Span<MipVariableState> states,
+    GlobalObjectivePrecision* global_obj_precision, TumStats* stats) {
+  absl::Span<const int> compo_vars = compo.continuous_vars;
+  // Use a higher target bound than mip_max_bound (1e7) so components with
+  // large or clamped bounds can still be scaled together, while keeping scaled
+  // continuous TUM domains within 1e11 so double-precision LP simplex
+  // tolerances (1e-4 in CP space) remain accurate on unit-coefficient rows.
+  constexpr double kTumPrecisionMaxBound = 1e11;
+  const double max_domain_bound =
+      std::min(std::max(params.mip_max_bound(), kTumPrecisionMaxBound),
+               std::nextafter(static_cast<double>(kint64max / 2), 0.0));
+  const int max_exp =
+      MaxPowerOfTwoExponentWithinBound(compo_max_bound, max_domain_bound);
+  if (max_exp <= 0) return;
+  const double compo_max_scaling = std::ldexp(1.0, max_exp);
+
+  const ComponentPrecisionScalingBounds bounds =
+      ComputeComponentPrecisionScalingBounds(params, mp_model, compo, states,
+                                             max_domain_bound,
+                                             global_obj_precision);
+
+  double compo_min_headroom = kInfinity;
+  double compo_max_needed = 0.0;
+  for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
+    compo_min_headroom =
+        std::min(compo_min_headroom, bounds.min_headroom[local_col]);
+    compo_max_needed =
+        std::max(compo_max_needed, bounds.max_scaling_needed[local_col]);
+  }
+  if (compo_min_headroom == kInfinity || compo_max_needed <= 1.0) return;
+
+  const double needed_scaling =
+      std::ldexp(1.0, LowestPowerOfTwoAtOrAbove(compo_max_needed));
+  const double scaling =
+      std::min({compo_max_scaling, compo_min_headroom, needed_scaling});
+  if (scaling <= 1.0) return;
+
+  for (const int var : compo_vars) {
+    MipVariableState& state = states[var];
+    CHECK_EQ(state.scaling, 1.0);
+    ++stats->num_common_scaled;
+    if (global_obj_precision != nullptr &&
+        mp_model.variables(var).objective_coefficient() != 0.0 &&
+        !(state.lb == 0.0 && state.ub == 0.0)) {
+      global_obj_precision->NotifyContinuousPow2Scaling(scaling);
     }
-
-    to_dense_index[var] = residual_var_indices.size();
-    residual_var_indices.push_back(var);
+    ScaleVariableState(scaling, &state);
   }
-  if (residual_var_indices.empty()) return {};
+  stats->min_common_scaling = std::min(stats->min_common_scaling, scaling);
+  stats->max_common_scaling = std::max(stats->max_common_scaling, scaling);
+}
 
-  // 2. Partition residual variables and constraints into connected
-  // components.
-  const int num_cols = residual_var_indices.size();
-  DenseConnectedComponentsFinder components;
-  components.SetNumberOfNodes(num_cols);
-
-  const int num_constraints = mp_model->constraint_size();
-  std::vector<int> row_first_col(num_constraints, -1);
-  for (int c = 0; c < num_constraints; ++c) {
-    const MPConstraintProto& constraint = mp_model->constraint(c);
-    int first_col = -1;
-    for (int i = 0; i < constraint.var_index_size(); ++i) {
-      if (constraint.coefficient(i) == 0.0) continue;
-      const int col = to_dense_index[constraint.var_index(i)];
-      if (col == -1) continue;  // Skip external variables.
-      if (first_col == -1) {
-        first_col = col;
-      } else {
-        components.AddEdge(first_col, col);
-      }
-    }
-    row_first_col[c] = first_col;
-  }
-
-  const int num_components = components.GetNumberOfComponents();
-  const std::vector<int> col_to_components = components.GetComponentIds();
-  std::vector<std::vector<int>> compo_vars(num_components);
-  std::vector<int> var_to_local_col(num_vars, -1);
-  for (int col = 0; col < num_cols; ++col) {
-    const int compo = col_to_components[col];
-    const int var = residual_var_indices[col];
-    var_to_local_col[var] = compo_vars[compo].size();
-    compo_vars[compo].push_back(var);
-  }
-  std::vector<std::vector<int>> compo_rows(num_components);
-  for (int c = 0; c < num_constraints; ++c) {
-    if (row_first_col[c] != -1) {
-      compo_rows[col_to_components[row_first_col[c]]].push_back(c);
-    }
-  }
-
-  // 3. Process each connected component independently.
+struct TumComponentScratch {
+  struct NonIntegerValue {
+    double value;
+    double tol;
+  };
   glop::CompactSparseMatrix row_matrix;
   glop::CompactSparseMatrix col_matrix;
   std::vector<double> col_scale;
   std::vector<double> row_scale;
-  std::vector<double> non_integer_values;
+  std::vector<NonIntegerValue> non_integer_values;
+};
 
+// Evaluates a single residual continuous component for total unimodularity /
+// 2-modularity, tightens bounds, and (when `!only_tighten_bounds`) either
+// makes its variables integral (filling `row_scalings`, see
+// TryScaleModularComponent()) or returns true with
+// `*common_precision_max_bound` set for `ApplyTumCommonPrecisionScaling()`.
+//
+// The matrix coefficients are read from `mp_model`, the variables are read
+// from and written to `states`. Note that when `only_tighten_bounds` is true,
+// `compo.continuous_vars` may also contain integer variables.
+bool TryProcessTumComponent(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    bool only_tighten_bounds, bool include_large_integers,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    GlobalObjectivePrecision* global_obj_precision, TumStats* stats,
+    TumComponentScratch* scratch, double* common_precision_max_bound,
+    std::vector<ModularConstraintScaling>* row_scalings) {
+  absl::Span<const int> compo_vars = compo.continuous_vars;
+  absl::Span<const int> compo_rows = compo.constraints;
+  absl::Span<const int> var_to_local_col = compo.var_to_local_col;
+  CHECK(!var_to_local_col.empty());
+  ++stats->num_components;
   const double tolerance = params.mip_wanted_precision();
-  int num_tum_components = 0;
-  int num_2_modular_components = 0;
-  int num_new_tum_integers = 0;
-  int num_new_2_modular_integers = 0;
-  int num_common_scaled = 0;
-  double min_common_scaling = std::numeric_limits<double>::infinity();
-  double max_common_scaling = 0.0;
-  bool any_scaled = false;
-  std::vector<double> var_scaling(num_vars, 1.0);
 
-  // Continuous components that could not be made integral and that will be
-  // scaled by a common power-of-two factor when mip_scale_for_precision is on.
-  struct PrecisionScaleCandidate {
-    int compo;
-    double max_bound;  // Max absolute variable bound in the component.
+  // Compute this component's row_matrix and col_matrix.
+  scratch->row_matrix.Reset(RowIndex(compo_vars.size()));
+  for (const int c : compo_rows) {
+    const MPConstraintProto& constraint = mp_model.constraints(c).proto();
+    for (int i = 0; i < constraint.var_index_size(); ++i) {
+      const double coeff = constraint.coefficient(i);
+      if (coeff == 0.0) continue;
+      const int local_col = var_to_local_col[constraint.var_index(i)];
+      if (local_col == -1) continue;
+      scratch->row_matrix.AddEntryToCurrentColumn(RowIndex(local_col), coeff);
+    }
+    scratch->row_matrix.CloseCurrentColumn();
+  }
+  scratch->col_matrix.PopulateFromTranspose(scratch->row_matrix);
+
+  // Can we scale it to only +1/-1?
+  if (!ComputeRowAndColScales(scratch->col_matrix, scratch->row_matrix,
+                              tolerance, &scratch->col_scale,
+                              &scratch->row_scale)) {
+    return false;
+  }
+
+  // Is the scaled matrix TUM or 2-modular? Note that positive row/column
+  // scaling preserves both the sparsity pattern and entry signs, which is all
+  // CheckComponentModularity inspects.
+  const ModularityStatus status =
+      CheckComponentModularity(scratch->col_matrix, scratch->row_matrix);
+  if (status == ModularityStatus::kNotTwoModular) {
+    return false;
+  }
+
+  // If the component contains integer variables, we can only tighten bounds
+  // if all the vertices of the component LP are integral whatever the
+  // (integer) value of the external variables. By Hoffman-Kruskal, this is
+  // the case if the matrix is TUM with unit column scaling and if all the
+  // variable bounds, scaled RHS and scaled external coefficients are integer.
+  if (include_large_integers) {
+    bool has_integer_vars = false;
+    for (const int var : compo_vars) {
+      if (states[var].is_integer) {
+        has_integer_vars = true;
+        break;
+      }
+    }
+    if (has_integer_vars &&
+        !ComponentHasIntegralVertices(mp_model, states, compo_vars, compo_rows,
+                                      scratch->col_scale, scratch->row_scale,
+                                      var_to_local_col, status, tolerance)) {
+      return false;
+    }
+  }
+
+  if (status == ModularityStatus::kTotallyUnimodular) {
+    ++stats->num_tum_components;
+  } else {
+    ++stats->num_2_modular_components;
+  }
+
+  const double base_factor =
+      status == ModularityStatus::kTwoModular ? 2.0 : 1.0;
+  TightenComponentBounds(compo_vars, compo_rows, scratch->col_scale,
+                         scratch->row_scale, var_to_local_col, base_factor,
+                         mp_model, states, stats);
+  if (only_tighten_bounds) return false;
+
+  // Collect bounds and discrete coefficients in this component, pre-scaled
+  // by `col_scale` and `1 / row_scale`.
+  bool has_col_scaling = false;
+  double max_bound = 0.0;
+  scratch->non_integer_values.clear();
+  auto record_value = [&](double raw_v, double v_tol) {
+    if (!std::isfinite(raw_v)) return;
+    const double v = std::abs(raw_v);
+    if (std::abs(v - std::round(v)) > v_tol) {
+      scratch->non_integer_values.push_back({v, v_tol});
+    }
   };
-  std::vector<PrecisionScaleCandidate> precision_scale_candidates;
+  for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
+    const int var = compo_vars[local_col];
+    const double c_scale = scratch->col_scale[local_col];
+    const double col_tol = tolerance * std::min(1.0, c_scale);
+    if (std::abs(c_scale - 1.0) > col_tol) has_col_scaling = true;
+    max_bound = std::max(max_bound, c_scale);
+    record_value(c_scale, col_tol);
 
-  // TODO(user): There is a bad interaction with the bound propagator that
-  // propagates bound using tolerances, so that they are not exactly integer :(
-  // find a cleaner way ?
-  const auto is_almost_integer = [&params](double x) {
-    return !std::isfinite(x) ||
-           std::abs(x - std::round(x)) <= params.mip_wanted_precision();
-  };
+    const double lb = states[var].lb * c_scale;
+    const double ub = states[var].ub * c_scale;
+    if (std::isfinite(lb)) max_bound = std::max(max_bound, std::abs(lb));
+    if (std::isfinite(ub)) max_bound = std::max(max_bound, std::abs(ub));
+    record_value(lb, col_tol);
+    record_value(ub, col_tol);
+  }
+  for (int local_row = 0; local_row < compo_rows.size(); ++local_row) {
+    const int c = compo_rows[local_row];
+    const MPConstraintProto& constraint = mp_model.constraints(c).proto();
+    const double r_scale = scratch->row_scale[local_row];
+    AccurateSum<double> ext_offset;
+    for (int i = 0; i < constraint.var_index_size(); ++i) {
+      const double coeff = constraint.coefficient(i);
+      if (coeff == 0.0) continue;
+      const int v = constraint.var_index(i);
+      if (var_to_local_col[v] != -1) continue;
+      const MipVariableState& ext_state = states[v];
+      if (ext_state.shift != 0.0) ext_offset.Add(coeff * ext_state.shift);
+      if (ext_state.lb == 0.0 && ext_state.ub == 0.0) continue;
+      const double val = std::abs(coeff / ext_state.scaling) / r_scale;
+      const double max_dom =
+          std::max(std::abs(ext_state.lb), std::abs(ext_state.ub));
+      const double ext_tol =
+          std::isfinite(max_dom)
+              ? std::min(tolerance, 0.5 * params.mip_check_precision() /
+                                        std::max(1.0, r_scale * max_dom))
+              : tolerance * std::min(1.0, val);
+      record_value(val, ext_tol);
+    }
+    record_value((constraint.lower_bound() - ext_offset.Value()) / r_scale,
+                 tolerance);
+    record_value((constraint.upper_bound() - ext_offset.Value()) / r_scale,
+                 tolerance);
+  }
 
-  for (int compo = 0; compo < num_components; ++compo) {
-    // Computes this component's row_matrix and col_matrix.
-    row_matrix.Reset(RowIndex(compo_vars[compo].size()));
-    for (const int c : compo_rows[compo]) {
-      const MPConstraintProto& constraint = mp_model->constraint(c);
-      for (int i = 0; i < constraint.var_index_size(); ++i) {
-        const double coeff = constraint.coefficient(i);
-        if (coeff == 0.0) continue;
-        const int local_col = var_to_local_col[constraint.var_index(i)];
-        if (local_col == -1) continue;
-        row_matrix.AddEntryToCurrentColumn(RowIndex(local_col), coeff);
+  // Determine whether we can mark variables as integer (possibly with a
+  // rational scaling factor) or apply a common component power-of-two factor.
+  const int64_t modular_factor =
+      status == ModularityStatus::kTwoModular ? 2 : 1;
+  const double max_s =
+      params.mip_max_bound() / (base_factor * std::max(1.0, max_bound));
+  bool mark_as_integer = false;
+
+  double chosen_s = 1.0;
+  if (scratch->non_integer_values.empty() && modular_factor == 1 &&
+      !has_col_scaling) {
+    mark_as_integer = true;
+  } else if (params.mip_automatically_scale_variables() && max_s >= 1.0) {
+    const int64_t int_limit =
+        max_s >= static_cast<double>(kint64max)
+            ? kint64max
+            : CapAdd(static_cast<int64_t>(std::floor(max_s)), 1);
+    double s = 1.0;
+    for (const auto& [v, v_tol] : scratch->non_integer_values) {
+      const int64_t f = FindRationalFactor(s * v, int_limit, s * v_tol);
+      if (f == 0 || s * f > max_s) {
+        s = 0.0;
+        break;
       }
-      row_matrix.CloseCurrentColumn();
+      s *= f;
     }
-    col_matrix.PopulateFromTranspose(row_matrix);
-
-    // Can we scale it to only +1/-1?
-    if (!ComputeRowAndColScales(col_matrix, row_matrix, tolerance, &col_scale,
-                                &row_scale)) {
-      continue;
-    }
-
-    // Is the scaled matrix TUM or 2-modular? Note that positive row/column
-    // scaling preserves both the sparsity pattern and entry signs, which is all
-    // CheckComponentModularity inspects.
-    const ModularityStatus status =
-        CheckComponentModularity(col_matrix, row_matrix);
-    if (status == ModularityStatus::kNotTwoModular) {
-      continue;
-    }
-
-    // If the component contains integer variables, we can only tighten bounds
-    // if all the vertices of the component LP are integral whatever the
-    // (integer) value of the external variables. By Hoffman-Kruskal, this is
-    // the case if the matrix is TUM with unit column scaling and if all the
-    // variable bounds, scaled RHS and scaled external coefficients are integer.
-    if (include_large_integers) {
-      bool has_integer_vars = false;
-      for (const int var : compo_vars[compo]) {
-        if (mp_model->variable(var).is_integer()) {
-          has_integer_vars = true;
-          break;
-        }
-      }
-      if (has_integer_vars &&
-          !ComponentHasIntegralVertices(*mp_model, compo_vars[compo],
-                                        compo_rows[compo], col_scale, row_scale,
-                                        var_to_local_col, status, tolerance)) {
-        continue;
-      }
-    }
-
-    if (status == ModularityStatus::kTotallyUnimodular) {
-      ++num_tum_components;
-    } else {
-      ++num_2_modular_components;
-    }
-
-    const double base_factor =
-        status == ModularityStatus::kTwoModular ? 2.0 : 1.0;
-    TightenComponentBounds(compo_vars[compo], compo_rows[compo], col_scale,
-                           row_scale, var_to_local_col, base_factor, mp_model,
-                           bound_reduction_stats);
-    if (only_tighten_bounds) continue;
-
-    // Collect bounds and discrete coefficients in this component, pre-scaled
-    // by `col_scale` and `1 / row_scale`.
-    bool has_col_scaling = false;
-    double max_bound = 0.0;
-    non_integer_values.clear();
-    auto record_value = [&](double v) {
-      if (!is_almost_integer(v)) {
-        non_integer_values.push_back(std::abs(v));
-      }
-    };
-    for (int local_col = 0; local_col < compo_vars[compo].size(); ++local_col) {
-      const int var = compo_vars[compo][local_col];
-      const double c_scale = col_scale[local_col];
-      if (std::abs(c_scale - 1.0) > tolerance) has_col_scaling = true;
-      max_bound = std::max(max_bound, c_scale);
-      record_value(c_scale);
-
-      const double lb = mp_model->variable(var).lower_bound() * c_scale;
-      const double ub = mp_model->variable(var).upper_bound() * c_scale;
-      if (std::isfinite(lb)) max_bound = std::max(max_bound, std::abs(lb));
-      if (std::isfinite(ub)) max_bound = std::max(max_bound, std::abs(ub));
-      record_value(lb);
-      record_value(ub);
-    }
-    for (int local_row = 0; local_row < compo_rows[compo].size(); ++local_row) {
-      const int c = compo_rows[compo][local_row];
-      const MPConstraintProto& constraint = mp_model->constraint(c);
-      const double r_scale = row_scale[local_row];
-      record_value(constraint.lower_bound() / r_scale);
-      record_value(constraint.upper_bound() / r_scale);
-      for (int i = 0; i < constraint.var_index_size(); ++i) {
-        const double coeff = constraint.coefficient(i);
-        if (coeff == 0.0) continue;
-        if (var_to_local_col[constraint.var_index(i)] == -1) {
-          record_value(coeff / r_scale);
-        }
-      }
-    }
-
-    // Determine whether we can mark variables as integer (possibly with a
-    // rational scaling factor) or apply a common component power-of-two factor.
-    const double max_s =
-        params.mip_max_bound() / (base_factor * std::max(1.0, max_bound));
-    double component_multiplier = 1.0;
-    bool mark_as_integer = false;
-
-    double chosen_s = 1.0;
-    if (non_integer_values.empty() && base_factor == 1.0 && !has_col_scaling) {
+    if (s > 0.0) {
+      chosen_s = s;
       mark_as_integer = true;
-    } else if (params.mip_automatically_scale_variables() && max_s >= 1.0) {
-      const int64_t int_limit =
-          max_s >= static_cast<double>(kint64max)
-              ? kint64max
-              : CapAdd(static_cast<int64_t>(std::floor(max_s)), 1);
-      double s = 1.0;
-      for (const double v : non_integer_values) {
-        const int64_t f = FindRationalFactor(s * v, int_limit, s * tolerance);
-        if (f == 0 || s * f > max_s) {
-          s = 0.0;
+    }
+  }
+
+  if (mark_as_integer &&
+      TryScaleModularComponent(params, compo, mp_model, scratch->col_scale,
+                               scratch->row_scale, modular_factor, chosen_s,
+                               states, stats, row_scalings)) {
+    if (status == ModularityStatus::kTotallyUnimodular) {
+      stats->num_new_tum_integers += compo_vars.size();
+    } else {
+      stats->num_new_2_modular_integers += compo_vars.size();
+    }
+    if (global_obj_precision != nullptr) {
+      for (const int var : compo_vars) {
+        if (mp_model.variables(var).objective_coefficient() != 0.0) {
+          global_obj_precision->MarkDirty();
           break;
         }
-        s *= f;
-      }
-      if (s > 0.0) {
-        chosen_s = s;
-        component_multiplier = base_factor * s;
-        mark_as_integer = true;
       }
     }
-
-    if (!mark_as_integer && !has_col_scaling) {
-      if (params.mip_scale_for_precision()) {
-        // The common factor is chosen below, once the integerizing scalings
-        // of all the other components are known. Skip components with an
-        // infinite or zero bound.
-        double compo_max_bound = 0.0;
-        for (const int var : compo_vars[compo]) {
-          compo_max_bound = std::max(
-              {compo_max_bound, std::abs(mp_model->variable(var).lower_bound()),
-               std::abs(mp_model->variable(var).upper_bound())});
-        }
-        if (compo_max_bound > 0.0 && std::isfinite(compo_max_bound)) {
-          precision_scale_candidates.push_back({compo, compo_max_bound});
-        }
-        continue;
-      }
-      if (params.mip_scale_to_max_bound()) {
-        if (max_bound > 0.0 && max_bound <= params.mip_max_bound()) {
-          const int exp =
-              HighestPowerOfTwoAtOrBelow(params.mip_max_bound() / max_bound);
-          component_multiplier = std::ldexp(1.0, exp);
-        }
-      }
-    }
-
-    for (int local_col = 0; local_col < compo_vars[compo].size(); ++local_col) {
-      const int var = compo_vars[compo][local_col];
-      const double scaling =
-          mark_as_integer
-              ? std::round(component_multiplier * col_scale[local_col])
-              : component_multiplier;
-      if (scaling != 1.0) {
-        var_scaling[var] = scaling;
-        any_scaled = true;
-      }
-      if (mark_as_integer) {
-        mp_model->mutable_variable(var)->set_is_integer(true);
-        if (status == ModularityStatus::kTotallyUnimodular) {
-          ++num_new_tum_integers;
-        } else {
-          ++num_new_2_modular_integers;
-        }
-      } else if (scaling != 1.0) {
-        ++num_common_scaled;
-        min_common_scaling = std::min(min_common_scaling, scaling);
-        max_common_scaling = std::max(max_common_scaling, scaling);
-      }
-    }
-    if (mark_as_integer) {
-      ComputeComponentIntegerizationErrors(
-          *mp_model, compo_vars[compo], compo_rows[compo], col_scale, row_scale,
-          var_to_local_col, var_scaling, base_factor, chosen_s,
-          integer_error_lb, integer_error_ub);
-    }
+    return false;
   }
 
-  if (only_tighten_bounds) return {};
-
-  if (num_tum_components + num_2_modular_components == 0) {
-    if (num_components > 1) {
-      SOLVER_LOG(logger, "[TUM] 0/", num_components,
-                 " continuous residual matrix with simple structure.");
+  if (!has_col_scaling && params.mip_scale_for_precision()) {
+    // Skip components with an infinite or zero bound.
+    double compo_max_bound = 0.0;
+    for (const int var : compo_vars) {
+      compo_max_bound = std::max({compo_max_bound, std::abs(states[var].lb),
+                                  std::abs(states[var].ub)});
     }
-    return {};
-  }
-
-  // Apply the integerizing scalings now. Two components never share a
-  // constraint, but they all share the objective: integerizing a component
-  // changes its objective coefficients, and the headroom computed below for
-  // the remaining continuous components must account for that.
-  if (any_scaled) ApplyVarScaling(var_scaling, mp_model);
-
-  // Scale the remaining continuous TUM components by a common power-of-two
-  // factor so that their +1/-1 coefficients are preserved.
-  if (!precision_scale_candidates.empty()) {
-    std::vector<double> precision_scaling(num_vars, 1.0);
-    bool any_precision_scaled = false;
-
-    // Use a higher target bound than mip_max_bound (1e7) so components with
-    // large or clamped bounds can still be scaled together, while keeping
-    // scaled continuous TUM domains within 1e11 so double-precision LP simplex
-    // tolerances (1e-4 in CP space) remain accurate on unit-coefficient rows.
-    constexpr double kTumPrecisionMaxBound = 1e11;
-    const double max_domain_bound =
-        std::min(std::max(params.mip_max_bound(), kTumPrecisionMaxBound),
-                 std::nextafter(static_cast<double>(kint64max / 2), 0.0));
-    const PrecisionScalingBounds bounds = ComputePrecisionScalingBounds(
-        params, *mp_model, /*current_vars_scaling=*/{}, max_domain_bound);
-
-    for (const PrecisionScaleCandidate& candidate :
-         precision_scale_candidates) {
-      const int max_exp = MaxPowerOfTwoExponentWithinBound(candidate.max_bound,
-                                                           max_domain_bound);
-      if (max_exp <= 0) continue;
-      const double compo_max_scaling = std::ldexp(1.0, max_exp);
-
-      double compo_min_headroom = kInfinity;
-      double compo_max_needed = 0.0;
-      for (const int var : compo_vars[candidate.compo]) {
-        compo_min_headroom =
-            std::min(compo_min_headroom, bounds.min_headroom[var]);
-        compo_max_needed =
-            std::max(compo_max_needed, bounds.max_scaling_needed[var]);
-      }
-      if (compo_min_headroom == kInfinity || compo_max_needed <= 1.0) continue;
-
-      const double needed_scaling =
-          std::ldexp(1.0, LowestPowerOfTwoAtOrAbove(compo_max_needed));
-      const double scaling =
-          std::min({compo_max_scaling, compo_min_headroom, needed_scaling});
-      if (scaling <= 1.0) continue;
-
-      for (const int var : compo_vars[candidate.compo]) {
-        precision_scaling[var] = scaling;
-        ++num_common_scaled;
-      }
-      any_precision_scaled = true;
-      min_common_scaling = std::min(min_common_scaling, scaling);
-      max_common_scaling = std::max(max_common_scaling, scaling);
-    }
-
-    if (any_precision_scaled) {
-      ApplyVarScaling(precision_scaling, mp_model);
-      for (int var = 0; var < num_vars; ++var) {
-        var_scaling[var] *= precision_scaling[var];
-      }
+    if (compo_max_bound > 0.0 && std::isfinite(compo_max_bound)) {
+      *common_precision_max_bound = compo_max_bound;
+      return true;
     }
   }
+  return false;
+}
 
-  SOLVER_LOG(logger, "[TUM] ", num_tum_components, "/", num_components,
-             " continuous residual matrix are Totally Unimodular; +",
-             num_new_tum_integers, " variables marked as integer.");
-  if (num_new_2_modular_integers > 0) {
-    SOLVER_LOG(logger, "[TUM] ", num_2_modular_components, "/",
-               num_components - num_tum_components,
-               " components left are 2-modular; +", num_new_2_modular_integers,
-               " variable scaled and marked as integer.");
+void LogTumBoundTighteningStats(const TumStats& stats, SolverLogger* logger) {
+  if (stats.num_tightened_bounds > 0) {
+    SOLVER_LOG(logger, "[TUM] Tightened ",
+               FormatCounter(stats.num_tightened_bounds),
+               " variable bounds across ", stats.num_bound_tightened_components,
+               " components from [", stats.old_min, ", ", stats.old_max,
+               "] to [", stats.new_min, ", ", stats.new_max, "].");
   }
-  if (num_common_scaled > 0) {
-    SOLVER_LOG(logger, "[TUM] ", num_common_scaled,
-               " variables scaled with a common component factor in [",
-               min_common_scaling, ", ", max_common_scaling, "].");
-  }
-  return var_scaling;
 }
 
 }  // namespace
 
-std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
-    const SatParameters& params, MPModelProto* mp_model,
-    absl::Span<double> integer_error_lb, absl::Span<double> integer_error_ub,
-    SolverLogger* logger, bool only_tighten_bounds) {
-  const int num_vars = mp_model->variable_size();
-  CHECK_EQ(integer_error_lb.size(), num_vars);
-  CHECK_EQ(integer_error_ub.size(), num_vars);
-  if (!mp_model->general_constraint().empty()) return {};
-  if (params.keep_all_feasible_solutions_in_presolve()) return {};
-
-  BoundReductionStats bound_reduction_stats;
-  std::vector<double> result;
-  if (only_tighten_bounds) {
-    // Integer variables with a large domain (typically unbounded ones) are
-    // first included in the residual matrix: this allows to tighten them when
-    // they are part of an integral TUM component (e.g. big-M scheduling
-    // formulations), and this also provides finite bounds for the external
-    // variables of the second pass. The second pass only considers continuous
-    // variables as before, since it can lead to different (smaller) components.
-    for (const bool include_large_integers : {true, false}) {
-      MarkResidualTotallyUnimodularVariableAsIntegerImpl(
-          params, mp_model, logger, only_tighten_bounds, include_large_integers,
-          &bound_reduction_stats, integer_error_lb, integer_error_ub);
+ResidualContinuousComponents SplitIntoResidualContinuousComponents(
+    const MPModelProtoWrapper& mp_model) {
+  ResidualContinuousComponents result;
+  const int num_vars = mp_model.num_variables();
+  std::vector<int> to_dense_index(num_vars, -1);
+  std::vector<int> residual_var_indices;
+  for (int var = 0; var < num_vars; ++var) {
+    if (!mp_model.variables(var).is_integer()) {
+      to_dense_index[var] = residual_var_indices.size();
+      residual_var_indices.push_back(var);
     }
-  } else {
-    result = MarkResidualTotallyUnimodularVariableAsIntegerImpl(
-        params, mp_model, logger, only_tighten_bounds,
-        /*include_large_integers=*/false, &bound_reduction_stats,
-        integer_error_lb, integer_error_ub);
   }
 
-  if (bound_reduction_stats.num_tightened_bounds > 0) {
-    SOLVER_LOG(logger, "[TUM] Tightened ",
-               FormatCounter(bound_reduction_stats.num_tightened_bounds),
-               " variable bounds across ", bound_reduction_stats.num_components,
-               " components from [", bound_reduction_stats.old_min, ", ",
-               bound_reduction_stats.old_max, "] to [",
-               bound_reduction_stats.new_min, ", ",
-               bound_reduction_stats.new_max, "].");
+  const int num_cols = residual_var_indices.size();
+  DenseConnectedComponentsFinder cc;
+  cc.SetNumberOfNodes(num_cols);
+
+  const int num_constraints = mp_model.num_constraints();
+  std::vector<int> row_first_col(num_constraints, -1);
+  for (int c = 0; c < num_constraints; ++c) {
+    const EnforcedLinearConstraint& ct = mp_model.constraints(c);
+    if (ConstraintIsAlwaysTrue(ct.proto())) continue;
+    int first_col = -1;
+    for (int i = 0; i < ct.num_terms(); ++i) {
+      if (ct.coeffs(i) == 0.0) continue;
+      const int col = to_dense_index[ct.vars(i)];
+      if (col == -1) continue;
+      if (first_col == -1) {
+        first_col = col;
+      } else {
+        cc.AddEdge(first_col, col);
+      }
+    }
+    row_first_col[c] = first_col;
+    if (first_col == -1) {
+      result.pure_integer_constraints.push_back(c);
+    }
+  }
+
+  const int num_components = cc.GetNumberOfComponents();
+  const std::vector<int> col_to_component = cc.GetComponentIds();
+  result.components.resize(num_components);
+  for (int col = 0; col < num_cols; ++col) {
+    result.components[col_to_component[col]].continuous_vars.push_back(
+        residual_var_indices[col]);
+  }
+  for (int c = 0; c < num_constraints; ++c) {
+    if (row_first_col[c] != -1) {
+      result.components[col_to_component[row_first_col[c]]]
+          .constraints.push_back(c);
+    }
   }
   return result;
+}
+
+void LogTumStats(const TumStats& stats, SolverLogger* logger) {
+  if (stats.num_tum_components + stats.num_2_modular_components == 0) {
+    if (stats.num_components > 1) {
+      SOLVER_LOG(logger, "[TUM] 0/", stats.num_components,
+                 " continuous residual matrix with simple structure.");
+    }
+    LogTumBoundTighteningStats(stats, logger);
+    return;
+  }
+
+  SOLVER_LOG(logger, "[TUM] ", stats.num_tum_components, "/",
+             stats.num_components,
+             " continuous residual matrix are Totally Unimodular; +",
+             stats.num_new_tum_integers, " variables marked as integer.");
+  if (stats.num_new_2_modular_integers > 0) {
+    SOLVER_LOG(logger, "[TUM] ", stats.num_2_modular_components, "/",
+               stats.num_components - stats.num_tum_components,
+               " components left are 2-modular; +",
+               stats.num_new_2_modular_integers,
+               " variable scaled and marked as integer.");
+  }
+  if (stats.num_modular_constraints > 0) {
+    SOLVER_LOG(logger, "[TUM] ", stats.num_modular_constraints,
+               " modular constraints scaled directly (max bound error: ",
+               stats.max_var_bound_error, ").");
+  }
+  if (stats.num_common_scaled > 0) {
+    SOLVER_LOG(logger, "[TUM] ", stats.num_common_scaled,
+               " variables scaled with a common component factor in [",
+               stats.min_common_scaling, ", ", stats.max_common_scaling, "].");
+  }
+  LogTumBoundTighteningStats(stats, logger);
+}
+
+std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
+    const SatParameters& params, const ResidualContinuousComponent& compo,
+    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
+    GlobalObjectivePrecision* global_obj_precision, TumStats* stats) {
+  DCHECK(mp_model.underlying_model().general_constraint().empty());
+  CHECK_EQ(compo.var_to_local_col.size(), mp_model.num_variables());
+  CHECK_EQ(states.size(), mp_model.num_variables());
+  std::vector<ModularConstraintScaling> row_scalings;
+  if (compo.continuous_vars.empty()) return row_scalings;
+  if (params.keep_all_feasible_solutions_in_presolve()) return row_scalings;
+
+  TumComponentScratch scratch;
+  double common_precision_max_bound = 0.0;
+  if (TryProcessTumComponent(params, compo, /*only_tighten_bounds=*/false,
+                             /*include_large_integers=*/false, mp_model, states,
+                             global_obj_precision, stats, &scratch,
+                             &common_precision_max_bound, &row_scalings)) {
+    ApplyTumCommonPrecisionScaling(params, compo, common_precision_max_bound,
+                                   mp_model, states, global_obj_precision,
+                                   stats);
+  }
+  return row_scalings;
+}
+
+void TightenResidualTotallyUnimodularVariableBounds(
+    const SatParameters& params, MPModelProtoWrapper* mp_model,
+    SolverLogger* logger) {
+  if (!mp_model->underlying_model().general_constraint().empty()) return;
+  if (params.keep_all_feasible_solutions_in_presolve()) return;
+
+  const int num_vars = mp_model->num_variables();
+  const int num_constraints = mp_model->num_constraints();
+  std::vector<MipVariableState> states(num_vars);
+  for (int var = 0; var < num_vars; ++var) {
+    const MPVariableProto& mp_var = mp_model->variables(var);
+    states[var].lb = mp_var.lower_bound();
+    states[var].ub = mp_var.upper_bound();
+    states[var].is_integer = mp_var.is_integer();
+  }
+
+  // Integer variables with a large domain (typically unbounded ones) are
+  // first included in the residual matrix: this allows to tighten them when
+  // they are part of an integral TUM component (e.g. big-M scheduling
+  // formulations), and this also provides finite bounds for the external
+  // variables of the second pass. The second pass only considers continuous
+  // variables, since it can lead to different (smaller) components.
+  //
+  // In both passes, we only tighten the bounds of components whose LP vertices
+  // are guaranteed to be integral for any integer assignment of the external
+  // variables (Hoffman-Kruskal).
+  TumStats stats;
+  TumComponentScratch scratch;
+  std::vector<int> to_dense_index(num_vars, -1);
+  std::vector<int> residual_var_indices;
+  std::vector<int> row_first_col(num_constraints, -1);
+  std::vector<int> var_to_local_col_buffer(num_vars, -1);
+  const double tighten_split = 0.1 * params.mip_max_bound();
+  for (const bool include_large_integers : {true, false}) {
+    // 1. Identify and re-index residual variables.
+    //
+    // Note: Rather than considering only integer variable as external, we also
+    // mark as external any variable that have a "small" domain. This should
+    // allow to split the problem into more component, increasing the chance
+    // that some of them are TUM and allow to restrict their large bounds via
+    // TightenComponentBounds().
+    to_dense_index.assign(num_vars, -1);
+    residual_var_indices.clear();
+    for (int var = 0; var < num_vars; ++var) {
+      const double lb = states[var].lb;
+      const double ub = states[var].ub;
+      if (std::abs(lb) <= tighten_split && std::abs(ub) <= tighten_split) {
+        continue;
+      }
+      if (!include_large_integers && states[var].is_integer) continue;
+      to_dense_index[var] = residual_var_indices.size();
+      residual_var_indices.push_back(var);
+    }
+    if (residual_var_indices.empty()) continue;
+
+    // 2. Partition residual variables and constraints into connected
+    // components.
+    const int num_cols = residual_var_indices.size();
+    DenseConnectedComponentsFinder components;
+    components.SetNumberOfNodes(num_cols);
+    for (int c = 0; c < num_constraints; ++c) {
+      const MPConstraintProto& constraint = mp_model->constraints(c).proto();
+      int first_col = -1;
+      for (int i = 0; i < constraint.var_index_size(); ++i) {
+        if (constraint.coefficient(i) == 0.0) continue;
+        const int col = to_dense_index[constraint.var_index(i)];
+        if (col == -1) continue;  // Skip external variables.
+        if (first_col == -1) {
+          first_col = col;
+        } else {
+          components.AddEdge(first_col, col);
+        }
+      }
+      row_first_col[c] = first_col;
+    }
+
+    const int num_components = components.GetNumberOfComponents();
+    const std::vector<int> col_to_components = components.GetComponentIds();
+    std::vector<ResidualContinuousComponent> compos(num_components);
+    for (int col = 0; col < num_cols; ++col) {
+      compos[col_to_components[col]].continuous_vars.push_back(
+          residual_var_indices[col]);
+    }
+    for (int c = 0; c < num_constraints; ++c) {
+      if (row_first_col[c] != -1) {
+        compos[col_to_components[row_first_col[c]]].constraints.push_back(c);
+      }
+    }
+
+    // 3. Process each connected component independently.
+    for (ResidualContinuousComponent& compo : compos) {
+      const ScopedVarToLocalCol scoped(&compo, &var_to_local_col_buffer);
+      double unused_common_precision_max_bound = 0.0;
+      TryProcessTumComponent(params, compo, /*only_tighten_bounds=*/true,
+                             include_large_integers, *mp_model,
+                             absl::MakeSpan(states),
+                             /*global_obj_precision=*/nullptr, &stats, &scratch,
+                             &unused_common_precision_max_bound,
+                             /*row_scalings=*/nullptr);
+    }
+  }
+  LogTumBoundTighteningStats(stats, logger);
+
+  // Only the bounds can change.
+  for (int var = 0; var < num_vars; ++var) {
+    MPVariableProto* mp_var = mp_model->mutable_variables(var);
+    mp_var->set_lower_bound(states[var].lb);
+    mp_var->set_upper_bound(states[var].ub);
+  }
 }
 
 }  // namespace sat

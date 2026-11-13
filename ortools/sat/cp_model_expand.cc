@@ -2945,9 +2945,7 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      context->UpdateConstraintVariableUsage(c);
-    }
+    context->UpdateConstraintVariableUsage(c);
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {
@@ -2987,9 +2985,7 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      context->UpdateConstraintVariableUsage(c);
-    }
+    context->UpdateConstraintVariableUsage(c);
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {

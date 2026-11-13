@@ -1134,12 +1134,10 @@ void BM_ModelReduction(benchmark::State& state) {
     CHECK(prep_copy.MaybeUpdate(updated));
     prep_bounds.ReportPotentialNewBounds("sat", vars, vals, vals);
     prep_bounds.Synchronize();
-    prep_copy.AddSearchDeterministicTime(100.0 *
-                                         prep_copy.estimated_copy_dtime());
     CHECK(prep_copy.MaybeUpdate(updated));
     CHECK(updated);
     stage_proto = prep_copy.proto();
-    stage_stats = prep_copy.model_stats();
+    stage_stats = ComputeModelStats(stage_proto);
     stage_sol = prep_copy.MapSolution(model.planted_sol);
   } else {
     stage_stats = ComputeModelStats(stage_proto);
@@ -1178,7 +1176,6 @@ void BM_ModelReduction(benchmark::State& state) {
     shared_bounds->ReportPotentialNewBounds("sat", batch.vars, batch.lbs,
                                             batch.ubs);
     shared_bounds->Synchronize();
-    copy->AddSearchDeterministicTime(100.0 * copy->estimated_copy_dtime());
     bool updated = false;
     state.ResumeTiming();
     CHECK(copy->MaybeUpdate(updated));
@@ -1260,16 +1257,21 @@ void BM_DomainReductions(benchmark::State& state) {
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
                         /*shared_clauses=*/nullptr);
     bool updated = false;
-    CHECK(copy.MaybeUpdate(updated));
+    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    ModelStats stats = ComputeModelStats(copy.proto());
+    double search_dtime = 0.0;
     int64_t iter_rebuilds = updated ? 1 : 0;
     for (const BoundsBatch& batch : rounds) {
       shared_bounds.ReportPotentialNewBounds("sat", batch.vars, batch.lbs,
                                              batch.ubs);
       shared_bounds.Synchronize();
-      copy.AddSearchDeterministicTime(3.0 * copy.estimated_copy_dtime());
+      const double pre_dtime = EstimateCopyDeterministicTime(stats);
+      search_dtime += 3.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated));
+      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
       if (updated) {
+        stats = ComputeModelStats(copy.proto());
+        search_dtime = 0.0;
         ++iter_rebuilds;
       }
     }
@@ -1319,19 +1321,23 @@ void BM_FixedVariables(benchmark::State& state) {
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
                         /*shared_clauses=*/nullptr);
     bool updated = false;
-    double pre_dtime = copy.estimated_copy_dtime();
-    CHECK(copy.MaybeUpdate(updated));
+    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    ModelStats stats = ComputeModelStats(copy.proto());
+    double pre_dtime = EstimateCopyDeterministicTime(stats);
+    double search_dtime = 0.0;
     int64_t iter_rebuilds = updated ? 1 : 0;
     double iter_copy_dtime = updated ? pre_dtime : 0.0;
     for (const BoundsBatch& batch : rounds) {
       shared_bounds.ReportPotentialNewBounds("sat", batch.vars, batch.lbs,
                                              batch.ubs);
       shared_bounds.Synchronize();
-      pre_dtime = copy.estimated_copy_dtime();
-      copy.AddSearchDeterministicTime(10.0 * pre_dtime);
+      pre_dtime = EstimateCopyDeterministicTime(stats);
+      search_dtime += 10.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated));
+      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
       if (updated) {
+        stats = ComputeModelStats(copy.proto());
+        search_dtime = 0.0;
         ++iter_rebuilds;
         iter_copy_dtime += pre_dtime;
       }
@@ -1446,8 +1452,10 @@ void BM_MixedUpdates(benchmark::State& state) {
         shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
     DenseModelCopy copy("ls", model.proto, &shared_bounds, &shared_clauses);
     bool updated = false;
-    double pre_dtime = copy.estimated_copy_dtime();
-    CHECK(copy.MaybeUpdate(updated));
+    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    ModelStats stats = ComputeModelStats(copy.proto());
+    double pre_dtime = EstimateCopyDeterministicTime(stats);
+    double search_dtime = 0.0;
     int64_t iter_rebuilds = updated ? 1 : 0;
     double iter_copy_dtime = updated ? pre_dtime : 0.0;
     for (const MixedBatch& batch : rounds) {
@@ -1459,11 +1467,13 @@ void BM_MixedUpdates(benchmark::State& state) {
       for (const auto [lit1, lit2] : batch.binary_clauses) {
         shared_clauses.AddBinaryClause(sat_id, lit1, lit2);
       }
-      pre_dtime = copy.estimated_copy_dtime();
-      copy.AddSearchDeterministicTime(3.0 * pre_dtime);
+      pre_dtime = EstimateCopyDeterministicTime(stats);
+      search_dtime += 3.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated));
+      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
       if (updated) {
+        stats = ComputeModelStats(copy.proto());
+        search_dtime = 0.0;
         ++iter_rebuilds;
         iter_copy_dtime += pre_dtime;
         const std::vector<int64_t> dense_sol =

@@ -228,6 +228,7 @@ or_cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],

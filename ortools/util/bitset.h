@@ -675,11 +675,9 @@ class SparseBitset {
     to_clear_.assign(other.to_clear_.begin(), other.to_clear_.end());
   }
 
-  // A bit hacky for really hot loop.
-  typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
-  typename Bitset64<IntegerType>::ConstView BitsetConstView() {
-    return bitset_.const_view();
-  }
+  auto view() { return bitset_.view(); }
+  auto const_view() const { return bitset_.const_view(); }
+
   void SetUnsafe(typename Bitset64<IntegerType>::View view, IntegerType index) {
     view.Set(index);
     to_clear_.push_back(index);
@@ -704,10 +702,6 @@ class SparseBitset {
     for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
 #endif
     to_clear_.clear();
-  }
-
-  typename Bitset64<IntegerType>::ConstView const_view() const {
-    return bitset_.const_view();
   }
 
  private:

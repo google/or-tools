@@ -939,16 +939,17 @@ TEST(ModelCopyTest, CopyModelAdvancesDeterministicTime) {
       CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto, &model));
   EXPECT_DOUBLE_EQ(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
-      EstimateCopyDeterministicTime(ComputeModelStats(copied_proto)));
+      EstimateCopyDeterministicTime(ComputeModelStats(proto)));
 
   // Even if initial copy proves the model infeasible, deterministic time for
-  // the scanned prefix is still recorded.
+  // the input model is still recorded.
   proto.add_constraints()->mutable_bool_or();  // Empty clause -> UNSAT.
   Model unsat_model;
   EXPECT_FALSE(CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto,
                          &unsat_model));
-  EXPECT_GT(unsat_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
-            1e-6);
+  EXPECT_DOUBLE_EQ(
+      unsat_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
+      EstimateCopyDeterministicTime(ComputeModelStats(proto)));
 }
 
 TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
@@ -989,13 +990,11 @@ TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
   EXPECT_EQ(&copy.proto(), &proto);
   EXPECT_EQ(copy.bounds_timestamp(), -1);
   EXPECT_EQ(copy.equivalences_timestamp(), -1);
-  EXPECT_GT(copy.estimated_copy_dtime(), 0.0);
   EXPECT_EQ(copy.MapInnerObjectiveValue(10), 10);
 
   // Tighten bound on variable 0 without fixing it: [0, 10] -> [2, 8].
   shared_bounds_manager.ReportPotentialNewBounds("test", {0}, {2}, {8});
   shared_bounds_manager.Synchronize();
-  copy.AddSearchDeterministicTime(100.0 * copy.estimated_copy_dtime());
 
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_FALSE(updated);
@@ -1005,8 +1004,7 @@ TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
   EXPECT_EQ(copy.var_domains()[0].Max(), 8);
 }
 
-TEST(DenseModelCopyTest,
-     RateLimiterGatesRebuildsByRemovableVariablesAndSearchTime) {
+TEST(DenseModelCopyTest, MinVariableReductionRatioGatesRebuilds) {
   CpModelProto proto;
   for (int i = 0; i < 20; ++i) {
     auto* var = proto.add_variables();
@@ -1032,10 +1030,12 @@ TEST(DenseModelCopyTest,
 
   DenseModelCopy copy("test", proto, &shared_bounds_manager,
                       &shared_clauses_manager);
-  EXPECT_EQ(copy.model_stats().num_variables, 20);
-  EXPECT_EQ(copy.model_stats().num_constraints, 1);
-  EXPECT_EQ(copy.model_stats().num_linear_terms, 22);
-  const double initial_estimated_dtime = copy.estimated_copy_dtime();
+  const ModelStats initial_stats = ComputeModelStats(copy.proto());
+  EXPECT_EQ(initial_stats.num_variables, 20);
+  EXPECT_EQ(initial_stats.num_constraints, 1);
+  EXPECT_EQ(initial_stats.num_linear_terms, 22);
+  const double initial_estimated_dtime =
+      EstimateCopyDeterministicTime(initial_stats);
   EXPECT_GT(initial_estimated_dtime, 1e-6);
 
   bool updated = true;
@@ -1043,50 +1043,43 @@ TEST(DenseModelCopyTest,
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains().size(), 20);
 
-  // Fixing 1 out of 20 variables (x = 5%) requires search_dtime >= 20 *
-  // estimated_copy_dtime(). At 19x it stays in place; reaching 20x triggers
-  // the rebuild.
+  // Fixing 1 out of 20 variables (x = 5%): deferred when
+  // min_variable_reduction_ratio = 1/19 (~5.26%), triggered at 1/20.5 (~4.88%).
   shared_bounds_manager.ReportPotentialNewBounds("test", {0}, {5}, {5});
   shared_bounds_manager.Synchronize();
-  copy.AddSearchDeterministicTime(19.0 * copy.estimated_copy_dtime());
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 19.0));
   EXPECT_FALSE(updated);
   EXPECT_TRUE(copy.var_domains().IsFixed(0));
   EXPECT_EQ(copy.var_domains()[0].FixedValue(), 5);
   EXPECT_EQ(copy.var_domains().size(), 20);
 
-  copy.AddSearchDeterministicTime(1.5 * copy.estimated_copy_dtime());
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 20.5));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 19);
   EXPECT_EQ(copy.proto().variables_size(), 19);
   EXPECT_GE(copy.bounds_timestamp(), 0);
-  EXPECT_EQ(copy.search_dtime_since_rebuild(), 0.0);
-  EXPECT_LT(copy.estimated_copy_dtime(), initial_estimated_dtime);
+  const double prev_estimated_dtime =
+      EstimateCopyDeterministicTime(ComputeModelStats(copy.proto()));
+  EXPECT_LT(prev_estimated_dtime, initial_estimated_dtime);
   // 2 * x0 + 3 * x15 with x0 = 5 shifts objective offset by +10, so dense inner
   // objective for input inner objective 25 is 15.
   EXPECT_EQ(copy.MapInnerObjectiveValue(25), 15);
 
-  // Now fix 9 of the remaining 19 variables (x = 9/19 ~ 47.4%). With 1.5x
-  // search dtime (9/19 * 1.5 < 1.0), rebuild is still deferred; adding another
-  // 1.0x (total 2.5x, so 9/19 * 2.5 > 1.0) triggers the rebuild much sooner
-  // than 10x.
+  // Now fix 9 of the remaining 19 variables (x = 9/19 ~ 47.4%). Deferred at
+  // min_variable_reduction_ratio = 1/1.5 (~66.7%), triggered at 1/2.5 (40%).
   shared_bounds_manager.ReportPotentialNewBounds(
       "test", {1, 2, 3, 4, 5, 6, 7, 8, 9}, {6, 3, 4, 2, 2, 2, 3, 4, 5},
       {6, 3, 4, 2, 2, 2, 3, 4, 5});
   shared_bounds_manager.Synchronize();
-  copy.AddSearchDeterministicTime(1.5 * copy.estimated_copy_dtime());
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 1.5));
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains().size(), 19);
 
-  const double prev_estimated_dtime = copy.estimated_copy_dtime();
-  copy.AddSearchDeterministicTime(1.0 * copy.estimated_copy_dtime());
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 2.5));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 10);
-  EXPECT_EQ(copy.search_dtime_since_rebuild(), 0.0);
-  EXPECT_LT(copy.estimated_copy_dtime(), prev_estimated_dtime);
+  EXPECT_LT(EstimateCopyDeterministicTime(ComputeModelStats(copy.proto())),
+            prev_estimated_dtime);
 
   std::vector<int64_t> input_sol = {5, 6, 3, 4, 2, 2, 2, 3, 4, 5,
                                     7, 7, 7, 7, 7, 7, 7, 7, 7, 7};
@@ -1121,20 +1114,19 @@ TEST(DenseModelCopyTest, BinaryEquivalencesAndConflictingBounds) {
                                          NegatedRef(1));
   ASSERT_EQ(shared_clauses_manager.NumEquivalences(), 1);
 
-  // Rate-limited before search dtime accumulates.
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  // Deferred when min_variable_reduction_ratio exceeds 1/10.
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.2));
   EXPECT_FALSE(updated);
 
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.1));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 9);
   EXPECT_EQ(copy.equivalences_timestamp(), 1);
 
-  // Fix x0 = 1 incrementally; dense var 0 becomes [1, 1].
+  // Fix x0 = 1 incrementally without rebuilding; dense var 0 becomes [1, 1].
   shared_bounds_manager.ReportPotentialNewBounds("sat", {0}, {1}, {1});
   shared_bounds_manager.Synchronize();
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.5));
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains()[0], Domain(1));
 
@@ -1145,8 +1137,7 @@ TEST(DenseModelCopyTest, BinaryEquivalencesAndConflictingBounds) {
   EXPECT_FALSE(copy.MaybeUpdate(updated));
 }
 
-TEST(DenseModelCopyTest,
-     ModelStatsFilledDuringCopyTrackSchedulingAndLinearReductions) {
+TEST(DenseModelCopyTest, ComputeModelStatsTracksSchedulingAndLinearReductions) {
   // Variables:
   //   0, 1: optional presence literals [0, 1]
   //   2, 3, 4: start0, size0, end0 [0, 20]
@@ -1253,25 +1244,21 @@ TEST(DenseModelCopyTest,
   SharedBoundsManager shared_bounds(copied_proto);
   DenseModelCopy copy("test", copied_proto, &shared_bounds,
                       /*shared_clauses=*/nullptr);
-  EXPECT_EQ(copy.model_stats(), initial_stats);
-  EXPECT_DOUBLE_EQ(copy.estimated_copy_dtime(),
-                   EstimateCopyDeterministicTime(initial_stats));
 
   // Fix presence literal 0 to false (unperformed interval 0) and fix var 8 = 3.
   shared_bounds.ReportPotentialNewBounds("sat", {0, 8}, {0, 3}, {0, 3});
   shared_bounds.Synchronize();
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
 
   bool updated = false;
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
-  EXPECT_EQ(copy.model_stats().num_variables, 9);
-  EXPECT_EQ(copy.model_stats().num_intervals, 1);
-  EXPECT_EQ(copy.model_stats().num_interval_references, 2);
-  EXPECT_EQ(copy.model_stats().num_table_values, 6);
-  EXPECT_LT(copy.model_stats().num_linear_terms,
-            initial_stats.num_linear_terms);
-  EXPECT_LT(copy.estimated_copy_dtime(),
+  const ModelStats reduced_stats = ComputeModelStats(copy.proto());
+  EXPECT_EQ(reduced_stats.num_variables, 9);
+  EXPECT_EQ(reduced_stats.num_intervals, 1);
+  EXPECT_EQ(reduced_stats.num_interval_references, 2);
+  EXPECT_EQ(reduced_stats.num_table_values, 6);
+  EXPECT_LT(reduced_stats.num_linear_terms, initial_stats.num_linear_terms);
+  EXPECT_LT(EstimateCopyDeterministicTime(reduced_stats),
             EstimateCopyDeterministicTime(initial_stats));
 }
 
@@ -1416,7 +1403,8 @@ TEST(DenseModelCopyTest, ChainedRebuildsMatchSingleShotAndShrinkWorkUnits) {
   EXPECT_TRUE(chained.var_domains().IsFixed(0));
   EXPECT_EQ(chained.var_domains()[0].FixedValue(), 1);
   EXPECT_EQ(chained.proto().constraints_size(), 6);
-  const double dtime1 = chained.estimated_copy_dtime();
+  const double dtime1 =
+      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
   EXPECT_GT(dtime1, 1e-6);
 
   // Rebuild 2: fix x6 = 4, x7 = 2 and add negated + transitive equivalences
@@ -1430,13 +1418,13 @@ TEST(DenseModelCopyTest, ChainedRebuildsMatchSingleShotAndShrinkWorkUnits) {
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), NegatedRef(3));
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(0), 4);
   shared_clauses.AddBinaryClause(sat_id, 0, NegatedRef(4));
-  chained.AddSearchDeterministicTime(10.0 * chained.estimated_copy_dtime());
 
   ASSERT_TRUE(chained.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
   // Removed: x6, x7, v2, v3, v4 (v0 kept as first_fixed_literal) => 11 left.
   EXPECT_EQ(chained.var_domains().size(), 11);
-  const double dtime2 = chained.estimated_copy_dtime();
+  const double dtime2 =
+      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
   EXPECT_LT(dtime2, dtime1);
   EXPECT_GT(dtime2, 1e-6);
 
@@ -1449,13 +1437,13 @@ TEST(DenseModelCopyTest, ChainedRebuildsMatchSingleShotAndShrinkWorkUnits) {
   shared_bounds.Synchronize();
   shared_clauses.AddBinaryClause(sat_id, 3, 5);
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(3), NegatedRef(5));
-  chained.AddSearchDeterministicTime(10.0 * chained.estimated_copy_dtime());
 
   ASSERT_TRUE(chained.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
   // Removed additionally: x8, x9, x12, v5 => 7 vars remaining.
   EXPECT_EQ(chained.var_domains().size(), 7);
-  const double dtime3 = chained.estimated_copy_dtime();
+  const double dtime3 =
+      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
   EXPECT_LT(dtime3, dtime2);
 
   // Compare everything against a fresh single-shot DenseModelCopy seeing the
@@ -1467,7 +1455,8 @@ TEST(DenseModelCopyTest, ChainedRebuildsMatchSingleShotAndShrinkWorkUnits) {
   EXPECT_TRUE(single_shot_updated);
 
   EXPECT_THAT(chained.proto(), EqualsProto(single_shot.proto()));
-  EXPECT_EQ(chained.model_stats(), single_shot.model_stats());
+  EXPECT_EQ(ComputeModelStats(chained.proto()),
+            ComputeModelStats(single_shot.proto()));
   ASSERT_EQ(chained.var_domains().size(), single_shot.var_domains().size());
   for (int v = 0; v < chained.var_domains().size(); ++v) {
     EXPECT_EQ(chained.var_domains()[v], single_shot.var_domains()[v])
@@ -1517,20 +1506,19 @@ TEST(DenseModelCopyTest, RedundantEquivalencesOnRemovedVarsSkipRebuild) {
   shared_bounds.ReportPotentialNewBounds("sat", {0, 1, 2}, {1, 0, 1},
                                          {1, 0, 1});
   shared_bounds.Synchronize();
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 8);
   EXPECT_EQ(copy.equivalences_timestamp(), 0);
 
   // Export consistent equivalence between already-removed fixed vars 1 and 2
-  // (x1 == ~x2). Even with sufficient search dtime, MaybeUpdate should skip
-  // rebuilding (`updated == false`) and keep `equivalences_timestamp()`
-  // unchanged so callers do not reset search weights.
+  // (x1 == ~x2). Even with min_variable_reduction_ratio = 0.0, MaybeUpdate
+  // should skip rebuilding (`updated == false`) and keep
+  // `equivalences_timestamp()` unchanged so callers do not reset search
+  // weights.
   shared_clauses.AddBinaryClause(sat_id, 1, 2);
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(1), NegatedRef(2));
   ASSERT_EQ(shared_clauses.NumEquivalences(), 1);
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
 
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_FALSE(updated);
@@ -1546,7 +1534,6 @@ TEST(DenseModelCopyTest, RedundantEquivalencesOnRemovedVarsSkipRebuild) {
   shared_clauses.AddBinaryClause(sat_id, 0, 1);
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(0), NegatedRef(1));
   ASSERT_EQ(shared_clauses.NumEquivalences(), 2);
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
 
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_FALSE(updated);
@@ -1587,7 +1574,6 @@ TEST(DenseModelCopyTest, ChainedRebuildFixesNonHeadMergedVariable) {
   shared_clauses.AddBinaryClause(sat_id, 1, NegatedRef(2));
   shared_clauses.AddBinaryClause(sat_id, 2, 3);
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), NegatedRef(3));
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 4);
@@ -1600,7 +1586,6 @@ TEST(DenseModelCopyTest, ChainedRebuildFixesNonHeadMergedVariable) {
   shared_bounds.Synchronize();
   shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), 4);
   shared_clauses.AddBinaryClause(sat_id, 2, NegatedRef(4));
-  copy.AddSearchDeterministicTime(10.0 * copy.estimated_copy_dtime());
   ASSERT_TRUE(copy.MaybeUpdate(updated));
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 2);

@@ -6457,6 +6457,34 @@ TEST(LoadCpModelTest, LargeMultiEnforcedBoolAndOptimizationMatchesPresolve) {
   }
 }
 
+TEST(SolveCpModelTest, MaxHsPropagatesInfeasibleHittingSetSubmodel) {
+  CpModelProto m;
+  auto* cap = m.add_constraints()->mutable_linear();
+  cap->add_domain(0);
+  cap->add_domain(2);
+  for (int i = 0; i < 5; ++i) {
+    AddVariable(0, 1, &m);
+    m.mutable_objective()->add_vars(i);
+    m.mutable_objective()->add_coeffs(1);
+    cap->add_vars(i);
+    cap->add_coeffs(1);
+  }
+  for (int a = 0; a < 5; ++a) {
+    for (int b = a + 1; b < 5; ++b) {
+      for (int c = b + 1; c < 5; ++c) {
+        auto* ct = m.add_constraints()->mutable_bool_or();
+        for (int v : {a, b, c}) ct->add_literals(v);
+      }
+    }
+  }
+  SatParameters params;
+  params.set_num_workers(1);
+  params.set_optimize_with_core(true);
+  params.set_optimize_with_max_hs(true);
+  const CpSolverResponse response = SolveWithParameters(m, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

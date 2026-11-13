@@ -53,8 +53,8 @@ namespace sat {
 // This can only be done if the variable is fixed.
 constexpr int kNoVariableMapping = kint32min;
 
-// Compact size summary of a CpModelProto, populated on the fly during ModelCopy
-// so copy deterministic time can be estimated without rescanning the model.
+// Compact size summary of a CpModelProto used to estimate model copy
+// deterministic time.
 struct ModelStats {
   int64_t num_variables = 0;
   int64_t num_constraints = 0;
@@ -266,7 +266,6 @@ class ModelCopy {
   absl::Span<const int64_t> InternalIntervalMapping() const {
     return interval_mapping_;
   }
-  const ModelStats& model_stats() const { return model_stats_; }
 
  private:
   // Write a summary of what happens to the logger_.
@@ -418,7 +417,6 @@ class ModelCopy {
   const SatParameters& params_;
   SolverLogger* logger_;
   CpModelProto* working_model_;
-  ModelStats model_stats_;
 
   absl::Span<const int> variable_mapping_;
 
@@ -502,10 +500,9 @@ class VariableDomains {
 // which can be dynamically updated when new bounds or equivalences are found.
 //
 // Non-fixing bound updates are applied incrementally in place to
-// `var_domains()`, while full model rebuilds (`ModelCopy`) are triggered once
-// `reduction_ratio * search_dtime_since_rebuild() >= estimated_copy_dtime()`,
-// where `reduction_ratio` is the fraction of unfixed variables newly fixed or
-// merged by equivalences since the last rebuild.
+// `var_domains()`, while `proto()` is rebuilt once the fraction of unfixed
+// variables newly fixed or merged by equivalences reaches
+// `min_variable_reduction_ratio`.
 class DenseModelCopy {
  public:
   // active_constraints() will be used when copying input_model_proto into the
@@ -527,30 +524,14 @@ class DenseModelCopy {
   const VariableDomains& var_domains() const { return var_domains_; }
 
   // Updates `var_domains()` incrementally with the latest shared bounds and,
-  // when warranted by the rate limiter, rebuilds `proto()` to remove fixed and
-  // equivalent variables. Returns false if the model is proven infeasible. Sets
-  // `updated` to true iff `proto()` and the variable mapping were rebuilt.
-  bool MaybeUpdate(bool& updated);
-
-  // Records search deterministic time spent evaluating moves on this dense
-  // model so full rebuilds can be amortized against search work.
-  void AddSearchDeterministicTime(double dtime) {
-    if (dtime > 0.0) {
-      search_dtime_since_rebuild_ += dtime;
-    }
-  }
-  const ModelStats& model_stats() const {
-    if (!model_stats_.has_value()) {
-      model_stats_ = ComputeModelStats(input_model_proto_);
-    }
-    return *model_stats_;
-  }
-  double estimated_copy_dtime() const {
-    return EstimateCopyDeterministicTime(model_stats());
-  }
-  double search_dtime_since_rebuild() const {
-    return search_dtime_since_rebuild_;
-  }
+  // when the fraction of unfixed variables newly fixed or merged by
+  // equivalences is at least `min_variable_reduction_ratio` (or on the first
+  // call when `active_constraints` is set), rebuilds `proto()` to remove fixed
+  // and equivalent variables. Pass `min_variable_reduction_ratio > 1.0` to
+  // update domains in place without rebuilding. Returns false if the model is
+  // proven infeasible. Sets `updated` to true iff `proto()` and the variable
+  // mapping were rebuilt.
+  bool MaybeUpdate(bool& updated, double min_variable_reduction_ratio = 0.0);
 
   // Maps a solution from the input model to the dense model, and vice versa.
   std::vector<int64_t> MapSolution(
@@ -565,7 +546,7 @@ class DenseModelCopy {
   // Updates `input_var_domains_` and `var_domains_` in place from
   // `shared_bounds_`. Returns false if any domain becomes empty (UNSAT).
   bool UpdateFromSharedBounds();
-  bool ShouldRebuild() const;
+  bool ShouldRebuild(double min_variable_reduction_ratio) const;
 
   // Propagates tightened `var_domains_` back into the active input variables'
   // `input_var_domains_`. Returns false if UNSAT.
@@ -590,7 +571,6 @@ class DenseModelCopy {
   SharedBoundsManager* const shared_bounds_;
   const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
-  mutable std::optional<ModelStats> model_stats_;
 
   bool first_update_ = true;
   bool is_unsat_ = false;
@@ -601,7 +581,6 @@ class DenseModelCopy {
   int64_t equivalences_timestamp_ = -1;
   int64_t latest_equivalences_timestamp_ = -1;
   int64_t fixed_vars_at_last_rebuild_ = 0;
-  double search_dtime_since_rebuild_ = 0.0;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
   // variables removed. Allocated lazily on `arena_` once the first rebuild
