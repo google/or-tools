@@ -3324,6 +3324,25 @@ LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& model) {
       new FilterWithPathState(path_state_filter, filter));
 }
 
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeTypeRegulationsFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension) {
+  const Model& model = *dimension.model();
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeDimensionFilter(dimension,
+                                                          path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
 using RoutingFilterTestWithUnaryCallbackAndSolverType =
     ::testing::TestWithParam<
         std::tuple<bool, RoutingSearchParameters::SchedulingSolver>>;
@@ -4410,8 +4429,7 @@ TEST_P(
     auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
     std::vector<LocalSearchFilterManager::FilterEvent> filters;
     AppendDimensionCumulFilters(path_state, {dimension}, parameters,
-                                /*filter_objective_cost=*/true,
-                                /*use_chain_cumul_filter=*/true, &filters);
+                                /*filter_objective_cost=*/true, &filters);
     ASSERT_EQ(filters.size(), 2);
     filters[0].filter = model.solver()->RevAlloc(
         new FilterWithPathState(path_state_filter, filters[0].filter));
@@ -4511,8 +4529,7 @@ class NodePrecedenceCumulFiltersTest
       std::vector<LocalSearchFilterManager::FilterEvent> filters;
       AppendDimensionCumulFilters(path_state, {time_dimension_},
                                   DefaultRoutingSearchParameters(),
-                                  filter_objective,
-                                  /*use_chain_cumul_filter*/ true, &filters);
+                                  filter_objective, &filters);
       EXPECT_EQ(filters.size(), 2);
       LocalSearchFilter* const filter = filters[1].filter;
       filter->Synchronize(&initial_solution, nullptr);
@@ -4876,17 +4893,17 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
   if (!resource_filter_setup.create_filters_independently) {
     auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+    if (!use_cp_sat) {
+      AppendLightWeightDimensionFilters(path_state, {time_dimension}, &filters);
+    }
     AppendDimensionCumulFilters(path_state, {time_dimension},
                                 DefaultRoutingSearchParameters(),
-                                filter_objective_cost,
-                                /*use_chain_cumul_filter=*/true, &filters);
+                                filter_objective_cost, &filters);
     // There should be 3 filters:
-    // Chain/PathCumulFilter, ResourceAssignmentFilter, LPCumulFilter.
+    // Dimension/PathCumulFilter, ResourceAssignmentFilter, LPCumulFilter.
     ASSERT_EQ(filters.size(), 3);
-    if (use_cp_sat) {
-      filters[0].filter = model.solver()->RevAlloc(
-          new FilterWithPathState(path_state_filter, filters[0].filter));
-    }
+    filters[0].filter = model.solver()->RevAlloc(
+        new FilterWithPathState(path_state_filter, filters[0].filter));
   } else {
     const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
     if (use_cp_sat) {
@@ -4897,7 +4914,7 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
            kAccept, /*priority*/ 1});
     } else {
       filters.push_back(
-          {MakeChainCumulFilter(*time_dimension), kAccept, /*priority*/ 0});
+          {MakeDimensionFilter(*time_dimension), kAccept, /*priority*/ 0});
     }
     filters.push_back(
         {MakeResourceAssignmentFilter(
@@ -4933,8 +4950,8 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
       {2, 6, 1, 7, 3, 8}};
   const int kExpectedCost[] = {1, 1, 1, 1, 3, 2, 2};
   const bool kExpectedAccept[][std::size(kDeltaSolutions)] = {
-      /* Chain/PathCumulFilter */ {true, !use_cp_sat, !use_cp_sat, true, true,
-                                   true, true},
+      /* Dimension/PathCumulFilter */ {true, !use_cp_sat, !use_cp_sat, true,
+                                       true, true, true},
       /* ResourceAssignmentFilter */
       {true, true, true, true, false, true, true},
       /* LPCumulFilter */ {true, false, false, true, false, true, false}};
@@ -5193,8 +5210,7 @@ TEST_F(PickupToDeliveryLimitTest, AppendDimensionCumulFiltersTest) {
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
   AppendDimensionCumulFilters(path_state, {dimension},
                               DefaultRoutingSearchParameters(),
-                              /*filter_objective_cost=*/true,
-                              /*use_chain_cumul_filter=*/true, &filters);
+                              /*filter_objective_cost=*/true, &filters);
   filters[0].filter = model_->solver()->RevAlloc(
       new FilterWithPathState(path_state_filter, filters[0].filter));
   // The PathCumulFilter doesn't propagate its own objective value when called
@@ -6298,7 +6314,7 @@ TEST(RoutingFilterTest, TypeIncompatibilityFilterTypePolicies) {
       }
       model.CloseModel();
 
-      IntVarLocalSearchFilter* filter = MakeTypeRegulationsFilter(model);
+      LocalSearchFilter* filter = MakeTypeRegulationsFilter(model);
 
       Assignment empty_solution(model.solver());
       MakeAssignment(kEmptySolution, model.Nexts(), &empty_solution);
@@ -6375,7 +6391,7 @@ class TypeRequirementFilterTest : public ::testing::Test {
                              const std::vector<bool>& expected_accept) {
     ASSERT_EQ(expected_accept.size(), std::size(kDeltaSolutions));
 
-    IntVarLocalSearchFilter* filter = MakeTypeRegulationsFilter(*model_);
+    LocalSearchFilter* filter = MakeTypeRegulationsFilter(*model_);
 
     Assignment empty_solution(model_->solver());
     MakeAssignment(kEmptySolution, model_->Nexts(), &empty_solution);
