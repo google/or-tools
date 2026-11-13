@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -173,6 +174,24 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
   const MPModelProto& mp_model = mp_model_wrapper.underlying_model();
   sat::ResidualContinuousComponents components =
       sat::SplitIntoResidualContinuousComponents(mp_model_wrapper);
+  if (!components.components.empty()) {
+    int64_t num_continuous_vars = 0;
+    double min_lb = std::numeric_limits<double>::infinity();
+    double max_ub = -std::numeric_limits<double>::infinity();
+    for (const sat::ResidualContinuousComponent& compo :
+         components.components) {
+      num_continuous_vars += compo.continuous_vars.size();
+      for (const int var : compo.continuous_vars) {
+        min_lb = std::min(min_lb, (*states)[var].lb);
+        max_ub = std::max(max_ub, (*states)[var].ub);
+      }
+    }
+    SOLVER_LOG(logger, "[Scaling] ", FormatCounter(num_continuous_vars),
+               " continuous variables in ",
+               FormatCounter(components.components.size()),
+               " residual components, domains in [", min_lb, ", ", max_ub,
+               "].");
+  }
 
   cp_model->Clear();
   cp_model->set_name(mp_model_wrapper.name());
