@@ -29,7 +29,8 @@
 // The purpose of the example is to demonstrates how to write local
 // search operators and local search filters.
 
-#include <bit>
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <random>
@@ -46,7 +47,6 @@
 #include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/local_search.h"
-#include "ortools/util/bitset.h"
 
 ABSL_FLAG(int, symbols_per_card, 8, "Number of symbols per card.");
 ABSL_FLAG(int, ls_seed, 1,
@@ -294,7 +294,7 @@ class DobbleOperator : public IntVarLocalSearchOperator {
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  std::vector<std::vector<int> > symbols_per_card_;
+  std::vector<std::vector<int>> symbols_per_card_;
 };
 
 // ----- Swap 2 symbols -----
@@ -450,25 +450,25 @@ class DobbleFilter : public IntVarLocalSearchFilter {
         num_cards_(num_cards),
         num_symbols_(num_symbols),
         num_symbols_per_card_(num_symbols_per_card),
-        temporary_bitset_(0),
-        symbol_bitmask_per_card_(num_cards, 0),
+        symbol_bitmask_per_card_(num_cards),
         violation_costs_(num_cards_, std::vector<int>(num_cards_, 0)) {}
 
   // We build the current bitmap and the matrix of violation cost
   // between any two cards.
   void OnSynchronize(const Assignment* delta) override {
-    symbol_bitmask_per_card_.assign(num_cards_, 0);
+    symbol_bitmask_per_card_.assign(num_cards_, {});
     for (int card = 0; card < num_cards_; ++card) {
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {
         if (Value(VarIndex(card, symbol))) {
-          SetBit64(&symbol_bitmask_per_card_[card], symbol);
+          symbol_bitmask_per_card_[card].set(symbol);
         }
       }
     }
     for (int card1 = 0; card1 < num_cards_; ++card1) {
       for (int card2 = 0; card2 < num_cards_; ++card2) {
-        violation_costs_[card1][card2] = ViolationCost(std::popcount(
-            symbol_bitmask_per_card_[card1] & symbol_bitmask_per_card_[card2]));
+        violation_costs_[card1][card2] = ViolationCost(
+            (symbol_bitmask_per_card_[card1] & symbol_bitmask_per_card_[card2])
+                .count());
       }
     }
     DCHECK(CheckCards());
@@ -540,14 +540,14 @@ class DobbleFilter : public IntVarLocalSearchFilter {
  private:
   // Undo information after an evaluation.
   struct UndoChange {
-    UndoChange(int c, uint64_t b) : card(c), bitset(b) {}
+    UndoChange(int c, std::bitset<64> b) : card(c), bitset(b) {}
     int card;
-    uint64_t bitset;
+    std::bitset<64> bitset;
   };
 
   int VarIndex(int card, int symbol) { return card * num_symbols_ + symbol; }
 
-  void ClearBitset() { temporary_bitset_ = 0; }
+  void ClearBitset() { temporary_bitset_.reset(); }
 
   // For each touched card, compare against all others to compute the
   // delta in term of cost. We use a bitset to avoid counting twice
@@ -557,13 +557,13 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     int cost_delta = 0;
     for (int i = 0; i < touched_cards.size(); ++i) {
       const int touched = touched_cards[i];
-      SetBit64(&temporary_bitset_, touched);
-      const uint64_t card_bitset = symbol_bitmask_per_card_[touched];
+      temporary_bitset_.set(touched);
+      const std::bitset<64> card_bitset = symbol_bitmask_per_card_[touched];
       const std::vector<int>& row_cost = violation_costs_[touched];
       for (int other_card = 0; other_card < num_cards_; ++other_card) {
-        if (!IsBitSet64(&temporary_bitset_, other_card)) {
-          cost_delta += ViolationCost(std::popcount(
-              card_bitset & symbol_bitmask_per_card_[other_card]));
+        if (!temporary_bitset_.test(other_card)) {
+          cost_delta += ViolationCost(
+              (card_bitset & symbol_bitmask_per_card_[other_card]).count());
           cost_delta -= row_cost[other_card];
         }
       }
@@ -584,16 +584,12 @@ class DobbleFilter : public IntVarLocalSearchFilter {
       const int card = touched_var / num_symbols_;
       const int symbol = touched_var % num_symbols_;
       const int new_value = solution_delta.Element(index).Value();
-      if (!IsBitSet64(&temporary_bitset_, card)) {
+      if (!temporary_bitset_.test(card)) {
         SaveRestoreInformation(card);
         touched_cards->push_back(card);
-        SetBit64(&temporary_bitset_, card);
+        temporary_bitset_.set(card);
       }
-      if (new_value) {
-        SetBit64(&symbol_bitmask_per_card_[card], symbol);
-      } else {
-        ClearBit64(&symbol_bitmask_per_card_[card], symbol);
-      }
+      symbol_bitmask_per_card_[card].set(symbol, new_value != 0);
     }
   }
 
@@ -616,25 +612,25 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // num_symbols_per_card symbols on it.
   bool CheckCards() {
     for (int i = 0; i < num_cards_; ++i) {
-      if (num_symbols_per_card_ != std::popcount(symbol_bitmask_per_card_[i])) {
-        VLOG(1) << "card " << i << " has bitset of size "
-                << std::popcount(symbol_bitmask_per_card_[i]);
+      const int count = symbol_bitmask_per_card_[i].count();
+      if (num_symbols_per_card_ != count) {
+        VLOG(1) << "card " << i << " has bitset of size " << count;
         return false;
       }
     }
     return true;
   }
 
-  int ViolationCost(uint64_t cardinality) const {
+  int ViolationCost(size_t cardinality) const {
     return (cardinality > 0 ? cardinality - 1 : 1);
   }
 
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  uint64_t temporary_bitset_;
-  std::vector<uint64_t> symbol_bitmask_per_card_;
-  std::vector<std::vector<int> > violation_costs_;
+  std::bitset<64> temporary_bitset_;
+  std::vector<std::bitset<64>> symbol_bitmask_per_card_;
+  std::vector<std::vector<int>> violation_costs_;
   std::vector<UndoChange> restore_information_;
 };
 
@@ -649,7 +645,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // Creates the solver.
   Solver solver("dobble");
   // Creates the matrix of boolean variables (cards * symbols).
-  std::vector<std::vector<IntVar*> > card_symbol_vars(num_cards);
+  std::vector<std::vector<IntVar*>> card_symbol_vars(num_cards);
   std::vector<IntVar*> all_card_symbol_vars;
   for (int card_index = 0; card_index < num_cards; ++card_index) {
     solver.MakeBoolVarArray(num_symbols,
