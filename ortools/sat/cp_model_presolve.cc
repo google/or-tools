@@ -8777,6 +8777,9 @@ struct ConstraintHashForDuplicateDetection {
       case ConstraintProto::kExactlyOne:
         return absl::HashOf(type_and_enforcement,
                             absl::MakeSpan(ct.exactly_one().literals()));
+      case ConstraintProto::kBoolXor:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.bool_xor().literals()));
       case ConstraintProto::kInterval:
         return absl::HashOf(type_and_enforcement,
                             absl::MakeSpan(ct.interval().start().vars()),
@@ -8892,6 +8895,9 @@ struct ConstraintEqForDuplicateDetection {
       case ConstraintProto::kExactlyOne:
         return absl::MakeSpan(ct_a.exactly_one().literals()) ==
                absl::MakeSpan(ct_b.exactly_one().literals());
+      case ConstraintProto::kBoolXor:
+        return absl::MakeSpan(ct_a.bool_xor().literals()) ==
+               absl::MakeSpan(ct_b.bool_xor().literals());
       case ConstraintProto::kInterval: {
         return LinearExpressionProtosAreExactlyEqual(ct_a.interval().start(),
                                                      ct_b.interval().start()) &&

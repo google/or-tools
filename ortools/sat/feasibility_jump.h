@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -247,8 +248,8 @@ struct LsState {
   LsOptions options;
 
   // Timestamps of the bounds and equivalences used to compute this state.
-  int64_t bounds_timestamp = -1;
-  int64_t equivalences_timestamp = -1;
+  int64_t bounds_timestamp = -2;
+  int64_t equivalences_timestamp = -2;
 
   // Global counters, incremented across restarts.
   int64_t num_restarts = 0;
@@ -284,22 +285,33 @@ class SharedLsStates {
 
   ~SharedLsStates();
 
-  // Returns the next available state in round-robin fashion.
+  // Returns the next available state in round-robin fashion, preferring states
+  // compatible with `(bounds_timestamp, equivalences_timestamp)`.
   //
   // If all states are currently worked on, this will create a new one.
   // So this will always return a valid state.
-  LsState* GetNextState() {
+  LsState* GetNextState(int64_t bounds_timestamp = kint64max,
+                        int64_t equivalences_timestamp = kint64max) {
     absl::MutexLock mutex_lock(mutex_);
     int next = -1;
+    int fallback = -1;
     const int num_states = states_.size();
     for (int i = 0; i < num_states; ++i) {
       const int index = round_robin_index_;
       round_robin_index_ = (round_robin_index_ + 1) % num_states;
       if (taken_[index]) continue;
-      if (next == -1 || num_selected_[index] < num_selected_[next]) {
-        next = index;
+      if (fallback == -1 || num_selected_[index] < num_selected_[fallback]) {
+        fallback = index;
+      }
+      if (states_[index]->num_restarts == 0 ||
+          (states_[index]->bounds_timestamp <= bounds_timestamp &&
+           states_[index]->equivalences_timestamp <= equivalences_timestamp)) {
+        if (next == -1 || num_selected_[index] < num_selected_[next]) {
+          next = index;
+        }
       }
     }
+    if (next == -1) next = fallback;
 
     if (next == -1) {
       // We need more parallelism and create a new state.
@@ -514,7 +526,7 @@ class FeasibilityJumpSolver : public SubSolver {
   bool SlowCheckNumViolatedConstraints() const;
 
   double DeterministicTime() const {
-    return evaluator_->DeterministicTime() +
+    return (evaluator_ == nullptr ? 0.0 : evaluator_->DeterministicTime()) +
            dtime_.GetElapsedDeterministicTime();
   }
 
@@ -526,13 +538,13 @@ class FeasibilityJumpSolver : public SubSolver {
   // operate on the variables and constraints of this model.
   DenseModelCopy dense_model_;
 
-  SatParameters params_;
-  std::shared_ptr<SharedLsStates> states_;
-  ModelSharedTimeLimit* shared_time_limit_;
+  const SatParameters params_;
+  const std::shared_ptr<SharedLsStates> states_;
+  ModelSharedTimeLimit* const shared_time_limit_;
   TimeLimit time_limit_;
-  SharedResponseManager* shared_response_;
-  SharedLsSolutionRepository* shared_hints_;
-  SharedStatTables* stat_tables_;
+  SharedResponseManager* const shared_response_;
+  SharedLsSolutionRepository* const shared_hints_;
+  SharedStatTables* const stat_tables_;
 
   // We don't have a local Model* here, so we need to keep the underlying memory
   // for our random_ generator, and we want to initialize it like in other
@@ -566,7 +578,7 @@ class FeasibilityJumpSolver : public SubSolver {
   std::vector<double> for_weight_update_;
 
   // The current state we work on, based on the `dense_model_` variables.
-  LsState* state_;
+  LsState* state_ = nullptr;
 
   // A list of `dense_model_` variables that might be relevant to check for
   // improving jumps.
@@ -577,6 +589,8 @@ class FeasibilityJumpSolver : public SubSolver {
 
   // Used for tracking the deterministic time only. See DeterministicTime().
   TimeLimit dtime_;
+  std::optional<ModelStats> model_stats_;
+  double search_dtime_since_rebuild_ = 0.0;
 };
 
 // This class helps keep track of moves that change more than one variable.
@@ -602,6 +616,9 @@ class CompoundMoveBuilder {
 
   // Returns the number of variables in the move.
   int Size() const { return stack_.size(); }
+
+  // Returns the number of dense variables supported by this move builder.
+  int NumVariables() const { return var_on_stack_.size(); }
 
   // Returns true if this var has been set in this move already,
   bool OnStack(int var) const;

@@ -5643,11 +5643,10 @@ TEST(PresolveCpModelTest, TrueLiteralBoolXor) {
   params.set_symmetry_level(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 1, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
-    constraints { bool_xor { literals: [ 1, 2, 3, 0 ] } }
+    constraints { bool_xor { literals: [ -1, 1, 2 ] } }
   )pb");
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
 }
@@ -9931,6 +9930,114 @@ TEST(PresolveTest, DuplicatePermutedAllDiffRemovedAndIntProdGcdStaysSorted) {
     }
   }
   EXPECT_EQ(num_all_diffs, 1);
+}
+
+TEST(PresolveTest, BoolXorHigherArityDuplicatePairCancellation) {
+  // v0 == v3 causes v0 ^ v1 ^ v2 ^ v3 = 1 to cancel the (v0, v0) pair at
+  // arity 4, reducing to v1 ^ v2 = 1 and deducing v1 == ~v2.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints { bool_xor { literals: [ 0, 1, 2, 3 ] } }
+  )pb");
+  SatParameters params;
+  params.set_symmetry_level(0);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveTest, DuplicateBoolXorDetectedAcrossSignFlipsAndPermutations) {
+  // ~v2 ^ v0 ^ ~v1 = 1 and v2 ^ v1 ^ v0 = 1 both normalize to [0, 1, 2].
+  // Enforced v2 => (v1 ^ ~v0 = 1) and v2 => (~v1 ^ v0 = 1) both normalize to
+  // [-1, 1]. DetectDuplicateConstraints merges each pair into one kBoolXor.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_xor { literals: [ -3, 0, -2 ] } }
+    constraints { bool_xor { literals: [ 2, 1, 0 ] } }
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ 1, -1 ] }
+    }
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ -2, 0 ] }
+    }
+  )pb");
+  SatParameters params;
+  params.set_symmetry_level(0);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_xor { literals: [ 0, 1, 2 ] } }
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ -1, 1 ] }
+    }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveTest, EnforcedBoolXorStripsEnforcementAndDeduplicatesWithClause) {
+  // [v2, v3] => xor(v2, ~v3, v0) strips v2 (= 1) and ~v3 (= 0), leaving unary
+  // [v2, v3] => xor(~v0), which canonicalizes to bool_or([-4, -3, -1]) and
+  // deduplicates against an explicit duplicate clause.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 2, 3 ]
+      bool_xor { literals: [ 2, -4, 0 ] }
+    }
+    constraints { bool_or { literals: [ -1, -4, -3 ] } }
+    constraints {
+      enforcement_literal: [ 1 ]
+      bool_xor { literals: [ 1, 0, 2 ] }
+    }
+    constraints {
+      enforcement_literal: [ 1 ]
+      bool_xor { literals: [ -1, 2 ] }
+    }
+  )pb");
+  SatParameters params;
+  params.set_symmetry_level(0);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_EQ(ValidateCpModel(presolved_model), "");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_or { literals: [ -4, -3, -1 ] } }
+    constraints {
+      enforcement_literal: [ 1 ]
+      bool_xor { literals: [ -1, 2 ] }
+    }
+  )pb");
+  EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
 }
 
 }  // namespace

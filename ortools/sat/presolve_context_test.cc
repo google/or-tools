@@ -1566,7 +1566,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
     constraints { at_most_one { literals: [ 3, 2, 0, 1, 4 ] } }
     # c4: kExactlyOne (with 2 = 0 and 4 = 0, leaves [0, 1]).
     constraints { exactly_one { literals: [ 2, 0, 1, 4 ] } }
-    # c5: kBoolXor with false literal removal and odd true literal kept at end.
+    # c5: kBoolXor with duplicate pair cancellation and parity normalization.
     constraints { bool_xor { literals: [ 3, -1, 3, 1, 5, 4 ] } }
     # c6: kLinMax with unsorted exprs.
     constraints {
@@ -2200,6 +2200,88 @@ TEST(PresolveContextTest,
             ConstraintProto::CONSTRAINT_NOT_SET);
   EXPECT_TRUE(context.LiteralIsTrue(3));
   EXPECT_TRUE(context.LiteralIsFalse(4));
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeBoolXorRemovesEnforcementLiteralsAndRewritesUnaryToBoolOr) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    # c0: [2] => xor(2, -1, 1, 3): 2 is true (flips parity) and -1 (~v0) flips
+    # parity back, leaving [2] => xor(0, 1, 3).
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ 2, -1, 1, 3 ] }
+    }
+    # c1: [2, -5] => xor(-3, -5, 0, 1): -3 (~v2) is false under [2], -5 (~v4)
+    # is true under [-5] (flips parity), leaving [-5, 2] => xor(-1, 1).
+    constraints {
+      enforcement_literal: [ 2, -5 ]
+      bool_xor { literals: [ -3, -5, 0, 1 ] }
+    }
+    # c2: [2] => xor(0) (unary enforced) -> bool_or([-3, 0]).
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ 0 ] }
+    }
+    # c3: [2, 3] => xor(2, 1) -> 2 is true (flips parity), leaving unary
+    # [2, 3] => xor(-2) -> bool_or([-4, -3, -2]).
+    constraints {
+      enforcement_literal: [ 2, 3 ]
+      bool_xor { literals: [ 2, 1 ] }
+    }
+    # c4: [2] => xor(2) -> 2 is true, leaving [2] => (0 == 0) (always true) ->
+    # removed.
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_xor { literals: [ 2 ] }
+    }
+    # c5: [2, 3] => xor(-3): -3 (~v2) is false under [2], leaving [2, 3] =>
+    # (0 == 1) (always false) -> bool_or([-4, -3]).
+    constraints {
+      enforcement_literal: [ 2, 3 ]
+      bool_xor { literals: [ -3 ] }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+
+  // Before canonicalization, unary enforced kBoolXor and kBoolXor containing
+  // enforcement variables are non-canonical.
+  EXPECT_FALSE(context.ConstraintIsCanonical(0));
+  EXPECT_FALSE(context.ConstraintIsCanonical(2));
+
+  context.CanonicalizeConstraintsLazily();
+
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  EXPECT_THAT(context.Constraint(0), testing::EqualsProto(R"pb(
+                enforcement_literal: [ 2 ]
+                bool_xor { literals: [ 0, 1, 3 ] }
+              )pb"));
+  EXPECT_THAT(context.Constraint(1), testing::EqualsProto(R"pb(
+                enforcement_literal: [ -5, 2 ]
+                bool_xor { literals: [ -1, 1 ] }
+              )pb"));
+  EXPECT_THAT(context.Constraint(2), testing::EqualsProto(R"pb(
+                bool_or { literals: [ -3, 0 ] }
+              )pb"));
+  EXPECT_THAT(context.Constraint(3), testing::EqualsProto(R"pb(
+                bool_or { literals: [ -4, -3, -2 ] }
+              )pb"));
+  EXPECT_EQ(context.Constraint(4).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_THAT(context.Constraint(5), testing::EqualsProto(R"pb(
+                bool_or { literals: [ -4, -3 ] }
+              )pb"));
 }
 
 }  // namespace
