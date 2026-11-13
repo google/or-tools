@@ -176,11 +176,11 @@ if(BUILD_re2)
   FetchContent_Declare(
     re2
     GIT_REPOSITORY "https://github.com/google/re2.git"
-    GIT_TAG "2025-08-12"
+    GIT_TAG "2025-11-05"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2025-08-12.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2025-11-05.patch"
     SYSTEM
   )
   set(RE2_BUILD_TESTING OFF)
