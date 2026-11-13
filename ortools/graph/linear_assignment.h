@@ -764,9 +764,11 @@ class LinearSumAssignment {
   // Proof: Suppose the price decrease of every node in the iteration
   // with epsilon_ == x is bounded by B(x) which is proportional to x
   // (not surprisingly, this will be the same function B() as
-  // above). Assume for simplicity that C, the largest cost magnitude,
-  // is a power of alpha. Then the price of each node, tallied across
-  // all iterations is bounded
+  // above). Let C be the initial value of epsilon_, i.e. the width of the
+  // range of arc costs, taken to include 0 (see FinalizeSetup()); for
+  // non-negative costs this is the largest cost magnitude. Assume for
+  // simplicity that C is a power of alpha. Then the price of each node,
+  // tallied across all iterations is bounded
   //   p(v) > 2 * B(C/alpha) + 2 * B(C/alpha^2) + ... + 2 * B(kMinEpsilon)
   //        == 2 * B(C/alpha) * alpha / (alpha - 1)
   //        == 2 * B(C) / (alpha - 1).
@@ -811,7 +813,9 @@ class LinearSumAssignment {
   // A bound on the amount by which a node's price can be reduced
   // during the current iteration, used only for slack
   // relabelings. Where epsilon is the first iteration's error
-  // parameter and C is the largest magnitude of an arc cost, we set
+  // parameter and C is the width of the range of arc costs (taken to
+  // include 0, so the largest cost magnitude when costs are non-negative),
+  // we set
   //   slack_relabeling_price_ = -B(C, epsilon)
   //                           = (C + epsilon) * (n-2)/2.
   //
@@ -878,6 +882,12 @@ class LinearSumAssignment {
   // representation.
   CostValue largest_scaled_cost_magnitude_;
 
+  // The smallest (at most 0) and largest (at least 0) scaled arc costs. A node
+  // price may have to move by the width of this range, which is up to twice
+  // largest_scaled_cost_magnitude_ when costs have both signs.
+  CostValue smallest_scaled_cost_;
+  CostValue largest_scaled_cost_;
+
   // The total excess in the graph. Given our asymmetric definition of
   // epsilon-optimality and our use of the double-push operation, this
   // equals the number of unmatched left-side nodes.
@@ -938,6 +948,8 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       price_lower_bound_(0),
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
+      smallest_scaled_cost_(0),
+      largest_scaled_cost_(0),
       total_excess_(0),
       price_(std::make_unique<CostValue[]>(2 * num_left_nodes)),
       matched_arc_(num_left_nodes, 0),
@@ -961,6 +973,8 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       price_lower_bound_(0),
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
+      smallest_scaled_cost_(0),
+      largest_scaled_cost_(0),
       total_excess_(0),
       price_(std::make_unique<CostValue[]>(2 * num_left_nodes)),
       matched_arc_(num_left_nodes, 0),
@@ -985,6 +999,8 @@ void LinearSumAssignment<GraphType, CostValue>::SetArcCost(ArcIndex arc,
   const CostValue cost_magnitude = std::abs(cost);
   largest_scaled_cost_magnitude_ =
       std::max(largest_scaled_cost_magnitude_, cost_magnitude);
+  smallest_scaled_cost_ = std::min(smallest_scaled_cost_, cost);
+  largest_scaled_cost_ = std::max(largest_scaled_cost_, cost);
   scaled_arc_cost_[arc] = cost;
 }
 
@@ -1342,7 +1358,19 @@ bool LinearSumAssignment<GraphType, CostValue>::FinalizeSetup() {
   // epsilon_ must be greater than kMinEpsilon so that in the case
   // where the largest arc cost is zero, we still do a Refine()
   // iteration.
-  epsilon_ = std::max(largest_scaled_cost_magnitude_, kMinEpsilon + 1);
+  //
+  // We start from the width of the cost range rather than from the largest
+  // cost magnitude: with costs of both signs, a price may have to drop by
+  // more than the largest magnitude before the optimal assignment is found,
+  // and the price bounds derived from epsilon_ below would then report a
+  // feasible problem as infeasible. For non-negative costs both are equal.
+  // smallest_scaled_cost_ <= 0, so the comparison below cannot overflow.
+  const CostValue cost_range =
+      largest_scaled_cost_ >
+              std::numeric_limits<CostValue>::max() + smallest_scaled_cost_
+          ? std::numeric_limits<CostValue>::max()
+          : largest_scaled_cost_ - smallest_scaled_cost_;
+  epsilon_ = std::max(cost_range, kMinEpsilon + 1);
   VLOG(2) << "Largest given cost magnitude: "
           << largest_scaled_cost_magnitude_ / cost_scaling_factor_;
   // Initialize left-side node-indexed arrays and check incidence
