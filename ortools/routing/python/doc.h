@@ -2996,8 +2996,6 @@ vehicle from the start of the route until this position.)doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_TypeRegulationsChecker = R"doc()doc";
 
-static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_current_route_visits = R"doc()doc";
-
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_model = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_occurrences_of_type = R"doc()doc";

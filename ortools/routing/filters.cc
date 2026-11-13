@@ -1145,7 +1145,6 @@ class TypeRegulationsFilter : public LocalSearchFilter {
 
   const Model& routing_model_;
   const PathState* path_state_;
-  std::vector<int> nexts_;
   // The following vectors are used to keep track of the type counts for hard
   // incompatibilities.
   std::vector<std::vector<int>> hard_incompatibility_type_index_;
@@ -1164,7 +1163,6 @@ TypeRegulationsFilter::TypeRegulationsFilter(const Model& model,
                                              const PathState* path_state)
     : routing_model_(model),
       path_state_(path_state),
-      nexts_(path_state_->NumNodes(), -1),
       hard_incompatibility_type_index_(path_state_->NumPaths()),
       hard_incompatibility_types_(path_state_->NumPaths()),
       hard_incompatibility_type_counts_(path_state_->NumNodes()),
@@ -1218,14 +1216,9 @@ bool TypeRegulationsFilter::Accept(const Assignment* /*delta*/,
     if (!HardIncompatibilitiesRespected(path)) {
       return false;
     }
-    int prev_node = -1;
-    for (int node : path_state_->Nodes(path)) {
-      if (prev_node != -1) nexts_[prev_node] = node;
-      prev_node = node;
-    }
-    const auto next_accessor = [this](int64_t node) { return nexts_[node]; };
-    if (!temporal_incompatibility_checker_.CheckVehicle(path, next_accessor) ||
-        !requirement_checker_.CheckVehicle(path, next_accessor)) {
+    const PathState::NodeRange route_nodes = path_state_->Nodes(path);
+    if (!temporal_incompatibility_checker_.CheckVehicle(route_nodes) ||
+        !requirement_checker_.CheckVehicle(route_nodes)) {
       return false;
     }
   }
