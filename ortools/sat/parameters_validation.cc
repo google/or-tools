@@ -158,6 +158,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(lp_dual_tolerance);
 
   TEST_NON_NEGATIVE(linearization_level);
+  TEST_NON_NEGATIVE(variables_shaving_max_neighborhood_variables);
+  TEST_NON_NEGATIVE(variables_shaving_max_neighborhood_constraints);
   TEST_NON_NEGATIVE(max_deterministic_time);
   TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(mip_wanted_precision);

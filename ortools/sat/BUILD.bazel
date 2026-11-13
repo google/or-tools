@@ -1231,7 +1231,6 @@ or_cc_library(
         ":synchronization",
         ":util",
         "//ortools/base/macros:buildenv",
-        "//ortools/graph:connected_components",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
@@ -1242,6 +1241,21 @@ or_cc_library(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+or_cc_test(
+    name = "shaving_solver_test",
+    size = "small",
+    srcs = ["shaving_solver_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":integer_base",
+        ":sat_parameters_cc_proto",
+        ":shaving_solver",
+        ":util",
+        "//ortools/base:gmock_main",
     ],
 )
 

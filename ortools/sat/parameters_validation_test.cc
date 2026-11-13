@@ -59,6 +59,18 @@ TEST(ValidateParameters, LinearizationLevel) {
   EXPECT_THAT(ValidateParameters(params), HasSubstr("non-negative"));
 }
 
+TEST(ValidateParameters, ShavingSubmodelLimits) {
+  SatParameters params;
+  params.set_variables_shaving_max_neighborhood_variables(-1);
+  EXPECT_THAT(ValidateParameters(params),
+              HasSubstr("variables_shaving_max_neighborhood_variables"));
+
+  params.set_variables_shaving_max_neighborhood_variables(0);
+  params.set_variables_shaving_max_neighborhood_constraints(-1);
+  EXPECT_THAT(ValidateParameters(params),
+              HasSubstr("variables_shaving_max_neighborhood_constraints"));
+}
+
 TEST(ValidateParameters, NumSharedTreeSearchWorkers) {
   SatParameters params;
   params.set_shared_tree_num_workers(-2);
