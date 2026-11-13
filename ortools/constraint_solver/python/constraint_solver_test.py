@@ -17,6 +17,9 @@
 These are transated from ../local_search_test.cc
 """
 
+import datetime
+import sys
+
 from absl.testing import absltest
 
 from ortools.constraint_solver.python import constraint_solver as cp
@@ -1161,6 +1164,38 @@ class ConstraintSolverTest(absltest.TestCase):
         t = solver.new_fixed_duration_interval_var(s, 5, "t")
         r = solver.new_interval_relaxed_max(t)
         self.assertIsNotNone(r)
+
+    def test_solve_once(self):
+        solver = cp.Solver("test_solve_once")
+        x = solver.new_int_var(0, 5, "x")
+        db = solver.phase(
+            [x],
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        )
+        once_db = solver.solve_once(db)
+        solver.new_search(once_db)
+        solutions = []
+        while solver.next_solution():
+            solutions.append(x.value())
+        solver.end_search()
+        self.assertEqual(solutions, [0])
+
+        # Verify monitors passed to solve_once bound failures in an infeasible tree.
+        y = solver.new_int_var(0, 5, "y")
+        z = solver.new_int_var(0, 5, "z")
+        solver.add(y + z == 20)
+        infeasible_db = solver.phase(
+            [y, z],
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        )
+        fail_limit = solver.limit(
+            datetime.timedelta(days=365), sys.maxsize, 3, sys.maxsize
+        )
+        limited_once_db = solver.solve_once(infeasible_db, [fail_limit])
+        self.assertFalse(solver.solve(limited_once_db))
+        self.assertLessEqual(solver.num_failures, 5)
 
 
 class IntVarLocalSearchOperatorTest(absltest.TestCase):
