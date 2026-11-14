@@ -1,5 +1,7 @@
 # OR-Tools - Google Optimization Tools
 
+[English](README.md) | [简体中文](README.zh.md)
+
 [![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
 \
