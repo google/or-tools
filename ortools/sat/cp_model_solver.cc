@@ -3622,6 +3622,22 @@ void CpModelSolver::SolvePresolvedModel() {
   // the SharedTimeLimit, in a thread safe manner.
   subsolvers_launched_ = true;
 
+  // If the presolve fixed all the variables and removed all the constraints,
+  // the empty assignment is the only solution of the presolved model. Report it
+  // directly: starting the workers would only find it again, which costs time
+  // (thread pool, subsolver creation) and may fail if a search limit is hit
+  // before the solution is reported.
+  if (presolved_model_proto_->variables().empty() &&
+      presolved_model_proto_->constraints().empty()) {
+    SOLVER_LOG(logger_, "");
+    SOLVER_LOG(logger_, "The presolved model is empty, skipping the search.");
+    shared_response_manager_->NewSolution({}, "presolve");
+    shared_response_manager_->NotifyThatImprovingProblemIsInfeasible(
+        "presolve");
+    shared_->LogFinalStatistics();
+    return;
+  }
+
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
   static_assert(operations_research::kTargetOsSupportsThreads);
   if (params_.num_workers() > 1 || params_.interleave_search() ||

@@ -2351,7 +2351,7 @@ TEST(SolveCpModelTest, EmptyOptimizationModel) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
-TEST(SolveCpModelTest, EmptyOptimizationModelBuggy) {
+TEST(SolveCpModelTest, EmptyOptimizationModelWithConflictLimit) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     objective { offset: 0 }
   )pb");
@@ -2359,10 +2359,11 @@ TEST(SolveCpModelTest, EmptyOptimizationModelBuggy) {
   params.set_num_workers(1);
   params.set_log_search_progress(true);
 
-  // This causes the inner solver to abort before finding the empty solution!
+  // The empty solution is reported without any search, so the conflict limit
+  // does not matter.
   params.set_max_number_of_conflicts(0);
   const CpSolverResponse response = SolveWithParameters(model_proto, params);
-  EXPECT_EQ(response.status(), CpSolverStatus::UNKNOWN);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
 TEST(SolveCpModelTest, EmptyOptimizationModelMultiThread) {
@@ -2380,16 +2381,16 @@ TEST(SolveCpModelTest, EmptyOptimizationModelMultiThread) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
-TEST(SolveCpModelTest, EmptyOptimizationModelBuggyInterleave) {
+TEST(SolveCpModelTest, EmptyOptimizationModelInterleaveWithConflictLimit) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     objective { offset: 0 }
   )pb");
   SatParameters params;
   params.set_log_search_progress(true);
 
-  // This causes each chunk to abort right away with UNKNOWN. But because we are
-  // in chunked mode, we always reschedule full solver and we never finish if
-  // there is no time limit.
+  // On a non-empty model, this causes each chunk to abort right away with
+  // UNKNOWN. But because we are in chunked mode, we always reschedule full
+  // solver and we never finish if there is no time limit.
   //
   // TODO(user): Fix this behavior by not rescheduling in this case?
   params.set_max_number_of_conflicts(0);
@@ -2400,9 +2401,35 @@ TEST(SolveCpModelTest, EmptyOptimizationModelBuggyInterleave) {
   params.set_max_time_in_seconds(1);
   const CpSolverResponse response = SolveWithParameters(model_proto, params);
 
-  // The feasibility jump solver does not care about max_number_of_conflicts(),
-  // so it finds the empty solution. But it is disabled in interleaved search.
-  EXPECT_THAT(response.status(), testing::Eq(CpSolverStatus::UNKNOWN));
+  // The empty solution is reported without any search, so the conflict limit
+  // does not matter.
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(SolveCpModelTest, ModelSolvedByPresolveMultiThread) {
+  // The presolve fixes all variables of this model.
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 5, 20 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1 ]
+      coeffs: [ 1, 2 ]
+    }
+  )pb");
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_num_workers(8);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.objective_value(), 5);
+  EXPECT_THAT(response.solution(), testing::ElementsAre(5, 0));
 }
 
 TEST(PresolveCpModelTest, Issue4068) {
