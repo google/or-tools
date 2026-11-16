@@ -679,9 +679,10 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
       if (lb == -kInfinity && ub == kInfinity) {
         absl::StrAppend(output, exported_variable_names_[var_index], " free");
       } else {
-        if (lb != -kInfinity) {
-          absl::StrAppend(output, RoundTripDoubleFormat(lb), " <= ");
-        }
+        // The lower bound is always written, even when it is -inf: in the LP
+        // format a variable keeps its default lower bound of 0 unless one is
+        // given, so "x <= 4" would mean 0 <= x <= 4.
+        absl::StrAppend(output, RoundTripDoubleFormat(lb), " <= ");
         absl::StrAppend(output, exported_variable_names_[var_index]);
         if (ub != kInfinity) {
           absl::StrAppend(output, " <= ", RoundTripDoubleFormat(ub));
