@@ -32,7 +32,6 @@
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/strong_integers.h"
 
@@ -566,6 +565,20 @@ TEST(Bitset64Test, Iterator) {
   ++it;
   next++;
   EXPECT_TRUE(it == next);
+  ++next;
+  EXPECT_EQ(next, bitset.end());
+  EXPECT_EQ(bitset.end(), next);
+  EXPECT_NE(it, next);
+  EXPECT_NE(next, it);
+}
+
+TEST(Bitset64Test, IteratorSingleBitZero) {
+  Bitset64<int> bitset(5);
+  bitset.Set(0);
+  auto begin = bitset.begin();
+  auto end = bitset.end();
+  EXPECT_NE(begin, end);
+  EXPECT_NE(end, begin);
 }
 
 TEST(Bitset64Test, CopyBucket) {
