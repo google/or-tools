@@ -162,8 +162,8 @@ go_sdk.download(version = "1.22.4")
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.module(
     path = "github.com/golang/glog",
-    sum = "h1:1+mZ9upx1Dh6FmUTFR1naJ77miKiXgALjWOZ3NVFPmY=",
-    version = "v1.2.2",
+    sum = "h1:DrW6hGnjIhtvhOIiAKT6Psh/Kd/ldepEa81DKeiRJ5I=",
+    version = "v1.2.5",
 )
 go_deps.module(
     path = "github.com/golang/protobuf",
