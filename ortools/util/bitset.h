@@ -22,7 +22,6 @@
 #include <cstdint>
 #include <functional>
 #include <iterator>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -440,41 +439,32 @@ class Bitset64 {
   // the bitset while iterating produces undefined results.
   class Iterator {
    public:
-    // Make this iterator a std::forward_iterator, so it works with std::sample,
-    // std::max_element, etc.
-    Iterator() : buckets_(nullptr), size_(0) {}
-    Iterator(Iterator&& other) = default;
-    Iterator(const Iterator& other) = default;
-    Iterator& operator=(const Iterator& other) = default;
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
     using value_type = IndexType;
-    using size_type = std::size_t;
-    using reference = value_type&;
-    using pointer = value_type*;
+    using reference = value_type;
+    using pointer = void;
+
+    Iterator() = default;
 
     explicit Iterator(const Bitset64& bitset)
         : buckets_(bitset.buckets_.data()), size_(bitset.buckets_.size()) {
-      if (!bitset.buckets_.empty()) {
-        current_ = buckets_[0];
-        this->operator++();
+      AdvanceToNonZeroBucket();
+    }
+
+    IndexType operator*() const {
+      return IndexType(BitShift64(bucket_) |
+                       LeastSignificantBitPosition64(current_));
+    }
+
+    Iterator& operator++() {
+      current_ &= current_ - 1;  // Clears the LSB.
+      if (current_ == 0) {
+        ++bucket_;
+        AdvanceToNonZeroBucket();
       }
+      return *this;
     }
-
-    static Iterator EndIterator(const Bitset64& bitset) {
-      return Iterator(bitset.buckets_.data());
-    }
-
-    bool operator==(const Iterator& other) const { return !(*this != other); }
-    bool operator!=(const Iterator& other) const {
-      if (other.size_ == 0) {
-        return size_ != 0;
-      }
-      return std::tie(index_, current_) !=
-             std::tie(other.index_, other.current_);
-    }
-
-    IndexType operator*() const { return IndexType(index_); }
 
     Iterator operator++(int) {
       Iterator other = *this;
@@ -482,36 +472,32 @@ class Bitset64 {
       return other;
     }
 
-    Iterator& operator++() {
-      int bucket = BitOffset64(index_);
-      while (current_ == 0) {
-        bucket++;
-        if (bucket == size_) {
-          size_ = 0;
-          return *this;
-        }
-        current_ = buckets_[bucket];
-      }
-
-      // Computes the index and clears the least significant bit of current_.
-      index_ = BitShift64(bucket) | LeastSignificantBitPosition64(current_);
-      current_ &= current_ - 1;
-      return *this;
+    friend bool operator==(const Iterator& lhs, const Iterator& rhs) {
+      return lhs.current_ == rhs.current_ && lhs.bucket_ == rhs.bucket_;
     }
 
    private:
-    explicit Iterator(const uint64_t* buckets) : buckets_(buckets), size_(0) {}
+    friend class Bitset64;
+    explicit Iterator(size_t bucket) : bucket_(bucket) {}
 
-    const uint64_t* buckets_;
-    int size_;
-    int index_ = 0;
+    void AdvanceToNonZeroBucket() {
+      // `buckets_` is never dereferenced when nullptr.
+      DCHECK((buckets_ != nullptr || bucket_ == size_));
+      while (bucket_ != size_ && (current_ = buckets_[bucket_]) == 0) {
+        ++bucket_;
+      }
+    }
+
+    const uint64_t* buckets_ = nullptr;
+    size_t size_ = 0;
+    size_t bucket_ = 0;
     uint64_t current_ = 0;
   };
 
   // Returns iterators over the indices of bits set to 1, supporting range-based
   // `for` loops: `for (const IndexType index : bitset)`.
   Iterator begin() const { return Iterator(*this); }
-  Iterator end() const { return Iterator::EndIterator(*this); }
+  Iterator end() const { return Iterator(buckets_.size()); }
 
  private:
   static constexpr uint64_t GetNumBuckets(IndexType size) {
