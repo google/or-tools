@@ -74,6 +74,7 @@ TEST(RoutingModelTest, DefaultRoutingSearchParameters) {
           farthest_seeds_ratio: 0
           neighbors_ratio: 1
           min_neighbors: 1
+          max_memory_usage_bytes: 6000000000  # 6 GB
           use_neighbors_ratio_for_initialization: false
           add_unperformed_entries: false
         }
@@ -81,6 +82,7 @@ TEST(RoutingModelTest, DefaultRoutingSearchParameters) {
           farthest_seeds_ratio: 0
           neighbors_ratio: 1
           min_neighbors: 1
+          max_memory_usage_bytes: 6000000000  # 6 GB
           use_neighbors_ratio_for_initialization: true
           add_unperformed_entries: false
         }
@@ -180,6 +182,7 @@ TEST(RoutingModelTest, DefaultSecondaryRoutingSearchParameters) {
           farthest_seeds_ratio: 0
           neighbors_ratio: 1
           min_neighbors: 1
+          max_memory_usage_bytes: 6000000000  # 6 GB
           use_neighbors_ratio_for_initialization: false
           add_unperformed_entries: false
         }
@@ -187,6 +190,7 @@ TEST(RoutingModelTest, DefaultSecondaryRoutingSearchParameters) {
           farthest_seeds_ratio: 0
           neighbors_ratio: 1
           min_neighbors: 1
+          max_memory_usage_bytes: 6000000000  # 6 GB
           use_neighbors_ratio_for_initialization: true
           add_unperformed_entries: false
         }
@@ -476,7 +480,7 @@ TEST_F(RoutingSearchParametersValidationTest,
 }
 
 constexpr double kInvalidSavingsMaxMemoryUsageBytes[] = {
-    kNaN, -kEpsilon, -1.0, 0.0, 1e10 + 0.01, kInfinity};
+    kNaN, -kEpsilon, -1.0, 0.0, 1e11 + 0.01, kInfinity};
 
 TEST_F(RoutingSearchParametersValidationTest,
        SavingsParameters_FirstSolutionHeuristic_MaxMemoryUsage) {
@@ -743,6 +747,54 @@ TEST_F(RoutingSearchParametersValidationTest,
   }
 }
 
+constexpr int64_t kInvalidGCIMaxMemoryUsageBytes[] = {
+    kint64min, -1, 0, 100'000'000'000 + 1, kint64max};
+
+TEST_F(RoutingSearchParametersValidationTest,
+       GlobalCheapestInsertion_FirstSolutionHeuristic_MaxMemoryUsage) {
+  for (int64_t value : kInvalidGCIMaxMemoryUsageBytes) {
+    parameters_.mutable_global_cheapest_insertion_first_solution_parameters()
+        ->set_max_memory_usage_bytes(value);
+    EXPECT_THAT(FindErrorsInRoutingSearchParameters(parameters_),
+                ElementsAre(AllOf(
+                    HasSubstr("Global cheapest insertion"),
+                    HasSubstr("first solution heuristic"),
+                    HasSubstr("global_cheapest_insertion_parameters.max_memory_"
+                              "usage_bytes"))))
+        << value;
+  }
+}
+
+TEST_F(RoutingSearchParametersValidationTest,
+       GlobalCheapestInsertion_RecreateHeuristic_MaxMemoryUsage) {
+  SetRecommendedIteratedLocalSearchParameters(parameters_);
+  RecreateStrategy* recreate_strategy =
+      parameters_.mutable_iterated_local_search_parameters()
+          ->mutable_ruin_recreate_parameters()
+          ->mutable_recreate_strategy();
+  for (const FirstSolutionStrategy::Value heuristic :
+       {FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION,
+        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION}) {
+    recreate_strategy->set_heuristic(heuristic);
+    GlobalCheapestInsertionParameters* gci_parameters =
+        recreate_strategy->mutable_parameters()
+            ->mutable_global_cheapest_insertion();
+    // Get default values from the RoutingSearchParameters proto.
+    *gci_parameters =
+        parameters_.global_cheapest_insertion_first_solution_parameters();
+    for (int64_t value : kInvalidGCIMaxMemoryUsageBytes) {
+      gci_parameters->set_max_memory_usage_bytes(value);
+      EXPECT_THAT(
+          FindErrorsInRoutingSearchParameters(parameters_),
+          ElementsAre(AllOf(HasSubstr("Global cheapest insertion"),
+                            HasSubstr("recreate heuristic"),
+                            HasSubstr("global_cheapest_insertion_parameters."
+                                      "max_memory_usage_bytes"))))
+          << value;
+    }
+  }
+}
+
 TEST_F(RoutingSearchParametersValidationTest,
        RelocateExpensiveChainNumArcsToConsider) {
   for (int value : {kint32min, -1, 0, 1, 1000001, kint32max}) {
@@ -999,11 +1051,13 @@ TEST_F(RoutingSearchParametersValidationTest, WrongestParameters) {
       farthest_seeds_ratio: nan
       neighbors_ratio: nan
       min_neighbors: -1
+      max_memory_usage_bytes: -2
     }
     global_cheapest_insertion_ls_operator_parameters {
       farthest_seeds_ratio: nan
       neighbors_ratio: nan
       min_neighbors: -1
+      max_memory_usage_bytes: 100000000001  # > 100GB
     }
     relocate_expensive_chain_num_arcs_to_consider: -1
     heuristic_expensive_chain_lns_num_arcs_to_consider: -1
@@ -1030,10 +1084,12 @@ TEST_F(RoutingSearchParametersValidationTest, WrongestParameters) {
       "global_cheapest_insertion_parameters.farthest_seeds_ratio",
       "global_cheapest_insertion_parameters.neighbors_ratio",
       "global_cheapest_insertion_parameters.min_neighbors",
+      "global_cheapest_insertion_parameters.max_memory_usage_bytes",
       // LNS GCI parameters.
       "global_cheapest_insertion_parameters.farthest_seeds_ratio",
       "global_cheapest_insertion_parameters.neighbors_ratio",
       "global_cheapest_insertion_parameters.min_neighbors",
+      "global_cheapest_insertion_parameters.max_memory_usage_bytes",
 
       "relocate_expensive_chain_num_arcs_to_consider",
       "heuristic_expensive_chain_lns_num_arcs_to_consider",
@@ -1649,6 +1705,7 @@ void SetupDefaultRecreateParameters(
       gci_params->set_farthest_seeds_ratio(0.1);
       gci_params->set_neighbors_ratio(1);
       gci_params->set_min_neighbors(1);
+      gci_params->set_max_memory_usage_bytes(6e9);
       gci_params->set_use_neighbors_ratio_for_initialization(true);
       gci_params->set_add_unperformed_entries(true);
     } break;
