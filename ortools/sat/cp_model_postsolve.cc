@@ -610,8 +610,8 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
         if (lin.domain(0) != lin.domain(1)) continue;
         int v1 = lin.vars(0);
         int v2 = lin.vars(1);
-        int c1 = lin.coeffs(0);
-        int c2 = lin.coeffs(1);
+        int64_t c1 = lin.coeffs(0);
+        int64_t c2 = lin.coeffs(1);
         if (v2 < num_original_vars && v1 >= num_original_vars) {
           std::swap(v1, v2);
           std::swap(c1, c2);
