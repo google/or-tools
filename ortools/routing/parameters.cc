@@ -83,6 +83,7 @@ CreateDefaultGlobalCheapestInsertionParameters(
   gci.set_farthest_seeds_ratio(0);
   gci.set_neighbors_ratio(1.0);
   gci.set_min_neighbors(1);
+  gci.set_max_memory_usage_bytes(6e9);
   gci.set_use_neighbors_ratio_for_initialization(
       use_neighbors_ratio_for_initialization);
   gci.set_add_unperformed_entries(false);
@@ -323,7 +324,7 @@ void FindErrorsInSavingsParameters(const absl::string_view prefix,
         prefix, " - Invalid savings_parameters.neighbors_ratio: ", ratio));
   }
   if (const double max_memory = savings_parameters.max_memory_usage_bytes();
-      std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
+      std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e11) {
     errors.emplace_back(StrCat(
         prefix,
         " - Invalid savings_parameters.max_memory_usage_bytes: ", max_memory));
@@ -363,6 +364,14 @@ void FindErrorsInGlobalCheapestInsertionParameters(
         prefix,
         " - Invalid global_cheapest_insertion_parameters.min_neighbors: ",
         min_neighbors, ". Must be greater or equal to 1."));
+  }
+  if (const int64_t max_memory = gci_parameters.max_memory_usage_bytes();
+      max_memory <= 0 || max_memory > 1e11) {
+    errors.emplace_back(
+        StrCat(prefix,
+               " - Invalid "
+               "global_cheapest_insertion_parameters.max_memory_usage_bytes: ",
+               max_memory));
   }
 }
 
