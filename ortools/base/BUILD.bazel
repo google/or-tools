@@ -481,9 +481,10 @@ or_cc_test(
     srcs = ["gzipfile_test.cc"],
     deps = [
         ":file",
-        ":gmock_main",
         ":gzipfile",
+        "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
         "@zlib",
     ],
 )
@@ -508,8 +509,9 @@ or_cc_test(
     deps = [
         ":bzip2file",
         ":file",
-        ":gmock_main",
+        "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/strings",
         "@bzip2//:bz2",
+        "@googletest//:gtest_main",
     ],
 )
