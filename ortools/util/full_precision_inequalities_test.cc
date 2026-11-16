@@ -1078,6 +1078,119 @@ INSTANTIATE_TEST_SUITE_P(
             .expected_bounds = {std::nextafter(std::ldexp(1.0, 63), 0.0),
                                 std::ldexp(1.0, 63)}}));
 
+struct QuotientBoundsTestCase {
+  double a;
+  double b;
+  std::pair<double, double> expected_bounds;
+};
+
+using QuotientBoundsTest = testing::TestWithParam<QuotientBoundsTestCase>;
+
+TEST_P(QuotientBoundsTest, PosPos) {
+  const auto param = GetParam();
+  EXPECT_EQ(QuotientBounds(param.a, param.b), param.expected_bounds);
+}
+
+TEST_P(QuotientBoundsTest, PosNeg) {
+  const auto param = GetParam();
+  const auto neg_bounds = std::make_pair(-param.expected_bounds.second,
+                                         -param.expected_bounds.first);
+  EXPECT_EQ(QuotientBounds(param.a, -param.b), neg_bounds);
+}
+
+TEST_P(QuotientBoundsTest, NegPos) {
+  const auto param = GetParam();
+  const auto neg_bounds = std::make_pair(-param.expected_bounds.second,
+                                         -param.expected_bounds.first);
+  EXPECT_EQ(QuotientBounds(-param.a, param.b), neg_bounds);
+}
+
+TEST_P(QuotientBoundsTest, NegNeg) {
+  const auto param = GetParam();
+  EXPECT_EQ(QuotientBounds(-param.a, -param.b), param.expected_bounds);
+}
+
+// The expected bounds that are not exact are written as hexadecimal literals so
+// that they do not depend on the rounding of the division under test.
+INSTANTIATE_TEST_SUITE_P(
+    Values, QuotientBoundsTest,
+    testing::Values(
+        // Exact quotients.
+        QuotientBoundsTestCase{
+            .a = 0.0, .b = 3.0, .expected_bounds = {0.0, 0.0}},
+        QuotientBoundsTestCase{
+            .a = 6.0, .b = 3.0, .expected_bounds = {2.0, 2.0}},
+        QuotientBoundsTestCase{
+            .a = 1.0, .b = 4.0, .expected_bounds = {0.25, 0.25}},
+        QuotientBoundsTestCase{
+            .a = 3.75, .b = 2.5, .expected_bounds = {1.5, 1.5}},
+        QuotientBoundsTestCase{
+            .a = std::ldexp(3.75, 100),
+            .b = std::ldexp(2.5, -400),
+            .expected_bounds = {std::ldexp(1.5, 500), std::ldexp(1.5, 500)}},
+        QuotientBoundsTestCase{
+            .a = 4 * std::numeric_limits<double>::denorm_min(),
+            .b = 2.0,
+            .expected_bounds = {2 * std::numeric_limits<double>::denorm_min(),
+                                2 * std::numeric_limits<double>::denorm_min()}},
+        // The double `1.0 / 3.0` is below 1/3.
+        QuotientBoundsTestCase{
+            .a = 1.0,
+            .b = 3.0,
+            .expected_bounds = {0x1.5555555555555p-2, 0x1.5555555555556p-2}},
+        // The double `1.0 / 10.0` is above 1/10.
+        QuotientBoundsTestCase{
+            .a = 1.0,
+            .b = 10.0,
+            .expected_bounds = {0x1.9999999999999p-4, 0x1.999999999999ap-4}},
+        // The quotient of the doubles 0.3 and 0.1 is below 3.
+        QuotientBoundsTestCase{
+            .a = 0.3, .b = 0.1, .expected_bounds = {0x1.7ffffffffffffp+1, 3.0}},
+        // The double `q = max / 3.0` is above max/3 and `q * 3.0` is above max.
+        QuotientBoundsTestCase{.a = std::numeric_limits<double>::max(),
+                               .b = 3.0,
+                               .expected_bounds = {0x1.5555555555554p+1022,
+                                                   0x1.5555555555555p+1022}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::nextafter(std::numeric_limits<double>::max(), 0.0),
+            .expected_bounds = {1.0, std::nextafter(1.0, 2.0)}},
+        // The quotient is too large to be representable.
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        // The quotient is too small to be representable.
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = 4.0,
+            .expected_bounds = {0.0,
+                                std::numeric_limits<double>::denorm_min()}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = 2.0,
+            .expected_bounds = {0.0,
+                                std::numeric_limits<double>::denorm_min()}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {0.0,
+                                std::numeric_limits<double>::denorm_min()}},
+        // Subnormal quotients.
+        QuotientBoundsTestCase{
+            .a = 3 * std::numeric_limits<double>::denorm_min(),
+            .b = 2.0,
+            .expected_bounds = {std::numeric_limits<double>::denorm_min(),
+                                2 * std::numeric_limits<double>::denorm_min()}},
+        QuotientBoundsTestCase{.a = std::numeric_limits<double>::min(),
+                               .b = 3.0,
+                               .expected_bounds = {0x0.5555555555555p-1022,
+                                                   0x0.5555555555556p-1022}}));
+
 TEST(TightSumTest, DefaultConstructedIsZero) {
   TightSum sum;
 

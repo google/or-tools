@@ -305,6 +305,12 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
 // Returns a tight double interval containing n.
 std::pair<double, double> Int64DoubleBounds(int64_t n);
 
+// Tight bounds [lb, ub] containing the exact rational quotient `a / b` for a
+// finite `a` and a finite `b != 0` (`{q, q}` when `q = a / b` is exact, and a
+// 1-ulp interval otherwise). A quotient that is too large to be representable
+// gives `{max_double, inf}` (or `{-inf, -max_double}`).
+std::pair<double, double> QuotientBounds(double a, double b);
+
 inline double FastStepUp(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);

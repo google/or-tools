@@ -635,4 +635,35 @@ std::pair<double, double> Int64DoubleBounds(const int64_t n) {
   }
 }
 
+std::pair<double, double> QuotientBounds(double a, double b) {
+  DCHECK(std::isfinite(a));
+  DCHECK(std::isfinite(b));
+  DCHECK_NE(b, 0.0);
+  if (b < 0.0) {
+    a = -a;
+    b = -b;
+  }
+
+  // Whatever the rounding mode, q is `a / b` if it is representable, and one of
+  // the two doubles surrounding `a / b` otherwise.
+  const double q = a / b;
+  if (!std::isfinite(q)) {
+    // Overflow: |a / b| > kDoubleMax.
+    return q > 0.0 ? std::make_pair(kDoubleMax, kInf)
+                   : std::make_pair(-kInf, -kDoubleMax);
+  }
+
+  // As b > 0, `a / b` compares to q as a compares to `q * b`, and the tight
+  // bounds of `q * b` give the latter comparison exactly: they are equal iff
+  // `q * b` is a double, and otherwise they are two consecutive doubles so the
+  // double a is not strictly between them. This also holds when `q * b`
+  // overflows: the infinite bound is then on the side opposite to a. Note that
+  // this covers q == 0, which happens when a == 0 or when `a / b` underflows.
+  const auto [prod_lb, prod_ub] = ProdBounds(q, b);
+  if (prod_lb == a && prod_ub == a) return {q, q};
+  if (prod_ub <= a) return {q, FastStepUp(q)};
+  DCHECK_GE(prod_lb, a);
+  return {FastStepDown(q), q};
+}
+
 }  // namespace operations_research
