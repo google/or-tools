@@ -25,6 +25,7 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
 #include "ortools/base/proto_enum_utils.h"
@@ -1738,6 +1739,7 @@ TEST_F(
 
     for (const RecreateParameters::ParametersCase parameters_case :
          GetSupportedRecreateParametersCases()) {
+      SCOPED_TRACE(DUMP_VARS(recreate_heuristic, parameters_case));
       SetupDefaultRecreateParameters(recreate_strategy, parameters_case);
 
       const std::vector<std::string> errors =

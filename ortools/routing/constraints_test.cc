@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solver_test_util.h"
@@ -523,6 +524,7 @@ TEST_IN_PROPAGATION(NumActiveVehiclesCapacityConstraint,
         enforce_active_vehicles));
 
     for (int expected_inactive : {0, 2}) {
+      SCOPED_TRACE(DUMP_VARS(expected_inactive));
       IntVar* vehicle_active_var = vehicle_active_vars[expected_inactive];
       EXPECT_EQ(vehicle_active_var->Min(), 0);
       EXPECT_EQ(vehicle_active_var->Max(), 0);

@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -23,6 +22,7 @@
 #include "absl/time/time.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 #include "ortools/base/types.h"
@@ -62,6 +62,7 @@ TEST(CPSATSearchTest, SolveTSPModel) {
   for (bool use_scaling : {false, true}) {
     for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
       for (bool use_generalized_cp_sat : {false, true}) {
+        SCOPED_TRACE(DUMP_VARS(use_scaling, use_cp, use_generalized_cp_sat));
         RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
         if (use_generalized_cp_sat) {
           parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -100,6 +101,7 @@ TEST(CPSATSearchTest, SolveTSPModel) {
 TEST(CPSATSearchTest, SolveTSPModelWithDisjointTimeWindows) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -140,6 +142,7 @@ TEST(CPSATSearchTest, SolveTSPModelWithDisjointTimeWindows) {
 TEST(CPSATSearchTest, SolveTSPModelWithSoftUB) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -182,6 +185,7 @@ TEST(CPSATSearchTest, SolveTSPModelWithSoftUB) {
 TEST(CPSATSearchTest, SolveTSPModelWithSoftLB) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -224,6 +228,7 @@ TEST(CPSATSearchTest, SolveTSPModelWithSoftLB) {
 TEST(CPSATSearchTest, SolveTSPModelWithSoftLBAndUB) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -311,6 +316,7 @@ TEST(CPSATSearchTest, SolveTSPWithUnperformedModel) {
 // singleton with kNoPenalty penalty) are properly handled in the cp-sat model.
 TEST(CPSATSearchTest, SolveTSPWithDelayedActiveNodes) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
+    SCOPED_TRACE(DUMP_VARS(use_cp));
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     // generalized_cp_sat will detect penalties properly
     parameters.set_use_cp_sat(BOOL_TRUE);
@@ -340,6 +346,7 @@ TEST(CPSATSearchTest, SolveTSPWithDelayedActiveNodes) {
 TEST(CPSATSearchTest, SolveVRPWithSoftLBAndUB) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -384,6 +391,8 @@ TEST(CPSATSearchTest, SolveVRPCallbacks) {
   for (bool report_intermediate_cp_sat_solutions : {false, true}) {
     for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
       for (bool use_generalized_cp_sat : {false, true}) {
+        SCOPED_TRACE(DUMP_VARS(report_intermediate_cp_sat_solutions, use_cp,
+                               use_generalized_cp_sat));
         RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
         parameters.set_report_intermediate_cp_sat_solutions(
             report_intermediate_cp_sat_solutions);
@@ -758,6 +767,7 @@ TEST(CPSATSearchTest, SolveTSPWithWindowsModelDifferentSlacks) {
 TEST(CPSATSearchTest, SolveTSPWithPickupAndDelivery) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -818,6 +828,7 @@ TEST(CPSATSearchTest, SolveTSPWithPickupAndDelivery) {
 // given initial solution with a solution limit.
 TEST(CPSATSearchTest, SolveTSPModelWithSatImprovement) {
   for (bool use_generalized_cp_sat : {false, true}) {
+    SCOPED_TRACE(DUMP_VARS(use_generalized_cp_sat));
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     if (use_generalized_cp_sat) {
       parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -917,6 +928,7 @@ TEST(CPSATSearchTest, SolveUnconstrainedVRPModel) {
 TEST(CPSATSearchTest, SolveConstrainedVehicleVRPModel) {
   for (OptionalBoolean use_cp : {BOOL_FALSE, BOOL_TRUE}) {
     for (bool use_generalized_cp_sat : {false, true}) {
+      SCOPED_TRACE(DUMP_VARS(use_cp, use_generalized_cp_sat));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       if (use_generalized_cp_sat) {
         parameters.set_use_generalized_cp_sat(BOOL_TRUE);
@@ -1654,6 +1666,8 @@ TEST(RoutingSearchTest, SolveCapacitatedVRPModelWithMaxActiveVehicles) {
               use_generalized_cp_sat == BOOL_FALSE) {
             continue;
           }
+          SCOPED_TRACE(DUMP_VARS(max_active_vehicles, use_cp, use_cp_sat,
+                                 use_generalized_cp_sat));
           RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
           parameters.set_use_cp_sat(use_cp_sat);
           parameters.set_use_generalized_cp_sat(use_generalized_cp_sat);
@@ -1698,6 +1712,7 @@ TEST(RoutingSearchTest, SolveVRPModelWithUnboundCumuls) {
             use_generalized_cp_sat == BOOL_FALSE) {
           continue;
         }
+        SCOPED_TRACE(DUMP_VARS(use_cp, use_cp_sat, use_generalized_cp_sat));
         RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
         parameters.set_use_cp_sat(use_cp_sat);
         parameters.set_use_generalized_cp_sat(use_generalized_cp_sat);
