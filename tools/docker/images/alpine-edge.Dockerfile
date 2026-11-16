@@ -14,7 +14,7 @@ CMD ["/bin/sh"]
 RUN apk add --no-cache swig
 
 # .NET install
-RUN apk add --no-cache dotnet8-sdk
+RUN apk add --no-cache dotnet10-sdk
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
