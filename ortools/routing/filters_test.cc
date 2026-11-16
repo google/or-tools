@@ -3384,6 +3384,7 @@ TEST_P(RoutingFilterTestWithUnaryCallbackAndSolverType,
   parameters.set_continuous_scheduling_solver(solver_type);
   IndexManager manager(kNodes, kVehicles, NodeIndex(0));
   for (int lp = 0; lp < std::size(kUseGlobalLPFiltering); lp++) {
+    SCOPED_TRACE(DUMP_VARS(solver_type, kUseGlobalLPFiltering[lp]));
     Model model(manager);
     const int callback =
         use_unary_callback
@@ -4967,6 +4968,8 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
     Assignment delta(model.solver());
 
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(f, d, use_cp_sat, resource_fixed_cost,
+                             filter_objective_cost));
       MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                 kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[f][d];
@@ -8020,6 +8023,7 @@ TEST(RoutingFilterTest,
   const int kNodes = 4;
   const int kVehicles = 3;
   for (bool split_groups : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(split_groups));
     // First solution: 0-1-6, 4-2-7, 5-3-8
     const int kInitialSolution[] = {1, 6, 7, 8, 2, 3};
     IndexManager manager(kNodes, kVehicles, NodeIndex(0));
@@ -8087,6 +8091,7 @@ TEST(
   const int kNodes = 7;
   const int kVehicles = 3;
   for (bool split_groups : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(split_groups));
     // First solution: 0-1-9, 7-3-10, 8-5-11
     const int kInitialSolution[] = {1, 9, 2, 10, 4, 11, 6, 3, 5};
     IndexManager manager(kNodes, kVehicles, NodeIndex(0));
@@ -9751,6 +9756,9 @@ TEST_P(RoutingFilterTestWithUnaryCallback, ResourceAssignmentFilteringTest) {
           Assignment delta(model.solver());
           int last_synchronized_delta_index = 0;
           for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+            SCOPED_TRACE(DUMP_VARS(resource_fixed_cost, use_global_lp_filter,
+                                   filter_objective_cost,
+                                   propagate_objective_value, d));
             MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                       kDeltaSolutions[d], model.Nexts(), &delta);
             const bool expected_accept = kExpectedAccept[d];
@@ -9879,6 +9887,7 @@ TEST_P(RoutingFilterTestWithUnaryCallback,
       Assignment delta(model.solver());
       int last_synchronized_delta_index = 0;
       for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+        SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
         MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                   kDeltaSolutions[d], model.Nexts(), &delta);
         const bool expected_accept = kExpectedAccept[d];
@@ -9989,6 +9998,7 @@ TEST_P(RoutingFilterTestWithFixedCost,
     Assignment delta(model.solver());
     int last_synchronized_delta_index = 0;
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
       MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                 kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[d];
@@ -10074,6 +10084,7 @@ TEST_P(RoutingFilterTestWithFixedCost,
     filter->Synchronize(&initial_solution, nullptr);
     Assignment delta(model.solver());
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
       MakeDelta(kInitialSolution, kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[d];
       ASSERT_EQ(filter->Accept(&delta, nullptr, kint64min, kint64max),

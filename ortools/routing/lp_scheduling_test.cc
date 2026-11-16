@@ -36,6 +36,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
@@ -928,6 +929,8 @@ TEST(GlobalDimensionCumulOptimizerTest, NotifyVehicleRequiresAResourceTest) {
       {true, true}, {false, true}, {true, false}, {false, false}};
 
   for (int i = 0; i < ABSL_ARRAYSIZE(kVehicleRequiresResource); i++) {
+    SCOPED_TRACE(DUMP_VARS(kVehicleRequiresResource[i][0],
+                           kVehicleRequiresResource[i][1]));
     Model model(manager);
     const std::string kDimName = "time";
     model.AddConstantDimensionWithSlack(
@@ -1442,6 +1445,10 @@ TEST(ComputeBestVehicleToResourceAssignmentTest, RandomizedStressTest) {
         std::log2(1 + static_cast<int64_t>(absl::int128(actual_max_arc_cost) *
                                            4 * num_flow_nodes / kint64max)));
     ASSERT_LE(expected_cost_right_shift, 16);
+    SCOPED_TRACE(DUMP_VARS(t, total_num_vehicles, num_vehicles_passed,
+                           num_vehicles_to_assign, num_resources,
+                           num_ignored_resources, num_res_classes, max_arc_cost,
+                           actual_max_arc_cost, expected_cost_right_shift));
 
     // CORNER CASES: ComputeBestVehicleToResourceAssignment() does some internal
     // down-scaling of the arc costs if necessary to avoid overflows within
@@ -1502,11 +1509,11 @@ TEST(ComputeBestVehicleToResourceAssignmentTest, RandomizedStressTest) {
     std::vector<bool> resource_was_assigned(num_resources, false);
     for (int v : vehicles_to_assign) {
       const int r = assignment[v];
-      ASSERT_GE(r, 0);
-      ASSERT_LT(r, num_resources);
+      ASSERT_GE(r, 0) << DUMP_VARS(v);
+      ASSERT_LT(r, num_resources) << DUMP_VARS(v);
       const int rc_idx = resource_class_index[r];
       ASSERT_FALSE(ignored_resources_per_class[RCIndex(rc_idx)].contains(r));
-      ASSERT_FALSE(resource_was_assigned[r]);
+      ASSERT_FALSE(resource_was_assigned[r]) << DUMP_VARS(v, r);
       resource_was_assigned[r] = true;
       recomputed_shifted_cost += costs[v][rc_idx] >> expected_cost_right_shift;
     }
@@ -1695,6 +1702,7 @@ TEST_P(ScheduleRouteWithTransitTargets, TransitTargetsFeasible) {
   std::vector<int64_t> transit_values;
   std::vector<int64_t> cumul_values;
   for (const double transit_target_threshold_ratio : {0.1, 0.5, 0.9}) {
+    SCOPED_TRACE(DUMP_VARS(transit_target_threshold_ratio));
     const DimensionSchedulingStatus status = Optimize(
         transit_target_threshold_ratio, &cumul_values, &transit_values);
     ASSERT_EQ(status, DimensionSchedulingStatus::OPTIMAL);
@@ -1725,12 +1733,15 @@ TEST_P(ScheduleRouteWithTransitTargets, TransitTargetsViolateSpanLimit) {
   std::vector<int64_t> transit_values;
   std::vector<int64_t> cumul_values;
   for (const double transit_target_threshold_ratio : {0.1, 0.5, 0.8, 0.9}) {
+    SCOPED_TRACE(DUMP_VARS(transit_target_threshold_ratio));
     const DimensionSchedulingStatus status = Optimize(
         transit_target_threshold_ratio, &cumul_values, &transit_values);
 
     ASSERT_EQ(status, DimensionSchedulingStatus::OPTIMAL);
+    SCOPED_TRACE(DUMP_VARS(transit_values));
     EXPECT_EQ(absl::c_accumulate(transit_values, 0), kSpanUpperBound);
 
+    SCOPED_TRACE(DUMP_VARS(cumul_values));
     ASSERT_EQ(cumul_values.size(), transit_values.size() + 1);
     EXPECT_EQ(cumul_values[0], 0);
     for (int i = 0; i < transit_values.size(); ++i) {
@@ -2229,7 +2240,9 @@ TEST(SetRouteTravelInfoConstraints, TooCompressedInfeasibility) {
                    /*time_limit_seconds=*/2, model, optimizer);
     std::vector<int64_t> optimal_cumuls;
     ASSERT_EQ(ComputeRouteCumuls(optimizer, travel_info, &optimal_cumuls),
-              DimensionSchedulingStatus::INFEASIBLE);
+              DimensionSchedulingStatus::INFEASIBLE)
+        << DUMP_VARS(i, kNodes, span_cost, dT, nb_segments,
+                     travel_info.travel_cost_coefficient);
   }
 }
 

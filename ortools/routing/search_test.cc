@@ -35,6 +35,7 @@
 #include "google/protobuf/generated_enum_reflection.h"
 #include "google/protobuf/timestamp.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/protoutil.h"
@@ -889,6 +890,7 @@ TEST_P(LocalCheapestInsertionWithHintTest, FullHintWithPickupAndDelivery) {
   const bool use_evaluator = std::get<1>(GetParam());
   for (auto strategy : google::protobuf::EnumerateEnumValues<
            LocalCheapestInsertionParameters::PairInsertionStrategy>()) {
+    SCOPED_TRACE(DUMP_VARS(strategy, use_hint, use_evaluator));
     IndexManager manager(/*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
     Model model(manager);
     model.AddPickupAndDelivery(1, 3);
@@ -987,6 +989,7 @@ TEST(SolveWithAlternativeSolversTest, NoSolution) {
 
 TEST(SolveWithAlternativeSolversTest, NoAlternatives) {
   for (int max_iterations = 0; max_iterations < 10; ++max_iterations) {
+    SCOPED_TRACE(DUMP_VARS(max_iterations));
     IndexManager manager(
         /*num_nodes=*/3, /*num_vehicles=*/1, NodeIndex(0));
     Model model(manager);
@@ -1011,6 +1014,7 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest, WithAlternatives) {
   const bool use_metaheuristic = GetParam();
   for (int max_iterations = 0; max_iterations < 10; ++max_iterations) {
+    SCOPED_TRACE(DUMP_VARS(max_iterations, use_metaheuristic));
     IndexManager manager(
         /*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
     Model model(manager);
@@ -1055,6 +1059,7 @@ TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
        WithAlternativeParameters) {
   const bool use_metaheuristic = GetParam();
   for (int max_iterations = 0; max_iterations < 10; ++max_iterations) {
+    SCOPED_TRACE(DUMP_VARS(max_iterations, use_metaheuristic));
     IndexManager manager(
         /*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
     Model model(manager);
@@ -1139,6 +1144,7 @@ TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
        FromFirstSolutionWithAlternatives) {
   const bool use_metaheuristic = GetParam();
   for (int max_iterations = 0; max_iterations < 10; ++max_iterations) {
+    SCOPED_TRACE(DUMP_VARS(max_iterations, use_metaheuristic));
     IndexManager manager(
         /*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
     Model model(manager);
@@ -1192,6 +1198,7 @@ TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
 TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
        WithFailingAlternative) {
   const bool use_metaheuristic = GetParam();
+  SCOPED_TRACE(DUMP_VARS(use_metaheuristic));
   IndexManager manager(
       /*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
   Model model(manager);
@@ -1227,6 +1234,7 @@ TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
 TEST_P(SolveWithAlternativeSolversAndMetaheuristicsTest,
        WithAlternativeParametersAndPrimaryTimeLimit) {
   const bool use_metaheuristic = GetParam();
+  SCOPED_TRACE(DUMP_VARS(use_metaheuristic));
   IndexManager manager(
       /*num_nodes=*/50, /*num_vehicles=*/1, NodeIndex(0));
   Model model(manager);
@@ -1333,7 +1341,7 @@ TEST(FilteredSavingsTest, TimeLimited) {
     int num_successes = 0;
     int num_failures = 0;
     while (num_failures * 2 >= num_successes) {
-      ASSERT_LE(num_failures, 5);
+      ASSERT_LE(num_failures, 5) << DUMP_VARS(num_failures, num_successes);
       auto model = std::make_unique<Model>(manager);
       const int vehicle_cost =
           model->RegisterTransitCallback([](int64_t, int64_t) { return 1; });
@@ -2249,6 +2257,7 @@ TEST(RoutingFilteredHeuristicTest, BuildSolutionFromRoutes_WithResource) {
   const IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
 
   for (bool has_start_chain : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(has_start_chain));
     Model model(manager);
 
     // Make non start/end nodes optional.

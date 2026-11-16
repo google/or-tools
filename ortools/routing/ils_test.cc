@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/constraint_solver/assignment.h"
@@ -1382,6 +1383,7 @@ TEST_P(RuinRecreatePerturbation_RemoveNodes, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(DUMP_VARS(recreate_strategy, num_removed_nodes));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.SetFixedCostOfVehicle(1000, 1);
@@ -1473,6 +1475,8 @@ TEST_P(RuinRecreatePerturbation_SISR, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(DUMP_VARS(recreate_strategy, max_removed_sequence_size,
+                             avg_num_removed_visits, bypass_factor));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.CloseModel();
@@ -1549,6 +1553,8 @@ TEST_P(RuinRecreatePerturbation_AdaptiveRandomWalk, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(
+          DUMP_VARS(recreate_strategy, strengthening_factor, weakening_factor));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.SetFixedCostOfVehicle(1000, 1);
@@ -1637,6 +1643,8 @@ TEST_P(RuinRecreatePerturbation_CompositeRuin, Solve) {
              std::vector<std::vector<RuinStrategy>>{
                  {ruin_strategy1, ruin_strategy2},
                  {ruin_strategy2, ruin_strategy1}}) {
+          SCOPED_TRACE(DUMP_VARS(recreate_strategy, composition_strategy,
+                                 num_removed_entities));
           IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
           Model model(manager);
           model.SetFixedCostOfVehicle(1000, 1);
@@ -1866,6 +1874,8 @@ TEST(NeighborAcceptanceCriteria, GreedyDescentWithLateAcceptance) {
   ASSERT_EQ(solutionWithCost19->ObjectiveValue(), 19);
 
   for (int late_acceptance_window : {0, 1, 2, 3, 10, 100}) {
+    SCOPED_TRACE(DUMP_VARS(late_acceptance_window));
+
     AcceptancePolicy acceptance_policy;
     acceptance_policy.add_strategies()
         ->mutable_greedy_descent()
@@ -1936,6 +1946,8 @@ TEST(NeighborAcceptanceCriteria, SimulatedAnnealing) {
 
   for (CoolingScheduleStrategy::Value cooling_schedule :
        GetCoolingScheduleStrategies()) {
+    SCOPED_TRACE(DUMP_VARS(cooling_schedule));
+
     IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
     Model model(manager);
     model.SetArcCostEvaluatorOfAllVehicles(

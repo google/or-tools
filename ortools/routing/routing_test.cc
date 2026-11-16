@@ -2615,6 +2615,7 @@ TEST_P(DimensionNodePrecedenceTest,
       {true, {1, 2, 3, 4}}, {false, {3, 2, 1, 4}}, {true, {2, 3, 4}}};
   accept_all_arcs_ = true;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2639,6 +2640,7 @@ TEST_P(DimensionNodePrecedenceTest, ValidateNodePrecedencesSecondImpliesFirst) {
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kSecondImpliesFirst;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2662,6 +2664,7 @@ TEST_P(DimensionNodePrecedenceTest, ValidateNodePrecedencesFirstImpliesSecond) {
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kFirstImpliesSecond;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2686,6 +2689,7 @@ TEST_P(DimensionNodePrecedenceTest,
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kFirstAndSecondEqual;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
