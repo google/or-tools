@@ -15,11 +15,12 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
+#include <cstddef>
 #include <cstdint>
-#include <cstring>
+#include <iterator>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "absl/base/optimization.h"
@@ -166,24 +167,19 @@ TYPED_TEST(BitIndex, TwoBits) {
 
 }  // namespace bitset_index
 
-TEST(BitsetTest, BitPos32) {
+TEST(BitsetTest, BitPos64) {
   for (int i = 0; i < 128; ++i) {
-    EXPECT_EQ(BitPos32(i), i % 32);
     EXPECT_EQ(BitPos64(i), i % 64);
   }
 }
 
 TEST(BitsetTest, BitOffset) {
   for (int i = 0; i < 128; ++i) {
-    EXPECT_EQ(BitOffset32(i), i / 32);
     EXPECT_EQ(BitOffset64(i), i / 64);
   }
 }
 
 TEST(BitsetTest, BitLength) {
-  EXPECT_EQ(0, BitLength32(0));
-  EXPECT_EQ(1, BitLength32(32));
-  EXPECT_EQ(2, BitLength32(33));
   EXPECT_EQ(0, BitLength64(0));
   EXPECT_EQ(1, BitLength64(33));
   EXPECT_EQ(1, BitLength64(64));
@@ -198,211 +194,144 @@ TEST(BitsetTest, OneBit) {
 }
 
 TEST(BitsetTest, IsBitSet) {
-  const uint32_t kBits32[2] = {0UL, 0xffffUL};
-  EXPECT_FALSE(IsBitSet32(kBits32, 0));
-  EXPECT_TRUE(IsBitSet32(kBits32, 32));
   const uint64_t kBits64[2] = {0UL, 0xffffffffUL};
   EXPECT_FALSE(IsBitSet64(kBits64, 0));
   EXPECT_TRUE(IsBitSet64(kBits64, 64));
 }
 
-TEST(BitsetTest, BitShift) {
-  EXPECT_EQ(1 << 5, BitShift32(1));
-  EXPECT_EQ(1 << 6, BitShift64(1));
+TEST(BitsetTest, BitShift) { EXPECT_EQ(1 << 6, BitShift64(1)); }
+
+TEST(BitsetTest, SetBit64) {
+  constexpr int kNumBuckets = 10;
+  constexpr int kNumBits = kNumBuckets * 64;
+  std::array<uint64_t, kNumBuckets> bits;
+  for (int i = 0; i < kNumBits; ++i) {
+    bits.fill(0);
+    SetBit64(bits.data(), i);
+    EXPECT_TRUE(IsBitSet64(bits.data(), i));
+  }
 }
 
-#define TEST_SET_BIT(size)                                       \
-  TEST(BitsetTest, SetBit##size) {                               \
-    const int kSize = 10;                                        \
-    std::array<uint##size##_t, kSize> bits;                      \
-    for (int i = 0; i < kSize * sizeof(*bits.data() * 8); ++i) { \
-      memset(bits.data(), 0UL, kSize * sizeof(*bits.data()));    \
-      SetBit##size(bits.data(), i);                              \
-      EXPECT_TRUE(IsBitSet##size(bits.data(), i));               \
-    }                                                            \
+TEST(BitsetTest, ClearBit64) {
+  constexpr int kNumBuckets = 10;
+  constexpr int kNumBits = kNumBuckets * 64;
+  std::array<uint64_t, kNumBuckets> bits;
+  for (int i = 0; i < kNumBits; ++i) {
+    bits.fill(kAllBits64);
+    ClearBit64(bits.data(), i);
+    EXPECT_FALSE(IsBitSet64(bits.data(), i));
   }
+}
 
-TEST_SET_BIT(32)
-TEST_SET_BIT(64)
-
-#undef TEST_SET_BIT
-
-#define TEST_CLEAR_BIT(size)                                     \
-  TEST(BitsetTest, ClearBit##size) {                             \
-    const int kSize = 10;                                        \
-    std::array<uint##size##_t, kSize> bits;                      \
-    for (int i = 0; i < kSize * sizeof(*bits.data() * 8); ++i) { \
-      memset(bits.data(), 0xff, kSize * sizeof(*bits.data()));   \
-      ClearBit##size(bits.data(), i);                            \
-      EXPECT_FALSE(IsBitSet##size(bits.data(), i));              \
-    }                                                            \
+TEST(BitsetTest, BitCountRange64) {
+  absl::BitGen randomizer;
+  constexpr int kTests = 1000;
+  constexpr int kNumBuckets = 10;
+  constexpr int kNumBits = kNumBuckets * 64;
+  std::array<uint64_t, kNumBuckets> bits;
+  for (int i = 0; i < kTests; ++i) {
+    bits.fill(0);
+    const int num_to_set = absl::LogUniform(randomizer, 0, kNumBits);
+    for (int j = 0; j < num_to_set; ++j) {
+      SetBit64(bits.data(), absl::Uniform(randomizer, 0, kNumBits));
+    }
+    int s = absl::Uniform(randomizer, 0, kNumBits);
+    int e = (i % 2 == 0)
+                ? absl::Uniform(randomizer, 0, kNumBits)
+                : std::min(kNumBits - 1, s + absl::Uniform(randomizer, 0, 64));
+    if (s > e) {
+      std::swap(s, e);
+    }
+    int count = 0;
+    for (int bit = s; bit <= e; ++bit) {
+      count += IsBitSet64(bits.data(), bit);
+    }
+    EXPECT_EQ(count, BitCountRange64(bits.data(), s, e));
   }
+}
 
-TEST_CLEAR_BIT(32);
-TEST_CLEAR_BIT(64);
-
-#undef TEST_CLEAR_BIT
-
-#define TEST_ONE_RANGE(size)                                   \
-  TEST(BitsetTest, OneRange##size) {                           \
-    absl::BitGen randomizer;                                   \
-    const int kTests = 1000;                                   \
-    for (int i = 0; i < kTests; ++i) {                         \
-      int s = absl::Uniform(randomizer, 0, size);              \
-      int e = absl::Uniform(randomizer, 0, size);              \
-      if (s > e) {                                             \
-        std::swap(s, e);                                       \
-      }                                                        \
-      uint##size##_t bits = OneRange##size(s, e);              \
-      for (int i = 0; i < size; ++i) {                         \
-        EXPECT_EQ(i >= s && i <= e, IsBitSet##size(&bits, i)); \
-      }                                                        \
-    }                                                          \
+TEST(BitsetTest, IsEmptyRange64) {
+  absl::BitGen randomizer;
+  constexpr int kTests = 1000;
+  constexpr int kNumBuckets = 10;
+  constexpr int kNumBits = kNumBuckets * 64;
+  std::array<uint64_t, kNumBuckets> bits;
+  for (int i = 0; i < kTests; ++i) {
+    bits.fill(0);
+    const int num_to_set = absl::LogUniform(randomizer, 0, kNumBits);
+    for (int j = 0; j < num_to_set; ++j) {
+      SetBit64(bits.data(), absl::Uniform(randomizer, 0, kNumBits));
+    }
+    int s = absl::Uniform(randomizer, 0, kNumBits);
+    int e = (i % 2 == 0)
+                ? absl::Uniform(randomizer, 0, kNumBits)
+                : std::min(kNumBits - 1, s + absl::Uniform(randomizer, 0, 64));
+    if (s > e) {
+      std::swap(s, e);
+    }
+    bool empty = true;
+    for (int bit = s; bit <= e; ++bit) {
+      if (IsBitSet64(bits.data(), bit)) {
+        empty = false;
+        break;
+      }
+    }
+    EXPECT_EQ(empty, IsEmptyRange64(bits.data(), s, e));
   }
+}
 
-TEST_ONE_RANGE(32);
-TEST_ONE_RANGE(64);
+TEST(BitsetTest, FindFirstBit64) {
+  absl::BitGen randomizer;
+  constexpr int kTests = 1000;
+  constexpr int kNumBuckets = 10;
+  constexpr int kNumBits = kNumBuckets * 64;
+  std::array<uint64_t, kNumBuckets> bits;
+  for (int i = 0; i < kTests; ++i) {
+    bits.fill(0);
+    const int num_to_set = absl::LogUniform(randomizer, 0, kNumBits);
+    for (int j = 0; j < num_to_set; ++j) {
+      SetBit64(bits.data(), absl::Uniform(randomizer, 0, kNumBits));
+    }
+    int start = absl::Uniform(randomizer, 0, kNumBits);
+    int end = (i % 2 == 0) ? absl::Uniform(randomizer, 0, kNumBits)
+                           : std::min(kNumBits - 1,
+                                      start + absl::Uniform(randomizer, 0, 64));
+    if (start > end) {
+      std::swap(start, end);
+    }
+    int bitup = -1;
+    int bitdown = -1;
+    for (int bit = start; bit <= end; ++bit) {
+      if (IsBitSet64(bits.data(), bit)) {
+        bitdown = bit;
+        if (bitup == -1) {
+          bitup = bit;
+        }
+      }
+    }
+    EXPECT_EQ(bitup, LeastSignificantBitPosition64(bits.data(), start, end));
+    EXPECT_EQ(bitdown, MostSignificantBitPosition64(bits.data(), start, end));
+    if (IsBitSet64(bits.data(), end)) {
+      EXPECT_EQ(bitup,
+                UnsafeLeastSignificantBitPosition64(bits.data(), start, end));
+    }
+    if (IsBitSet64(bits.data(), start)) {
+      EXPECT_EQ(bitdown,
+                UnsafeMostSignificantBitPosition64(bits.data(), start, end));
+    }
+    if (bitup == -1) {
+      SetBit64(bits.data(), end);
+      EXPECT_EQ(end,
+                UnsafeLeastSignificantBitPosition64(bits.data(), start, end));
+      ClearBit64(bits.data(), end);
 
-#undef TEST_ONE_RANGE
-
-#define TEST_INTERVAL_UP(size)                               \
-  TEST(BitsetTest, IntervalUp##size) {                       \
-    for (int i = 0; i < size; ++i) {                         \
-      uint##size##_t bits = IntervalUp##size(i);             \
-      EXPECT_EQ(i, LeastSignificantBitPosition##size(bits)); \
-      EXPECT_EQ(size - i, std::popcount(bits));              \
-    }                                                        \
+      SetBit64(bits.data(), start);
+      EXPECT_EQ(start,
+                UnsafeMostSignificantBitPosition64(bits.data(), start, end));
+      ClearBit64(bits.data(), start);
+    }
   }
-
-TEST_INTERVAL_UP(32)
-TEST_INTERVAL_UP(64)
-
-#undef TEST_INTERVAL_UP
-
-#define TEST_INTERVAL_DOWN(size)                            \
-  TEST(BitsetTest, IntervalDown##size) {                    \
-    for (int i = 0; i < size; ++i) {                        \
-      uint##size##_t bits = IntervalDown##size(i);          \
-      EXPECT_EQ(i, MostSignificantBitPosition##size(bits)); \
-      EXPECT_EQ(i + 1, std::popcount(bits));                \
-    }                                                       \
-  }
-
-TEST_INTERVAL_DOWN(32)
-TEST_INTERVAL_DOWN(64)
-
-#undef TEST_INTERVAL_DOWN
-
-#define TEST_BIT_COUNT_RANGE(size)                              \
-  TEST(BitsetTest, BitCountRange##size) {                       \
-    absl::BitGen randomizer;                                    \
-    const int kTests = 1000;                                    \
-    const int kSize = 10;                                       \
-    std::array<uint##size##_t, kSize> bits;                     \
-    for (int i = 0; i < kTests; ++i) {                          \
-      int s = absl::Uniform(randomizer, 0, size);               \
-      int e = absl::Uniform(randomizer, 0, size);               \
-      if (s > e) {                                              \
-        std::swap(s, e);                                        \
-      }                                                         \
-      int count = 0;                                            \
-      for (int bit = 0; bit < size; ++bit) {                    \
-        if (absl::Uniform(randomizer, 0, 2) == 0) {             \
-          SetBit##size(bits.data(), bit);                       \
-          if (s <= bit && bit <= e) {                           \
-            ++count;                                            \
-          }                                                     \
-        } else {                                                \
-          ClearBit##size(bits.data(), bit);                     \
-        }                                                       \
-      }                                                         \
-      EXPECT_EQ(count, BitCountRange##size(bits.data(), s, e)); \
-    }                                                           \
-  }
-
-TEST_BIT_COUNT_RANGE(32)
-TEST_BIT_COUNT_RANGE(64)
-
-#undef TEST_BIT_COUNT_RANGE
-
-#define TEST_IS_EMPTY_RANGE(size)                              \
-  TEST(BitsetTest, IsEmptyRange##size) {                       \
-    absl::BitGen randomizer;                                   \
-    const int kTests = 1000;                                   \
-    const int kSize = 10;                                      \
-    std::array<uint##size##_t, kSize> bits;                    \
-    for (int i = 0; i < kTests; ++i) {                         \
-      int s = absl::Uniform(randomizer, 0, size);              \
-      int e = absl::Uniform(randomizer, 0, size);              \
-      if (s > e) {                                             \
-        std::swap(s, e);                                       \
-      }                                                        \
-      bool empty = true;                                       \
-      for (int bit = 0; bit < size; ++bit) {                   \
-        if (absl::Uniform(randomizer, 0, 2) == 0) {            \
-          SetBit##size(bits.data(), bit);                      \
-          if (s <= bit && bit <= e) {                          \
-            empty = false;                                     \
-          }                                                    \
-        } else {                                               \
-          ClearBit##size(bits.data(), bit);                    \
-        }                                                      \
-      }                                                        \
-      EXPECT_EQ(empty, IsEmptyRange##size(bits.data(), s, e)); \
-    }                                                          \
-  }
-
-TEST_IS_EMPTY_RANGE(32)
-TEST_IS_EMPTY_RANGE(64)
-
-#undef TEST_IS_EMPTY_RANGE
-
-#define TEST_SIGNIFICANT_BIT_POSITION(size)                                    \
-  TEST(BitsetTest, FindFirstBit##size) {                                       \
-    absl::BitGen randomizer;                                                   \
-    const int kTests = 1000;                                                   \
-    const int kSize = 10;                                                      \
-    std::array<uint##size##_t, kSize> bits;                                    \
-    for (int i = 0; i < kTests; ++i) {                                         \
-      int start = absl::Uniform(randomizer, 0, size);                          \
-      int end = absl::Uniform(randomizer, 0, size);                            \
-      if (start > end) {                                                       \
-        std::swap(start, end);                                                 \
-      }                                                                        \
-      int bitup = -1;                                                          \
-      int bitdown = -1;                                                        \
-      for (int bit = 0; bit < size; ++bit) {                                   \
-        if (absl::Uniform(randomizer, 0, 2) == 0) {                            \
-          SetBit##size(bits.data(), bit);                                      \
-          if (bit <= end && bit >= start) {                                    \
-            bitdown = bit;                                                     \
-            if (bitup == -1) {                                                 \
-              bitup = bit;                                                     \
-            }                                                                  \
-          }                                                                    \
-        } else {                                                               \
-          ClearBit##size(bits.data(), bit);                                    \
-        }                                                                      \
-      }                                                                        \
-      EXPECT_EQ(bitup,                                                         \
-                LeastSignificantBitPosition##size(bits.data(), start, end));   \
-      if (IsBitSet##size(bits.data(), end)) {                                  \
-        EXPECT_EQ(bitup, UnsafeLeastSignificantBitPosition##size(bits.data(),  \
-                                                                 start, end)); \
-      }                                                                        \
-      EXPECT_EQ(bitdown,                                                       \
-                MostSignificantBitPosition##size(bits.data(), start, end));    \
-      if (IsBitSet##size(bits.data(), start)) {                                \
-        EXPECT_EQ(bitdown, UnsafeMostSignificantBitPosition##size(             \
-                               bits.data(), start, end));                      \
-      }                                                                        \
-    }                                                                          \
-  }
-
-TEST_SIGNIFICANT_BIT_POSITION(32)
-TEST_SIGNIFICANT_BIT_POSITION(64)
-
-#undef TEST_SIGNIFICANT_BIT_POSITION
+}
 
 DEFINE_STRONG_INT64_TYPE(TestIndex);
 
@@ -514,13 +443,6 @@ TEST(SparseBitsetTest, CopyFrom) {
   }
 }
 
-TEST(Bitset64Test, NegativeSize) {
-  if (!DEBUG_MODE) {
-    Bitset64<TestIndex> bitset(TestIndex(-10));
-    EXPECT_EQ(0, bitset.size());
-  }
-}
-
 TEST(Bitset64Test, BasicFunctions) {
   const TestIndex kSize(100);
   Bitset64<TestIndex> bitset(kSize);
@@ -627,6 +549,7 @@ TEST(Bitset64Test, Resize) {
 }
 
 TEST(Bitset64Test, Iterator) {
+  static_assert(std::forward_iterator<Bitset64<int>::Iterator>);
   Bitset64<int> bitset(5);
   bitset.Set(0);
   bitset.Set(2);
@@ -779,6 +702,91 @@ TEST(Bitset64Test, IteratorOverRandomBitSet) {
   }
   EXPECT_EQ(num_set_positions, num_iterated_positions);
 }
+
+static_assert(std::is_trivially_copyable_v<Bitset64<int>::View>);
+static_assert(std::is_trivially_copyable_v<Bitset64<int>::ConstView>);
+static_assert(std::is_trivially_copyable_v<Bitset64<TestIndex>::View>);
+static_assert(std::is_trivially_copyable_v<Bitset64<TestIndex>::ConstView>);
+#ifdef NDEBUG
+static_assert(sizeof(Bitset64<int>::View) == sizeof(uint64_t*));
+static_assert(sizeof(Bitset64<int>::ConstView) == sizeof(const uint64_t*));
+static_assert(sizeof(Bitset64<TestIndex>::View) == sizeof(uint64_t*));
+static_assert(sizeof(Bitset64<TestIndex>::ConstView) ==
+              sizeof(const uint64_t*));
+#endif
+
+TEST(Bitset64Test, Views) {
+  Bitset64<TestIndex> bitset(TestIndex(100));
+  Bitset64<TestIndex>::View view = bitset.view();
+  const Bitset64<TestIndex>::ConstView const_view = bitset.const_view();
+
+  view.Set(TestIndex(0));
+  view.Set(TestIndex(63));
+  view.Set(TestIndex(64));
+  view.Set(TestIndex(99));
+
+  EXPECT_TRUE(view[TestIndex(0)]);
+  EXPECT_TRUE(const_view[TestIndex(63)]);
+  EXPECT_TRUE(const_view[TestIndex(64)]);
+  EXPECT_TRUE(const_view[TestIndex(99)]);
+  EXPECT_FALSE(const_view[TestIndex(1)]);
+  EXPECT_FALSE(const_view[TestIndex(65)]);
+
+  view.Clear(TestIndex(63));
+  EXPECT_FALSE(view[TestIndex(63)]);
+  EXPECT_FALSE(const_view[TestIndex(63)]);
+  EXPECT_FALSE(bitset.IsSet(TestIndex(63)));
+}
+
+#ifndef NDEBUG
+TEST(Bitset64DeathTest, ViewBoundsChecking) {
+  Bitset64<TestIndex> empty;
+  EXPECT_DEATH((void)empty.const_view()[TestIndex(0)], "");
+  EXPECT_DEATH((void)empty.view()[TestIndex(0)], "");
+  EXPECT_DEATH(empty.view().Set(TestIndex(0)), "");
+  EXPECT_DEATH(empty.view().Clear(TestIndex(0)), "");
+
+  // Size 10 allocates a single 64-bit bucket, so indices 10 and 63 lie within
+  // the allocated word but outside [0, size).
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  Bitset64<TestIndex>::View view = bitset.view();
+  const Bitset64<TestIndex>::ConstView const_view = bitset.const_view();
+
+  EXPECT_DEATH((void)view[TestIndex(-1)], "");
+  EXPECT_DEATH((void)view[TestIndex(10)], "");
+  EXPECT_DEATH((void)view[TestIndex(63)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(-1)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(10)], "");
+  EXPECT_DEATH((void)const_view[TestIndex(63)], "");
+
+  EXPECT_DEATH(view.Set(TestIndex(-1)), "");
+  EXPECT_DEATH(view.Set(TestIndex(10)), "");
+  EXPECT_DEATH(view.Clear(TestIndex(-1)), "");
+  EXPECT_DEATH(view.Clear(TestIndex(10)), "");
+}
+
+TEST(Bitset64DeathTest, MemberBoundsChecking) {
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  EXPECT_DEATH((void)bitset[TestIndex(-1)], "");
+  EXPECT_DEATH((void)bitset[TestIndex(10)], "");
+  EXPECT_DEATH(bitset.Set(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.Set(TestIndex(10)), "");
+  EXPECT_DEATH(bitset.Clear(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.Clear(TestIndex(10)), "");
+  EXPECT_DEATH(bitset.ClearBucket(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.ClearBucket(TestIndex(10)), "");
+
+  Bitset64<TestIndex> smaller(TestIndex(5));
+  EXPECT_DEATH(bitset.CopyBucket(smaller, TestIndex(7)), "");
+}
+
+TEST(Bitset64DeathTest, NegativeSize) {
+  EXPECT_DEATH((Bitset64<TestIndex>(TestIndex(-1))), "");
+  Bitset64<TestIndex> bitset(TestIndex(10));
+  EXPECT_DEATH(bitset.Resize(TestIndex(-1)), "");
+  EXPECT_DEATH(bitset.ClearAndResize(TestIndex(-1)), "");
+}
+#endif  // NDEBUG
 
 TEST(BitQueue64Test, BasicTest) {
   const int kSize = 100000;

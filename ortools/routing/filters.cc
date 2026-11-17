@@ -909,9 +909,10 @@ void BasePathFilter::UpdatePathRanksFromStart(int start) {
 
 namespace {
 
-class VehicleAmortizedCostFilter : public BasePathFilter {
+class VehicleAmortizedCostFilter : public LocalSearchFilter {
  public:
-  explicit VehicleAmortizedCostFilter(const Model& routing_model);
+  VehicleAmortizedCostFilter(const Model& routing_model,
+                             const PathState* path_state);
   ~VehicleAmortizedCostFilter() override = default;
   std::string DebugString() const override {
     return "VehicleAmortizedCostFilter";
@@ -920,148 +921,82 @@ class VehicleAmortizedCostFilter : public BasePathFilter {
     return current_vehicle_cost_;
   }
   int64_t GetAcceptedObjectiveValue() const override {
-    return lns_detected() ? 0 : delta_vehicle_cost_;
+    return path_state_->IsInvalid() ? 0 : delta_vehicle_cost_;
   }
 
  private:
-  void OnSynchronizePathFromStart(int64_t start) override;
-  void OnAfterSynchronizePaths() override;
-  bool InitializeAcceptPath() override;
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override;
-  bool FinalizeAcceptPath(int64_t objective_min,
-                          int64_t objective_max) override;
+  int NumVisitsOfPath(int path) const {
+    int length = 0;
+    for (const PathState::Chain& chain : path_state_->Chains(path)) {
+      length += chain.NumNodes();
+    }
+    return length - 2;  // start and end are not counted.
+  }
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override;
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override;
 
+  const PathState* const path_state_;
   int64_t current_vehicle_cost_;
   int64_t delta_vehicle_cost_;
-  std::vector<int> current_route_lengths_;
-  std::vector<int64_t> start_to_end_;
-  std::vector<int> start_to_vehicle_;
-  std::vector<int64_t> vehicle_to_start_;
+  std::vector<int64_t> current_vehicle_costs_;
   const std::vector<int64_t>& linear_cost_factor_of_vehicle_;
   const std::vector<int64_t>& quadratic_cost_factor_of_vehicle_;
 };
 
 VehicleAmortizedCostFilter::VehicleAmortizedCostFilter(
-    const Model& routing_model)
-    : BasePathFilter(routing_model.Nexts(),
-                     routing_model.Size() + routing_model.vehicles(),
-                     routing_model.GetPathsMetadata()),
+    const Model& routing_model, const PathState* path_state)
+    : path_state_(path_state),
       current_vehicle_cost_(0),
       delta_vehicle_cost_(0),
-      current_route_lengths_(Size(), -1),
+      current_vehicle_costs_(routing_model.vehicles(), 0),
       linear_cost_factor_of_vehicle_(
           routing_model.GetAmortizedLinearCostFactorOfVehicles()),
       quadratic_cost_factor_of_vehicle_(
-          routing_model.GetAmortizedQuadraticCostFactorOfVehicles()) {
-  start_to_end_.resize(Size(), -1);
-  start_to_vehicle_.resize(Size(), -1);
-  vehicle_to_start_.resize(routing_model.vehicles());
-  for (int v = 0; v < routing_model.vehicles(); v++) {
-    const int64_t start = routing_model.Start(v);
-    start_to_vehicle_[start] = v;
-    start_to_end_[start] = routing_model.End(v);
-    vehicle_to_start_[v] = start;
-  }
-}
+          routing_model.GetAmortizedQuadraticCostFactorOfVehicles()) {}
 
-void VehicleAmortizedCostFilter::OnSynchronizePathFromStart(int64_t start) {
-  const int64_t end = start_to_end_[start];
-  CHECK_GE(end, 0);
-  const int route_length = Rank(end) - 1;
-  CHECK_GE(route_length, 0);
-  current_route_lengths_[start] = route_length;
-}
-
-void VehicleAmortizedCostFilter::OnAfterSynchronizePaths() {
-  current_vehicle_cost_ = 0;
-  for (int vehicle = 0; vehicle < vehicle_to_start_.size(); vehicle++) {
-    const int64_t start = vehicle_to_start_[vehicle];
-    DCHECK_EQ(vehicle, start_to_vehicle_[start]);
-    if (!IsVarSynced(start)) {
-      return;
-    }
-    const int route_length = current_route_lengths_[start];
-    DCHECK_GE(route_length, 0);
-
-    if (route_length == 0) {
-      // The path is empty.
-      continue;
-    }
-
-    const int64_t linear_cost_factor = linear_cost_factor_of_vehicle_[vehicle];
-    const int64_t route_length_cost =
-        CapProd(quadratic_cost_factor_of_vehicle_[vehicle],
-                route_length * route_length);
-
-    CapAddTo(CapSub(linear_cost_factor, route_length_cost),
-             &current_vehicle_cost_);
-  }
-}
-
-bool VehicleAmortizedCostFilter::InitializeAcceptPath() {
+bool VehicleAmortizedCostFilter::Accept(const Assignment* delta,
+                                        const Assignment* deltadelta,
+                                        int64_t objective_min,
+                                        int64_t objective_max) {
+  if (path_state_->IsInvalid()) return true;
   delta_vehicle_cost_ = current_vehicle_cost_;
-  return true;
-}
-
-bool VehicleAmortizedCostFilter::AcceptPath(int64_t path_start,
-                                            int64_t chain_start,
-                                            int64_t chain_end) {
-  // Number of nodes previously between chain_start and chain_end
-  const int previous_chain_nodes = Rank(chain_end) - 1 - Rank(chain_start);
-  CHECK_GE(previous_chain_nodes, 0);
-  int new_chain_nodes = 0;
-  int64_t node = GetNext(chain_start);
-  while (node != chain_end) {
-    new_chain_nodes++;
-    node = GetNext(node);
+  for (const int path : path_state_->ChangedPaths()) {
+    const int route_length = NumVisitsOfPath(path);
+    CapSubFrom(current_vehicle_costs_[path], &delta_vehicle_cost_);
+    const int64_t route_cost =
+        route_length > 0
+            ? CapSub(linear_cost_factor_of_vehicle_[path],
+                     CapProd(quadratic_cost_factor_of_vehicle_[path],
+                             route_length * route_length))
+            : 0;
+    CapAddTo(route_cost, &delta_vehicle_cost_);
   }
-
-  const int previous_route_length = current_route_lengths_[path_start];
-  CHECK_GE(previous_route_length, 0);
-  const int new_route_length =
-      previous_route_length - previous_chain_nodes + new_chain_nodes;
-
-  const int vehicle = start_to_vehicle_[path_start];
-  CHECK_GE(vehicle, 0);
-  DCHECK_EQ(path_start, vehicle_to_start_[vehicle]);
-
-  // Update the cost related to used vehicles.
-  // TODO(user): Handle possible overflows.
-  if (previous_route_length == 0) {
-    // The route was empty before, it is no longer the case (changed path).
-    CHECK_GT(new_route_length, 0);
-    CapAddTo(linear_cost_factor_of_vehicle_[vehicle], &delta_vehicle_cost_);
-  } else if (new_route_length == 0) {
-    // The route is now empty.
-    delta_vehicle_cost_ =
-        CapSub(delta_vehicle_cost_, linear_cost_factor_of_vehicle_[vehicle]);
-  }
-
-  // Update the cost related to the sum of the squares of the route lengths.
-  const int64_t quadratic_cost_factor =
-      quadratic_cost_factor_of_vehicle_[vehicle];
-  CapAddTo(CapProd(quadratic_cost_factor,
-                   previous_route_length * previous_route_length),
-           &delta_vehicle_cost_);
-  delta_vehicle_cost_ = CapSub(
-      delta_vehicle_cost_,
-      CapProd(quadratic_cost_factor, new_route_length * new_route_length));
-
-  return true;
-}
-
-bool VehicleAmortizedCostFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
-                                                    int64_t objective_max) {
   return delta_vehicle_cost_ <= objective_max;
 }
 
+void VehicleAmortizedCostFilter::Synchronize(const Assignment* assignment,
+                                             const Assignment* delta) {
+  for (const int path : path_state_->ChangedPaths()) {
+    const int route_length = NumVisitsOfPath(path);
+    const int64_t route_cost =
+        route_length > 0
+            ? CapSub(linear_cost_factor_of_vehicle_[path],
+                     CapProd(quadratic_cost_factor_of_vehicle_[path],
+                             route_length * route_length))
+            : 0;
+    CapSubFrom(current_vehicle_costs_[path], &current_vehicle_cost_);
+    current_vehicle_costs_[path] = route_cost;
+    CapAddTo(route_cost, &current_vehicle_cost_);
+  }
+}
 }  // namespace
 
-IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const Model& routing_model) {
+LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& routing_model,
+                                                  const PathState* path_state) {
   return routing_model.solver()->RevAlloc(
-      new VehicleAmortizedCostFilter(routing_model));
+      new VehicleAmortizedCostFilter(routing_model, path_state));
 }
 
 namespace {
@@ -1195,275 +1130,165 @@ IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model) {
 
 namespace {
 
-class TypeRegulationsFilter : public BasePathFilter {
+class TypeRegulationsFilter : public LocalSearchFilter {
  public:
-  explicit TypeRegulationsFilter(const Model& model);
+  TypeRegulationsFilter(const Model& model, const PathState* path_state);
   ~TypeRegulationsFilter() override = default;
   std::string DebugString() const override { return "TypeRegulationsFilter"; }
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override;
 
  private:
-  void OnSynchronizePathFromStart(int64_t start) override;
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override;
-
-  bool HardIncompatibilitiesRespected(int vehicle, int64_t chain_start,
-                                      int64_t chain_end);
+  bool HardIncompatibilitiesRespected(int path);
 
   const Model& routing_model_;
-  std::vector<int> start_to_vehicle_;
-  // The following vector is used to keep track of the type counts for hard
+  const PathState* path_state_;
+  std::vector<int> nexts_;
+  // The following vectors are used to keep track of the type counts for hard
   // incompatibilities.
-  std::vector<std::vector<int>> hard_incompatibility_type_counts_per_vehicle_;
+  std::vector<std::vector<int>> hard_incompatibility_type_index_;
+  std::vector<std::vector<int>> hard_incompatibility_types_;
+  std::vector<std::vector<int>> hard_incompatibility_type_counts_;
   // Used to verify the temporal incompatibilities and requirements.
   TypeIncompatibilityChecker temporal_incompatibility_checker_;
   TypeRequirementChecker requirement_checker_;
+  // Temporary storage for type counts.
+  std::vector<int> type_indices_;
+  std::vector<int> type_counts_;
+  absl::flat_hash_set<int> types_to_check_;
 };
 
-TypeRegulationsFilter::TypeRegulationsFilter(const Model& model)
-    : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(),
-                     model.GetPathsMetadata()),
-      routing_model_(model),
-      start_to_vehicle_(model.Size(), -1),
+TypeRegulationsFilter::TypeRegulationsFilter(const Model& model,
+                                             const PathState* path_state)
+    : routing_model_(model),
+      path_state_(path_state),
+      nexts_(path_state_->NumNodes(), -1),
+      hard_incompatibility_type_index_(path_state_->NumPaths()),
+      hard_incompatibility_types_(path_state_->NumPaths()),
+      hard_incompatibility_type_counts_(path_state_->NumNodes()),
       temporal_incompatibility_checker_(model,
                                         /*check_hard_incompatibilities*/ false),
       requirement_checker_(model) {
   const int num_vehicles = model.vehicles();
   const bool has_hard_type_incompatibilities =
       model.HasHardTypeIncompatibilities();
-  if (has_hard_type_incompatibilities) {
-    hard_incompatibility_type_counts_per_vehicle_.resize(num_vehicles);
-  }
   const int num_visit_types = model.GetNumberOfVisitTypes();
   for (int vehicle = 0; vehicle < num_vehicles; vehicle++) {
-    const int64_t start = model.Start(vehicle);
-    start_to_vehicle_[start] = vehicle;
     if (has_hard_type_incompatibilities) {
-      hard_incompatibility_type_counts_per_vehicle_[vehicle].resize(
-          num_visit_types, 0);
+      hard_incompatibility_type_index_[vehicle].resize(num_visit_types, -1);
     }
   }
 }
 
-void TypeRegulationsFilter::OnSynchronizePathFromStart(int64_t start) {
+void TypeRegulationsFilter::Synchronize(const Assignment* /*assignment*/,
+                                        const Assignment* /*delta*/) {
   if (!routing_model_.HasHardTypeIncompatibilities()) return;
-
-  const int vehicle = start_to_vehicle_[start];
-  CHECK_GE(vehicle, 0);
-  std::vector<int>& type_counts =
-      hard_incompatibility_type_counts_per_vehicle_[vehicle];
-  std::fill(type_counts.begin(), type_counts.end(), 0);
-  const int num_types = type_counts.size();
-
-  int64_t node = start;
-  while (node < Size()) {
-    DCHECK(IsVarSynced(node));
-    const int type = routing_model_.GetVisitType(node);
-    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
-                         Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-      CHECK_LT(type, num_types);
-      type_counts[type]++;
-    }
-    node = Value(node);
-  }
-}
-
-bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
-                                                           int64_t chain_start,
-                                                           int64_t chain_end) {
-  if (!routing_model_.HasHardTypeIncompatibilities()) return true;
-
-  const std::vector<int>& previous_type_counts =
-      hard_incompatibility_type_counts_per_vehicle_[vehicle];
-
-  absl::flat_hash_map</*type*/ int, /*new_count*/ int> new_type_counts;
-  absl::flat_hash_set<int> types_to_check;
-
-  // Go through the new nodes on the path and increment their type counts.
-  int64_t node = GetNext(chain_start);
-  while (node != chain_end) {
-    const int type = routing_model_.GetVisitType(node);
-    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
-                         Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-      DCHECK_LT(type, previous_type_counts.size());
-      int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
-                                            previous_type_counts[type]);
-      if (type_count++ == 0) {
-        // New type on the route, mark to check its incompatibilities.
-        types_to_check.insert(type);
-      }
-    }
-    node = GetNext(node);
-  }
-
-  // Update new_type_counts by decrementing the occurrence of the types of the
-  // nodes no longer on the route.
-  if (IsVarSynced(chain_start)) {
-    node = Value(chain_start);
-    while (node != chain_end) {
+  for (int path : path_state_->ChangedPaths()) {
+    hard_incompatibility_type_index_[path].assign(
+        hard_incompatibility_type_index_[path].size(), -1);
+    hard_incompatibility_types_[path].clear();
+    std::vector<int> last_type_counts;
+    for (int node : path_state_->Nodes(path)) {
+      hard_incompatibility_type_counts_[node] = last_type_counts;
       const int type = routing_model_.GetVisitType(node);
       if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
                            Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-        DCHECK_LT(type, previous_type_counts.size());
-        int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
-                                              previous_type_counts[type]);
-        CHECK_GE(type_count, 1);
-        type_count--;
+        int type_index = hard_incompatibility_type_index_[path][type];
+        if (type_index == -1) {
+          type_index = hard_incompatibility_types_[path].size();
+          hard_incompatibility_type_index_[path][type] = type_index;
+          hard_incompatibility_types_[path].push_back(type);
+          hard_incompatibility_type_counts_[node].emplace_back(0);
+        }
+        hard_incompatibility_type_counts_[node][type_index]++;
+        last_type_counts = hard_incompatibility_type_counts_[node];
       }
-      node = Value(node);
     }
   }
+}
 
-  // Check the incompatibilities for types in types_to_check.
-  for (int type : types_to_check) {
-    for (int incompatible_type :
-         routing_model_.GetHardTypeIncompatibilitiesOfType(type)) {
-      if (gtl::FindWithDefault(new_type_counts, incompatible_type,
-                               previous_type_counts[incompatible_type]) > 0) {
-        return false;
-      }
+bool TypeRegulationsFilter::Accept(const Assignment* /*delta*/,
+                                   const Assignment* /*deltadelta*/,
+                                   int64_t /*objective_min*/,
+                                   int64_t /*objective_max*/) {
+  if (path_state_->IsInvalid()) return true;
+  for (int path : path_state_->ChangedPaths()) {
+    if (!HardIncompatibilitiesRespected(path)) {
+      return false;
+    }
+    int prev_node = -1;
+    for (int node : path_state_->Nodes(path)) {
+      if (prev_node != -1) nexts_[prev_node] = node;
+      prev_node = node;
+    }
+    const auto next_accessor = [this](int64_t node) { return nexts_[node]; };
+    if (!temporal_incompatibility_checker_.CheckVehicle(path, next_accessor) ||
+        !requirement_checker_.CheckVehicle(path, next_accessor)) {
+      return false;
     }
   }
   return true;
 }
 
-bool TypeRegulationsFilter::AcceptPath(int64_t path_start, int64_t chain_start,
-                                       int64_t chain_end) {
-  const int vehicle = start_to_vehicle_[path_start];
-  CHECK_GE(vehicle, 0);
-  const auto next_accessor = [this](int64_t node) { return GetNext(node); };
-  return HardIncompatibilitiesRespected(vehicle, chain_start, chain_end) &&
-         temporal_incompatibility_checker_.CheckVehicle(vehicle,
-                                                        next_accessor) &&
-         requirement_checker_.CheckVehicle(vehicle, next_accessor);
-}
+bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int path) {
+  if (!routing_model_.HasHardTypeIncompatibilities()) return true;
 
-}  // namespace
-
-IntVarLocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model) {
-  return routing_model.solver()->RevAlloc(
-      new TypeRegulationsFilter(routing_model));
-}
-
-namespace {
-
-// ChainCumul filter. Version of dimension path filter which is O(delta) rather
-// than O(length of touched paths). Currently only supports dimensions without
-// costs (global and local span cost, soft bounds) and with unconstrained
-// cumul variables except overall capacity and cumul variables of path ends.
-
-class ChainCumulFilter : public BasePathFilter {
- public:
-  ChainCumulFilter(const Model& routing_model, const Dimension& dimension);
-  ~ChainCumulFilter() override = default;
-  std::string DebugString() const override {
-    return "ChainCumulFilter(" + name_ + ")";
-  }
-
- private:
-  void OnSynchronizePathFromStart(int64_t start) override;
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override;
-
-  const std::vector<IntVar*> cumuls_;
-  std::vector<int64_t> start_to_vehicle_;
-  std::vector<int64_t> start_to_end_;
-  std::vector<const TransitCallback2*> evaluators_;
-  const std::vector<int64_t> vehicle_capacities_;
-  std::vector<int64_t> current_path_cumul_mins_;
-  std::vector<int64_t> current_max_of_path_end_cumul_mins_;
-  std::vector<int64_t> old_nexts_;
-  std::vector<int> old_vehicles_;
-  std::vector<int64_t> current_transits_;
-  const std::string name_;
-};
-
-ChainCumulFilter::ChainCumulFilter(const Model& routing_model,
-                                   const Dimension& dimension)
-    : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
-                     routing_model.GetPathsMetadata()),
-      cumuls_(dimension.cumuls()),
-      evaluators_(routing_model.vehicles(), nullptr),
-      vehicle_capacities_(dimension.vehicle_capacities()),
-      current_path_cumul_mins_(dimension.cumuls().size(), 0),
-      current_max_of_path_end_cumul_mins_(dimension.cumuls().size(), 0),
-      old_nexts_(routing_model.Size(), kUnassigned),
-      old_vehicles_(routing_model.Size(), kUnassigned),
-      current_transits_(routing_model.Size(), 0),
-      name_(dimension.name()) {
-  start_to_vehicle_.resize(Size(), -1);
-  start_to_end_.resize(Size(), -1);
-  for (int i = 0; i < routing_model.vehicles(); ++i) {
-    start_to_vehicle_[routing_model.Start(i)] = i;
-    start_to_end_[routing_model.Start(i)] = routing_model.End(i);
-    evaluators_[i] = &dimension.transit_evaluator(i);
-  }
-}
-
-// On synchronization, maintain "propagated" cumul mins and max level of cumul
-// from each node to the end of the path; to be used by AcceptPath to
-// incrementally check feasibility.
-void ChainCumulFilter::OnSynchronizePathFromStart(int64_t start) {
-  const int vehicle = start_to_vehicle_[start];
-  std::vector<int64_t> path_nodes;
-  int64_t node = start;
-  int64_t cumul = cumuls_[node]->Min();
-  while (node < Size()) {
-    path_nodes.push_back(node);
-    current_path_cumul_mins_[node] = cumul;
-    const int64_t next = Value(node);
-    if (next != old_nexts_[node] || vehicle != old_vehicles_[node]) {
-      old_nexts_[node] = next;
-      old_vehicles_[node] = vehicle;
-      current_transits_[node] = (*evaluators_[vehicle])(node, next);
-    }
-    CapAddTo(current_transits_[node], &cumul);
-    cumul = std::max(cumuls_[next]->Min(), cumul);
-    node = next;
-  }
-  path_nodes.push_back(node);
-  current_path_cumul_mins_[node] = cumul;
-  int64_t max_cumuls = cumul;
-  for (int i = path_nodes.size() - 1; i >= 0; --i) {
-    const int64_t node = path_nodes[i];
-    max_cumuls = std::max(max_cumuls, current_path_cumul_mins_[node]);
-    current_max_of_path_end_cumul_mins_[node] = max_cumuls;
-  }
-}
-
-// The complexity of the method is O(size of chain (chain_start...chain_end).
-bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
-                                  int64_t chain_end) {
-  const int vehicle = start_to_vehicle_[path_start];
-  const int64_t capacity = vehicle_capacities_[vehicle];
-  int64_t node = chain_start;
-  int64_t cumul = current_path_cumul_mins_[node];
-  while (node != chain_end) {
-    const int64_t next = GetNext(node);
-    if (IsVarSynced(node) && next == Value(node) &&
-        vehicle == old_vehicles_[node]) {
-      CapAddTo(current_transits_[node], &cumul);
+  type_indices_ = hard_incompatibility_type_index_[path];
+  type_counts_.assign(hard_incompatibility_types_[path].size(), 0);
+  types_to_check_.clear();
+  auto add_type_count = [&](int type, int count) {
+    const int type_index = type_indices_[type];
+    if (type_index != -1) {
+      type_counts_[type_index] += count;
     } else {
-      CapAddTo((*evaluators_[vehicle])(node, next), &cumul);
+      type_indices_[type] = type_counts_.size();
+      type_counts_.emplace_back(count);
+      types_to_check_.insert(type);
     }
-    cumul = std::max(cumuls_[next]->Min(), cumul);
-    if (cumul > capacity) return false;
-    node = next;
-  }
-  const int64_t end = start_to_end_[path_start];
-  const int64_t end_cumul_delta =
-      CapSub(current_path_cumul_mins_[end], current_path_cumul_mins_[node]);
-  const int64_t after_chain_cumul_delta =
-      CapSub(current_max_of_path_end_cumul_mins_[node],
-             current_path_cumul_mins_[node]);
-  return CapAdd(cumul, after_chain_cumul_delta) <= capacity &&
-         CapAdd(cumul, end_cumul_delta) <= cumuls_[end]->Max();
-}
+  };
 
+  for (PathState::Chain chain : path_state_->Chains(path)) {
+    const int first_type = routing_model_.GetVisitType(chain.First());
+    if (first_type >= 0 && routing_model_.GetVisitTypePolicy(chain.First()) !=
+                               Model::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
+      add_type_count(first_type, 1);
+    }
+    const int chain_path = path_state_->Path(chain.First());
+    if (chain_path < 0) continue;
+    const std::vector<int>& first_counts =
+        hard_incompatibility_type_counts_[chain.First()];
+    const std::vector<int>& last_counts =
+        hard_incompatibility_type_counts_[chain.Last()];
+    const std::vector<int>& chain_types =
+        hard_incompatibility_types_[chain_path];
+    for (int i = 0; i < last_counts.size(); ++i) {
+      const int count =
+          last_counts[i] - (i < first_counts.size() ? first_counts[i] : 0);
+      if (count > 0) {
+        add_type_count(chain_types[i], count);
+      }
+    }
+  }
+
+  // Check the incompatibilities for types in types_to_check.
+  for (int type : types_to_check_) {
+    for (int incompatible_type :
+         routing_model_.GetHardTypeIncompatibilitiesOfType(type)) {
+      const int incompatible_type_index = type_indices_[incompatible_type];
+      if (incompatible_type_index == -1) continue;
+      if (type_counts_[incompatible_type_index] > 0) return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
-IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension) {
-  Model& model = *dimension.model();
-  return model.solver()->RevAlloc(new ChainCumulFilter(model, dimension));
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model,
+                                             const PathState* path_state) {
+  return routing_model.solver()->RevAlloc(
+      new TypeRegulationsFilter(routing_model, path_state));
 }
 
 bool FillDimensionValuesFromDimension(
@@ -1495,11 +1320,10 @@ bool FillDimensionValuesFromDimension(
         prev_node = chain.First();
       }
       const int chain_path = path_state->Path(chain.First());
-      absl::Span<const int64_t> ctravels =
-          chain_path >= 0 ? dimension_values.CommittedTravels(chain_path)
-                          : absl::Span<const int64_t>();
-      if (chain.NumNodes() >= 2 && !ctravels.empty() &&
+      if (chain.NumNodes() >= 2 && chain_path >= 0 &&
           path_class[chain_path] == path_class[path]) {
+        const absl::Span<const int64_t> ctravels =
+            dimension_values.CommittedTravels(chain_path);
         const int num_chain_travels = chain.NumNodes() - 1;
         const int committed_path_begin =
             path_state->CommittedPathRange(chain_path).begin_index;
@@ -1754,21 +1578,17 @@ class PathCumulFilter : public LocalSearchFilter {
   std::vector<std::vector<VehicleBreak>> ExtractInitialVehicleBreaks() const;
   std::vector<bool> ExtractLocalOptimizerUsageForVehicles() const;
 
-  void InitializeAcceptPath() {
+  void Revert() {
     accepted_objective_value_ = synchronized_objective_value_;
     dimension_values_.Revert();
     cost_of_path_.Revert();
     global_span_cost_.Revert();
     location_of_node_.Revert();
-    path_is_feasible_.Revert();
-    num_infeasible_paths_.Revert();
-    precedences_are_feasible_.Revert();
   }
-  bool AcceptPath(int path);
-  bool FinalizeAcceptPath(int64_t objective_min, int64_t objective_max,
-                          bool in_synchronize = false);
-  bool CheckConsecutiveNodePrecedences(int path) const;
-  bool CheckPrecedences(bool check_all_paths);
+  bool CheckPath(int path);
+  bool CheckPrecedences();
+  bool CheckGlobalSpanCost(int64_t objective_max);
+  bool CheckSchedulingCost(int64_t objective_max);
 
   // TODO(user): consider making those methods external functions.
   // Fills the data of path in dimension_values_: nodes, cumuls, travels,
@@ -1790,7 +1610,7 @@ class PathCumulFilter : public LocalSearchFilter {
   bool FilterPrecedences() const { return !node_index_to_precedences_.empty(); }
   // Returns true iff there is a global span cost.
   bool FilterGlobalSpanCost() const {
-    return global_span_cost_coefficient_ != 0;
+    return filter_objective_cost_ && global_span_cost_coefficient_ != 0;
   }
   // Returns true iff the given path has vehicle breaks.
   bool FilterVehicleBreaks(int path) const {
@@ -1882,14 +1702,13 @@ class PathCumulFilter : public LocalSearchFilter {
   // Maps each path to the sum of its path-only costs: span/slack cost,
   // soft cumul costs, soft span limits.
   CommittableArray<int64_t> cost_of_path_;
-  // The following fields track feasible paths. In practice this is used to
-  // validate partial paths as path states do not differentiate unsynced paths
-  // from empty paths when the filter is used in filter-based first solution
-  // heuristics.
-  CommittableArray<bool> path_is_feasible_;
-  CommittableValue<int> num_infeasible_paths_;
-  CommittableValue<bool> precedences_are_feasible_;
-  bool all_paths_synced_;
+  // In some rare cases, the current solution might be infeasible due to CP
+  // propagation from the objective upper bound to dimension variables (for
+  // instance when greedy descent reduces the objective upper bound by the
+  // optimization step). This in theory means that the current solution is
+  // optimal and cannot be further improved. This variable tracks when we are in
+  // this state.
+  bool is_infeasible_ = false;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
 
@@ -2099,10 +1918,6 @@ PathCumulFilter::PathCumulFilter(const Model& routing_model,
       break_propagator_(dimension.cumuls().size()),
       path_class_(path_state_->NumPaths(), -1),
       cost_of_path_(path_state_->NumPaths(), 0),
-      path_is_feasible_(path_state_->NumPaths(), true),
-      num_infeasible_paths_(0),
-      precedences_are_feasible_(true),
-      all_paths_synced_(false),
       synchronized_objective_value_(0),
       accepted_objective_value_(0),
       pickup_rank_and_alternative_index_of_pair_(
@@ -2325,7 +2140,7 @@ bool PathCumulFilter::PropagateVehicleBreaks(int path) {
                                            breaks_are_ordered);
 }
 
-bool PathCumulFilter::AcceptPath(int path) {
+bool PathCumulFilter::CheckPath(int path) {
   if (!FillDimensionValues(path)) return false;
 
   // Filter feasibility: cumul windows, transit, span, breaks.
@@ -2588,29 +2403,48 @@ bool PathCumulFilter::AcceptPath(int path) {
   return true;
 }
 
-bool PathCumulFilter::CheckConsecutiveNodePrecedences(int path) const {
-  if (!path_is_feasible_.Get(path)) return true;
-  const absl::Span<const int64_t> travel_sums =
-      dimension_values_.TravelSums(path);
-  int prev = -1;
-  int rank = -1;
-  for (const int node : dimension_values_.Nodes(path)) {
-    int64_t offset = kint64min;
-    // Check the "opposite" precedence constraint.
-    if (gtl::FindCopy(precedence_offsets_, std::pair<int, int>{node, prev},
-                      &offset) &&
-        CapSub(travel_sums[rank], travel_sums[rank + 1]) < offset) {
-      return false;
+bool PathCumulFilter::CheckPrecedences() {
+  DCHECK(FilterPrecedences());
+  // Fast pass on consecutive nodes of changed paths, useful when the number
+  // of precedences is much larger than the number of nodes.
+  // TODO(user): Remove this when we have a better way to express
+  // precedence chains, which does not require a quadratic number of
+  // precedences.
+  for (const int path : dimension_values_.ChangedPaths()) {
+    const absl::Span<const int64_t> travel_sums =
+        dimension_values_.TravelSums(path);
+    int prev = -1;
+    int rank = -1;
+    for (const int node : dimension_values_.Nodes(path)) {
+      int64_t offset = kint64min;
+      // Check the "opposite" precedence constraint.
+      if (gtl::FindCopy(precedence_offsets_, std::pair<int, int>{node, prev},
+                        &offset) &&
+          CapSub(travel_sums[rank], travel_sums[rank + 1]) < offset) {
+        return false;
+      }
+      prev = node;
+      ++rank;
     }
-    prev = node;
-    ++rank;
   }
-  return true;
-}
-
-bool PathCumulFilter::CheckPrecedences(bool check_all_paths) {
-  auto check_path_precedences = [this](int path) {
-    if (!path_is_feasible_.Get(path)) return true;
+  // Find location of all nodes: remove committed nodes of changed paths,
+  // then add nodes of changed paths, then mark changed loops.
+  for (const int path : dimension_values_.ChangedPaths()) {
+    for (const int node : dimension_values_.CommittedNodes(path)) {
+      location_of_node_.Set(node, {.path = PathState::kUnassigned, .rank = -1});
+    }
+  }
+  for (const int path : dimension_values_.ChangedPaths()) {
+    const absl::Span<const int> nodes = dimension_values_.Nodes(path);
+    const int num_nodes = nodes.size();
+    for (int rank = 0; rank < num_nodes; ++rank) {
+      location_of_node_.Set(nodes[rank], {.path = path, .rank = rank});
+    }
+  }
+  for (const int loop : path_state_->ChangedLoops()) {
+    location_of_node_.Set(loop, {.path = PathState::kLoop, .rank = -1});
+  }
+  for (const int path : dimension_values_.ChangedPaths()) {
     const absl::Span<const int> nodes = dimension_values_.Nodes(path);
     const int num_nodes = nodes.size();
     for (int rank = 0; rank < num_nodes; ++rank) {
@@ -2633,9 +2467,6 @@ bool PathCumulFilter::CheckPrecedences(bool check_all_paths) {
           case Dimension::PrecedenceStatus::kInvalid:
             return false;
         }
-        if (!path_is_feasible_.Get(path1) || !path_is_feasible_.Get(path2)) {
-          continue;
-        }
         DCHECK(node == first_node || node == second_node);
         DCHECK_EQ(first_node, dimension_values_.Nodes(path1)[rank1]);
         DCHECK_EQ(second_node, dimension_values_.Nodes(path2)[rank2]);
@@ -2657,20 +2488,6 @@ bool PathCumulFilter::CheckPrecedences(bool check_all_paths) {
         }
       }
     }
-    return true;
-  };
-
-  if (check_all_paths) {
-    for (int path = 0; path < path_state_->NumPaths(); ++path) {
-      if (!CheckConsecutiveNodePrecedences(path)) return false;
-    }
-    for (int path = 0; path < path_state_->NumPaths(); ++path) {
-      if (!check_path_precedences(path)) return false;
-    }
-  } else {
-    for (const int path : dimension_values_.ChangedPaths()) {
-      if (!check_path_precedences(path)) return false;
-    }
   }
   for (const int loop : path_state_->ChangedLoops()) {
     for (const auto [first_node, second_node, unused_offset,
@@ -2690,89 +2507,53 @@ bool PathCumulFilter::CheckPrecedences(bool check_all_paths) {
   return true;
 }
 
-bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
-                                         int64_t objective_max,
-                                         bool in_synchronize) {
-  if (path_state_->IsInvalid()) return true;
-  if (FilterPrecedences()) {
-    const bool check_all_paths = !precedences_are_feasible_.Get();
-    if (!in_synchronize && !check_all_paths) {
-      // Fast pass on consecutive nodes of changed paths, useful when the number
-      // of precedences is much larger than the number of nodes.
-      // TODO(user): Remove this when we have a better way to express
-      // precedence chains, which does not require a quadratic number of
-      // precedences.
-      for (const int path : dimension_values_.ChangedPaths()) {
-        if (!CheckConsecutiveNodePrecedences(path)) return false;
-      }
+bool PathCumulFilter::CheckGlobalSpanCost(int64_t objective_max) {
+  DCHECK(FilterGlobalSpanCost());
+  int64_t global_end_min = kint64min;
+  int64_t global_start_max = kint64max;
+  int64_t global_span_min = 0;
+  // Find global values of changed paths.
+  for (const int path : dimension_values_.ChangedPaths()) {
+    if (dimension_values_.NumNodes(path) == 0) continue;
+    if (dimension_values_.NumNodes(path) == 2 &&
+        !routing_model_.IsVehicleUsedWhenEmpty(path)) {
+      continue;
     }
-    // Find location of all nodes: remove committed nodes of changed paths,
-    // then add nodes of changed paths, then mark changed loops.
-    for (const int path : dimension_values_.ChangedPaths()) {
-      for (const int node : dimension_values_.CommittedNodes(path)) {
-        location_of_node_.Set(node,
-                              {.path = PathState::kUnassigned, .rank = -1});
-      }
-    }
-    for (const int path : dimension_values_.ChangedPaths()) {
-      const absl::Span<const int> nodes = dimension_values_.Nodes(path);
-      const int num_nodes = nodes.size();
-      for (int rank = 0; rank < num_nodes; ++rank) {
-        location_of_node_.Set(nodes[rank], {.path = path, .rank = rank});
-      }
-    }
-    for (const int loop : path_state_->ChangedLoops()) {
-      location_of_node_.Set(loop, {.path = PathState::kLoop, .rank = -1});
-    }
-    const bool precedences_ok = CheckPrecedences(check_all_paths);
-    precedences_are_feasible_.Set(precedences_ok);
-    if (!in_synchronize && !precedences_ok) return false;
-  }
-  if (filter_objective_cost_ && FilterGlobalSpanCost()) {
-    int64_t global_end_min = kint64min;
-    int64_t global_start_max = kint64max;
-    int64_t global_span_min = 0;
-    // Find global values of changed paths.
-    for (const int path : dimension_values_.ChangedPaths()) {
-      if (!path_is_feasible_.Get(path)) continue;
-      if (dimension_values_.NumNodes(path) == 0) continue;
-      if (dimension_values_.NumNodes(path) == 2 &&
-          !routing_model_.IsVehicleUsedWhenEmpty(path)) {
-        continue;
-      }
-      global_span_min =
-          std::max(global_span_min, dimension_values_.Span(path).min);
-      const int64_t end_min = dimension_values_.Cumuls(path).back().min;
-      global_end_min = std::max(global_end_min, end_min);
-      const int64_t start_max = dimension_values_.Cumuls(path).front().max;
-      global_start_max = std::min(global_start_max, start_max);
-    }
-    // Find global values of unchanged paths, merge with those of changed paths.
-    for (const auto& [span_min, path] : paths_by_decreasing_span_min_) {
-      if (dimension_values_.PathHasChanged(path)) continue;
-      global_span_min = std::max(global_span_min, span_min);
-      break;
-    }
-    for (const auto& [end_min, path] : paths_by_decreasing_end_min_) {
-      if (dimension_values_.PathHasChanged(path)) continue;
-      global_end_min = std::max(global_end_min, end_min);
-      break;
-    }
-    for (const auto& [start_max, path] : paths_by_increasing_start_max_) {
-      if (dimension_values_.PathHasChanged(path)) continue;
-      global_start_max = std::min(global_start_max, start_max);
-      break;
-    }
-    // Compute global span min.
     global_span_min =
-        std::max(global_span_min, CapSub(global_end_min, global_start_max));
-    const int64_t global_span_cost =
-        CapProd(global_span_min, global_span_cost_coefficient_);
-    CapSubFrom(global_span_cost_.Get(), &accepted_objective_value_);
-    global_span_cost_.Set(global_span_cost);
-    CapAddTo(global_span_cost, &accepted_objective_value_);
+        std::max(global_span_min, dimension_values_.Span(path).min);
+    const int64_t end_min = dimension_values_.Cumuls(path).back().min;
+    global_end_min = std::max(global_end_min, end_min);
+    const int64_t start_max = dimension_values_.Cumuls(path).front().max;
+    global_start_max = std::min(global_start_max, start_max);
   }
+  // Find global values of unchanged paths, merge with those of changed paths.
+  for (const auto& [span_min, path] : paths_by_decreasing_span_min_) {
+    if (dimension_values_.PathHasChanged(path)) continue;
+    global_span_min = std::max(global_span_min, span_min);
+    break;
+  }
+  for (const auto& [end_min, path] : paths_by_decreasing_end_min_) {
+    if (dimension_values_.PathHasChanged(path)) continue;
+    global_end_min = std::max(global_end_min, end_min);
+    break;
+  }
+  for (const auto& [start_max, path] : paths_by_increasing_start_max_) {
+    if (dimension_values_.PathHasChanged(path)) continue;
+    global_start_max = std::min(global_start_max, start_max);
+    break;
+  }
+  // Compute global span min.
+  global_span_min =
+      std::max(global_span_min, CapSub(global_end_min, global_start_max));
+  const int64_t global_span_cost =
+      CapProd(global_span_min, global_span_cost_coefficient_);
+  CapSubFrom(global_span_cost_.Get(), &accepted_objective_value_);
+  global_span_cost_.Set(global_span_cost);
+  CapAddTo(global_span_cost, &accepted_objective_value_);
+  return accepted_objective_value_ <= objective_max;
+}
 
+bool PathCumulFilter::CheckSchedulingCost(int64_t objective_max) {
   // Filtering on objective value, calling LPs and MIPs if needed.
   if (!use_local_optimizer_for_vehicle_.empty() &&
       accepted_objective_value_ <= objective_max) {
@@ -2783,7 +2564,8 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
     int solve_duration_shares = dimension_values_.ChangedPaths().size();
     for (const int vehicle : dimension_values_.ChangedPaths()) {
       if (!use_local_optimizer_for_vehicle_[vehicle] ||
-          !path_is_feasible_.Get(vehicle)) {
+          (dimension_values_.NumNodes(vehicle) == 2 &&
+           !routing_model_.IsVehicleUsedWhenEmpty(vehicle))) {
         continue;
       }
       const absl::Span<const int> nodes = dimension_values_.Nodes(vehicle);
@@ -2799,12 +2581,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
               path_accessor_, /*resource=*/nullptr,
               filter_objective_cost_ ? &path_cost_with_lp : nullptr);
       solve_duration_shares--;
-      if (status == DimensionSchedulingStatus::INFEASIBLE) {
-        if (!in_synchronize) return false;
-        path_is_feasible_.Set(vehicle, false);
-        num_infeasible_paths_.Set(num_infeasible_paths_.Get() + 1);
-        continue;
-      }
+      if (status == DimensionSchedulingStatus::INFEASIBLE) return false;
       // Replace previous path cost with the LP optimizer cost.
       if (filter_objective_cost_ &&
           (status == DimensionSchedulingStatus::OPTIMAL ||
@@ -2829,6 +2606,10 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
 
     solve_duration_shares = paths_requiring_mp_optimizer.size();
     for (const int vehicle : paths_requiring_mp_optimizer) {
+      if (dimension_values_.NumNodes(vehicle) == 2 &&
+          !routing_model_.IsVehicleUsedWhenEmpty(vehicle)) {
+        continue;
+      }
       int64_t path_cost_with_mp = 0;
       const DimensionSchedulingStatus status =
           mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
@@ -2836,12 +2617,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
               path_accessor_, /*resource=*/nullptr,
               filter_objective_cost_ ? &path_cost_with_mp : nullptr);
       solve_duration_shares--;
-      if (status == DimensionSchedulingStatus::INFEASIBLE) {
-        if (!in_synchronize) return false;
-        path_is_feasible_.Set(vehicle, false);
-        num_infeasible_paths_.Set(num_infeasible_paths_.Get() + 1);
-        continue;
-      }
+      if (status == DimensionSchedulingStatus::INFEASIBLE) return false;
       if (filter_objective_cost_ &&
           status == DimensionSchedulingStatus::OPTIMAL &&
           path_cost_with_mp > cost_of_path_.Get(vehicle)) {
@@ -2861,10 +2637,6 @@ void PathCumulFilter::Reset() {
   location_of_node_.SetAllAndCommit(
       {.path = PathState::kUnassigned, .rank = -1});
   global_span_cost_.SetAndCommit(0);
-  path_is_feasible_.SetAllAndCommit(true);
-  num_infeasible_paths_.SetAndCommit(0);
-  precedences_are_feasible_.SetAndCommit(true);
-  all_paths_synced_ = false;
   synchronized_objective_value_ = 0;
   accepted_objective_value_ = 0;
 }
@@ -2873,57 +2645,42 @@ bool PathCumulFilter::Accept(const Assignment* /*delta*/,
                              const Assignment* /*deltadelta*/,
                              int64_t objective_min, int64_t objective_max) {
   if (path_state_->IsInvalid()) return true;
-  InitializeAcceptPath();
+  if (is_infeasible_) return false;
+  Revert();
   for (const int path : path_state_->ChangedPaths()) {
-    if (!AcceptPath(path)) return false;
-    if (!path_is_feasible_.Get(path)) {
-      path_is_feasible_.Set(path, true);
-      num_infeasible_paths_.Set(num_infeasible_paths_.Get() - 1);
-    }
+    if (!CheckPath(path)) return false;
   }
-  if (num_infeasible_paths_.Get() > 0) return false;
-  return FinalizeAcceptPath(objective_min, objective_max,
-                            /*in_synchronize=*/false);
+  if (FilterPrecedences()) {
+    if (!CheckPrecedences()) return false;
+  }
+  if (FilterGlobalSpanCost()) {
+    if (!CheckGlobalSpanCost(objective_max)) return false;
+  }
+  return CheckSchedulingCost(objective_max);
 }
 
 void PathCumulFilter::Synchronize(const Assignment* /*assignment*/,
                                   const Assignment* delta) {
-  const bool synchronizing_all_paths =
-      !all_paths_synced_ || delta == nullptr || delta->Empty();
-  if (synchronizing_all_paths) {
-    Reset();
-  } else {
-    InitializeAcceptPath();
+  Revert();
+  is_infeasible_ = false;
+  for (const int path : path_state_->ChangedPaths()) {
+    const bool is_accepted = CheckPath(path);
+    DCHECK(is_accepted);
   }
-  all_paths_synced_ = true;
-
-  auto sync_path = [this](int path) {
-    const bool is_accepted = AcceptPath(path);
-    if (is_accepted != path_is_feasible_.Get(path)) {
-      path_is_feasible_.Set(path, is_accepted);
-      num_infeasible_paths_.Set(num_infeasible_paths_.Get() +
-                                (is_accepted ? -1 : 1));
-    }
-  };
-  if (synchronizing_all_paths) {
-    for (int path = 0; path < path_state_->NumPaths(); ++path) {
-      sync_path(path);
-    }
-  } else {
-    for (const int path : path_state_->ChangedPaths()) {
-      sync_path(path);
-    }
+  if (FilterPrecedences()) {
+    const bool are_precedences_ok = CheckPrecedences();
+    DCHECK(are_precedences_ok);
   }
 
-  if (filter_objective_cost_ && FilterGlobalSpanCost()) {
-    // TODO(user): check whether this could go into FinalizeAcceptPath(),
-    // with a Commit() on some data structure.
+  if (FilterGlobalSpanCost()) {
+    // TODO(user): check whether this could go into
+    // CheckGlobalSpanCost(), with a Commit() on some data structure.
     paths_by_decreasing_span_min_.clear();
     paths_by_decreasing_end_min_.clear();
     paths_by_increasing_start_max_.clear();
     for (int path = 0; path < path_state_->NumPaths(); ++path) {
       const int num_path_nodes = dimension_values_.Nodes(path).size();
-      if (!path_is_feasible_.Get(path) || num_path_nodes == 0 ||
+      if (num_path_nodes == 0 ||
           (num_path_nodes == 2 &&
            !routing_model_.IsVehicleUsedWhenEmpty(path))) {
         continue;
@@ -2938,16 +2695,17 @@ void PathCumulFilter::Synchronize(const Assignment* /*assignment*/,
     absl::c_sort(paths_by_decreasing_span_min_, std::greater<ValuedPath>());
     absl::c_sort(paths_by_decreasing_end_min_, std::greater<ValuedPath>());
     absl::c_sort(paths_by_increasing_start_max_);
+    const bool global_span_cost_ok = CheckGlobalSpanCost(kint64max);
+    DCHECK(global_span_cost_ok);
   }
-  // Using FinalizeAcceptPath() to commit all data structures to this state.
-  FinalizeAcceptPath(kint64min, kint64max, /*in_synchronize=*/true);
+  // Due to CP propagation, and given scheduling optimizers consider propagated
+  // bounds, if the schedule is infeasible, then we cannot accept any new
+  // solution (cf. description of the is_infeasible_ field).
+  is_infeasible_ = !CheckSchedulingCost(kint64max);
   dimension_values_.Commit();
   cost_of_path_.Commit();
   global_span_cost_.Commit();
   location_of_node_.Commit();
-  path_is_feasible_.Commit();
-  num_infeasible_paths_.Commit();
-  precedences_are_feasible_.Commit();
   synchronized_objective_value_ = accepted_objective_value_;
 }
 
@@ -3012,87 +2770,86 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
 
 }  // namespace
 
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension,
+                                       const PathState* path_state) {
+  using Interval = DimensionChecker::Interval;
+  // Fill path capacities and classes.
+  const int num_vehicles = dimension.model()->vehicles();
+  std::vector<Interval> path_capacity(num_vehicles);
+  std::vector<int> path_class(num_vehicles);
+  for (int v = 0; v < num_vehicles; ++v) {
+    const auto& vehicle_capacities = dimension.vehicle_capacities();
+    path_capacity[v] = {0, vehicle_capacities[v]};
+    path_class[v] = dimension.vehicle_to_class(v);
+  }
+  // For each class, retrieve the demands of each node.
+  // Dimension store evaluators with a double indirection for compacity:
+  // vehicle -> vehicle_class -> evaluator_index.
+  // We replicate this in DimensionChecker,
+  // except we expand evaluator_index to an array of values for all nodes.
+  const int num_vehicle_classes =
+      1 + *std::max_element(path_class.begin(), path_class.end());
+  const int num_cumuls = dimension.cumuls().size();
+  const int num_slacks = dimension.slacks().size();
+  std::vector<std::function<Interval(int64_t, int64_t)>> transits(
+      num_vehicle_classes, nullptr);
+  for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
+    const int vehicle_class = path_class[vehicle];
+    if (transits[vehicle_class] != nullptr) continue;
+    const auto& unary_evaluator = dimension.GetUnaryTransitEvaluator(vehicle);
+    if (unary_evaluator != nullptr) {
+      transits[vehicle_class] = [&unary_evaluator, &dimension, num_slacks](
+                                    int64_t node, int64_t) -> Interval {
+        if (node >= num_slacks) return {0, 0};
+        const int64_t min_transit = unary_evaluator(node);
+        const int64_t max_transit =
+            CapAdd(min_transit, dimension.SlackVar(node)->Max());
+        return {min_transit, max_transit};
+      };
+    } else {
+      const auto& binary_evaluator =
+          dimension.GetBinaryTransitEvaluator(vehicle);
+
+      transits[vehicle_class] = [&binary_evaluator, &dimension, num_slacks](
+                                    int64_t node, int64_t next) -> Interval {
+        if (node >= num_slacks) return {0, 0};
+        const int64_t min_transit = binary_evaluator(node, next);
+        const int64_t max_transit =
+            CapAdd(min_transit, dimension.SlackVar(node)->Max());
+        return {min_transit, max_transit};
+      };
+    }
+  }
+  // Fill node capacities.
+  std::vector<Interval> node_capacity(num_cumuls);
+  for (int node = 0; node < num_cumuls; ++node) {
+    const IntVar* cumul = dimension.CumulVar(node);
+    node_capacity[node] = {cumul->Min(), cumul->Max()};
+  }
+  // Make the dimension checker and pass ownership to the filter.
+  auto checker = std::make_unique<DimensionChecker>(
+      path_state, std::move(path_capacity), std::move(path_class),
+      std::move(transits), std::move(node_capacity));
+  return MakeDimensionFilter(dimension.model()->solver(), std::move(checker),
+                             dimension.name());
+}
+
 void AppendLightWeightDimensionFilters(
     const PathState* path_state, const std::vector<Dimension*>& dimensions,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
-  using Interval = DimensionChecker::Interval;
-  // For every dimension that fits, add a DimensionChecker.
+  const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
   // Add a DimensionChecker for every dimension.
   for (const Dimension* dimension : dimensions) {
-    // Fill path capacities and classes.
-    const int num_vehicles = dimension->model()->vehicles();
-    std::vector<Interval> path_capacity(num_vehicles);
-    std::vector<int> path_class(num_vehicles);
-    for (int v = 0; v < num_vehicles; ++v) {
-      const auto& vehicle_capacities = dimension->vehicle_capacities();
-      path_capacity[v] = {0, vehicle_capacities[v]};
-      path_class[v] = dimension->vehicle_to_class(v);
-    }
-    // For each class, retrieve the demands of each node.
-    // Dimension store evaluators with a double indirection for compacity:
-    // vehicle -> vehicle_class -> evaluator_index.
-    // We replicate this in DimensionChecker,
-    // except we expand evaluator_index to an array of values for all nodes.
-    const int num_vehicle_classes =
-        1 + *std::max_element(path_class.begin(), path_class.end());
-    const int num_cumuls = dimension->cumuls().size();
-    const int num_slacks = dimension->slacks().size();
-    std::vector<std::function<Interval(int64_t, int64_t)>> transits(
-        num_vehicle_classes, nullptr);
-    for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
-      const int vehicle_class = path_class[vehicle];
-      if (transits[vehicle_class] != nullptr) continue;
-      const auto& unary_evaluator =
-          dimension->GetUnaryTransitEvaluator(vehicle);
-      if (unary_evaluator != nullptr) {
-        transits[vehicle_class] = [&unary_evaluator, dimension, num_slacks](
-                                      int64_t node, int64_t) -> Interval {
-          if (node >= num_slacks) return {0, 0};
-          const int64_t min_transit = unary_evaluator(node);
-          const int64_t max_transit =
-              CapAdd(min_transit, dimension->SlackVar(node)->Max());
-          return {min_transit, max_transit};
-        };
-      } else {
-        const auto& binary_evaluator =
-            dimension->GetBinaryTransitEvaluator(vehicle);
-
-        transits[vehicle_class] = [&binary_evaluator, dimension, num_slacks](
-                                      int64_t node, int64_t next) -> Interval {
-          if (node >= num_slacks) return {0, 0};
-          const int64_t min_transit = binary_evaluator(node, next);
-          const int64_t max_transit =
-              CapAdd(min_transit, dimension->SlackVar(node)->Max());
-          return {min_transit, max_transit};
-        };
-      }
-    }
-    // Fill node capacities.
-    std::vector<Interval> node_capacity(num_cumuls);
-    for (int node = 0; node < num_cumuls; ++node) {
-      const IntVar* cumul = dimension->CumulVar(node);
-      node_capacity[node] = {cumul->Min(), cumul->Max()};
-    }
-    // Make the dimension checker and pass ownership to the filter.
-    auto checker = std::make_unique<DimensionChecker>(
-        path_state, std::move(path_capacity), std::move(path_class),
-        std::move(transits), std::move(node_capacity));
-    const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
-    LocalSearchFilter* filter = MakeDimensionFilter(
-        dimension->model()->solver(), std::move(checker), dimension->name());
-    filters->push_back({filter, kAccept});
+    filters->push_back({MakeDimensionFilter(*dimension, path_state), kAccept});
   }
 }
 
 void AppendDimensionCumulFilters(
     const PathState* path_state, const std::vector<Dimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
   const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
   // Filter priority depth increases with complexity of filtering.
-  // - Dimensions without any cumul-related costs or constraints will have a
-  //   ChainCumulFilter, lowest priority depth.
   // - Dimensions with cumul costs or constraints, but no global span cost
   //   and/or precedences will have a PathCumulFilter.
   // - Dimensions with a global span cost coefficient and/or precedences will
@@ -3135,7 +2892,7 @@ void AppendDimensionCumulFilters(
   for (int d = 0; d < num_dimensions; d++) {
     const Dimension& dimension = *dimensions[d];
     const Model& model = *dimension.model();
-    // NOTE: We always add the [Chain|Path]CumulFilter to filter each route's
+    // NOTE: We always add the PathCumulFilter to filter each route's
     // feasibility separately to try and cut bad decisions earlier in the
     // search, but we don't propagate the computed cost if the LPCumulFilter is
     // already doing it.
@@ -3149,10 +2906,6 @@ void AppendDimensionCumulFilters(
           filter_objective_cost, has_dimension_optimizers));
       const int priority = filter->UsesDimensionOptimizers() ? 1 : 0;
       filters->push_back({filter, kAccept, priority});
-    } else if (use_chain_cumul_filter) {
-      filters->push_back(
-          {model.solver()->RevAlloc(new ChainCumulFilter(model, dimension)),
-           kAccept, /*priority*/ 0});
     }
 
     if (use_cumul_bounds_propagator_filter[d]) {

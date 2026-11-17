@@ -181,6 +181,16 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
                      SolverLogger* logger = nullptr);
 
 // --------------------------------------------------------
+// ClearTrivialConstraints (work on the MPModelProtoWrapper)
+// --------------------------------------------------------
+
+// Relaxes constraint bounds that are always satisfied within the variable
+// bounds to +/-infinity, and clears constraints whose lower and upper bounds
+// are both infinite.
+void ClearTrivialConstraints(sat::MPModelProtoWrapper* model,
+                             SolverLogger* logger = nullptr);
+
+// --------------------------------------------------------
 // ExactPresolve (work on the MPModelProtoWrapper)
 // --------------------------------------------------------
 
@@ -190,7 +200,7 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
 // before propagation, so it will never cut solutions that were feasible up
 // to that tolerance and not dominated via dual reasoning.
 //
-// Currently this just combines PropagateBounds() and
+// Currently this combines ClearTrivialConstraints(), PropagateBounds(), and
 // RestrictBoundsWithDualReasoning().
 //
 // TODO(user): Add more like enforcement extraction, but this is a bit trickier
@@ -257,43 +267,47 @@ inline std::function<double(const MPVariableProto& mp_var)> IntegerShifts() {
 //
 // After this, all "fixed" variable should be fixed at exactly zero for
 // instance. And our scaler correctly just skip these.
+inline double FinalCpSatShiftValue(double lb, double ub, bool is_integer,
+                                   double tolerance) {
+  if (!is_integer) {
+    // Case 1/
+    if (std::floor(ub) < std::ceil(lb)) {
+      if (std::isfinite(lb) && lb > 0.0) return lb;
+      if (std::isfinite(ub) && ub < 0.0) return ub;
+    }
+  }
+
+  // Case 2/
+  if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
+  if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
+
+  return 0.0;
+}
 inline std::function<double(const MPVariableProto& mp_var)> FinalCpSatShift(
     double tolerance) {
   return [tolerance](const MPVariableProto& var) {
-    const double lb = var.lower_bound();
-    const double ub = var.upper_bound();
-    if (!var.is_integer()) {
-      // Case 1/
-      if (std::floor(ub) < std::ceil(lb)) {
-        if (std::isfinite(lb) && lb > 0.0) return lb;
-        if (std::isfinite(ub) && ub < 0.0) return ub;
-      }
-    }
-
-    // Case 2/
-    if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
-    if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
-
-    return 0.0;
+    return FinalCpSatShiftValue(var.lower_bound(), var.upper_bound(),
+                                var.is_integer(), tolerance);
   };
 }
 
 // When we are going to scale floating point variables, it makes sense to shift
 // one bound to 0.0 if the domain does not contain zero.
+inline double ShiftBeforeScalingValue(double lb, double ub, bool is_integer) {
+  if (!is_integer) {
+    if (std::isfinite(lb) && lb > 0.0) return lb;
+    if (std::isfinite(ub) && ub < 0.0) return ub;
+  } else {
+    if (std::isfinite(lb) && lb > 0.0) return std::ceil(lb);
+    if (std::isfinite(ub) && ub < 0.0) return std::floor(ub);
+  }
+  return 0.0;
+}
 inline std::function<double(const MPVariableProto& mp_var)>
 ShiftBeforeScaling() {
   return [](const MPVariableProto& var) {
-    const double lb = var.lower_bound();
-    const double ub = var.upper_bound();
-    if (!var.is_integer()) {
-      if (std::isfinite(lb) && lb > 0.0) return lb;
-      if (std::isfinite(ub) && ub < 0.0) return ub;
-    } else {
-      if (std::isfinite(lb) && lb > 0.0) return std::ceil(lb);
-      if (std::isfinite(ub) && ub < 0.0) return std::floor(ub);
-    }
-
-    return 0.0;
+    return ShiftBeforeScalingValue(var.lower_bound(), var.upper_bound(),
+                                   var.is_integer());
   };
 }
 

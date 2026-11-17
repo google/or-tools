@@ -59,6 +59,8 @@ build:linux --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
+build:macos --copt=-mmacosx-version-min=10.15
+build:macos --linkopt=-mmacosx-version-min=10.15
 build:macos --features=-supports_dynamic_linker
 build:macos --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 
