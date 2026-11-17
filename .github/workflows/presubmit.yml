@@ -47,7 +47,7 @@ jobs:
     - uses: actions/setup-python@v7
       with:
         python-version: ${{env.PYTHON_VERSION}}
-    - uses: bazel-contrib/setup-bazel@0.19.1
+    - uses: bazel-contrib/setup-bazel@0.19.2
     - name: Build
       run: bazel build --config=ci //ortools/... //tools/... //examples/...
     - name: Test
