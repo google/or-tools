@@ -2063,6 +2063,59 @@ TEST(SolveCpModelTest, TriviallyInfeasibleNegatedAssumptions) {
               testing::ElementsAre(-2));
 }
 
+TEST(SolveCpModelTest, IntegralLpSolutionsRespectAssumptions) {
+  for (const bool negate_assumptions : {false, true}) {
+    SCOPED_TRACE(negate_assumptions);
+    CpModelProto model_proto = ParseTestProto(R"pb(
+      variables { domain: [ -2147483648, 2147483648 ] }
+      variables { domain: [ -2147483648, 2147483648 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      # x - y >= 1 and y - x >= 1 cannot both hold.
+      constraints {
+        enforcement_literal: 2
+        linear {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -1 ]
+          domain: [ 1, 9223372036854775807 ]
+        }
+      }
+      constraints {
+        enforcement_literal: 3
+        linear {
+          vars: [ 1, 0 ]
+          coeffs: [ 1, -1 ]
+          domain: [ 1, 9223372036854775807 ]
+        }
+      }
+      assumptions: [ 2, 3 ]
+    )pb");
+    if (negate_assumptions) {
+      for (int i = 0; i < 2; ++i) {
+        const int literal = -model_proto.assumptions(i) - 1;
+        model_proto.set_assumptions(i, literal);
+        model_proto.mutable_constraints(i)->set_enforcement_literal(0, literal);
+      }
+    }
+
+    SatParameters params;
+    params.set_num_workers(1);
+    params.set_linearization_level(2);
+    params.set_keep_all_feasible_solutions_in_presolve(true);
+    params.set_permute_variable_randomly(false);
+    params.set_permute_presolve_constraint_order(false);
+    params.set_use_absl_random(false);
+    params.set_max_deterministic_time(1);
+    // An integral LP solution with both guards disabled satisfies the
+    // constraints, but violates the assumptions and must not be reported.
+    const CpSolverResponse response = SolveWithParameters(model_proto, params);
+    EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+    EXPECT_THAT(response.sufficient_assumptions_for_infeasibility(),
+                UnorderedElementsAre(model_proto.assumptions(0),
+                                     model_proto.assumptions(1)));
+  }
+}
+
 TEST(SolveCpModelTest, AssumptionsAndInfeasibility) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: 0 domain: 1 }
