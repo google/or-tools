@@ -24,12 +24,22 @@
 #include "ortools/base/file.h"
 #include "ortools/base/options.h"
 
-namespace recordio {
+namespace ORTOOLS_RECORDIO_NAMESPACE {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;
 
 RecordWriter::RecordWriter(File* file) : file_(file), use_compression_(true) {}
 
-bool RecordWriter::Close() { return file_->Close(file::Defaults()).ok(); }
+RecordWriter::~RecordWriter() { Close(); }
+
+bool RecordWriter::Close() {
+  if (file_ == nullptr) {
+    return true;
+  }
+  const bool result = file_->Close(file::Defaults()).ok();
+  // Note that ortools/base/file.h File::Close() does `delete this`.
+  file_ = nullptr;
+  return result;
+}
 
 void RecordWriter::set_use_compression(bool use_compression) {
   use_compression_ = use_compression;
@@ -54,7 +64,17 @@ std::string RecordWriter::Compress(std::string const& s) const {
 
 RecordReader::RecordReader(File* const file) : file_(file) {}
 
-bool RecordReader::Close() { return file_->Close(file::Defaults()).ok(); }
+RecordReader::~RecordReader() { Close(); }
+
+bool RecordReader::Close() {
+  if (file_ == nullptr) {
+    return true;
+  }
+  const bool result = file_->Close(file::Defaults()).ok();
+  // Note that ortools/base/file.h File::Close() does `delete this`.
+  file_ = nullptr;
+  return result;
+}
 
 void RecordReader::Uncompress(const char* const source, uint64_t source_size,
                               char* const output_buffer,
@@ -69,4 +89,4 @@ void RecordReader::Uncompress(const char* const source, uint64_t source_size,
   }
   CHECK_LE(result_size, static_cast<unsigned long>(output_size));  // NOLINT
 }
-}  // namespace recordio
+}  // namespace ORTOOLS_RECORDIO_NAMESPACE

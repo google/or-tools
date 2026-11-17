@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -290,9 +292,24 @@ or_cc_library(
     deps = [
         ":base_export",
         ":file",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@zlib",
+    ],
+)
+
+or_cc_test(
+    name = "recordio_test",
+    srcs = ["recordio_test.cc"],
+    deps = [
+        ":file",
+        ":gmock_main",
+        ":recordio",
+        ":recordio_test_cc_proto",
+        ":temp_file",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -514,4 +531,14 @@ or_cc_test(
         "@bzip2//:bz2",
         "@googletest//:gtest_main",
     ],
+)
+
+proto_library(
+    name = "recordio_test_proto",
+    srcs = ["recordio_test.proto"],
+)
+
+cc_proto_library(
+    name = "recordio_test_cc_proto",
+    deps = [":recordio_test_proto"],
 )
