@@ -46,7 +46,7 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 2.0.2',
         'pandas >= 2.0.0',
-        'protobuf >= 7.35.0,<7.36',
+        'protobuf >= 7.35.0,<8.0',
         'typing-extensions >= 4.12',
         'immutabledict >= 3.0.0',
     ],
