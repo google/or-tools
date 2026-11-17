@@ -11,18 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file defines some IO interfaces to compatible with Google
+// IO specifications.
 #ifndef ORTOOLS_BASE_RECORDIO_H_
 #define ORTOOLS_BASE_RECORDIO_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
+#include "absl/base/nullability.h"
+#include "absl/log/log.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/file.h"
 
-// This file defines some IO interfaces to compatible with Google
-// IO specifications.
-namespace recordio {
+// Enable switching the namespace in the unit tests at Google.
+//
+#define ORTOOLS_RECORDIO_NAMESPACE recordio
+
+namespace ORTOOLS_RECORDIO_NAMESPACE {
 // This class appends a protocol buffer to a file in a binary format.
 // The data written in the file follows the following format (sequentially):
 // - MagicNumber (32 bits) to recognize this format.
@@ -37,9 +44,14 @@ class OR_DLL RecordWriter {
   static const int kMagicNumber;
 
   explicit RecordWriter(File* file);
+  ~RecordWriter();
 
   template <class P>
   bool WriteProtocolMessage(const P& proto) {
+    if (file_ == nullptr) {
+      LOG(DFATAL) << "Close() already called";
+      return false;
+    }
     std::string uncompressed_buffer;
     if (!proto.SerializeToString(&uncompressed_buffer)) {
       return false;
@@ -80,7 +92,7 @@ class OR_DLL RecordWriter {
 
  private:
   std::string Compress(const std::string& input) const;
-  File* const file_;
+  File* absl_nullable file_;
   bool use_compression_;
 };
 
@@ -90,8 +102,15 @@ class RecordReader {
  public:
   explicit RecordReader(File* const file);
 
+  ~RecordReader();
+
   template <class P>
   bool ReadProtocolMessage(P* const proto) {
+    if (file_ == nullptr) {
+      LOG(DFATAL) << "Close() already called";
+      return false;
+    }
+
     uint64_t usize = 0;
     uint64_t csize = 0;
     int magic_number = 0;
@@ -131,8 +150,8 @@ class RecordReader {
   void Uncompress(const char* const source, uint64_t source_size,
                   char* const output_buffer, uint64_t output_size) const;
 
-  File* const file_;
+  File* absl_nullable file_;
 };
-}  // namespace recordio
+}  // namespace ORTOOLS_RECORDIO_NAMESPACE
 
 #endif  // ORTOOLS_BASE_RECORDIO_H_
