@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -34,17 +35,6 @@
 
 namespace operations_research::fz {
 namespace {
-
-// Combines multiple lambdas into a single callable overload set for
-// `std::visit` over `std::variant` (the C++ "overloaded" visitor idiom).
-// Note: Although C++20 supports CTAD for aggregates, the explicit deduction
-// guide below is retained for MSVC compatibility.
-template <class... Ts>
-struct Overloaded : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts>
-Overloaded(Ts...) -> Overloaded<Ts...>;
 
 // Returns true if `annotations` contains a top-level identifier (`:: foo`) or
 // function-call (`:: foo(...)`) annotation with name `id`.
@@ -716,7 +706,7 @@ class Parser {
                              bool introduced, const VarRefOrValue& rhs,
                              SourceLocation loc, Variable** out) {
     return std::visit(
-        Overloaded{
+        absl::Overload{
             [&](std::monostate) {
               *out = model_->AddVariable(name, domain, introduced);
               return true;
@@ -800,7 +790,7 @@ class Parser {
           return Fail(id, "Unknown array symbol '%s'", id.lexeme);
         }
         return std::visit(
-            Overloaded{
+            absl::Overload{
                 [&]<typename T>(const std::vector<T>& arr) {
                   T elem;
                   if (!Lookup1Based<T>(arr, idx, idx_loc, id.lexeme, &elem)) {
@@ -818,7 +808,7 @@ class Parser {
       if (it == symbols_.end()) {
         return Fail(id, "Unknown symbol '%s'", id.lexeme);
       }
-      return std::visit(Overloaded{
+      return std::visit(absl::Overload{
                             [&]<typename T>(const std::vector<T>&) {
                               return Fail(id, "Expected scalar, got array '%s'",
                                           id.lexeme);
@@ -933,7 +923,7 @@ class Parser {
       auto lookup = [&]<typename T>(const std::vector<T>& arr, T* elem) {
         return Lookup1Based<T>(arr, idx, idx_loc, id.lexeme, elem);
       };
-      return std::visit(Overloaded{
+      return std::visit(absl::Overload{
                             [&](const std::vector<int64_t>& arr) {
                               int64_t v = 0;
                               if (!lookup(arr, &v)) return false;
@@ -970,7 +960,7 @@ class Parser {
       return Fail(id, "Unknown identifier '%s'", id.lexeme);
     }
     *out = std::visit(
-        Overloaded{
+        absl::Overload{
             [](int64_t v) { return Argument::IntegerValue(v); },
             [](const std::vector<int64_t>& v) {
               return Argument::IntegerList(v);
@@ -1016,7 +1006,7 @@ class Parser {
     bool has_domains = false;
     bool has_ints = false;
     for (const VarRefOrValue& elem : elems) {
-      std::visit(Overloaded{
+      std::visit(absl::Overload{
                      [](std::monostate) {},
                      [&](int64_t) { has_ints = true; },
                      [&](double) { has_floats = true; },
@@ -1237,7 +1227,7 @@ class Parser {
                     id.lexeme);
       }
       return std::visit(
-          Overloaded{
+          absl::Overload{
               [&](const std::vector<Variable*>& arr) {
                 Variable* var = nullptr;
                 if (!Lookup1Based<Variable*>(arr, idx, idx_loc, id.lexeme,
@@ -1268,7 +1258,7 @@ class Parser {
       return true;
     }
     *out = std::visit(
-        Overloaded{
+        absl::Overload{
             [](Variable* v) { return Annotation::VarRef(v); },
             [](const std::vector<Variable*>& v) {
               return Annotation::VarRefArray(v);
