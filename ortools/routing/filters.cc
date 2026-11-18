@@ -1001,131 +1001,182 @@ LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& routing_model,
 
 namespace {
 
-// TODO(user): Make this filter use PathStates.
 // TODO(user): Optimize the case where same vehicle groups are disjoint and
 // deltas are not "splitting" the groups.
-class SameVehicleCostFilter : public BasePathFilter {
+class SameVehicleCostFilter : public LocalSearchFilter {
  public:
-  explicit SameVehicleCostFilter(const Model& model)
-      : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(),
-                       model.GetPathsMetadata()),
-        model_(model),
-        same_vehicle_costs_per_node_(model.Size()),
-        nodes_per_vehicle_(model.GetNumberOfSoftSameVehicleConstraints()),
-        new_nodes_per_vehicle_(model.GetNumberOfSoftSameVehicleConstraints()),
-        current_vehicle_per_node_(model.Size()),
-        current_cost_(0) {
+  SameVehicleCostFilter(const Model& model, const PathState* path_state)
+      : model_(model),
+        path_state_(path_state),
+        groups_per_node_(path_state->NumNodes()),
+        group_counts_of_node_(path_state->NumNodes()),
+        num_vehicles_per_group_(model.GetNumberOfSoftSameVehicleConstraints(),
+                                0),
+        current_path_group_counts_per_path_(
+            path_state->NumPaths(),
+            IndexedCounts(model.GetNumberOfSoftSameVehicleConstraints())),
+        delta_path_group_counts_(model.GetNumberOfSoftSameVehicleConstraints()),
+        current_cost_(0),
+        delta_cost_(0) {
     for (int i = 0; i < model.GetNumberOfSoftSameVehicleConstraints(); ++i) {
       for (int node : model.GetSoftSameVehicleIndices(i)) {
-        same_vehicle_costs_per_node_[node].push_back(i);
+        groups_per_node_[node].push_back(i);
       }
-    }
-    start_to_vehicle_.resize(Size(), -1);
-    for (int v = 0; v < model.vehicles(); v++) {
-      const int64_t start = model.Start(v);
-      start_to_vehicle_[start] = v;
     }
   }
   int64_t GetSynchronizedObjectiveValue() const override {
     return current_cost_;
   }
   int64_t GetAcceptedObjectiveValue() const override {
-    return lns_detected() ? 0 : delta_cost_;
+    return path_state_->IsInvalid() ? 0 : delta_cost_;
+  }
+  void Synchronize(const Assignment* /*assignment*/,
+                   const Assignment* /*delta*/) override {
+    num_vehicles_per_group_.Revert();
+    for (const int path : path_state_->ChangedPaths()) {
+      IndexedCounts& current_path_group_counts =
+          current_path_group_counts_per_path_[path];
+      for (const int group : current_path_group_counts.Groups()) {
+        num_vehicles_per_group_.GetMutable(group)--;
+      }
+      current_path_group_counts.Reset();
+      for (const int node : path_state_->Nodes(path)) {
+        for (const int group : groups_per_node_[node]) {
+          if (current_path_group_counts.Add(group, 1)) {
+            num_vehicles_per_group_.GetMutable(group)++;
+          }
+        }
+        group_counts_of_node_[node] = current_path_group_counts.Counts();
+      }
+    }
+    UpdateCostFromChangedGroups(current_cost_);
+    num_vehicles_per_group_.Commit();
+  }
+  bool Accept(const Assignment* /*delta*/, const Assignment* /*deltadelta*/,
+              int64_t /*objective_min*/, int64_t objective_max) override {
+    if (path_state_->IsInvalid()) return true;
+    delta_cost_ = current_cost_;
+    num_vehicles_per_group_.Revert();
+    for (const int path : path_state_->ChangedPaths()) {
+      UpdateGroupCounts(path);
+    }
+    UpdateCostFromChangedGroups(delta_cost_);
+    return delta_cost_ <= objective_max;
   }
   std::string DebugString() const override { return "SameVehicleCostFilter"; }
 
  private:
-  bool InitializeAcceptPath() override {
-    delta_cost_ = current_cost_;
-    for (int same_vehicle_cost_index : touched_) {
-      new_nodes_per_vehicle_[same_vehicle_cost_index] =
-          nodes_per_vehicle_[same_vehicle_cost_index];
-    }
-    touched_.clear();
-    return true;
-  }
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override {
-    const int64_t vehicle = start_to_vehicle_[path_start];
-    DCHECK_GE(vehicle, 0);
-    if (chain_start == chain_end) return true;
-    for (int64_t node = GetNext(chain_start); node != chain_end;
-         node = GetNext(node)) {
-      if (vehicle == current_vehicle_per_node_[node]) continue;
-      for (int same_vehicle_cost_index : same_vehicle_costs_per_node_[node]) {
-        auto& new_nodes = new_nodes_per_vehicle_[same_vehicle_cost_index];
-        new_nodes[vehicle]++;
-        new_nodes[current_vehicle_per_node_[node]]--;
-        if (new_nodes[current_vehicle_per_node_[node]] == 0) {
-          new_nodes.erase(current_vehicle_per_node_[node]);
+  void UpdateGroupCounts(int path) {
+    delta_path_group_counts_.CopyFromAndResetCounts(
+        current_path_group_counts_per_path_[path]);
+    // Update group counts for the current path.
+    for (const PathState::Chain chain : path_state_->Chains(path)) {
+      // Update group counts for the current chain based on
+      // accumulated counts computed in Synchronize().
+      for (const int group : groups_per_node_[chain.First()]) {
+        if (delta_path_group_counts_.Add(group, 1)) {
+          num_vehicles_per_group_.GetMutable(group)++;
         }
-        touched_.insert(same_vehicle_cost_index);
+      }
+      const int chain_path = path_state_->Path(chain.First());
+      if (chain_path < 0) continue;
+      const std::vector<int>& first_counts =
+          group_counts_of_node_[chain.First()];
+      const std::vector<int>& last_counts = group_counts_of_node_[chain.Last()];
+      const std::vector<int>& chain_groups =
+          current_path_group_counts_per_path_[chain_path].Groups();
+      for (int i = 0; i < last_counts.size(); ++i) {
+        const int count =
+            last_counts[i] - (i < first_counts.size() ? first_counts[i] : 0);
+        if (count > 0) {
+          const int group = chain_groups[i];
+          if (delta_path_group_counts_.Add(group, count)) {
+            num_vehicles_per_group_.GetMutable(group)++;
+          }
+        }
       }
     }
-    return true;
-  }
-  bool FinalizeAcceptPath(int64_t /*objective_min*/,
-                          int64_t objective_max) override {
-    for (int same_vehicle_cost_index : touched_) {
-      CapAddTo(CapSub(GetCost(same_vehicle_cost_index, new_nodes_per_vehicle_),
-                      GetCost(same_vehicle_cost_index, nodes_per_vehicle_)),
-               &delta_cost_);
-    }
-    return delta_cost_ <= objective_max;
-  }
 
-  void OnAfterSynchronizePaths() override {
-    current_cost_ = 0;
-    touched_.clear();
-    for (int same_vehicle_cost_index = 0;
-         same_vehicle_cost_index < nodes_per_vehicle_.size();
-         ++same_vehicle_cost_index) {
-      nodes_per_vehicle_[same_vehicle_cost_index].clear();
-      touched_.insert(same_vehicle_cost_index);
-    }
-    current_vehicle_per_node_.assign(model_.Size(), -1);
-    for (int v = 0; v < model_.vehicles(); ++v) {
-      int64_t node = GetNext(model_.Start(v));
-      DCHECK(model_.IsEnd(node) || IsVarSynced(node));
-      while (!model_.IsEnd(node)) {
-        for (int same_vehicle_cost_index : same_vehicle_costs_per_node_[node]) {
-          nodes_per_vehicle_[same_vehicle_cost_index][v]++;
-        }
-        current_vehicle_per_node_[node] = v;
-        node = GetNext(node);
+    // Decrement the number of vehicle count for groups that have been removed
+    // from the path. No need to check newly added groups.
+    for (const int group : current_path_group_counts_per_path_[path].Groups()) {
+      if (delta_path_group_counts_.Count(group) == 0) {
+        num_vehicles_per_group_.GetMutable(group)--;
       }
     }
-    for (int same_vehicle_cost_index = 0;
-         same_vehicle_cost_index < nodes_per_vehicle_.size();
-         ++same_vehicle_cost_index) {
-      CapAddTo(GetCost(same_vehicle_cost_index, nodes_per_vehicle_),
-               &current_cost_);
+  }
+  void UpdateCostFromChangedGroups(int64_t& cost) const {
+    for (const int group : num_vehicles_per_group_.ChangedIndices()) {
+      CapAddTo(
+          CapSub(GetCost(group, num_vehicles_per_group_.Get(group)),
+                 GetCost(group, num_vehicles_per_group_.GetCommitted(group))),
+          &cost);
     }
   }
-  int64_t GetCost(
-      int index,
-      absl::Span<const absl::flat_hash_map<int, int>> nodes_per_vehicle) const {
-    const int num_vehicles_used = nodes_per_vehicle[index].size();
+  int64_t GetCost(int group, int num_vehicles_used) const {
     if (num_vehicles_used <= 1) return 0;
-    return CapProd(num_vehicles_used - 1, model_.GetSoftSameVehicleCost(index));
+    return CapProd(num_vehicles_used - 1, model_.GetSoftSameVehicleCost(group));
   }
 
   const Model& model_;
-  std::vector<int> start_to_vehicle_;
-  std::vector<std::vector<int>> same_vehicle_costs_per_node_;
-  std::vector<absl::flat_hash_map<int, int>> nodes_per_vehicle_;
-  std::vector<absl::flat_hash_map<int, int>> new_nodes_per_vehicle_;
-  absl::flat_hash_set<int> touched_;
-  std::vector<int> current_vehicle_per_node_;
+  const PathState* const path_state_;
+  // Groups in which a node appears.
+  std::vector<std::vector<int>> groups_per_node_;
+  // Accumulated group counts on a path at the position of a given node.
+  std::vector<std::vector<int>> group_counts_of_node_;
+  // Number of vehicle paths that contain nodes from a given group.
+  CommittableArray<int> num_vehicles_per_group_;
+
+  // Helper class to store and update group counts for a path.
+  class IndexedCounts {
+   public:
+    explicit IndexedCounts(int size) : indices_(size, -1) {}
+    void Reset() {
+      for (int group : groups_) indices_[group] = -1;
+      counts_.clear();
+      groups_.clear();
+    }
+    void CopyFromAndResetCounts(const IndexedCounts& other) {
+      Reset();
+      groups_ = other.groups_;
+      counts_.assign(groups_.size(), 0);
+      for (int i = 0; i < groups_.size(); ++i) {
+        indices_[groups_[i]] = i;
+      }
+    }
+    bool Add(int group, int count) {
+      const int index = indices_[group];
+      if (index != -1) {
+        counts_[index] += count;
+        return false;
+      }
+      indices_[group] = counts_.size();
+      counts_.emplace_back(count);
+      groups_.push_back(group);
+      return true;
+    }
+    int Count(int group) const { return counts_[indices_[group]]; }
+    const std::vector<int>& Counts() const { return counts_; }
+    const std::vector<int>& Groups() const { return groups_; }
+
+   private:
+    std::vector<int> indices_;
+    std::vector<int> counts_;
+    std::vector<int> groups_;
+  };
+  std::vector<IndexedCounts> current_path_group_counts_per_path_;
+  IndexedCounts delta_path_group_counts_;
+
   int64_t current_cost_;
   int64_t delta_cost_;
 };
 
 }  // namespace
 
-IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model) {
+LocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model,
+                                             const PathState* path_state) {
   return routing_model.solver()->RevAlloc(
-      new SameVehicleCostFilter(routing_model));
+      new SameVehicleCostFilter(routing_model, path_state));
 }
 
 namespace {

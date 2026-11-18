@@ -618,15 +618,30 @@ void Model::NodeNeighborsByCostClass::ComputeNeighbors(
 
 const Model::NodeNeighborsByCostClass*
 Model::GetOrCreateNodeNeighborsByCostClass(
-    double neighbors_ratio, int64_t min_neighbors, double& neighbors_ratio_used,
-    bool add_vehicle_starts_to_neighbors, bool add_vehicle_ends_to_neighbors,
+    double neighbors_ratio, int min_neighbors, int max_neighbors,
+    double& neighbors_ratio_used, bool add_vehicle_starts_to_neighbors,
+    bool add_vehicle_ends_to_neighbors,
     bool only_sort_neighbors_for_partial_neighborhoods) {
+  DCHECK_LE(min_neighbors, max_neighbors);
   const int64_t num_non_start_end_nodes = Size() - vehicles();
+  if (num_non_start_end_nodes == 0) {
+    neighbors_ratio_used = 1;
+    return GetOrCreateNodeNeighborsByCostClass(
+        {static_cast<int>(Size()), add_vehicle_starts_to_neighbors,
+         add_vehicle_ends_to_neighbors,
+         only_sort_neighbors_for_partial_neighborhoods});
+  }
+
   neighbors_ratio_used = neighbors_ratio;
   int num_neighbors = std::max(
       min_neighbors,
-      MathUtil::SafeRound<int64_t>(neighbors_ratio * num_non_start_end_nodes));
-  if (neighbors_ratio == 1 || num_neighbors >= num_non_start_end_nodes - 1) {
+      MathUtil::SafeRound<int>(neighbors_ratio * num_non_start_end_nodes));
+  if (num_neighbors > max_neighbors) {
+    num_neighbors = max_neighbors;
+    neighbors_ratio_used =
+        num_neighbors / static_cast<double>(num_non_start_end_nodes);
+  }
+  if (num_neighbors >= num_non_start_end_nodes - 1) {
     neighbors_ratio_used = 1;
     num_neighbors = Size();
   }
@@ -5368,10 +5383,12 @@ void Model::CreateNeighborhoodOperators(
   // This would allow the operators to iterate on the neighbors by increasing
   // distance, even if all nodes are considered as neighbors.
   double neighbors_ratio_used = 1;
+  const int min_neighbors = std::min(parameters.ls_operator_min_neighbors(),
+                                     static_cast<int>(Size()));
   const NodeNeighborsByCostClass* neighbors_by_cost_class =
       GetOrCreateNodeNeighborsByCostClass(
-          parameters.ls_operator_neighbors_ratio(),
-          parameters.ls_operator_min_neighbors(), neighbors_ratio_used,
+          parameters.ls_operator_neighbors_ratio(), min_neighbors, Size(),
+          neighbors_ratio_used,
           /*add_vehicle_starts_to_neighbors=*/false,
           /*add_vehicle_ends_to_neighbors=*/false);
   std::function<const std::vector<int>&(int, int)> get_incoming_neighbors;
@@ -5913,7 +5930,8 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
     if (!same_vehicle_costs_.empty()) {
       if (options.filter_objective) {
         filter_events.push_back(
-            {MakeSameVehicleCostFilter(*this), kAccept, priority});
+            {MakeSameVehicleCostFilter(*this, path_state_reference), kAccept,
+             priority});
       }
     }
 

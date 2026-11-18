@@ -1905,9 +1905,10 @@ class OR_ROUTING_DLL Model {
   /// Returns neighbors of all nodes for every cost class. The result is cached
   /// and is computed once. The number of neighbors considered is based on a
   /// ratio of non-vehicle nodes, specified by neighbors_ratio, with a minimum
-  /// of min-neighbors node considered.
+  /// of min_neighbors and a maximum of max_neighbors nodes considered.
+  /// Note that min_neighbors should be less than or equal to max_neighbors.
   const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
-      double neighbors_ratio, int64_t min_neighbors,
+      double neighbors_ratio, int min_neighbors, int max_neighbors,
       double& neighbors_ratio_used, bool add_vehicle_starts_to_neighbors = true,
       bool add_vehicle_ends_to_neighbors = false,
       bool only_sort_neighbors_for_partial_neighborhoods = true);

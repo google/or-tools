@@ -1435,7 +1435,9 @@ static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeig
 R"doc(Returns neighbors of all nodes for every cost class. The result is
 cached and is computed once. The number of neighbors considered is
 based on a ratio of non-vehicle nodes, specified by neighbors_ratio,
-with a minimum of min-neighbors node considered.)doc";
+with a minimum of min_neighbors and a maximum of max_neighbors nodes
+considered. Note that min_neighbors should be less than or equal to
+max_neighbors.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeighborsByCostClass_2 =
 R"doc(Returns parameters.num_neighbors neighbors of all nodes for every cost
