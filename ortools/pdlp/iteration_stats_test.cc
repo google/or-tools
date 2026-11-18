@@ -445,6 +445,20 @@ TEST(IterationStatsTest, InfeasibilityInformationWithoutCertificateLp) {
       )pb"));
 }
 
+TEST(IterationStatsTest, InfeasibilityInformationQp) {
+  const Eigen::VectorXd primal_ray{{2.0, 2.0}};
+  const Eigen::VectorXd dual_ray{{0.0}};
+  CheckScaledAndUnscaledInfeasibilityStats(
+      TestDiagonalQp2(), primal_ray, dual_ray, primal_ray,
+      ParseTextOrDie<InfeasibilityInformation>(R"pb(
+        max_primal_ray_infeasibility: 0.0
+        primal_ray_linear_objective: -4.0
+        primal_ray_quadratic_norm: 1.0
+        max_dual_ray_infeasibility: 0.0
+        dual_ray_objective: 0.0
+      )pb"));
+}
+
 TEST(IterationStatsTest, DetectsDualRayHasInfeasibleComponent) {
   const Eigen::VectorXd primal_ray{{0.0, 0.0}};
   const Eigen::VectorXd dual_ray{{1.0, 1.0}};
