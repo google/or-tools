@@ -1025,9 +1025,11 @@ bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
 bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   // Get neighbors.
   double neighbors_ratio_used = 1;
+  const int min_neighbors =
+      std::min(gci_params_.min_neighbors(), static_cast<int>(model()->Size()));
   node_index_to_neighbors_by_cost_class_ =
       model()->GetOrCreateNodeNeighborsByCostClass(
-          gci_params_.neighbors_ratio(), gci_params_.min_neighbors(),
+          gci_params_.neighbors_ratio(), min_neighbors, model()->Size(),
           neighbors_ratio_used);
   if (neighbors_ratio_used == 1) {
     gci_params_.set_use_neighbors_ratio_for_initialization(false);

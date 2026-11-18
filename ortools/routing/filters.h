@@ -90,7 +90,8 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(const Model& routing_model,
                                                    bool filter_cost);
 
 /// Returns a filter computing same vehicle costs.
-IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model);
+LocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model,
+                                             const PathState* path_state);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
 LocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model,

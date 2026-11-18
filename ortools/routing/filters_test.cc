@@ -3324,6 +3324,15 @@ LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& model) {
       new FilterWithPathState(path_state_filter, filter));
 }
 
+LocalSearchFilter* MakeSameVehicleCostFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeSameVehicleCostFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
 LocalSearchFilter* MakeTypeRegulationsFilter(const Model& model) {
   auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
   LocalSearchFilter* const filter =
