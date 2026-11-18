@@ -167,11 +167,16 @@ void CpModelPresolver::ProcessAtMostOneAndLinear() {
       timer(time_limit_);
   temp_ct_.Clear();
   for (int c = 0; c < num_constraints; ++c) {
-    ConstraintProto* ct = context_->MutableConstraint(c);
-    if (ct->constraint_case() != ConstraintProto::kLinear) continue;
+    if (context_->Constraint(c).constraint_case() != ConstraintProto::kLinear) {
+      continue;
+    }
 
     // We loop if the constraint changed.
     for (int i = 0; i < 5; ++i) {
+      context_->CanonicalizeConstraintsLazily();
+      if (context_->ModelIsUnsat()) return;
+      ConstraintProto* ct = context_->MutableConstraint(c);
+      if (ct->constraint_case() != ConstraintProto::kLinear) break;
       const int old_size = ct->linear().vars().size();
       const int old_enf_size = ct->enforcement_literal().size();
       ProcessOneLinearWithAmo(c, ct, &amo_in_linear);
@@ -199,12 +204,10 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
                                                ActivityBoundHelper* helper) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
   if (ct->linear().vars().size() <= 1) return;
+  DCHECK(context_->ConstraintIsCanonical(*ct));
   DeterministicTimer<{.scale = 3.0e-07, .offset = 1.3e-06}> timer(
       time_limit_, ct->linear().vars().size());
 
-  // TODO(user): It is possible in some corner-case that the linear constraint
-  // is NOT canonicalized. This is because we might detect equivalence here and
-  // we will continue with ProcessOneLinearWithAmo() in the parent loop.
   tmp_terms_.clear();
   DCHECK(temp_ct_.enforcement_literal().empty());
   temp_ct_.mutable_linear()->Clear();
@@ -213,13 +216,9 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
   int64_t min_magnitude = kint64max;
   int64_t max_magnitude = 0;
   for (int i = 0; i < initial_size; ++i) {
-    // TODO(user): Just do not use negative reference in linear!
-    int ref = ct->linear().vars(i);
-    int64_t coeff = ct->linear().coeffs(i);
-    if (!RefIsPositive(ref)) {
-      ref = NegatedRef(ref);
-      coeff = -coeff;
-    }
+    const int ref = ct->linear().vars(i);
+    const int64_t coeff = ct->linear().coeffs(i);
+    DCHECK(RefIsPositive(ref));
     if (context_->CanBeUsedAsLiteral(ref)) {
       tmp_terms_.push_back({ref, coeff});
       min_magnitude = std::min(min_magnitude, std::abs(coeff));
@@ -7218,43 +7217,105 @@ void CpModelPresolver::ProcessVariablesOnlyUsedInEncoding() {
 void CpModelPresolver::EncodeAllAffineRelations() {
   if (!CanonicalizeConstraintsLazily()) return;
 
-  std::vector<int> vars_to_encode;
+  // Collect all active non-representative affine variables once, grouped by
+  // representative, and drive propagation to a fixed point via
+  // `modified_domains` and `MutableVarWithReducedSmallDegree()` so we never
+  // rescan all model variables across rounds.
+  std::vector<int> affine_vars;
+  absl::flat_hash_map<int, std::vector<int>> rep_to_vars;
   for (int var = 0; var < context_->NumVariables(); ++var) {
-    if (context_->IsFixed(var)) continue;
-
+    if (context_->IsFixed(var) || context_->VariableIsNotUsedAnymore(var)) {
+      continue;
+    }
     const AffineRelation::Relation r = context_->GetAffineRelation(var);
     if (r.representative == var) continue;
-
-    // TODO(user): It seems some affine relations are still removable at this
-    // stage even though they should be removed inside PresolveToFixPoint().
-    // Investigate. For now, we just remove such relations.
-    if (context_->VariableIsNotUsedAnymore(var)) continue;
-    if (!constraint_presolver_->PresolveAffineRelationIfAny(var)) break;
-    if (context_->VariableIsNotUsedAnymore(var)) continue;
-    if (context_->IsFixed(var)) continue;
-    vars_to_encode.push_back(var);
+    affine_vars.push_back(var);
+    rep_to_vars[r.representative].push_back(var);
   }
 
-  // If PresolveAffineRelationIfAny() fixed any variable, canonicalize all
-  // existing constraints before encoding the remaining affine relations.
-  if (!CanonicalizeConstraintsLazily()) return;
+  context_->modified_domains.ResetAllToFalse();
+  context_->MutableVarWithReducedSmallDegree()->ResetAllToFalse();
+
+  for (const int var : affine_vars) {
+    if (!constraint_presolver_->PresolveAffineRelationIfAny(var)) return;
+  }
+
+  SparseBitset<int> to_process(context_->NumVariables());
+  std::vector<int> vars_to_process;
+  while (true) {
+    if (!CanonicalizeConstraintsLazily()) return;
+
+    to_process.ResetAllToFalse();
+    auto enqueue = [&](int var) {
+      if (context_->IsFixed(var) || context_->VariableIsNotUsedAnymore(var)) {
+        return;
+      }
+      if (context_->GetAffineRelation(var).representative != var) {
+        to_process.Set(var);
+      }
+    };
+
+    for (const int u : context_->modified_domains.PositionsSetAtLeastOnce()) {
+      enqueue(u);
+      if (const auto it = rep_to_vars.find(u); it != rep_to_vars.end()) {
+        for (const int var : it->second) enqueue(var);
+      }
+    }
+    context_->modified_domains.ResetAllToFalse();
+
+    for (const int u : context_->MutableVarWithReducedSmallDegree()
+                           ->PositionsSetAtLeastOnce()) {
+      enqueue(u);
+    }
+    context_->MutableVarWithReducedSmallDegree()->ResetAllToFalse();
+
+    if (to_process.PositionsSetAtLeastOnce().empty()) break;
+
+    vars_to_process.assign(to_process.PositionsSetAtLeastOnce().begin(),
+                           to_process.PositionsSetAtLeastOnce().end());
+    absl::c_sort(vars_to_process);
+    for (const int var : vars_to_process) {
+      if (!constraint_presolver_->PresolveAffineRelationIfAny(var)) return;
+    }
+  }
 
   int64_t num_added = 0;
-  for (const int var : vars_to_encode) {
+  for (const int var : affine_vars) {
     if (context_->IsFixed(var)) continue;
     const AffineRelation::Relation r = context_->GetAffineRelation(var);
     if (r.representative == var) continue;
     if (context_->VariableIsNotUsedAnymore(var)) continue;
+    DCHECK(!context_->IsFixed(r.representative));
 
+    // Emit the 2-variable equality directly in canonical kLinear form: we
+    // cannot call CanonicalizeConstraintsLazily() afterwards because
+    // `context_->affine_relations_` is still active (needed below for
+    // search_strategy, objective, and variable-mapping heuristics) and would
+    // substitute `var` back to `r.representative`, cancelling this constraint
+    // to 0 == 0 and deleting it.
     ++num_added;
+    int v0 = var;
+    int64_t c0 = 1;
+    int v1 = r.representative;
+    int64_t c1 = -r.coeff;
+    int64_t rhs = r.offset;
+    if (v0 > v1) {
+      std::swap(v0, v1);
+      std::swap(c0, c1);
+    }
+    if (c0 < 0) {
+      c0 = -c0;
+      c1 = -c1;
+      rhs = -rhs;
+    }
     ConstraintProto* ct = context_->AddConstraint();
     auto* arg = ct->mutable_linear();
-    arg->add_vars(var);
-    arg->add_coeffs(1);
-    arg->add_vars(r.representative);
-    arg->add_coeffs(-r.coeff);
-    arg->add_domain(r.offset);
-    arg->add_domain(r.offset);
+    arg->add_vars(v0);
+    arg->add_coeffs(c0);
+    arg->add_vars(v1);
+    arg->add_coeffs(c1);
+    arg->add_domain(rhs);
+    arg->add_domain(rhs);
   }
 
   // Now that we encoded all remaining affine relation with constraints, we
@@ -7835,15 +7896,11 @@ void InitializeMappingModelVariables(absl::Span<const Domain> domains,
   for (ConstraintProto& ct_ref : *mapping_proto->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
     ApplyToAllLiteralIndices(mapping_function, &ct_ref);
-    if (ct_ref.constraint_case() == ConstraintProto::kLinMax) {
-      CanonicalizeLinMax(&ct_ref);
-    }
   }
 }
 }  // namespace
 
 void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
-  if (!CanonicalizeConstraintsLazily()) return;
   ExpandCpModel(context_);
   (void)CanonicalizeConstraintsLazily();
 }
@@ -7882,6 +7939,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (!PresolvePureSatProblem()) {
       (void)context_->NotifyThatModelIsUnsat(
           "Proved Infeasible during SAT presolve");
+      return InfeasibleStatus();
+    }
+    if (context_->lrat_proof_handler == nullptr &&
+        !CanonicalizeConstraintsLazily()) {
       return InfeasibleStatus();
     }
 
@@ -8020,17 +8081,34 @@ CpSolverStatus CpModelPresolver::Presolve() {
   if (!context_->params().cp_model_presolve()) {
     ExpandCpModelAndCanonicalizeConstraints();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
+    // We don't want to run postsolve when the presolve is disabled, but the
+    // expansion might have added some constraints to the mapping model. To
+    // restore correctness, we merge them with the working model before final
+    // canonicalization and affine encoding.
+    if (!context_->mapping_model->constraints().empty()) {
+      context_->UpdateRuleStats(
+          "TODO: mapping model not empty with presolve disabled");
+      for (const ConstraintProto& ct : context_->mapping_model->constraints()) {
+        *context_->AddConstraint() = ct;
+      }
+      context_->mapping_model->clear_constraints();
+    }
+
+    // We need to append all the variable equivalence that are still used!
+    EncodeAllAffineRelations();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    DCHECK(context_->mapping_model->constraints().empty());
+
     context_->WriteHintToProto();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We still write back the canonical objective as we don't deal well
     // with uninitialized domain or duplicate variables.
     if (context_->WorkingModel().has_objective()) {
+      if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
       context_->WriteObjectiveToProto();
     }
-
-    // We need to append all the variable equivalence that are still used!
-    EncodeAllAffineRelations();
 
     // Make sure we also have an initialized mapping model as we use this for
     // filling the tightened variables. Even without presolve, we do some
@@ -8041,20 +8119,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
                                     &fixed_postsolve_mapping,
                                     context_->mapping_model);
 
-    // We don't want to run postsolve when the presolve is disabled, but the
-    // expansion might have added some constraints to the mapping model. To
-    // restore correctness, we merge them with the working model.
-    if (!context_->mapping_model->constraints().empty()) {
-      context_->UpdateRuleStats(
-          "TODO: mapping model not empty with presolve disabled");
-      for (const ConstraintProto& ct : context_->mapping_model->constraints()) {
-        *context_->AddConstraint() = ct;
-      }
-      context_->mapping_model->clear_constraints();
-    }
-
-    if (logger_->LoggingIsEnabled()) context_->LogInfo();
-    return CpSolverStatus::UNKNOWN;
+    constraint_presolver_->RemoveEmptyConstraints();
+    return LogAndValidatePresolvedModel();
   }
 
   // Presolve all variable domains once. The PresolveToFixPoint() function will
@@ -8486,6 +8552,8 @@ CpSolverStatus CpModelPresolver::LogAndValidatePresolvedModel() {
       return CpSolverStatus::MODEL_INVALID;
     }
   }
+  DCHECK(
+      context_->ModelProtoIsCanonical(context_->UnsafeMutableWorkingModel()));
 
   return CpSolverStatus::UNKNOWN;
 }
@@ -8508,9 +8576,6 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
   for (ConstraintProto& ct_ref : *cp_model->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
     ApplyToAllLiteralIndices(mapping_function, &ct_ref);
-    if (ct_ref.constraint_case() == ConstraintProto::kLinMax) {
-      CanonicalizeLinMax(&ct_ref);
-    }
     if (ct_ref.constraint_case() == ConstraintProto::kRoutes) {
       for (RoutesConstraintProto::NodeExpressions& node_exprs :
            *ct_ref.mutable_routes()->mutable_dimensions()) {

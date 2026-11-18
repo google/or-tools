@@ -114,9 +114,14 @@ void CpConstraintPresolver::RemoveEmptyConstraints() {
   std::vector<int> interval_mapping(old_num_non_empty_constraints, -1);
   int new_num_constraints = 0;
   for (int c = 0; c < old_num_non_empty_constraints; ++c) {
-    const auto type = context_->Constraint(c).constraint_case();
+    const ConstraintProto& old_ct = context_->Constraint(c);
+    const auto type = old_ct.constraint_case();
     if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
     if (type == ConstraintProto::kDummyConstraint) continue;
+    if (type == ConstraintProto::kInterval && !old_ct.interval().has_start() &&
+        !old_ct.interval().has_size() && !old_ct.interval().has_end()) {
+      continue;
+    }
     cp_model->mutable_constraints(new_num_constraints)
         ->Swap(cp_model->mutable_constraints(c));
     if (type == ConstraintProto::kInterval) {
@@ -134,13 +139,18 @@ void CpConstraintPresolver::RemoveEmptyConstraints() {
     }
 
     // After first copy, interval should always be defined before they are
-    // used, so we can remap as we re-index.
+    // used, so we can remap and filter dropped unperformed intervals as we
+    // re-index.
+    ConstraintProto* ct = cp_model->mutable_constraints(new_num_constraints);
     ApplyToAllIntervalIndices(
-        [&interval_mapping](int* ref) {
-          *ref = interval_mapping[*ref];
-          CHECK_NE(-1, *ref);
-        },
-        cp_model->mutable_constraints(new_num_constraints));
+        [&interval_mapping](int* ref) { *ref = interval_mapping[*ref]; }, ct,
+        /*filter=*/true);
+    if ((type == ConstraintProto::kNoOverlap &&
+         ct->no_overlap().intervals().empty()) ||
+        (type == ConstraintProto::kNoOverlap2D &&
+         ct->no_overlap_2d().x_intervals().empty())) {
+      continue;
+    }
 
     new_num_constraints++;
   }
@@ -530,7 +540,6 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
     DivideLinearExpression(gcd, &expr);
   }
   context_->MarkConstraintForCanonicalization(c);
-  DCHECK(LinMaxIsCanonical(*ct));
   return true;
 }
 
@@ -8057,7 +8066,7 @@ void CpConstraintPresolver::RunPropagatorsForConstraint(
   CreateValidModelWithSingleConstraint(ct, context_, &variable_mapping,
                                        &tmp_model_);
   timer.Advance(tmp_model_.constraints_size());
-  DCHECK_EQ(ValidateCpModel(tmp_model_, false), "");
+  DCHECK_EQ(ValidateCpModel(tmp_model_, /*after_presolve=*/true), "");
   if (!LoadModelForPresolve(tmp_model_, std::move(local_params), context_,
                             &model, "single constraint")) {
     return;

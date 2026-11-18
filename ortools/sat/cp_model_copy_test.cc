@@ -886,7 +886,7 @@ TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
-      enforcement_literal: [ -4, 4 ]
+      enforcement_literal: [ 4, -4 ]
       lin_max {
         target {
           vars: [ 1, 2 ]
@@ -895,8 +895,8 @@ TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
         }
         exprs {
           vars: [ 0, 1 ]
-          coeffs: [ 1, -1 ]
-          offset: 1
+          coeffs: [ 1, 2 ]
+          offset: 3
         }
         exprs {
           vars: [ 0, 1 ]
@@ -905,8 +905,8 @@ TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
         }
         exprs {
           vars: [ 0, 1 ]
-          coeffs: [ 1, 2 ]
-          offset: 3
+          coeffs: [ 1, -1 ]
+          offset: 1
         }
       }
     }
@@ -1262,336 +1262,45 @@ TEST(DenseModelCopyTest, ComputeModelStatsTracksSchedulingAndLinearReductions) {
             EstimateCopyDeterministicTime(initial_stats));
 }
 
-TEST(DenseModelCopyTest, ChainedRebuildsMatchSingleShotAndShrinkWorkUnits) {
-  // Variables:
-  //   0..5: Booleans [0, 1] (v0 fixed to 1 via non-reified bool_and)
-  //   6..15: integers [0, 20]
-  const CpModelProto proto = ParseTestProto(R"pb(
-    variables {
-      name: "v0"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "v1"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "v2"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "v3"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "v4"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "v5"
-      domain: [ 0, 1 ]
-    }
-    variables {
-      name: "x6"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x7"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x8"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x9"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x10"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x11"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x12"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x13"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x14"
-      domain: [ 0, 20 ]
-    }
-    variables {
-      name: "x15"
-      domain: [ 0, 20 ]
-    }
-    # Constraint 0: filtered out by active_constraints.
-    constraints {
-      linear {
-        vars: [ 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]
-        coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-        domain: [ 0, 200 ]
-      }
-    }
-    # Constraint 1: non-reified bool_and fixing v0 = 1 during copy.
-    constraints { bool_and { literals: [ 0 ] } }
-    # Constraints 2..7: mix of clauses and linear constraints over all vars.
-    constraints { bool_or { literals: [ -1, 1, 2, 3 ] } }
-    constraints {
-      enforcement_literal: [ 2 ]
-      bool_or { literals: [ 3, -5, 1 ] }
-    }
-    constraints {
-      linear {
-        vars: [ 0, 1, 4, 6, 7, 8 ]
-        coeffs: [ 2, 3, -4, 1, 2, -1 ]
-        domain: [ -10, 40 ]
-      }
-    }
-    constraints {
-      linear {
-        vars: [ 2, 5, 9, 10, 11 ]
-        coeffs: [ 5, -2, 1, 3, 2 ]
-        domain: [ 0, 50 ]
-      }
-    }
-    constraints {
-      linear {
-        vars: [ 3, 4, 12, 13, 14, 15 ]
-        coeffs: [ 7, 1, 2, -3, 1, 4 ]
-        domain: [ -20, 60 ]
-      }
-    }
-    constraints {
-      linear {
-        vars: [ 6, 8, 10, 12, 14 ]
-        coeffs: [ 1, 1, 1, 1, 1 ]
-        domain: [ 5, 100 ]
-      }
-    }
-    objective {
-      vars: [ 0, 1, 2, 3, 4, 5, 6, 8, 9, 12, 14 ]
-      coeffs: [ 4, 3, -2, 5, 6, -1, 2, 1, 3, 2, 4 ]
-      offset: 10
-      integer_before_offset: 10
-      integer_scaling_factor: 1
-    }
-  )pb");
-
-  auto active_constraints = [](int c) { return c != 0; };
-
-  SharedBoundsManager shared_bounds(proto);
-  SharedClausesManager shared_clauses(/*always_synchronize=*/true);
-  const int sat_id =
-      shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
-
-  DenseModelCopy chained("chained", proto, &shared_bounds, &shared_clauses,
-                         active_constraints);
-
-  // Rebuild 1: triggered immediately by active_constraints_ != nullptr.
-  // Filters constraint 0 and propagates bool_and { [0] } -> v0 = 1.
-  bool updated = false;
-  ASSERT_TRUE(chained.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  EXPECT_EQ(chained.var_domains().size(), 16);
-  EXPECT_TRUE(chained.var_domains().IsFixed(0));
-  EXPECT_EQ(chained.var_domains()[0].FixedValue(), 1);
-  EXPECT_EQ(chained.proto().constraints_size(), 6);
-  const double dtime1 =
-      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
-  EXPECT_GT(dtime1, 1e-6);
-
-  // Rebuild 2: fix x6 = 4, x7 = 2 and add negated + transitive equivalences
-  //   v2 == v1, v3 == ~v2 (=> v3 == ~v1), v4 == v0 (so bool_and fixing v0 = 1
-  // fixes v4 = 1 via PropagateInputEquivalences!).
-  shared_bounds.ReportPotentialNewBounds("sat", {6, 7}, {4, 2}, {4, 2});
-  shared_bounds.Synchronize();
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(1), 2);
-  shared_clauses.AddBinaryClause(sat_id, 1, NegatedRef(2));
-  shared_clauses.AddBinaryClause(sat_id, 2, 3);
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), NegatedRef(3));
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(0), 4);
-  shared_clauses.AddBinaryClause(sat_id, 0, NegatedRef(4));
-
-  ASSERT_TRUE(chained.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  // Removed: x6, x7, v2, v3, v4 (v0 kept as first_fixed_literal) => 11 left.
-  EXPECT_EQ(chained.var_domains().size(), 11);
-  const double dtime2 =
-      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
-  EXPECT_LT(dtime2, dtime1);
-  EXPECT_GT(dtime2, 1e-6);
-
-  // Rebuild 3: fix x8 = 5, x9 = 3, x12 = 3 and add transitive negated
-  // equivalence v5 == ~v3 (so v5 == v1). Fixing x12 = 3 avoids making x12 an
-  // extra `first_fixed_literal` in the single-shot baseline before bool_and
-  // fixes v0 = 1.
-  shared_bounds.ReportPotentialNewBounds("sat", {8, 9, 12}, {5, 3, 3},
-                                         {5, 3, 3});
-  shared_bounds.Synchronize();
-  shared_clauses.AddBinaryClause(sat_id, 3, 5);
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(3), NegatedRef(5));
-
-  ASSERT_TRUE(chained.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  // Removed additionally: x8, x9, x12, v5 => 7 vars remaining.
-  EXPECT_EQ(chained.var_domains().size(), 7);
-  const double dtime3 =
-      EstimateCopyDeterministicTime(ComputeModelStats(chained.proto()));
-  EXPECT_LT(dtime3, dtime2);
-
-  // Compare everything against a fresh single-shot DenseModelCopy seeing the
-  // accumulated bounds & equivalences all at once.
-  DenseModelCopy single_shot("single_shot", proto, &shared_bounds,
-                             &shared_clauses, active_constraints);
-  bool single_shot_updated = false;
-  ASSERT_TRUE(single_shot.MaybeUpdate(single_shot_updated));
-  EXPECT_TRUE(single_shot_updated);
-
-  EXPECT_THAT(chained.proto(), EqualsProto(single_shot.proto()));
-  EXPECT_EQ(ComputeModelStats(chained.proto()),
-            ComputeModelStats(single_shot.proto()));
-  ASSERT_EQ(chained.var_domains().size(), single_shot.var_domains().size());
-  for (int v = 0; v < chained.var_domains().size(); ++v) {
-    EXPECT_EQ(chained.var_domains()[v], single_shot.var_domains()[v])
-        << "var " << v;
-  }
-
-  // Test solution mapping round-trip & objective mapping consistency.
-  const std::vector<int64_t> input_sol = {
-      /*v0=*/1,  /*v1=*/0,  /*v2=*/0,  /*v3=*/1,   /*v4=*/1,  /*v5=*/0,
-      /*x6=*/4,  /*x7=*/2,  /*x8=*/5,  /*x9=*/3,   /*x10=*/7, /*x11=*/8,
-      /*x12=*/3, /*x13=*/9, /*x14=*/6, /*x15=*/10,
-  };
-  const std::vector<int64_t> chained_dense = chained.MapSolution(input_sol);
-  const std::vector<int64_t> single_dense = single_shot.MapSolution(input_sol);
-  EXPECT_EQ(chained_dense, single_dense);
-  EXPECT_EQ(chained.ReverseMapSolution(chained_dense), input_sol);
-  EXPECT_EQ(single_shot.ReverseMapSolution(single_dense), input_sol);
-  EXPECT_EQ(chained.MapInnerObjectiveValue(100),
-            single_shot.MapInnerObjectiveValue(100));
-}
-
-TEST(DenseModelCopyTest, RedundantEquivalencesOnRemovedVarsSkipRebuild) {
-  CpModelProto proto;
-  for (int i = 0; i < 10; ++i) {
-    auto* var = proto.add_variables();
+TEST(ModelCopyTest, ImportAndSimplifyConstraintsRespectsTimeLimitOnLnsCopy) {
+  CpModelProto initial_model;
+  for (int v = 0; v < 2; ++v) {
+    auto* var = initial_model.add_variables();
     var->add_domain(0);
-    var->add_domain(1);
+    var->add_domain(10);
   }
-  for (int i = 0; i < 9; ++i) {
-    auto* ct = proto.add_constraints()->mutable_bool_or();
-    ct->add_literals(i);
-    ct->add_literals(i + 1);
-  }
-
-  SharedBoundsManager shared_bounds(proto);
-  SharedClausesManager shared_clauses(/*always_synchronize=*/true);
-  const int sat_id =
-      shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
-
-  DenseModelCopy copy("test", proto, &shared_bounds, &shared_clauses);
-  bool updated = true;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_FALSE(updated);
-
-  // Fix variables 0, 1, 2: builds custom dense copy keeping var 0 as
-  // first_fixed_literal and removing vars 1 and 2 (8 dense vars remain).
-  shared_bounds.ReportPotentialNewBounds("sat", {0, 1, 2}, {1, 0, 1},
-                                         {1, 0, 1});
-  shared_bounds.Synchronize();
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  EXPECT_EQ(copy.var_domains().size(), 8);
-  EXPECT_EQ(copy.equivalences_timestamp(), 0);
-
-  // Export consistent equivalence between already-removed fixed vars 1 and 2
-  // (x1 == ~x2). Even with min_variable_reduction_ratio = 0.0, MaybeUpdate
-  // should skip rebuilding (`updated == false`) and keep
-  // `equivalences_timestamp()` unchanged so callers do not reset search
-  // weights.
-  shared_clauses.AddBinaryClause(sat_id, 1, 2);
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(1), NegatedRef(2));
-  ASSERT_EQ(shared_clauses.NumEquivalences(), 1);
-
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_FALSE(updated);
-  EXPECT_EQ(copy.equivalences_timestamp(), 0);
-  EXPECT_EQ(copy.var_domains().size(), 8);
-
-  // A subsequent call without new equivalences also stays a no-op.
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_FALSE(updated);
-
-  // Also check redundant equivalence between removed var 1 and
-  // first_fixed_literal var 0 (x1 == ~x0).
-  shared_clauses.AddBinaryClause(sat_id, 0, 1);
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(0), NegatedRef(1));
-  ASSERT_EQ(shared_clauses.NumEquivalences(), 2);
-
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_FALSE(updated);
-  EXPECT_EQ(copy.equivalences_timestamp(), 0);
-  EXPECT_EQ(copy.var_domains().size(), 8);
-}
-
-TEST(DenseModelCopyTest, ChainedRebuildFixesNonHeadMergedVariable) {
-  CpModelProto proto;
-  for (int i = 0; i < 6; ++i) {
-    auto* var = proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-  }
-  {
-    auto* ct = proto.add_constraints()->mutable_bool_or();
-    ct->add_literals(1);
-    ct->add_literals(4);
-    ct->add_literals(5);
+  for (int c = 0; c < 1500; ++c) {
+    auto* linear = initial_model.add_constraints()->mutable_linear();
+    linear->add_vars(0);
+    linear->add_vars(1);
+    linear->add_coeffs(1);
+    linear->add_coeffs(1);
+    linear->add_domain(0);
+    linear->add_domain(10);
   }
 
-  SharedBoundsManager shared_bounds(proto);
-  SharedClausesManager shared_clauses(/*always_synchronize=*/true);
-  const int sat_id =
-      shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
+  Model model;
+  SatParameters params;
+  params.set_max_time_in_seconds(0);
+  model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
 
-  DenseModelCopy copy("test", proto, &shared_bounds, &shared_clauses);
-  bool updated = true;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_FALSE(updated);
+  // When first_copy is false (as in LNS submodel creation) and the time limit
+  // is reached, ImportAndSimplifyConstraints must abort promptly and return
+  // false.
+  CpModelProto lns_model;
+  ModelCopy lns_copier(&lns_model, &model);
+  ASSERT_TRUE(lns_copier.ImportVariables(initial_model));
+  EXPECT_FALSE(lns_copier.ImportAndSimplifyConstraints(initial_model,
+                                                       /*first_copy=*/false));
+  EXPECT_EQ(lns_model.constraints_size(), 0);
 
-  // Rebuild 1: fix v0 = 0 (kept as first_fixed_literal) and merge v2 == v1 and
-  // v3 == ~v2 into dense var 1 (active list: v1 -> v2 -> v3). Remaining dense
-  // vars: [v0=0, v1, v4, v5] (size 4).
-  shared_bounds.ReportPotentialNewBounds("sat", {0}, {0}, {0});
-  shared_bounds.Synchronize();
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(1), 2);
-  shared_clauses.AddBinaryClause(sat_id, 1, NegatedRef(2));
-  shared_clauses.AddBinaryClause(sat_id, 2, 3);
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), NegatedRef(3));
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  EXPECT_EQ(copy.var_domains().size(), 4);
-
-  // Rebuild 2: fix non-head member v3 = 0 (mapping to ~d1, so d1 = 1) and add
-  // equivalence v4 == v2 referencing non-head member v2. Propagate across the
-  // linked list should fix v1 = 1, v2 = 1, v3 = 0, v4 = 1 and remove the entire
-  // class plus v4 (leaving only [v0=0, v5]).
-  shared_bounds.ReportPotentialNewBounds("sat", {3}, {0}, {0});
-  shared_bounds.Synchronize();
-  shared_clauses.AddBinaryClause(sat_id, NegatedRef(2), 4);
-  shared_clauses.AddBinaryClause(sat_id, 2, NegatedRef(4));
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
-  EXPECT_TRUE(updated);
-  EXPECT_EQ(copy.var_domains().size(), 2);
-
-  EXPECT_EQ(copy.ReverseMapSolution({0, 1}),
-            (std::vector<int64_t>{0, 1, 1, 0, 1, 1}));
+  // When first_copy is true, initial model import still completes.
+  CpModelProto first_copy_model;
+  ModelCopy first_copier(&first_copy_model, &model);
+  ASSERT_TRUE(first_copier.ImportVariables(initial_model));
+  EXPECT_TRUE(first_copier.ImportAndSimplifyConstraints(initial_model,
+                                                        /*first_copy=*/true));
+  EXPECT_EQ(first_copy_model.constraints_size(), 1500);
 }
 
 }  // namespace

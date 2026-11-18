@@ -564,7 +564,6 @@ PlantedModel BuildSchedulingHeavyModel(int target_num_vars, std::mt19937& rng) {
     for (int t = 0; t < num_tasks; ++t) {
       SetAffineExpr(lin_max->add_exprs(), tasks[t].end_var);
     }
-    CanonicalizeLinMax(ct);
   }
 
   // Tie auxiliary Booleans into simple satisfied bool_or clauses.
@@ -893,7 +892,6 @@ void AddLinMaxGadget(PlantedModel& model, std::mt19937& rng) {
   for (const int av : arg_vars) {
     SetAffineExpr(lin_max->add_exprs(), av);
   }
-  CanonicalizeLinMax(ct);
 }
 
 void AddIntProdGadget(PlantedModel& model, std::mt19937& rng) {

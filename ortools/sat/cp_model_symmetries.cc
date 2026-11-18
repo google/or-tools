@@ -707,8 +707,55 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
-      case ConstraintProto::kRoutes:
-        // TODO(user): Implement this.
+      case ConstraintProto::kRoutes: {
+        // Similar to kCircuit, except that node 0 (the depot) has a distinct
+        // role and cannot be permuted with non-depot nodes.
+        // Note that like kCircuit, we do not create a central constraint_node
+        // unless the constraint has enforcement literals, in which case the
+        // enforcement logic after the switch attaches the enforcement literals
+        // to constraint_node and we must link constraint_node to every arc of
+        // this constraint.
+        const int num_arcs = constraint.routes().literals().size();
+        absl::flat_hash_map<int, int> routes_node_to_symmetry_node;
+        if (!constraint.enforcement_literal().empty()) {
+          CHECK_EQ(constraint_node, new_node(color));
+        }
+        std::vector<int64_t> arc_color = color;
+        arc_color.push_back(1);
+        std::vector<int64_t> node_color = color;
+        node_color.push_back(2);
+        std::vector<int64_t> depot_color = color;
+        depot_color.push_back(3);
+        for (int i = 0; i < num_arcs; ++i) {
+          const int literal = constraint.routes().literals(i);
+          const int tail = constraint.routes().tails(i);
+          const int head = constraint.routes().heads(i);
+          const int arc_node = new_node(arc_color);
+          auto [head_it, head_inserted] =
+              routes_node_to_symmetry_node.insert({head, 0});
+          if (head_inserted) {
+            head_it->second = new_node(head == 0 ? depot_color : node_color);
+          }
+          const int head_node = head_it->second;
+          auto [tail_it, tail_inserted] =
+              routes_node_to_symmetry_node.insert({tail, 0});
+          if (tail_inserted) {
+            tail_it->second = new_node(tail == 0 ? depot_color : node_color);
+          }
+          const int tail_node = tail_it->second;
+          // Connect constraint_node (which holds the enforcement literals) to
+          // every arc of the route constraint so that the enforcement literals
+          // apply to the entire route graph, including any disconnected
+          // components or self-loops.
+          if (!constraint.enforcement_literal().empty()) {
+            all_arcs.emplace_back(constraint_node, arc_node);
+          }
+          all_arcs.emplace_back(tail_node, arc_node);
+          all_arcs.emplace_back(get_literal_node(literal), arc_node);
+          all_arcs.emplace_back(arc_node, head_node);
+        }
+        break;
+      }
       case ConstraintProto::kElement:
       case ConstraintProto::kTable:
       case ConstraintProto::kAutomaton:
@@ -747,8 +794,12 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
   std::pair<int, int> current_arc = {-1, -1};
   int multiplicity = 0;
+  std::vector<bool> has_incoming_arc(num_variables, false);
 
   auto flush_arc = [&](int tail, int head, int count) {
+    if (head < num_variables) {
+      has_incoming_arc[head] = true;
+    }
     if (count == 1) {
       builder.AddArc(tail, head);
     } else {
@@ -787,7 +838,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // nodes, but we will need a mapping to know the variable <-> node index.
   int next_id = color_id_generator.NextFreeId();
   for (int i = 0; i < num_variables; ++i) {
-    if ((*graph)[i].empty()) {
+    if ((*graph)[i].empty() && !has_incoming_arc[i]) {
       (*initial_equivalence_classes)[i] = next_id++;
     }
   }

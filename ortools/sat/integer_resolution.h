@@ -33,6 +33,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -146,6 +147,15 @@ class IntegerConflictResolution {
   // Add the integer variable entry to the queue.
   void AddToQueueIfNotThere(IntegerVariableData& data);
 
+  // Fills `conflict` with the negation of all the decisions up to (and
+  // including) `conflict_level`, highest level first. This is always a valid
+  // learned conflict, albeit a weak one, and is used when we abort the conflict
+  // resolution because the time limit was reached. This must only be called if
+  // there are no assumptions at level one (see ComputeFirstUIPConflict()).
+  void FillConflictWithDecisions(
+      int conflict_level, std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
+
   Trail* trail_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
@@ -153,6 +163,7 @@ class IntegerConflictResolution {
   SharedStatistics* shared_stats_;
   ClauseManager* clauses_propagator_;
   BinaryImplicationGraph* implications_;
+  TimeLimit* time_limit_;
   const SatParameters& params_;
 
   // A heap. We manage it manually.

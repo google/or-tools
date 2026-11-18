@@ -1017,13 +1017,13 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       reversible_int_repository_(model->GetOrCreate<RevIntRepository>()),
       tree_(lrat_proof_handler_, mapping_, encoder_) {}
 
-void SharedTreeWorker::MaybeProposeSplits() {
-  if (assigned_nodes_.empty()) return;
+bool SharedTreeWorker::MaybeProposeSplits() {
+  if (assigned_nodes_.empty()) return true;
   if (sat_solver_->CurrentDecisionLevel() <= sat_solver_->AssumptionLevel()) {
-    return;
+    return true;
   }
   if (time_limit_->GetElapsedDeterministicTime() <= next_split_dtime_) {
-    return;
+    return true;
   }
   next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
                       parameters_->shared_tree_split_min_dtime();
@@ -1038,10 +1038,14 @@ void SharedTreeWorker::MaybeProposeSplits() {
     if (leaf_node->LiteralIsTrue(*encoded)) continue;
     if (leaf_node->LiteralIsTrue(encoded->Negated())) continue;
     if (manager_->TrySplitTree(*encoded, assignment_, tree_)) {
-      ResetAndEnqueueAssumptions();
+      // Re-enqueuing the assumptions can prove the problem infeasible. This
+      // must be reported to the caller: the SAT solver is then UNSAT, possibly
+      // at a positive decision level, and must not be propagated again.
+      return ResetAndEnqueueAssumptions();
     }
-    return;
+    return true;
   }
+  return true;
 }
 
 bool SharedTreeWorker::ShouldReplaceSubtree() {
@@ -1199,7 +1203,12 @@ SatSolver::Status SharedTreeWorker::Search(
     const auto& decision_policy =
         heuristics_->decision_policies[heuristics_->policy_index];
     LiteralIndex decision_index;
-    if (!helper_->GetDecision(decision_policy, &decision_index)) continue;
+    if (!helper_->GetDecision(decision_policy, &decision_index)) {
+      // Processing a conflict found while computing the decision can prove
+      // the problem infeasible.
+      if (sat_solver_->ModelIsUnsat()) return sat_solver_->UnsatStatus();
+      continue;
+    }
 
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision_index == kNoLiteralIndex) {
@@ -1221,7 +1230,7 @@ SatSolver::Status SharedTreeWorker::Search(
         !CloseNodeAfterConflict()) {
       return sat_solver_->UnsatStatus();
     }
-    MaybeProposeSplits();
+    if (!MaybeProposeSplits()) return sat_solver_->UnsatStatus();
   }
 
   return SatSolver::LIMIT_REACHED;

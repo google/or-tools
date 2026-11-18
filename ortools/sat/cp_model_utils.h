@@ -196,8 +196,10 @@ void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
                               ConstraintProto* ct);
+// If `filter` is true, entries mapped to -1 are removed (along with their
+// paired interval in `no_overlap_2d` or demand in `cumulative`).
 void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
-                               ConstraintProto* ct);
+                               ConstraintProto* ct, bool filter = false);
 
 // Applies the given function to all LinearExpressionProto fields of the
 // constraint.
@@ -428,42 +430,6 @@ inline bool LinearExpressionProtosAreExactlyEqual(
          absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
          a.offset() == b.offset();
 }
-
-// Compares two LinearExpressionProtos lexicographically by (vars, coeffs,
-// offset).
-inline bool LinearExpressionProtoLessThan(const LinearExpressionProto& a,
-                                          const LinearExpressionProto& b) {
-  if (absl::MakeSpan(a.vars()) != absl::MakeSpan(b.vars())) {
-    return absl::MakeSpan(a.vars()) < absl::MakeSpan(b.vars());
-  }
-  if (absl::MakeSpan(a.coeffs()) != absl::MakeSpan(b.coeffs())) {
-    return absl::MakeSpan(a.coeffs()) < absl::MakeSpan(b.coeffs());
-  }
-  return a.offset() < b.offset();
-}
-
-// Returns true if the expression has unique positive variables sorted by vars,
-// non-zero coefficients, and no variable in enforcements.
-bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
-                                 const LinearExpressionProto& expr);
-bool LinearExpressionIsCanonical(const LinearExpressionProto& expr);
-
-// Returns true if the lin_max constraint is canonical: its enforcement
-// literals are sorted and unique (with distinct variables) and do not appear
-// in target or exprs, and its lin_max argument is canonical.
-bool LinMaxIsCanonical(const ConstraintProto& ct);
-
-// Sorts terms by variable, merges duplicate variables, removes zero
-// coefficients, and replaces any variable in enforcements with its value.
-void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
-                                  LinearExpressionProto* expr);
-void CanonicalizeLinearExpression(LinearExpressionProto* expr);
-void CanonicalizeLinearExpression(const absl::flat_hash_set<int>& enforcements,
-                                  LinearConstraintProto* proto);
-
-// Canonicalizes the enforcement literals, target, and expressions of a
-// lin_max constraint, and sorts exprs by (vars, coeffs, offset).
-void CanonicalizeLinMax(ConstraintProto* ct);
 
 // Returns true if there is exactly one variable appearing in all the
 // expressions.

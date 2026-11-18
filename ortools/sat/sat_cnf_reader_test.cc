@@ -145,18 +145,6 @@ TEST(SatCnfReader, CnfFormatCornerCases) {
       "-4 -5 0\n"
       "+1 0\n"
       "-1 0\n";
-  std::string file_content_with_comments =
-      "c comments are ignored\n"
-      "p cnf 5 4\n"
-      "c + are not mandatory: \n"
-      "+1 2 +3 0\n"
-      "c and can be anywhere, with 0 0 0\n"
-      "-4 -5 0\n"
-      "c empty lines are ignored\n"
-      "\n\n\n    \n"
-      "+1 0\n"
-      "c same for spaces:\n"
-      "    -1   0\n";
   SatCnfReader reader;
   LinearBooleanProblem problem = LoadCnfFile(reader, file_content);
   EXPECT_EQ(file_content, LinearBooleanProblemToCnfString(problem));
@@ -202,14 +190,6 @@ TEST(SatCnfReader, WcnfFormat) {
 }
 
 TEST(SatCnfReader, WcnfNewFormat) {
-  const std::string new_format =
-      "1 +1 +2 +3 0\n"
-      "2 -4 -5 0\n"
-      "h -1 0\n"
-      "h +1 0\n"
-      "99 +1 0\n"
-      "3 +4 0\n"
-      "3 +5 0\n";
   const std::string file_content =
       "p wcnf 5 7 109\n"
       "1 +1 +2 +3 0\n"
