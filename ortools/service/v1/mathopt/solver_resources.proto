@@ -22,8 +22,6 @@ package operations_research.service.v1.mathopt;
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1.mathopt";
 
-option csharp_namespace = "Google.OrTools.Service";
-
 // This message is used to specify some hints on the resources a remote solve is
 // expected to use. These parameters are hints and may be ignored by the remote
 // server (in particular in case of solve in a local subprocess, for example).

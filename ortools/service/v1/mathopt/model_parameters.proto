@@ -25,8 +25,6 @@ import "ortools/service/v1/mathopt/sparse_containers.proto";
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1.mathopt";
 
-option csharp_namespace = "Google.OrTools.Service";
-
 // A suggested starting solution for the solver.
 //
 // MIP solvers generally only want primal information (`variable_values`), while
