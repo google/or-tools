@@ -862,10 +862,6 @@ bool PresolveContext::HasUnusedAffineVariable() const {
 // multiple of another if std::abs(coeff) is greater than 1 and if it is not
 // fixed to zero. This is important because it allows simply using the same
 // representative for any referenced literals.
-//
-// NOTE(user): When both domains contain [0,1] and later the wrong variable
-// becomes usable as boolean, then we have a bug. Because of that, the code
-// for GetLiteralRepresentative() is not as simple as it should be.
 bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
                                   AffineRelation* repo) {
   const int rep_x = repo->Get(x).representative;
@@ -960,6 +956,12 @@ void PresolveContext::RemoveAllVariablesFromAffineRelationConstraint() {
 }
 
 void PresolveContext::RemoveNonRepresentativeAffineVariableIfUnused(int var) {
+  // Postsolve does not run on mapping_model when presolve is disabled, so
+  // unused non-representative variables must stay in affine_relations_ for
+  // EncodeAllAffineRelations() to emit into working_model_.
+  if (!params_.cp_model_presolve()) {
+    return;
+  }
   if (!VariableIsUnique(var)) {
     return;
   }
@@ -1263,10 +1265,11 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   }
 
   // TODO(user): can we force the rep and remove GetAffineRelation()?
-  const bool had_literal_rep = CanBeUsedAsLiteral(x) || CanBeUsedAsLiteral(y);
   CHECK(AddRelation(x, y, c, o, &affine_relations_));
-  DCHECK(!had_literal_rep ||
-         CanBeUsedAsLiteral(GetAffineRelation(x).representative));
+  DCHECK(!CanBeUsedAsLiteral(x) ||
+         CanBeUsedAsLiteral(GetLiteralRepresentative(x)));
+  DCHECK(!CanBeUsedAsLiteral(y) ||
+         CanBeUsedAsLiteral(GetLiteralRepresentative(y)));
   UpdateRuleStats("affine: new relation");
 
   // Let's propagate again the new relation. We might as well do it as early
@@ -1320,32 +1323,12 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
 }
 
 int PresolveContext::GetLiteralRepresentative(int ref) const {
-  const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
-
   CHECK(CanBeUsedAsLiteral(ref));
-  if (!CanBeUsedAsLiteral(r.representative)) {
-    // NOTE(user): This can happen in some corner cases where the affine
-    // relations were added before the variable became usable as Boolean. When
-    // this is the case, the domain will be of the form [x, x + 1] and should be
-    // later remapped to a Boolean variable.
-    return ref;
-  }
-
-  // We made sure that the affine representative can always be used as a
-  // literal. However, if some variables are fixed, we might not have only
-  // (coeff=1 offset=0) or (coeff=-1 offset=1) and we might have something like
-  // (coeff=8 offset=0) which is only valid for both variables at zero...
-  //
-  // What is sure is that depending on the value, only one mapping can be valid
-  // because r.coeff can never be zero.
-  const bool positive_possible = (r.offset == 0 || r.coeff + r.offset == 1);
-  const bool negative_possible = (r.offset == 1 || r.coeff + r.offset == 0);
-  DCHECK_NE(positive_possible, negative_possible);
-  if (RefIsPositive(ref)) {
-    return positive_possible ? r.representative : NegatedRef(r.representative);
-  } else {
-    return positive_possible ? NegatedRef(r.representative) : r.representative;
-  }
+  const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
+  CHECK(CanBeUsedAsLiteral(r.representative));
+  CHECK((r.coeff == 1 && r.offset == 0) || (r.coeff == -1 && r.offset == 1));
+  return RefIsPositive(ref) == (r.coeff == 1) ? r.representative
+                                              : NegatedRef(r.representative);
 }
 
 bool PresolveContext::VariableIsAffineRepresentative(int var) const {
@@ -2885,15 +2868,30 @@ bool DomainMatchesProto(const Domain& domain,
   }
   return true;
 }
+
+// Compares two LinearExpressionProtos lexicographically by (vars, coeffs,
+// offset).
+bool LinearExpressionProtoLessThan(const LinearExpressionProto& a,
+                                   const LinearExpressionProto& b) {
+  if (absl::MakeSpan(a.vars()) != absl::MakeSpan(b.vars())) {
+    return absl::MakeSpan(a.vars()) < absl::MakeSpan(b.vars());
+  }
+  if (absl::MakeSpan(a.coeffs()) != absl::MakeSpan(b.coeffs())) {
+    return absl::MakeSpan(a.coeffs()) < absl::MakeSpan(b.coeffs());
+  }
+  return a.offset() < b.offset();
+}
 }  // namespace
 
 bool PresolveContext::LiteralsAreCanonical(
-    absl::Span<const int> lits,
-    const absl::flat_hash_set<int>& enforcements) const {
+    absl::Span<const int> lits, const absl::flat_hash_set<int>& enforcements,
+    bool check_sorted) const {
   int prev = std::numeric_limits<int>::min();
+  absl::flat_hash_set<int> seen_vars;
   for (const int lit : lits) {
     const int var = PositiveRef(lit);
-    if (lit <= prev || IsFixed(lit) || GetLiteralRepresentative(lit) != lit) {
+    if ((check_sorted ? lit <= prev : !seen_vars.insert(var).second) ||
+        IsFixed(lit) || GetLiteralRepresentative(lit) != lit) {
       return false;
     }
     if (enforcements.contains(var) || enforcements.contains(NegatedRef(var))) {
@@ -2901,7 +2899,28 @@ bool PresolveContext::LiteralsAreCanonical(
     }
     prev = lit;
   }
-  return !SortedLiteralsHaveOppositePair(lits);
+  return !check_sorted || !SortedLiteralsHaveOppositePair(lits);
+}
+
+bool PresolveContext::LinearExpressionIsCanonical(
+    const absl::flat_hash_set<int>& enforcements,
+    const LinearExpressionProto& expr, bool check_sorted) const {
+  if (expr.vars_size() != expr.coeffs_size()) return false;
+  int prev_var = -1;
+  absl::flat_hash_set<int> seen_vars;
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int var = expr.vars(i);
+    if (!RefIsPositive(var) || expr.coeffs(i) == 0 ||
+        (check_sorted ? var <= prev_var : !seen_vars.insert(var).second) ||
+        IsFixed(var) || !VariableIsAffineRepresentative(var)) {
+      return false;
+    }
+    if (enforcements.contains(var) || enforcements.contains(NegatedRef(var))) {
+      return false;
+    }
+    prev_var = var;
+  }
+  return true;
 }
 
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
@@ -3577,7 +3596,6 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinMax() {
   CanonicalizeAllExprs();
   SortExpressions(ct_->mutable_lin_max()->mutable_exprs());
-  DCHECK(LinMaxIsCanonical(*ct_));
 }
 
 void PresolveContext::ConstraintCanonicalizer::SortExpressions(
@@ -3805,12 +3823,13 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
   }
 }
 
-bool PresolveContext::ConstraintIsCanonical(int c) const {
+bool PresolveContext::ConstraintIsCanonical(int c, bool check_sorted) const {
   if (is_unsat_) return true;
-  return ConstraintIsCanonical(Constraint(c));
+  return ConstraintIsCanonical(Constraint(c), check_sorted);
 }
 
-bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
+bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct,
+                                            bool check_sorted) const {
   if (is_unsat_) return true;
   if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
     return ct.enforcement_literal().empty();
@@ -3831,7 +3850,10 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       !ct.enforcement_literal().empty()) {
     return false;
   }
-  if (!LiteralsAreCanonical(ct.enforcement_literal())) return false;
+  if (!LiteralsAreCanonical(ct.enforcement_literal(), /*enforcements=*/{},
+                            check_sorted)) {
+    return false;
+  }
 
   const absl::flat_hash_set<int> enf_set(ct.enforcement_literal().begin(),
                                          ct.enforcement_literal().end());
@@ -3840,15 +3862,8 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
     ApplyToAllLinearExpressions(
         [&](const LinearExpressionProto& expr) {
           if (!ok) return;
-          if (!LinearExpressionIsCanonical(enf_set, expr)) {
+          if (!LinearExpressionIsCanonical(enf_set, expr, check_sorted)) {
             ok = false;
-            return;
-          }
-          for (const int var : expr.vars()) {
-            if (IsFixed(var) || !VariableIsAffineRepresentative(var)) {
-              ok = false;
-              return;
-            }
           }
         },
         ct);
@@ -3872,11 +3887,14 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       }
       if (!HasEnforcementLiteral(ct) && lin.vars_size() < 2) return false;
       int prev_var = -1;
+      absl::flat_hash_set<int> seen_vars;
       int64_t gcd = 0;
       for (int i = 0; i < lin.vars_size(); ++i) {
         const int var = lin.vars(i);
-        if (!RefIsPositive(var) || var <= prev_var || lin.coeffs(i) == 0 ||
-            IsFixed(var) || !VariableIsAffineRepresentative(var)) {
+        if (!RefIsPositive(var) ||
+            (check_sorted ? var <= prev_var : !seen_vars.insert(var).second) ||
+            lin.coeffs(i) == 0 || IsFixed(var) ||
+            !VariableIsAffineRepresentative(var)) {
           return false;
         }
         if (enf_set.contains(var) || enf_set.contains(NegatedRef(var))) {
@@ -3891,31 +3909,43 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       return true;
     }
     case ConstraintProto::ConstraintCase::kBoolOr:
-      if (lrat_proof_handler != nullptr && !params_.cp_model_presolve()) {
+      if (lrat_proof_handler != nullptr &&
+          (!params_.cp_model_presolve() ||
+           params_.cp_model_pure_sat_presolve())) {
         return true;
       }
       return ct.bool_or().literals_size() >= 2 &&
-             LiteralsAreCanonical(ct.bool_or().literals());
+             LiteralsAreCanonical(ct.bool_or().literals(), /*enforcements=*/{},
+                                  check_sorted);
     case ConstraintProto::ConstraintCase::kBoolAnd:
+      if (lrat_proof_handler != nullptr &&
+          params_.cp_model_pure_sat_presolve()) {
+        return true;
+      }
       return HasEnforcementLiteral(ct) && !ct.bool_and().literals().empty() &&
-             LiteralsAreCanonical(ct.bool_and().literals(), enf_set);
+             LiteralsAreCanonical(ct.bool_and().literals(), enf_set,
+                                  check_sorted);
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return !HasEnforcementLiteral(ct) &&
              ct.at_most_one().literals_size() >= 2 &&
-             LiteralsAreCanonical(ct.at_most_one().literals());
+             LiteralsAreCanonical(ct.at_most_one().literals(),
+                                  /*enforcements=*/{}, check_sorted);
     case ConstraintProto::ConstraintCase::kExactlyOne:
       return !HasEnforcementLiteral(ct) &&
              ct.exactly_one().literals_size() >= 2 &&
-             LiteralsAreCanonical(ct.exactly_one().literals());
+             LiteralsAreCanonical(ct.exactly_one().literals(),
+                                  /*enforcements=*/{}, check_sorted);
     case ConstraintProto::ConstraintCase::kBoolXor: {
       const auto& lits = ct.bool_xor().literals();
       if (lits.size() < 2) return false;
       int prev_var = -1;
+      absl::flat_hash_set<int> seen_vars;
       for (int i = 0; i < lits.size(); ++i) {
         const int lit = lits[i];
         const int var = PositiveRef(lit);
-        if ((i > 0 && !RefIsPositive(lit)) || var <= prev_var || IsFixed(lit) ||
-            GetLiteralRepresentative(lit) != lit) {
+        if ((i > 0 && !RefIsPositive(lit)) ||
+            (check_sorted ? var <= prev_var : !seen_vars.insert(var).second) ||
+            IsFixed(lit) || GetLiteralRepresentative(lit) != lit) {
           return false;
         }
         if (enf_set.contains(var) || enf_set.contains(NegatedRef(var))) {
@@ -3926,7 +3956,10 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       return true;
     }
     case ConstraintProto::ConstraintCase::kLinMax:
-      return LinMaxIsCanonical(ct) && all_exprs_canonical();
+      return all_exprs_canonical() &&
+             (!check_sorted ||
+              absl::c_is_sorted(ct.lin_max().exprs(),
+                                LinearExpressionProtoLessThan));
     case ConstraintProto::ConstraintCase::kCircuit:
       return literals_are_resolved(ct.circuit().literals());
     case ConstraintProto::ConstraintCase::kRoutes:
@@ -3941,12 +3974,14 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
       return true;
     case ConstraintProto::ConstraintCase::kIntProd:
       return all_exprs_canonical() &&
-             absl::c_is_sorted(ct.int_prod().exprs(),
-                               LinearExpressionProtoLessThan);
+             (!check_sorted ||
+              absl::c_is_sorted(ct.int_prod().exprs(),
+                                LinearExpressionProtoLessThan));
     case ConstraintProto::ConstraintCase::kAllDiff:
       return all_exprs_canonical() &&
-             absl::c_is_sorted(ct.all_diff().exprs(),
-                               LinearExpressionProtoLessThan);
+             (!check_sorted ||
+              absl::c_is_sorted(ct.all_diff().exprs(),
+                                LinearExpressionProtoLessThan));
     case ConstraintProto::ConstraintCase::kIntDiv:
     case ConstraintProto::ConstraintCase::kIntMod:
     case ConstraintProto::ConstraintCase::kElement:
@@ -3960,11 +3995,24 @@ bool PresolveContext::ConstraintIsCanonical(const ConstraintProto& ct) const {
   return true;
 }
 
-bool PresolveContext::AllConstraintsAreCanonical() const {
+bool PresolveContext::AllConstraintsAreCanonical(bool check_sorted) const {
   if (is_unsat_) return true;
-  if (NeedsCanonicalization()) return false;
+  if (check_sorted && NeedsCanonicalization()) return false;
   for (int c = 0; c < NumConstraints(); ++c) {
-    if (!ConstraintIsCanonical(c)) return false;
+    if (!ConstraintIsCanonical(c, check_sorted)) return false;
+  }
+  return true;
+}
+
+bool PresolveContext::ModelProtoIsCanonical(CpModelProto* proto) const {
+  CpModelProto mapping;
+  PresolveContext new_context(*this, proto, &mapping);
+  new_context.InitializeNewDomains();
+  if (new_context.ModelIsUnsat()) return true;
+  for (int c = 0; c < new_context.NumConstraints(); ++c) {
+    if (!new_context.ConstraintIsCanonical(c, /*check_sorted=*/false)) {
+      return false;
+    }
   }
   return true;
 }
@@ -3996,14 +4044,14 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
                                           CpModelProto* mini_model) {
   mini_model->Clear();
 
-  *mini_model->add_constraints() = ct;
-
   absl::flat_hash_map<int, int> inverse_interval_map;
   for (const int i : UsedIntervals(ct)) {
+    const ConstraintProto& itv_ct = context->Constraint(i);
+    const IntervalConstraintProto& itv = itv_ct.interval();
+    if (!itv.has_start() && !itv.has_size() && !itv.has_end()) continue;
     auto [it, inserted] =
         inverse_interval_map.insert({i, mini_model->constraints_size()});
     if (inserted) {
-      const ConstraintProto& itv_ct = context->Constraint(i);
       *mini_model->add_constraints() = itv_ct;
 
       // Now add end = start + size for the interval. This is not strictly
@@ -4011,18 +4059,16 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
       ConstraintProto* linear = mini_model->add_constraints();
       *linear->mutable_enforcement_literal() = itv_ct.enforcement_literal();
       LinearConstraintProto* mutable_linear = linear->mutable_linear();
-      const IntervalConstraintProto& itv = itv_ct.interval();
 
       mutable_linear->add_domain(0);
       mutable_linear->add_domain(0);
       AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
       AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
       AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-      CanonicalizeLinearExpression({itv_ct.enforcement_literal().begin(),
-                                    itv_ct.enforcement_literal().end()},
-                                   mutable_linear);
     }
   }
+
+  *mini_model->add_constraints() = ct;
 
   absl::flat_hash_map<int, int> inverse_variable_map;
   for (const ConstraintProto& cur_ct : mini_model->constraints()) {
@@ -4049,16 +4095,12 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
   };
   const auto interval_mapping_function = [&inverse_interval_map](int* i) {
     const auto it = inverse_interval_map.find(*i);
-    DCHECK(it != inverse_interval_map.end());
-    *i = it->second;
+    *i = it == inverse_interval_map.end() ? -1 : it->second;
   };
   for (ConstraintProto& ct : *mini_model->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct);
     ApplyToAllLiteralIndices(mapping_function, &ct);
-    ApplyToAllIntervalIndices(interval_mapping_function, &ct);
-    if (ct.constraint_case() == ConstraintProto::kLinMax) {
-      CanonicalizeLinMax(&ct);
-    }
+    ApplyToAllIntervalIndices(interval_mapping_function, &ct, /*filter=*/true);
     if (ct.constraint_case() == ConstraintProto::kRoutes) {
       for (RoutesConstraintProto::NodeExpressions& node_exprs :
            *ct.mutable_routes()->mutable_dimensions()) {
@@ -4076,6 +4118,55 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
           expr.set_vars(0, RefIsPositive(ref) ? image : NegatedRef(image));
         }
       }
+    }
+  }
+
+  // Canonicalize `mini_model` (whose variable remapping and synthetic interval
+  // equations above may have left unsorted terms, fixed variables, or cleared
+  // constraints) so it satisfies post-presolve `LoadCpModel` invariants, and
+  // compact out any emptied constraints or unperformed interval stubs.
+  Model local_model;
+  CpModelProto mapping_model;
+  PresolveContext mini_context(&local_model, mini_model, &mapping_model);
+  mini_context.InitializeNewDomains();
+  mini_context.CanonicalizeConstraintsLazily();
+  if (mini_context.ModelIsUnsat()) {
+    mini_model->mutable_constraints()->Clear();
+    mini_model->add_constraints()->mutable_bool_or();
+  } else {
+    mini_context.WriteVariableDomainsToProto();
+    const int old_num_constraints = mini_model->constraints_size();
+    std::vector<int> post_interval_map;
+    if (!inverse_interval_map.empty()) {
+      post_interval_map.assign(old_num_constraints, -1);
+    }
+    int new_size = 0;
+    for (int c = 0; c < old_num_constraints; ++c) {
+      ConstraintProto* cur_ct = mini_model->mutable_constraints(c);
+      if (cur_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+        continue;
+      }
+      if (cur_ct->constraint_case() == ConstraintProto::kInterval) {
+        if (!cur_ct->interval().has_start() && !cur_ct->interval().has_size() &&
+            !cur_ct->interval().has_end()) {
+          continue;
+        }
+        post_interval_map[c] = new_size;
+      }
+      if (new_size != c) {
+        mini_model->mutable_constraints(new_size)->Swap(cur_ct);
+      }
+      ++new_size;
+    }
+    mini_model->mutable_constraints()->DeleteSubrange(
+        new_size, old_num_constraints - new_size);
+    if (!inverse_interval_map.empty() && new_size > 0 &&
+        new_size < old_num_constraints) {
+      // Only `ct` (the last constraint in `mini_model`) can reference
+      // intervals.
+      ApplyToAllIntervalIndices(
+          [&post_interval_map](int* ref) { *ref = post_interval_map[*ref]; },
+          mini_model->mutable_constraints(new_size - 1), /*filter=*/true);
     }
   }
 }

@@ -11,20 +11,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/feasibility_jump.h"
+#include "ortools/sat/violation_ls.h"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
+#include <string>
 #include <utility>
-#include <vector>
 
+#include "absl/synchronization/notification.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "gtest/gtest.h"
+#include "ortools/base/threadpool.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model_test_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/stat_tables.h"
-#include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 
@@ -99,7 +103,7 @@ TEST(JumpTableTest, TestSetJump) {
   EXPECT_EQ(num_calls, 0);
 }
 
-TEST(FeasibilityJumpSolverTest,
+TEST(ViolationLsSolverTest,
      IncrementalUpdatesPreserveWeightsAndAdvanceDeterministicTime) {
   CpModelProto proto;
   for (int i = 0; i < 10; ++i) {
@@ -148,10 +152,11 @@ TEST(FeasibilityJumpSolverTest,
   SharedResponseManager response(&model);
   SharedLsSolutionRepository ls_hints;
 
-  auto ls_states = std::make_shared<SharedLsStates>("fj", params, &stat_tables);
-  FeasibilityJumpSolver fj("fj", SubSolver::FIRST_SOLUTION, proto, params,
-                           ls_states, &time_limit, &response, &shared_bounds,
-                           &shared_clauses, &ls_hints, &stat_tables);
+  auto ls_states = std::make_shared<SharedLsStates>("ls", params, &stat_tables);
+  ViolationLsSolver fj("ls", /*fj_enabled=*/true, /*vls_enabled=*/false, proto,
+                       params, ls_states, &time_limit, &response,
+                       &shared_bounds, &shared_clauses, &ls_hints,
+                       &stat_tables);
 
   // Initialize all 8 states with one batch each.
   double prev_dtime = 0.0;
@@ -200,7 +205,7 @@ TEST(FeasibilityJumpSolverTest,
   EXPECT_EQ(state0->move->NumVariables(), 8);
 }
 
-TEST(FeasibilityJumpSolverTest,
+TEST(ViolationLsSolverTest,
      MultipleWorkersHandleStaggeredRebuildsAndConflictingBounds) {
   CpModelProto proto;
   for (int i = 0; i < 10; ++i) {
@@ -252,13 +257,15 @@ TEST(FeasibilityJumpSolverTest,
   SharedLsSolutionRepository ls_hints;
 
   auto ls_states =
-      std::make_shared<SharedLsStates>("fj", params1, &stat_tables);
-  FeasibilityJumpSolver fj1("fj1", SubSolver::FIRST_SOLUTION, proto, params1,
-                            ls_states, &time_limit, &response, &shared_bounds,
-                            &shared_clauses, &ls_hints, &stat_tables);
-  FeasibilityJumpSolver fj2("fj2", SubSolver::FIRST_SOLUTION, proto, params2,
-                            ls_states, &time_limit, &response, &shared_bounds,
-                            &shared_clauses, &ls_hints, &stat_tables);
+      std::make_shared<SharedLsStates>("ls", params1, &stat_tables);
+  ViolationLsSolver fj1("ls1", /*fj_enabled=*/true, /*vls_enabled=*/false,
+                        proto, params1, ls_states, &time_limit, &response,
+                        &shared_bounds, &shared_clauses, &ls_hints,
+                        &stat_tables);
+  ViolationLsSolver fj2("ls2", /*fj_enabled=*/true, /*vls_enabled=*/false,
+                        proto, params2, ls_states, &time_limit, &response,
+                        &shared_bounds, &shared_clauses, &ls_hints,
+                        &stat_tables);
 
   // Accumulate enough search dtime on fj1 while fj2 has almost none.
   for (int t = 0; t < 4; ++t) {
@@ -289,75 +296,67 @@ TEST(FeasibilityJumpSolverTest,
   EXPECT_FALSE(fj1.TaskIsAvailable());
 }
 
-TEST(FeasibilityJumpSolverTest,
-     LinearizationLevelZeroSolvesWithoutLinearModel) {
-  CpModelProto proto;
-  // Variables:
-  //   0..2: Booleans [0, 1]
-  //   3: integer [0, 2]
-  //   4: integer [0, 4]
-  for (int i = 0; i < 3; ++i) {
-    auto* var = proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-  }
-  {
-    auto* var = proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(2);
-  }
-  {
-    auto* var = proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(4);
-  }
-  // Constraints that LinearModel would normally rewrite at level > 0:
-  // exactly_one(0, 1, 2) + full-encoding literals for var 3.
-  {
-    auto* ct = proto.add_constraints()->mutable_exactly_one();
-    ct->add_literals(0);
-    ct->add_literals(1);
-    ct->add_literals(2);
-  }
-  for (int v = 0; v < 3; ++v) {
-    auto* eq_ct = proto.add_constraints();
-    eq_ct->add_enforcement_literal(v);
-    eq_ct->mutable_linear()->add_vars(3);
-    eq_ct->mutable_linear()->add_coeffs(1);
-    eq_ct->mutable_linear()->add_domain(v);
-    eq_ct->mutable_linear()->add_domain(v);
+TEST(ViolationLsSolverTest, ReinitializeAbortedByTimeLimitDoesNotCrash) {
+  CpModelProto model_proto;
+  auto* x = model_proto.add_variables();
+  x->add_domain(0);
+  x->add_domain(10);
+  auto* y = model_proto.add_variables();
+  y->add_domain(0);
+  y->add_domain(10);
+  auto* ct = model_proto.add_constraints()->mutable_linear();
+  ct->add_vars(0);
+  ct->add_coeffs(1);
+  ct->add_vars(1);
+  ct->add_coeffs(1);
+  ct->add_domain(5);
+  ct->add_domain(20);
+  auto* obj = model_proto.mutable_objective();
+  obj->add_vars(0);
+  obj->add_coeffs(1);
+  obj->add_vars(1);
+  obj->add_coeffs(1);
 
-    auto* neq_ct = proto.add_constraints();
-    neq_ct->add_enforcement_literal(NegatedRef(v));
-    neq_ct->mutable_linear()->add_vars(3);
-    neq_ct->mutable_linear()->add_coeffs(1);
-    if (v == 0) {
-      neq_ct->mutable_linear()->add_domain(1);
-      neq_ct->mutable_linear()->add_domain(2);
-    } else if (v == 1) {
-      neq_ct->mutable_linear()->add_domain(0);
-      neq_ct->mutable_linear()->add_domain(0);
-      neq_ct->mutable_linear()->add_domain(2);
-      neq_ct->mutable_linear()->add_domain(2);
-    } else {
-      neq_ct->mutable_linear()->add_domain(0);
-      neq_ct->mutable_linear()->add_domain(1);
-    }
-  }
-  // Linear constraint: var 3 + var 4 == 4.
-  {
-    auto* ct = proto.add_constraints()->mutable_linear();
-    ct->add_vars(3);
-    ct->add_vars(4);
-    ct->add_coeffs(1);
-    ct->add_coeffs(1);
-    ct->add_domain(4);
-    ct->add_domain(4);
-  }
-
+  Model model;
   SatParameters params;
-  params.set_feasibility_jump_linearization_level(0);
-  params.set_feasibility_jump_batch_dtime(1e-2);
+  params.set_feasibility_jump_batch_dtime(1e-4);
+  *model.GetOrCreate<SatParameters>() = params;
+
+  auto* shared_time_limit = model.GetOrCreate<ModelSharedTimeLimit>();
+  SharedResponseManager shared_response(&model);
+  shared_response.InitializeObjective(model_proto);
+  SharedBoundsManager shared_bounds(model_proto);
+  SharedClausesManager shared_clauses(/*always_synchronize=*/true);
+  SharedLsSolutionRepository shared_hints;
+  SharedStatTables stat_tables;
+  auto ls_states = std::make_shared<SharedLsStates>("ls", params, &stat_tables);
+
+  ViolationLsSolver solver("ls", /*fj_enabled=*/true, /*vls_enabled=*/true,
+                           model_proto, params, ls_states, shared_time_limit,
+                           &shared_response, &shared_bounds, &shared_clauses,
+                           &shared_hints, &stat_tables);
+
+  // First task initializes evaluator_ and runs a batch.
+  solver.GenerateTask(0)();
+
+  // Trigger a model rebuild on the next task while stopping the shared limit so
+  // Initialize() aborts and resets evaluator_ to nullptr.
+  shared_bounds.ReportPotentialNewBounds("test", {0}, {2}, {2});
+  shared_bounds.Synchronize();
+  shared_time_limit->Stop();
+  solver.GenerateTask(1)();
+
+  // A subsequent task sees updated == false and evaluator_ == nullptr; it must
+  // re-attempt initialization cleanly instead of dereferencing evaluator_.
+  solver.GenerateTask(2)();
+}
+
+TEST(ViolationLsSolverTest, StopsMidBatchWhenTimeLimitIsStopped) {
+  const CpModelProto proto = PigeonholeProblem(30);
+  SatParameters params;
+  params.set_feasibility_jump_batch_dtime(10.0);
+  params.set_feasibility_jump_decay(1.0);
+  params.set_violation_ls_compound_move_probability(0.0);
   SharedBoundsManager shared_bounds(proto);
   SharedClausesManager shared_clauses(true);
   SharedStatTables stat_tables;
@@ -365,19 +364,25 @@ TEST(FeasibilityJumpSolverTest,
   ModelSharedTimeLimit time_limit(&model);
   SharedResponseManager response(&model);
   SharedLsSolutionRepository ls_hints;
+  auto ls_states = std::make_shared<SharedLsStates>("ls", params, &stat_tables);
+  ViolationLsSolver fj("ls", /*fj_enabled=*/true, /*vls_enabled=*/false, proto,
+                       params, ls_states, &time_limit, &response,
+                       &shared_bounds, &shared_clauses, &ls_hints,
+                       &stat_tables);
+  absl::Notification started;
+  absl::Notification done;
+  ThreadPool pool(1);
 
-  auto ls_states = std::make_shared<SharedLsStates>("fj", params, &stat_tables);
-  FeasibilityJumpSolver fj("fj", SubSolver::FIRST_SOLUTION, proto, params,
-                           ls_states, &time_limit, &response, &shared_bounds,
-                           &shared_clauses, &ls_hints, &stat_tables);
+  pool.Schedule([&, task = fj.GenerateTask(0)] {
+    started.Notify();
+    task();
+    done.Notify();
+  });
+  started.WaitForNotification();
+  absl::SleepFor(absl::Milliseconds(20));
+  time_limit.Stop();
 
-  for (int t = 0; t < 8 && !response.HasFeasibleSolution(); ++t) {
-    ASSERT_TRUE(fj.TaskIsAvailable());
-    fj.GenerateTask(t)();
-  }
-  EXPECT_TRUE(response.HasFeasibleSolution());
-  EXPECT_GT(fj.deterministic_time(), 0.0);
+  EXPECT_TRUE(done.WaitForNotificationWithTimeout(absl::Milliseconds(100)));
 }
-
 }  // namespace
 }  // namespace operations_research::sat

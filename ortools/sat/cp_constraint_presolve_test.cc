@@ -1739,6 +1739,7 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintRandomEquivalence) {
     std::vector<int64_t> coeffs(num_vars);
     int64_t min_act = 0;
     int64_t max_act = 0;
+    int64_t small_span = 0;
     for (int i = 0; i < num_vars; ++i) {
       int64_t c = (i == num_vars - 1) ? absl::Uniform<int64_t>(random, 20, 80)
                                       : absl::Uniform<int64_t>(random, 1, 6);
@@ -1748,13 +1749,26 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintRandomEquivalence) {
       lin->add_coeffs(c);
       min_act += c > 0 ? c * orig_domains[i].Min() : c * orig_domains[i].Max();
       max_act += c > 0 ? c * orig_domains[i].Max() : c * orig_domains[i].Min();
+      if (i < num_vars - 1) {
+        small_span +=
+            std::abs(c) * (orig_domains[i].Max() - orig_domains[i].Min());
+      }
     }
     if (max_act - min_act < 2) continue;
-    const int64_t rhs_lb = absl::Uniform<int64_t>(random, min_act + 1, max_act);
-    const int64_t rhs_ub =
-        absl::Bernoulli(random, 0.2)
-            ? rhs_lb
-            : absl::Uniform<int64_t>(random, rhs_lb, max_act);
+    int64_t rhs_lb = 0;
+    int64_t rhs_ub = 0;
+    if (iter % 2 == 1 && std::abs(coeffs[num_vars - 1]) > small_span) {
+      // Sample bounds inside the two outer big-M activity islands so the
+      // constraint remains feasible and two-sided after domain propagation.
+      rhs_lb =
+          absl::Uniform<int64_t>(random, min_act + 1, min_act + small_span + 1);
+      rhs_ub = absl::Uniform<int64_t>(random, max_act - small_span, max_act);
+    } else {
+      rhs_lb = absl::Uniform<int64_t>(random, min_act + 1, max_act);
+      rhs_ub = absl::Bernoulli(random, 0.2)
+                   ? rhs_lb
+                   : absl::Uniform<int64_t>(random, rhs_lb, max_act);
+    }
     lin->add_domain(rhs_lb);
     lin->add_domain(rhs_ub);
 

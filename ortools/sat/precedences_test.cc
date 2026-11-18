@@ -1248,6 +1248,25 @@ TEST(BinaryRelationMapsTest, EnqueueLowerOrEqualDoesNotLeakReasons) {
   EXPECT_EQ(integer_trail->NumLazyReasons(), 0);
 }
 
+TEST(BinaryRelationMapsTest, MaybePropagateNegativeSlackWithNonUnitCoeff) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(1, 1));
+  const IntegerVariable y = model.Add(NewIntegerVariable(1, 1));
+
+  LinearExpression2 expr(x, y, IntegerValue(2), IntegerValue(3));
+  expr.SimpleCanonicalization();
+
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  auto* bounds = model.GetOrCreate<Linear2Bounds>();
+  root_bounds->AddUpperBound(expr, IntegerValue(4));
+
+  // 2*1 + 3*1 = 5 > 4 (slack = -1); FloorRatio(-1, 2) = -1 must detect the
+  // conflict instead of truncating -1 / 2 toward zero.
+  const LinearExpression2Index index = bounds->GetIndex(expr);
+  ASSERT_NE(index, kNoLinearExpression2Index);
+  EXPECT_FALSE(bounds->MaybePropagate(index, expr, IntegerValue(4)));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

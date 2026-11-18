@@ -45,6 +45,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -415,6 +416,7 @@ class ModelCopy {
 
   ModelCopyHelper helper_;
   const SatParameters& params_;
+  TimeLimit* time_limit_;
   SolverLogger* logger_;
   CpModelProto* working_model_;
 
@@ -548,22 +550,10 @@ class DenseModelCopy {
   bool UpdateFromSharedBounds();
   bool ShouldRebuild(double min_variable_reduction_ratio) const;
 
-  // Propagates tightened `var_domains_` back into the active input variables'
-  // `input_var_domains_`. Returns false if UNSAT.
-  bool SyncDenseDomainsToInputDomains(bool only_multi_var_classes = false);
-
-  // Propagates fixedness from `input_var_representatives` across
-  // `input_var_domains_` and intersects into active `var_domains_`. Returns
-  // false if UNSAT.
-  bool PropagateInputEquivalences(
-      absl::Span<const int> input_var_representatives);
-
-  // Computes and applies an incremental mapping from the current dense
-  // variables in `proto()` to the next compacted dense model, removing fixed
+  // Computes and applies a dense mapping of the variables which removes fixed
   // and non-representative variables. Returns false if UNSAT.
-  void ComputeStepVariableMapping(
-      absl::Span<const int> input_var_representatives);
-  bool ApplyStepVariableMapping();
+  bool ComputeVariableMapping(absl::Span<const int> input_var_representatives);
+  bool ApplyVariableMapping();
   void ResetVarDomains();
 
   const CpModelProto& input_model_proto_;
@@ -579,7 +569,6 @@ class DenseModelCopy {
   int64_t bounds_timestamp_ = -1;
   int64_t latest_bounds_timestamp_ = -1;
   int64_t equivalences_timestamp_ = -1;
-  int64_t latest_equivalences_timestamp_ = -1;
   int64_t fixed_vars_at_last_rebuild_ = 0;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
@@ -594,13 +583,8 @@ class DenseModelCopy {
   // removes the fixed and non-representative variables. Removed variables are
   // "mapped" to `kNoVariableMapping`.
   std::vector<int> input_var_mapping_;
-  // The reverse mapping from the dense to the input variables. Each entry's
-  // positive variable is also the head of an intrusive singly-linked list (via
-  // `next_equivalent_input_var_`, terminated at `tail_input_var_`) of all
-  // active input variables currently mapped to that dense variable.
+  // The reverse mapping from the dense to the input variables.
   std::vector<int> reverse_mapping_;
-  std::vector<int> next_equivalent_input_var_;
-  std::vector<int> tail_input_var_;
 
   // The domains of the `input_model_proto_` variables.
   std::vector<Domain> input_var_domains_;
@@ -611,12 +595,6 @@ class DenseModelCopy {
   std::vector<int> tmp_variables_;
   std::vector<int64_t> tmp_new_lower_bounds_;
   std::vector<int64_t> tmp_new_upper_bounds_;
-
-  // Scratch buffers reused across chained rebuilds.
-  std::vector<int> step_var_mapping_;
-  std::vector<int> next_reverse_mapping_;
-  std::vector<int> next_tail_input_var_;
-  std::vector<int> rep_to_new_dense_ref_;
 };
 
 }  // namespace sat

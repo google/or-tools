@@ -36,6 +36,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -57,6 +58,7 @@ IntegerConflictResolution::IntegerConflictResolution(Model* model)
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       clauses_propagator_(model->GetOrCreate<ClauseManager>()),
       implications_(model->GetOrCreate<BinaryImplicationGraph>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       params_(*model->GetOrCreate<SatParameters>()) {
   trail_->SetConflictResolutionFunction(
       [this](std::vector<Literal>* conflict,
@@ -274,6 +276,11 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     const IntegerVariable var = reason.vars[i];
     CHECK_GT(reason.coeffs[i], 0);
     if (PositiveVariable(var) == to_ignore) continue;
+
+    // A variable whose current lower bound is from level zero is true
+    // unconditionally: it requires no explanation in the conflict and cannot
+    // be relaxed below its level-zero bound.
+    if (integer_trail_->VariableLowerBoundIsFromLevelZero(var)) continue;
 
     IntegerVariableData& data = MutableIntData(var);
     UpdateData(var, source_index, data);
@@ -530,12 +537,33 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
       starting_conflict, std::nullopt);
   std::make_heap(tmp_queue_.begin(), tmp_queue_.end());
 
+  // On large problems with long linear reasons, a single conflict resolution
+  // can take a very long time (we have seen more than a minute in debug mode),
+  // and the time limit is only checked between conflicts. So we check it here
+  // from time to time too and, if it is reached, we abort and return the
+  // trivially valid conflict made of all the decisions.
+  //
+  // We only do that when there are no assumptions at level one, since in this
+  // case the decision at level one is not a real literal (see
+  // Trail::EnqueueAssumption()), and when the conflict is above the assumption
+  // level, since otherwise we need the full resolution to compute the core.
+  const int conflict_level = trail_->CurrentDecisionLevel();
+  const bool can_abort_on_time_limit =
+      conflict_level > sat_solver_->AssumptionLevel() &&
+      trail_->Decisions()[0].literal.Index() != kNoLiteralIndex;
+  TimeLimitCheckEveryNCalls time_limit_check(64, time_limit_);
+
   // We will expand Booleans as long as we don't have first UIP.
   // Then we will expand all integer_literals until we have only Boolean left.
   int64_t work_done = 0;
   bool uip_found = false;
   while (!tmp_queue_.empty()) {
     ++work_done;
+    if (can_abort_on_time_limit && time_limit_check.LimitReached()) {
+      FillConflictWithDecisions(conflict_level, conflict,
+                                reason_used_to_infer_the_conflict);
+      return;
+    }
 
     // TODO(user): By looking at the reason, we can "correct" the level and
     // trail index, if it changes, we could update the queue and continue. This
@@ -820,6 +848,23 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
     } else {
       ++comparison_num_same_;
     }
+  }
+}
+
+void IntegerConflictResolution::FillConflictWithDecisions(
+    int conflict_level, std::vector<Literal>* conflict,
+    std::vector<Literal>* reason_used_to_infer_the_conflict) {
+  conflict->clear();
+  reason_used_to_infer_the_conflict->clear();
+
+  // Note that the conflict resolution might have enqueued a new decision above
+  // `conflict_level` (see create_1uip_boolean_during_icr), but this does not
+  // modify the decisions at or below `conflict_level`.
+  const auto& decisions = trail_->Decisions();
+  for (int level = conflict_level; level > 0; --level) {
+    const Literal decision = decisions[level - 1].literal;
+    DCHECK_EQ(trail_->Info(decision.Variable()).level, level);
+    conflict->push_back(decision.Negated());
   }
 }
 

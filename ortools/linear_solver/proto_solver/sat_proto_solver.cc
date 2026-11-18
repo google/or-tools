@@ -48,6 +48,7 @@
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/tum.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/mp_model_solution_checker.h"

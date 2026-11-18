@@ -32,15 +32,14 @@ There are several tiers of behavior:
 -   **[8 workers]** This is the minimum number of workers needed to trigger
     parallel search. It blends workers with different linear relaxations (none,
     default, maximal), core-based search if applicable, a quick_restart
-    subsolver, a feasibility_jump first solution subsolver, and dedicated Large
-    Neighborhood Search subsolvers to find improved solutions.
+    subsolver, a violation_ls subsolver, and dedicated Large Neighborhood Search
+    subsolvers to find improved solutions.
 -   **[16 workers]** Bumping to 16 workers adds a continuous probing subsolver,
-    more first solution subsolvers (random search and feasibility_jump), two
-    dual subsolvers dedicated to improving the lower bound of the objective
-    (when minimizing), and more LNS subsolvers.
+    more first solution subsolvers (random search and violation_ls), two dual
+    subsolvers dedicated to improving the lower bound of the objective (when
+    minimizing), and more LNS subsolvers.
 -   **[24 workers]** Adds more dual subsolvers, no_lp and max_lp variations of
-    previous subsolvers, more feasibility_jump first solution subsolvers, and
-    more LNS subsolvers.
+    previous subsolvers, more violation_ls subsolvers, and more LNS subsolvers.
 -   **[32 workers and more]** Adds more LNS workers, and more first solution
     subsolvers.
 

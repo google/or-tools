@@ -524,160 +524,6 @@ TEST(ComputeFloatObjectiveValueTest, ExactWithLargeInt64Solution) {
   EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
 }
 
-TEST(CanonicalizeLinMaxTest, SortsTermsAndExpressions) {
-  ConstraintProto ct = ParseTestProto(R"pb(
-    lin_max {
-      target {
-        vars: [ 2, 1, 2 ]
-        coeffs: [ 1, 3, 2 ]
-        offset: 4
-      }
-      exprs {
-        vars: [ 1, 0 ]
-        coeffs: [ 2, 1 ]
-        offset: 5
-      }
-      exprs {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, -1 ]
-        offset: 10
-      }
-      exprs {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, -1 ]
-        offset: 2
-      }
-    }
-  )pb");
-  EXPECT_FALSE(LinMaxIsCanonical(ct));
-  CanonicalizeLinMax(&ct);
-  EXPECT_TRUE(LinMaxIsCanonical(ct));
-
-  const ConstraintProto expected = ParseTestProto(R"pb(
-    lin_max {
-      target {
-        vars: [ 1, 2 ]
-        coeffs: [ 3, 3 ]
-        offset: 4
-      }
-      exprs {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, -1 ]
-        offset: 2
-      }
-      exprs {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, -1 ]
-        offset: 10
-      }
-      exprs {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, 2 ]
-        offset: 5
-      }
-    }
-  )pb");
-  EXPECT_THAT(ct, testing::EqualsProto(expected));
-}
-
-TEST(CanonicalizeLinMaxTest, CancelsZeroCoefficientTerms) {
-  ConstraintProto ct = ParseTestProto(R"pb(
-    lin_max {
-      target {
-        vars: [ 0, 1, 0 ]
-        coeffs: [ 2, 0, -2 ]
-        offset: 3
-      }
-      exprs {
-        vars: [ 1, 1 ]
-        coeffs: [ 4, -4 ]
-        offset: 7
-      }
-      exprs { offset: 1 }
-    }
-  )pb");
-  EXPECT_FALSE(LinMaxIsCanonical(ct));
-  CanonicalizeLinMax(&ct);
-  EXPECT_TRUE(LinMaxIsCanonical(ct));
-
-  const ConstraintProto expected = ParseTestProto(R"pb(
-    lin_max {
-      target { offset: 3 }
-      exprs { offset: 1 }
-      exprs { offset: 7 }
-    }
-  )pb");
-  EXPECT_THAT(ct, testing::EqualsProto(expected));
-}
-
-TEST(CanonicalizeLinMaxTest, CanonicalizesEnforcementLiterals) {
-  ConstraintProto ct = ParseTestProto(R"pb(
-    enforcement_literal: [ 1, -1, 1 ]
-    lin_max {
-      target {
-        vars: [ 0, 1, 2 ]
-        coeffs: [ 3, 4, 5 ]
-        offset: 1
-      }
-      exprs {
-        vars: [ 1, 2 ]
-        coeffs: [ 2, 1 ]
-        offset: 10
-      }
-      exprs {
-        vars: [ 0, 2 ]
-        coeffs: [ -2, 1 ]
-        offset: 5
-      }
-    }
-  )pb");
-  EXPECT_FALSE(LinMaxIsCanonical(ct));
-  CanonicalizeLinMax(&ct);
-  EXPECT_TRUE(LinMaxIsCanonical(ct));
-
-  const ConstraintProto expected = ParseTestProto(R"pb(
-    enforcement_literal: [ -1, 1 ]
-    lin_max {
-      target {
-        vars: [ 2 ]
-        coeffs: [ 5 ]
-        offset: 5
-      }
-      exprs {
-        vars: [ 2 ]
-        coeffs: [ 1 ]
-        offset: 5
-      }
-      exprs {
-        vars: [ 2 ]
-        coeffs: [ 1 ]
-        offset: 12
-      }
-    }
-  )pb");
-  EXPECT_THAT(ct, testing::EqualsProto(expected));
-
-  // Contradictory enforcement literals (x and not(x)) are not canonical and
-  // clear the constraint when canonicalized.
-  ConstraintProto contradictory_ct = ParseTestProto(R"pb(
-    enforcement_literal: [ -1, 0 ]
-    lin_max {
-      target {
-        vars: [ 2 ]
-        coeffs: [ 1 ]
-      }
-      exprs {
-        vars: [ 2 ]
-        coeffs: [ 1 ]
-      }
-    }
-  )pb");
-  EXPECT_FALSE(LinMaxIsCanonical(contradictory_ct));
-  CanonicalizeLinMax(&contradictory_ct);
-  EXPECT_EQ(contradictory_ct.constraint_case(),
-            ConstraintProto::CONSTRAINT_NOT_SET);
-}
-
 TEST(AffineExprTest, ConstAndVarHelpers) {
   constexpr AffineExpr c = AffineExpr::Const(42);
   EXPECT_EQ(c.var, -1);
@@ -762,22 +608,6 @@ TEST(CpModelUtilsTest, ApplyToAllLinearExpressions) {
   EXPECT_EQ(visited, 0);
 }
 
-TEST(CpModelUtilsTest, CanonicalizeLinearConstraintProto) {
-  LinearConstraintProto lin = ParseTestProto(R"pb(
-    vars: [ 2, 0, 2, 1 ]
-    coeffs: [ 3, 4, -1, 5 ]
-    domain: [ 10, 20 ]
-  )pb");
-  // Enforcement: var 0 == 1 (shifts domain by -4), var 1 == 0 (dropped).
-  CanonicalizeLinearExpression({0, -2}, &lin);
-  const LinearConstraintProto expected = ParseTestProto(R"pb(
-    vars: [ 2 ]
-    coeffs: [ 2 ]
-    domain: [ 6, 16 ]
-  )pb");
-  EXPECT_THAT(lin, testing::EqualsProto(expected));
-}
-
 TEST(CpModelUtilsTest, SortedLiteralComplementaryHelpers) {
   EXPECT_EQ(FindComplementaryVarInSortedLiterals({}), -1);
   EXPECT_EQ(FindComplementaryVarInSortedLiterals({-3, -1}), -1);
@@ -794,6 +624,62 @@ TEST(CpModelUtilsTest, SortedLiteralComplementaryHelpers) {
   // NegatedRef(-3) == 2 and NegatedRef(2) == -3.
   EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-5, -3, 0}, {-2, 2, 4}));
   EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-2, 2, 4}, {-5, -3, 0}));
+}
+
+TEST(CpModelUtilsTest, ApplyToAllIntervalIndicesWithFilter) {
+  auto remap = [](int* ref) { *ref = (*ref == 1) ? -1 : *ref + 10; };
+
+  ConstraintProto no_overlap =
+      ParseTestProto(R"pb(no_overlap { intervals: [ 0, 1, 2 ] })pb");
+  ApplyToAllIntervalIndices(remap, &no_overlap, /*filter=*/true);
+  EXPECT_THAT(no_overlap, testing::EqualsProto(R"pb(
+                no_overlap { intervals: [ 10, 12 ] }
+              )pb"));
+
+  ConstraintProto no_overlap_2d = ParseTestProto(R"pb(
+    no_overlap_2d {
+      x_intervals: [ 0, 1, 2 ]
+      y_intervals: [ 2, 0, 1 ]
+    }
+  )pb");
+  ApplyToAllIntervalIndices(remap, &no_overlap_2d, /*filter=*/true);
+  EXPECT_THAT(no_overlap_2d, testing::EqualsProto(R"pb(
+                no_overlap_2d {
+                  x_intervals: [ 10 ]
+                  y_intervals: [ 12 ]
+                }
+              )pb"));
+
+  ConstraintProto cumulative = ParseTestProto(R"pb(
+    cumulative {
+      capacity { offset: 5 }
+      intervals: [ 0, 1, 2 ]
+      demands { offset: 2 }
+      demands { offset: 3 }
+      demands { offset: 4 }
+    }
+  )pb");
+  ApplyToAllIntervalIndices(remap, &cumulative, /*filter=*/true);
+  EXPECT_THAT(cumulative, testing::EqualsProto(R"pb(
+                cumulative {
+                  capacity { offset: 5 }
+                  intervals: [ 10, 12 ]
+                  demands { offset: 2 }
+                  demands { offset: 4 }
+                }
+              )pb"));
+}
+
+TEST(ApplyToAllVariableIndicesTest, DoesNotPopulateUnsetIntervalSubmessages) {
+  ConstraintProto unperformed_interval_stub = ParseTestProto(R"pb(
+    enforcement_literal: [ -1 ]
+    interval {}
+  )pb");
+  ApplyToAllVariableIndices([](int* ref) { *ref += 1; },
+                            &unperformed_interval_stub);
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_start());
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_size());
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_end());
 }
 
 }  // namespace

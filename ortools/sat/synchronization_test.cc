@@ -419,11 +419,6 @@ TEST(SharedResponseManagerTest, UnknownResponseMinimization) {
   shared_response->UpdateGapIntegral();
   EXPECT_EQ(1.0 * std::log(1 + 11), shared_response->GapIntegral());
 
-  const std::string response = R"pb(
-    objective_value: 7,
-    best_objective_bound: -4,
-    inner_objective_lower_bound: -4
-  )pb";
   auto result = shared_response->GetResponse();
   EXPECT_EQ(result.objective_value(), 7);
   EXPECT_EQ(result.best_objective_bound(), -4);
@@ -449,11 +444,6 @@ TEST(SharedResponseManagerTest, UnknownResponseMaximization) {
   shared_response->UpdateGapIntegral();
   EXPECT_EQ(1.0 * log(1 + 4.0 * 11), shared_response->GapIntegral());
 
-  const std::string response = R"pb(
-    objective_value: -28,
-    best_objective_bound: 16,
-    inner_objective_lower_bound: -4
-  )pb";
   auto result = shared_response->GetResponse();
   EXPECT_EQ(result.objective_value(), -28);
   EXPECT_EQ(result.best_objective_bound(), 16);

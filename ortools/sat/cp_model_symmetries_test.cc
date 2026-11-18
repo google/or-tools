@@ -264,21 +264,9 @@ TEST(FindCpModelSymmetries, CanMapLinearToItsNegation) {
 }
 
 TEST(FindCpModelSymmetries, UnsupportedConstraintTypeReturnsNoGenerators) {
-  CpModelProto model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ -5, 5 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 0, 10 ]
-    }
-    variables {
-      name: 'z'
-      domain: [ 0, 10 ]
-    }
-    constraints { routes {} }
-  )pb");
+  CpModelProto model = ParseTestProto(absl::StrCat(kBaseModel, R"pb(
+    constraints { table {} }
+  )pb"));
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
@@ -871,6 +859,112 @@ TEST(FindCpModelSymmetries, ReservoirLevelChangeAsymmetry) {
     generator_strs.push_back(gen->DebugString());
   }
   EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
+}
+
+TEST(FindCpModelSymmetries, RoutesSymmetricNonDepotNodesAndNotDepot) {
+  // Complete directed graph on 3 nodes {0, 1, 2} with self-loops on {1, 2}:
+  // - var 0: 0 -> 1
+  // - var 1: 1 -> 2
+  // - var 2: 2 -> 0
+  // - var 3: 0 -> 2
+  // - var 4: 2 -> 1
+  // - var 5: 1 -> 0
+  // - var 6: 1 -> 1
+  // - var 7: 2 -> 2
+  // Node 0 is the depot and cannot be permuted with nodes 1 or 2. Only nodes 1
+  // and 2 can be swapped, mapping (0 <-> 3)(1 <-> 4)(2 <-> 5)(6 <-> 7).
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1, 2, 0, 2, 1, 1, 2 ]
+        heads: [ 1, 2, 0, 2, 1, 0, 1, 2 ]
+        literals: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  ASSERT_EQ(generators.size(), 1);
+  EXPECT_EQ(generators[0]->DebugString(), "(0 3) (1 4) (2 5) (6 7)");
+}
+
+TEST(FindCpModelSymmetries, RoutesDirectedCycleHasNoSymmetry) {
+  // Single directed cycle 0 -> 1 -> 2 -> 0:
+  // In a circuit constraint, (0 1 2) would be a rotational symmetry, but in a
+  // routes constraint, node 0 is fixed as the depot and arc direction prevents
+  // swapping nodes 1 and 2.
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1, 2 ]
+        heads: [ 1, 2, 0 ]
+        literals: [ 0, 1, 2 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  EXPECT_TRUE(generators.empty());
+}
+
+TEST(FindCpModelSymmetries, RoutesWithEnforcementLiteral) {
+  CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 4
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 5
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 2, 3 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  ASSERT_EQ(generators.size(), 1);
+  EXPECT_EQ(generators[0]->DebugString(), "(0 2) (1 3) (4 5)");
+
+  // Fixing one of the enforcement literals breaks the symmetry between the two
+  // routes constraints.
+  model.mutable_variables(4)->set_domain(0, 1);
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+  EXPECT_TRUE(generators.empty());
 }
 
 TEST(DetectAndExploitSymmetriesInPresolveTest,

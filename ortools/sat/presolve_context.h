@@ -524,10 +524,15 @@ class PresolveContext {
   }
 
   // These methods are not fully optimized and must only be used for debug
-  // checks (e.g., DCHECK) and tests.
-  bool ConstraintIsCanonical(const ConstraintProto& ct) const;
-  bool ConstraintIsCanonical(int c) const;
-  bool AllConstraintsAreCanonical() const;
+  // checks (e.g., DCHECK) and tests. ModelProtoIsCanonical() checks the proto
+  // on a fresh presolve context and does not require any sort order.
+  bool ConstraintIsCanonical(const ConstraintProto& ct,
+                             bool check_sorted = true) const;
+  bool ConstraintIsCanonical(int c, bool check_sorted = true) const;
+  bool AllConstraintsAreCanonical(bool check_sorted = true) const;
+  // TODO(user): move this outside of PresolveContext and take a const
+  // CpModelProto as parameter.
+  bool ModelProtoIsCanonical(CpModelProto* proto) const;
 
   // This method only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
@@ -689,7 +694,13 @@ class PresolveContext {
   // Returns false if this makes the problem infeasible.
   bool StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
-  // Returns the representative of a literal.
+  // Returns the representative of a literal. `ref` and its affine
+  // representative must both satisfy `CanBeUsedAsLiteral`, linked with
+  // (coeff = 1, offset = 0) or (coeff = -1, offset = 1) (CHECKed). This always
+  // holds if `ref` is its own affine representative or was already in [0, 1]
+  // when its affine relation was added, whereas a non-representative integer
+  // variable whose domain later shrank into [0, 1] may need its representative
+  // canonicalized first.
   int GetLiteralRepresentative(int ref) const;
 
   // Check if an integer variable is an affine representative.
@@ -1051,6 +1062,19 @@ class PresolveContext {
                                         absl::string_view file, int line);
 
  private:
+  PresolveContext(const PresolveContext& other, CpModelProto* cp_model,
+                  CpModelProto* mapping)
+      : mapping_model(mapping),
+        lrat_proof_handler(other.lrat_proof_handler),
+        logger_(other.logger_),
+        params_(other.params_),
+        time_limit_(other.time_limit_),
+        random_(other.random_),
+        working_model_(cp_model),
+        canonicalization_(cp_model->GetArena()),
+        solution_crush_(nullptr),
+        graph_(cp_model, &solution_crush_) {}
+
   class ConstraintCanonicalizer {
    public:
     ConstraintCanonicalizer(PresolveContext* context, ConstraintProto* ct)
@@ -1110,11 +1134,14 @@ class PresolveContext {
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
-  // This method is not fully optimized and must only be used for debug checks
-  // (e.g., DCHECK) and tests.
-  bool LiteralsAreCanonical(
-      absl::Span<const int> lits,
-      const absl::flat_hash_set<int>& enforcements = {}) const;
+  // These methods are not fully optimized and must only be used for debug
+  // checks (e.g., DCHECK) and tests.
+  bool LiteralsAreCanonical(absl::Span<const int> lits,
+                            const absl::flat_hash_set<int>& enforcements = {},
+                            bool check_sorted = true) const;
+  bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
+                                   const LinearExpressionProto& expr,
+                                   bool check_sorted = true) const;
 
   SolverLogger* logger_;
   const SatParameters& params_;

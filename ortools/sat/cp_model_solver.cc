@@ -75,7 +75,6 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -98,6 +97,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/violation_ls.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
@@ -1666,7 +1666,9 @@ class LnsSolver : public SubSolver {
       auto context = std::make_unique<PresolveContext>(
           &local_model, &lns_fragment, &mapping_proto);
       const CpSolverStatus presolve_status =
-          PresolveCpModel(context.get(), &postsolve_mapping);
+          local_time_limit->LimitReached()
+              ? CpSolverStatus::UNKNOWN
+              : PresolveCpModel(context.get(), &postsolve_mapping);
 
       // It is important to stop here to avoid using a model for which the
       // presolve was interrupted in the middle.
@@ -2365,7 +2367,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     }
   }
 
-  // Active constraints management for feasibility jump and violation LS.
+  // Active constraints management for violation LS.
   std::function<bool(int)> active_constraints = nullptr;
   if (shared->scheduling_relaxation != nullptr &&
       shared->scheduling_relaxation->HasRedundantConstraints() &&
@@ -2381,148 +2383,97 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     };
   }
 
-  // Add violation LS workers.
+  const bool has_objective = shared->model_proto.has_objective() &&
+                             !shared->model_proto.objective().vars().empty();
+
+  if (has_objective && shared->scheduling_relaxation != nullptr &&
+      name_filter.Keep("ls_scheduling")) {
+    interleaved_subsolvers.push_back(
+        std::make_unique<SchedulingLocalSearchSolver>(
+            "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto, params,
+            shared->time_limit, shared->response, shared->stat_tables,
+            shared->scheduling_relaxation.get()));
+  }
+
+  // Add violation LS workers (handling both finding an initial feasible
+  // solution and finding improving solutions).
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
-  if (shared->model_proto.has_objective() &&
-      !shared->model_proto.objective().vars().empty()) {
-    // If not forced by the parameters, we want one LS every 3 threads that
-    // work on interleaved stuff. Note that by default there are many LNS
-    // subsolvers, so that shouldn't be too many.
-    const int num_thread_for_interleaved_workers =
-        params.num_workers() - full_worker_subsolvers.size();
-    int num_violation_ls = params.has_num_violation_ls()
-                               ? params.num_violation_ls()
-                               : (num_thread_for_interleaved_workers + 2) / 3;
+  const bool want_fj = params.use_feasibility_jump();
+  const bool want_vls =
+      has_objective && !params.use_lns_only() &&
+      (!params.has_num_violation_ls() || params.num_violation_ls() > 0);
 
-    // If there is no reentrant solver, maybe increase the number to reach max
-    // parallelism.
-    if (reentrant_interleaved_subsolvers.empty()) {
-      num_violation_ls =
-          std::max(num_violation_ls,
-                   num_thread_for_interleaved_workers -
-                       static_cast<int>(interleaved_subsolvers.size()));
-    }
+  int num_first_solution_threads_available =
+      std::max(0, params.num_workers() -
+                      static_cast<int>(full_worker_subsolvers.size()));
+  if (params.interleave_search() && params.num_workers() == 1) {
+    // TODO(user): the 1 should be a parameter.
+    num_first_solution_threads_available = 1;
+  }
 
-    const absl::string_view ls_name = "ls";
-    const absl::string_view lin_ls_name = "ls_lin";
+  const std::vector<SatParameters> first_solution_base_params =
+      name_filter.Filter(GetFirstSolutionBaseParams(params));
 
-    const int num_ls_lin =
-        name_filter.Keep(lin_ls_name) ? (num_violation_ls + 1) / 3 : 0;
-    const int num_ls_default =
-        name_filter.Keep(ls_name) ? num_violation_ls - num_ls_lin : 0;
-
-    if (num_ls_default > 0) {
-      std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
-          ls_name, params, shared->stat_tables);
-      for (int i = 0; i < num_ls_default; ++i) {
-        SatParameters local_params = params;
-        local_params.set_random_seed(
-            CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
-        local_params.set_feasibility_jump_linearization_level(0);
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                ls_name, SubSolver::INCOMPLETE, shared->model_proto,
-                local_params, states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints));
-      }
-    }
-
-    if (shared->scheduling_relaxation != nullptr &&
-        name_filter.Keep("ls_scheduling")) {
-      interleaved_subsolvers.push_back(
-          std::make_unique<SchedulingLocalSearchSolver>(
-              "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
-              params, shared->time_limit, shared->response, shared->stat_tables,
-              shared->scheduling_relaxation.get()));
-    }
-
-    if (num_ls_lin > 0) {
-      std::shared_ptr<SharedLsStates> lin_states =
-          std::make_shared<SharedLsStates>(lin_ls_name, params,
-                                           shared->stat_tables);
-      for (int i = 0; i < num_ls_lin; ++i) {
-        SatParameters local_params = params;
-        local_params.set_random_seed(
-            CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
-        local_params.set_feasibility_jump_linearization_level(2);
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                lin_ls_name, SubSolver::INCOMPLETE, shared->model_proto,
-                local_params, lin_states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints));
+  int num_ls = 0;
+  if (want_fj || want_vls) {
+    if (want_vls && params.has_num_violation_ls()) {
+      num_ls = params.num_violation_ls();
+    } else {
+      num_ls = (num_first_solution_threads_available + 2) / 3;
+      if (reentrant_interleaved_subsolvers.empty() &&
+          (want_vls || first_solution_base_params.empty())) {
+        num_ls = std::max(num_ls,
+                          num_first_solution_threads_available -
+                              static_cast<int>(interleaved_subsolvers.size()));
       }
     }
   }
 
-  // Adds first solution subsolvers.
-  // We have two kinds, either full_worker_subsolvers or feasibility jump ones.
-  //
-  // These will be stopped and deleted as soon as the first solution is found,
-  // leaving the resource for the other subsolvers (if we have an objective).
-  {
-    int num_thread_available =
-        params.num_workers() - static_cast<int>(full_worker_subsolvers.size());
+  const int num_ls_lin =
+      (num_ls > 0 && name_filter.Keep("ls_lin")) ? (num_ls + 1) / 3 : 0;
+  const int num_ls_default =
+      (num_ls > 0 && name_filter.Keep("ls")) ? num_ls - num_ls_lin : 0;
 
-    // We reserve 1 thread for all interleaved subsolvers that can work without
-    // a first solution. If we have feasibility jump, because these will be
-    // interleaved, we don't do that.
-    if (!params.use_feasibility_jump() &&
-        num_interleaved_subsolver_that_do_not_need_solution > 0) {
-      --num_thread_available;
+  auto add_ls_subsolvers = [&](int count, absl::string_view ls_name,
+                               int linearization_level) {
+    if (count <= 0) return;
+    auto states =
+        std::make_shared<SharedLsStates>(ls_name, params, shared->stat_tables);
+    for (int i = 0; i < count; ++i) {
+      SatParameters local_params = params;
+      local_params.set_random_seed(
+          CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
+      local_params.set_feasibility_jump_linearization_level(
+          linearization_level);
+      interleaved_subsolvers.push_back(std::make_unique<ViolationLsSolver>(
+          ls_name, want_fj, want_vls, shared->model_proto, local_params, states,
+          shared->time_limit, shared->response, shared->bounds.get(),
+          shared->clauses.get(), shared->ls_hints, shared->stat_tables,
+          active_constraints));
     }
-    num_thread_available = std::max(num_thread_available, 0);
-    // If we are in interleaved mode with one worker, num_thread_available is
-    // always zero. We force it to 1 so that we at least have a
-    // feasibility_jump subsolver.
-    if (params.interleave_search() && params.num_workers() == 1) {
-      // TODO(user): the 1 should be a parameter.
-      num_thread_available = 1;
-    }
+  };
+  add_ls_subsolvers(num_ls_default, "ls", /*linearization_level=*/0);
+  add_ls_subsolvers(num_ls_lin, "ls_lin", /*linearization_level=*/2);
 
-    const std::vector<SatParameters> all_params =
-        RepeatParameters(name_filter.Filter(GetFirstSolutionBaseParams(params)),
-                         num_thread_available);
-
-    std::shared_ptr<SharedLsStates> fj_states;
-    std::shared_ptr<SharedLsStates> fj_lin_states;
-
-    // Build the requested subsolvers.
-    for (const SatParameters& local_params : all_params) {
-      if (local_params.use_feasibility_jump()) {
-        // Create the SharedLsStates if not already done.
-        std::shared_ptr<SharedLsStates> states;
-        if (local_params.feasibility_jump_linearization_level() == 0) {
-          if (fj_states == nullptr) {
-            fj_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, shared->stat_tables);
-          }
-          states = fj_states;
-        } else {
-          if (fj_lin_states == nullptr) {
-            fj_lin_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, shared->stat_tables);
-          }
-          states = fj_lin_states;
-        }
-
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                local_params.name(), SubSolver::FIRST_SOLUTION,
-                shared->model_proto, local_params, states, shared->time_limit,
-                shared->response, shared->bounds.get(), shared->clauses.get(),
-                shared->ls_hints, shared->stat_tables, active_constraints));
-      } else {
-        first_solution_full_subsolvers.push_back(
-            std::make_unique<FullProblemSolver>(
-                local_params.name(), local_params,
-                /*split_in_chunks=*/local_params.interleave_search(), shared,
-                /*stop_on_first_solution=*/true));
-      }
-    }
+  // Add first solution subsolvers (stopped and deleted once a solution is
+  // found).
+  const int num_fj_active = want_fj ? (num_ls_default + num_ls_lin) : 0;
+  int num_fs_threads = num_first_solution_threads_available - num_fj_active;
+  if (num_fj_active == 0 &&
+      num_interleaved_subsolver_that_do_not_need_solution > 0 &&
+      !(params.interleave_search() && params.num_workers() == 1)) {
+    --num_fs_threads;
+  }
+  num_fs_threads = std::max(0, num_fs_threads);
+  for (const SatParameters& local_params :
+       RepeatParameters(first_solution_base_params, num_fs_threads)) {
+    first_solution_full_subsolvers.push_back(
+        std::make_unique<FullProblemSolver>(
+            local_params.name(), local_params,
+            /*split_in_chunks=*/local_params.interleave_search(), shared,
+            /*stop_on_first_solution=*/true));
   }
 
   // Add custom subsolvers.

@@ -360,6 +360,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // propagation.
   bool PropagateLpConstraint(LinearConstraint ct);
 
+  // Returns true if the "optimal constraints" kept for the current branch (the
+  // LP explanations, see `PropagateLpConstraint()`) use too much memory, in
+  // which case we should not run the LP propagation until we backtrack.
+  bool OptimalConstraintsUseTooMuchMemory() const;
+
   // Returns the number of non-fixed non-basic variables with zero reduced costs
   // and sets num_cols to the number of non-fixed columns in the LP.
   int64_t CalculateDegeneracy(int64_t* num_cols = nullptr);

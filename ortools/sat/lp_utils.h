@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -64,6 +65,14 @@ struct MipVariableState {
   double error_lb = 0.0;
   double error_ub = 0.0;
 };
+
+// Multiplies the current domain of `state` by `scaling`.
+inline void ScaleVariableState(double scaling, MipVariableState* state) {
+  if (scaling == 1.0) return;
+  state->lb *= scaling;
+  state->ub *= scaling;
+  state->scaling *= scaling;
+}
 
 // A residual continuous component: a set of continuous variables and the
 // constraints in which they appear, such that no constraint of the component
@@ -120,6 +129,17 @@ inline int LowestPowerOfTwoAtOrAbove(double value) {
   const double left = std::frexp(value, &exp);
   if (left == 0.5) return exp - 1;
   return exp;
+}
+
+// Returns the largest exponent e >= 0 such that magnitude * 2^e <= max_bound.
+// `magnitude` must be strictly positive.
+inline int MaxPowerOfTwoExponentWithinBound(double magnitude,
+                                            double max_bound) {
+  DCHECK_GT(magnitude, 0.0);
+  if (magnitude > max_bound) return 0;
+  int exp = HighestPowerOfTwoAtOrBelow(max_bound / magnitude);
+  if (std::ldexp(magnitude, exp) > max_bound) --exp;
+  return std::max(exp, 0);
 }
 
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
@@ -258,23 +278,9 @@ struct ConstraintScaler {
   std::vector<int64_t> tmp_enforcement_values;
   TightSum tmp_discretization_lb;
   TightSum tmp_discretization_ub;
+  TightSum tmp_scaled_lb;
+  TightSum tmp_scaled_ub;
 };
-
-// Given a set of edges on a graph with nodes [0, n), can we partition the
-// nodes into two subsets such that all the edge "constraints" (same_partition
-// or not) are satisfied?
-//
-// We are a bit more generic if the set of edges form disjoint components.
-// We will return for each node a number partition[i] equal to:
-// - -1 if there is no possible partition for this component.
-// - 0/1 if this component can be properly partitioned.
-struct EdgeConstraintForPartition {
-  int a;
-  int b;
-  bool same_partition;
-};
-std::vector<int> PartitionGraph(
-    int n, absl::Span<const EdgeConstraintForPartition> edges);
 
 // Initializes the state of all variables from the current wrapper bounds and
 // integrality (no scaling, no shift, no error).
@@ -302,27 +308,6 @@ ResidualContinuousComponents SplitIntoResidualContinuousComponents(
 
 // Statistics accumulated by the per-component functions below, and the
 // corresponding logging functions.
-struct TumStats {
-  int num_components = 0;
-  int num_tum_components = 0;
-  int num_2_modular_components = 0;
-  int num_new_tum_integers = 0;
-  int num_new_2_modular_integers = 0;
-  int num_modular_constraints = 0;
-  double max_var_bound_error = 0.0;
-  int num_common_scaled = 0;
-  double min_common_scaling = std::numeric_limits<double>::infinity();
-  double max_common_scaling = 0.0;
-
-  int num_bound_tightened_components = 0;
-  int num_tightened_bounds = 0;
-  double old_min = std::numeric_limits<double>::infinity();
-  double old_max = -std::numeric_limits<double>::infinity();
-  double new_min = std::numeric_limits<double>::infinity();
-  double new_max = -std::numeric_limits<double>::infinity();
-};
-void LogTumStats(const TumStats& stats, SolverLogger* logger);
-
 struct OneVariableComponentStats {
   int num_components = 0;
   int num_integers = 0;
@@ -350,59 +335,6 @@ struct ShiftStats {
   double max_shift = 0.0;
 };
 void LogShiftStats(const ShiftStats& stats, SolverLogger* logger);
-
-// Once all integer variables have a value, we can split the model into separate
-// components. If a given component is totally unimodular, then there exists a
-// solution of that component with variables taking only integer values; we mark
-// them as such.
-//
-// Note that we don't detect all totally unimodular residual matrices (TUM), we
-// use Heller & Tompkins's criterion (on A or A^T, after iteratively peeling
-// singleton rows/columns and scaling rows/columns to {-1, 0, 1}):
-//
-// A matrix A with entries in {-1, 0, 1} is TUM if:
-// 1/ Every column contains at most two non-zero entries.
-// 2/ The rows can be partitioned into two sets, R and R' such that for any
-//    column with exactly two entries:
-//     - if they are of the same sign, one row is in R and the other in R'
-//     - if they are of opposite sign, both rows are in the same set (R or R').
-//
-// Note that in addition to the matrix, we also need the constraint/variable
-// bounds of a totally unimodular LP to be integer to guarantee existence of a
-// fully integer solution.
-//
-// Note that if there are duplicate variables in a constraint (not presolved),
-// this might fail to detect TUM submatrices. It will however not wrongly detect
-// any.
-//
-// If params.mip_automatically_scale_variables() is true, we also detect
-// components that can be made integral via variable scaling (for example,
-// 2-modular components where any LP optimal basic solution is half-integral, or
-// components with rational bounds/RHS or column scaling). When a component with
-// unit column scaling cannot be made integral and mip_scale_for_precision is
-// enabled, we still scale all variables in the component by a common
-// power-of-two factor to preserve its +/-1 coefficients.
-//
-// Note that if some constraints in `mp_model` are enforced by external integer
-// variables (e.g., via MPModelProtoWrapper), it is valid to pass the underlying
-// MPModelProto directly (treating enforced constraints as always active, rather
-// than skipping them): for any fixed integer assignment of the external
-// variables, inactive enforced constraints simply remove rows from the
-// component LP, which preserves total unimodularity (or 2-modularity), vertex
-// integrality, and the worst-case vertex bounds computed when tightening.
-//
-// The variables marked as integer have their bounds enlarged (when
-// `mip_proper_relaxation` is true) or snapped to multiples of the
-// `modular_factor`, and this returns the scaling to use for each of
-// `compo.constraints` in ConstraintScaler::ScaleAndAddConstraint(), or an empty
-// vector if the component was not made integral.
-//
-// This processes a single residual continuous component (whose
-// `var_to_local_col` must be set) and only updates `states`.
-std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
-    const SatParameters& params, const ResidualContinuousComponent& compo,
-    const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    TumStats* stats);
 
 // Processes a residual continuous component with a single continuous variable
 // x, which is thus the unique non-integer of all its constraints.
@@ -433,15 +365,6 @@ void ScaleOneVariableResidualMatrix(const SatParameters& params,
                                     absl::Span<MipVariableState> states,
                                     OneVariableComponentStats* stats);
 
-// Uses the same TUM detection on the whole model, before it is split into
-// components, to only tighten the bounds of the variables with a large domain
-// that belong to a TUM component whose LP vertices are integral whatever the
-// value of the external integer variables (Hoffman-Kruskal). Integer variables
-// with a large domain are considered too (e.g. big-M scheduling formulations).
-void TightenResidualTotallyUnimodularVariableBounds(
-    const SatParameters& params, MPModelProtoWrapper* mp_model,
-    SolverLogger* logger);
-
 // Multiplies all continuous variables of the component by
 // params.mip_var_scaling(). If the domain of a variable is going to have larger
 // values than mip_max_bound, then we scale to have the max domain magnitude
@@ -449,6 +372,24 @@ void TightenResidualTotallyUnimodularVariableBounds(
 void ScaleComponentContinuousVariables(const SatParameters& params,
                                        const ResidualContinuousComponent& compo,
                                        absl::Span<MipVariableState> states);
+
+// Per-variable limits (indexed by the position of the variable in the
+// component) used to pick power-of-two scaling factors for continuous
+// variables, see ComputeComponentPrecisionScalingBounds().
+struct ComponentPrecisionScalingBounds {
+  // Largest power of two keeping the variable domain within the target bound.
+  std::vector<double> max_var_scaling;
+  // Scaling needed to reach the wanted precision on the activities of all the
+  // constraints containing the variable.
+  std::vector<double> max_scaling_needed;
+  // Largest power-of-two scaling that still allows all the constraints
+  // containing the variable to be scaled to integers.
+  std::vector<double> min_headroom;
+};
+ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
+    const SatParameters& params, const MPModelProtoWrapper& mp_model,
+    const ResidualContinuousComponent& compo,
+    absl::Span<const MipVariableState> states, double max_target_bound);
 
 // For each constraint, computes the scaling factor that allows to satisfy
 // mip_wanted_precision and records the power-of-two headroom left up to
@@ -510,6 +451,28 @@ inline double ExactScaledSumUb(double a, double b, double divisor = 1.0) {
   const double exact_sum_ub = TightSum().Add(a).Add(b).TightUpperBound();
   return divisor == 1.0 ? exact_sum_ub : FastStepUp(exact_sum_ub / divisor);
 }
+inline std::pair<double, double> DivInterval(double lb, double ub,
+                                             double divisor) {
+  if (divisor < 0.0) return DivInterval(-ub, -lb, -divisor);
+  return {lb == 0.0 ? 0.0 : ExactScaledSumLb(lb, 0.0, divisor),
+          ub == 0.0 ? 0.0 : ExactScaledSumUb(ub, 0.0, divisor)};
+}
+inline double MaxAbsScaledTightSum(const TightSum& sum,
+                                   double pos_divisor = 1.0) {
+  const auto [lb, ub] = sum.TightBounds();
+  const auto [dlb, dub] = DivInterval(lb, ub, pos_divisor);
+  return std::max(std::abs(dlb), std::abs(dub));
+}
+
+// Rounds a scaled lower bound `y` to an integer, given the allowed tolerance
+// `tol >= 0` in the same scaled space:
+// - Under `proper_relaxation`, enlarges downward to `floor(y)`, except when `y`
+//   is within `tol` below `round(y)` (snapping to `round(y)`).
+// - Otherwise, restricts inward to `ceil(y)`, except when `y` is within `tol`
+//   above `round(y)` (snapping to `round(y)`).
+// Upper bounds `w <= u` are handled symmetrically by passing `-u` and negating
+// the result (since `std::round(-u) == -std::round(u)`).
+double RoundScaledLowerBound(double y, double tol, bool proper_relaxation);
 
 // Utility useful for RestrictBoundsWithDualReasoning() but also the
 // PropagateBounds() MIP presolve.

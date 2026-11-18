@@ -5835,7 +5835,7 @@ TEST(SolveCpModelTest, CumulativeNegativeCapacity16Threads) {
   // Add *two* infeasible pigeonhole subproblems over the same base variables,
   // enforced by x0 and x1 respectively, so any state with x0=0 and x1=0 has 0
   // clause violations regardless of the pigeon variables, while proving UNSAT
-  // when x0=1 or x1=1 takes longer than FeasibilityJumpSolver takes to start.
+  // when x0=1 or x1=1 takes longer than ViolationLsSolver takes to start.
   for (const int neg_lit : {-x0 - 1, -x1 - 1}) {
     for (const ConstraintProto& ct : pigeonhole.constraints()) {
       ConstraintProto* clause = model_proto.add_constraints();
@@ -6364,6 +6364,161 @@ TEST(SolveCpModelTest, LnsPresolveTimeoutAdvancesDeterministicTime) {
               ::testing::ContainsRegex("'lns_rnd_var': +0/[1-9]"));
 }
 
+CpModelProto CreateJumpVsVlsOptimizationModel() {
+  // 1 integer variable x in [0, 5] and 5 booleans y_i in [0, 1].
+  // Constraint: x + sum(y_i) >= 5.
+  // Objective: minimize 2 * x + sum(y_i).
+  // From all zeros, jumping x -> 5 immediately satisfies the constraint
+  // (obj=10), whereas VLS can improve the objective down to 5 (x=0, y_i=1).
+  CpModelProto model_proto;
+  const int x = AddVariable(0, 5, &model_proto);
+  LinearConstraintProto* ct = model_proto.add_constraints()->mutable_linear();
+  ct->add_vars(x);
+  ct->add_coeffs(1);
+  ct->add_domain(5);
+  ct->add_domain(10);
+
+  auto* obj = model_proto.mutable_objective();
+  obj->add_vars(x);
+  obj->add_coeffs(2);
+
+  for (int i = 0; i < 5; ++i) {
+    const int y = AddVariable(0, 1, &model_proto);
+    ct->add_vars(y);
+    ct->add_coeffs(1);
+    obj->add_vars(y);
+    obj->add_coeffs(1);
+  }
+  return model_proto;
+}
+
+TEST(SolveCpModelTest, ViolationLsFindsAndImprovesSolutions) {
+  const CpModelProto model_proto = CreateJumpVsVlsOptimizationModel();
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_ls_only(true);
+  params.set_num_workers(1);
+  params.set_random_seed(1);
+  params.set_feasibility_jump_batch_dtime(0.005);
+  params.set_max_deterministic_time(0.5);
+  params.set_log_search_progress(true);
+
+  Model model;
+  model.Add(NewSatParameters(params));
+  std::string log;
+  model.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
+      [&log](const std::string& message) {
+        absl::StrAppend(&log, message, "\n");
+      });
+
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::FEASIBLE);
+  EXPECT_LT(response.objective_value(), 10.0);
+  EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+
+  EXPECT_THAT(log, ::testing::HasSubstr("1 interleaved subsolver: [ls]"));
+  EXPECT_THAT(log,
+              ::testing::Not(::testing::HasSubstr("first solution subsolver")));
+  EXPECT_THAT(log, ::testing::ContainsRegex("#1 .* ls_"));
+  EXPECT_THAT(log, ::testing::ContainsRegex("#[2-9][0-9]* .* ls_"));
+  EXPECT_THAT(log, ::testing::ContainsRegex("LS stats[\\s\\S]*'ls_"));
+  EXPECT_THAT(log, ::testing::ContainsRegex("Task timing[\\s\\S]*'ls'"));
+}
+
+TEST(SolveCpModelTest, ViolationLsPureSatisfactionStopsAfterFirstSolution) {
+  CpModelProto model_proto;
+  LinearConstraintProto* ct = model_proto.add_constraints()->mutable_linear();
+  for (int i = 0; i < 10; ++i) {
+    ct->add_vars(AddVariable(0, 1, &model_proto));
+    ct->add_coeffs(1);
+  }
+  ct->add_domain(5);
+  ct->add_domain(10);
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_ls_only(true);
+  params.set_num_workers(1);
+  params.set_log_search_progress(true);
+  params.set_log_to_response(true);
+
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+  EXPECT_THAT(response.solve_log(), ::testing::ContainsRegex("#1 .* ls_"));
+}
+
+TEST(SolveCpModelTest, ViolationLsStopsAfterFirstSolutionWhenUseLnsOnly) {
+  const CpModelProto model_proto = CreateJumpVsVlsOptimizationModel();
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_lns_only(true);
+  params.set_num_workers(2);
+  params.set_interleave_search(true);
+  params.set_random_seed(1);
+  params.set_feasibility_jump_batch_dtime(0.005);
+  params.set_max_deterministic_time(0.5);
+  params.set_log_search_progress(true);
+  params.set_log_to_response(true);
+
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_THAT(response.status(),
+              AnyOf(CpSolverStatus::FEASIBLE, CpSolverStatus::OPTIMAL));
+  EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+  EXPECT_THAT(response.solve_log(),
+              ::testing::ContainsRegex("interleaved subsolvers?: \\[.*ls\\]"));
+  EXPECT_THAT(response.solve_log(),
+              ::testing::Not(::testing::ContainsRegex("#[2-9][0-9]* .* ls_")));
+}
+
+TEST(SolveCpModelTest,
+     UseFeasibilityJumpAndNumViolationLsControlPhasesIndependently) {
+  const CpModelProto model_proto = CreateJumpVsVlsOptimizationModel();
+
+  // num_violation_ls = 0 with use_feasibility_jump = true: finds the first
+  // solution with ls and then stops LS.
+  {
+    SatParameters params;
+    params.set_cp_model_presolve(false);
+    params.set_use_ls_only(true);
+    params.set_num_workers(1);
+    params.set_use_feasibility_jump(true);
+    params.set_num_violation_ls(0);
+    params.set_feasibility_jump_batch_dtime(0.005);
+    params.set_max_deterministic_time(0.5);
+    params.set_log_search_progress(true);
+    params.set_log_to_response(true);
+
+    const CpSolverResponse response = SolveWithParameters(model_proto, params);
+    EXPECT_EQ(response.status(), CpSolverStatus::FEASIBLE);
+    EXPECT_THAT(response.solve_log(), ::testing::ContainsRegex("#1 .* ls_"));
+    EXPECT_THAT(
+        response.solve_log(),
+        ::testing::Not(::testing::ContainsRegex("#[2-9][0-9]* .* ls_")));
+  }
+
+  // use_feasibility_jump = false with num_violation_ls = 1 in LS-only mode:
+  // pre-incumbent LS is disabled so no initial solution is found.
+  {
+    SatParameters params;
+    params.set_cp_model_presolve(false);
+    params.set_use_ls_only(true);
+    params.set_num_workers(1);
+    params.set_use_feasibility_jump(false);
+    params.set_num_violation_ls(1);
+    params.set_max_deterministic_time(0.1);
+    params.set_log_search_progress(true);
+    params.set_log_to_response(true);
+
+    const CpSolverResponse response = SolveWithParameters(model_proto, params);
+    EXPECT_EQ(response.status(), CpSolverStatus::UNKNOWN);
+    EXPECT_THAT(response.solve_log(),
+                ::testing::Not(::testing::ContainsRegex("#[0-9]+ .* ls_")));
+  }
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
@@ -6483,6 +6638,140 @@ TEST(SolveCpModelTest, MaxHsPropagatesInfeasibleHittingSetSubmodel) {
   params.set_optimize_with_max_hs(true);
   const CpSolverResponse response = SolveWithParameters(m, params);
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(SolveCpModelTest, NoOverlapZeroSizeAndDuplicatesWithoutPresolve) {
+  // Two intervals that can both have size 0 at the same time point, plus a
+  // duplicate interval in no_overlap, solved with cp_model_presolve=false and
+  // a loaded debug solution.
+  CpModelProto m;
+  const int s_a = AddVariable(0, 6, &m);
+  const int e_a = AddVariable(0, 6, &m);
+  const int d_a = AddVariable(0, 4, &m);
+  const int s_b = AddVariable(0, 6, &m);
+  const int e_b = AddVariable(0, 6, &m);
+  const int d_b = AddVariable(0, 4, &m);
+
+  auto add_var_interval = [&](int s, int d, int e) {
+    const int idx = m.constraints_size();
+    IntervalConstraintProto* itv = m.add_constraints()->mutable_interval();
+    itv->mutable_start()->add_vars(s);
+    itv->mutable_start()->add_coeffs(1);
+    itv->mutable_size()->add_vars(d);
+    itv->mutable_size()->add_coeffs(1);
+    itv->mutable_end()->add_vars(e);
+    itv->mutable_end()->add_coeffs(1);
+    return idx;
+  };
+  const int itv_a = add_var_interval(s_a, d_a, e_a);
+  const int itv_b = add_var_interval(s_b, d_b, e_b);
+
+  // Duplicate interval in no_overlap forces d_a == 0 (s_a == e_a).
+  auto* dup_no_overlap = m.add_constraints()->mutable_no_overlap();
+  dup_no_overlap->add_intervals(itv_a);
+  dup_no_overlap->add_intervals(itv_a);
+
+  // Second no_overlap between itv_b and itv_a where both end up at [3, 3].
+  auto* pair_no_overlap = m.add_constraints()->mutable_no_overlap();
+  pair_no_overlap->add_intervals(itv_b);
+  pair_no_overlap->add_intervals(itv_a);
+
+  // Force s_a >= 3, e_a <= 3, s_b >= 3, e_b <= 3 via objective:
+  // minimize e_a + e_b - 2 * s_a - 2 * s_b + d_b, subject to s_a <= 3, s_b <= 3
+  // and e_a >= 3, e_b >= 3 -> unique optimum at s_a=e_a=s_b=e_b=3, d_a=d_b=0.
+  auto add_bounds_ct = [&](int var, int64_t lb, int64_t ub) {
+    auto* lin = m.add_constraints()->mutable_linear();
+    lin->add_vars(var);
+    lin->add_coeffs(1);
+    lin->add_domain(lb);
+    lin->add_domain(ub);
+  };
+  add_bounds_ct(s_a, 0, 3);
+  add_bounds_ct(e_a, 3, 6);
+  add_bounds_ct(s_b, 0, 3);
+  add_bounds_ct(e_b, 3, 6);
+
+  auto* obj = m.mutable_objective();
+  for (const auto [v, c] : std::vector<std::pair<int, int64_t>>{
+           {e_a, 1}, {e_b, 1}, {s_a, -2}, {s_b, -2}, {d_b, 1}}) {
+    obj->add_vars(v);
+    obj->add_coeffs(c);
+  }
+
+  SatParameters params;
+  params.set_num_workers(1);
+  Model model_with_presolve;
+  *model_with_presolve.GetOrCreate<SatParameters>() = params;
+  const CpSolverResponse response = SolveCpModel(m, &model_with_presolve);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_DOUBLE_EQ(response.objective_value(), -6.0);
+
+  Model model_without_presolve;
+  model_without_presolve.GetOrCreate<SharedResponseManager>()
+      ->LoadDebugSolution(response.solution());
+  params.set_cp_model_presolve(false);
+  *model_without_presolve.GetOrCreate<SatParameters>() = params;
+  const CpSolverResponse response_no_presolve =
+      SolveCpModel(m, &model_without_presolve);
+  ASSERT_EQ(response_no_presolve.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_DOUBLE_EQ(response_no_presolve.objective_value(), -6.0);
+  EXPECT_TRUE(SolutionIsFeasible(m, response_no_presolve.solution()));
+}
+
+TEST(SolveCpModelTest, DuplicatePositiveSizeIntervalInCombinedNoOverlap) {
+  CpModelProto m;
+  const int itv0 = AddInterval(0, 2, 10, &m);
+  const int itv1 = AddInterval(0, 2, 10, &m);
+  const int itv2 = AddInterval(0, 2, 10, &m);
+
+  // 4 entries (> 2) so CombinedDisjunctive is used when presolve is disabled,
+  // with itv0 duplicated and having positive size 2.
+  auto* no_overlap = m.add_constraints()->mutable_no_overlap();
+  no_overlap->add_intervals(itv0);
+  no_overlap->add_intervals(itv0);
+  no_overlap->add_intervals(itv1);
+  no_overlap->add_intervals(itv2);
+
+  for (const bool presolve : {true, false}) {
+    SatParameters params;
+    params.set_num_workers(1);
+    params.set_cp_model_presolve(presolve);
+    params.set_use_strong_propagation_in_disjunctive(false);
+    const CpSolverResponse response = SolveWithParameters(m, params);
+    EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE)
+        << "presolve=" << presolve;
+  }
+}
+
+TEST(SolveCpModelTest, EnforcedNoOverlapDoesNotLeakUnconditionalPrecedences) {
+  CpModelProto m;
+  const int enf = AddVariable(0, 1, &m);
+  const int itv0 = AddInterval(0, 5, 6, &m);
+  const int itv1 = AddInterval(0, 5, 6, &m);
+  const int itv2 = AddInterval(0, 5, 6, &m);
+
+  ConstraintProto* ct = m.add_constraints();
+  ct->add_enforcement_literal(enf);
+  ct->mutable_no_overlap()->add_intervals(itv0);
+  ct->mutable_no_overlap()->add_intervals(itv1);
+  ct->mutable_no_overlap()->add_intervals(itv2);
+
+  // Reward activating enf if possible, though enf=1 is infeasible because three
+  // intervals of size 5 cannot fit in [0, 6]. enf=0 must remain feasible.
+  m.mutable_objective()->add_vars(enf);
+  m.mutable_objective()->add_coeffs(-1);
+
+  for (const bool presolve : {true, false}) {
+    SatParameters params;
+    params.set_num_workers(1);
+    params.set_cp_model_presolve(presolve);
+    const CpSolverResponse response = SolveWithParameters(m, params);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL)
+        << "presolve=" << presolve;
+    EXPECT_DOUBLE_EQ(response.objective_value(), 0.0)
+        << "presolve=" << presolve;
+    EXPECT_TRUE(SolutionIsFeasible(m, response.solution()));
+  }
 }
 
 }  // namespace

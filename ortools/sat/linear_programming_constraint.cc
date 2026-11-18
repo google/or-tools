@@ -72,7 +72,6 @@
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -1073,9 +1072,8 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
   cut_generators_.push_back(std::move(generator));
 }
 
-bool LinearProgrammingConstraint::IncrementalPropagate(
-    absl::Span<const int> watch_indices) {
-  if (!enabled_) return true;
+bool LinearProgrammingConstraint::OptimalConstraintsUseTooMuchMemory() const {
+  if (cumulative_optimal_constraint_sizes_.empty()) return false;
 
   // If we have a really deep branch, with a lot of LP explanation constraints,
   // we could take a quadratic amount of memory: O(num_var) per number of
@@ -1085,17 +1083,29 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   //
   // Note that 100 Millions int32_t variables, with the int128 coefficients and
   // extra propagation vector is already a few GB.
-  if (!cumulative_optimal_constraint_sizes_.empty()) {
-    const double current_size =
-        static_cast<double>(cumulative_optimal_constraint_sizes_.back());
-    const double low_limit = 1e7;
-    if (current_size > low_limit) {
-      // We only propagate if we use less than 100 times the number of current
-      // integer literal enqueued.
-      const double num_enqueues = static_cast<double>(integer_trail_->Index());
-      if ((current_size - low_limit) > 100 * num_enqueues) return true;
-    }
-  }
+  const double current_size =
+      static_cast<double>(cumulative_optimal_constraint_sizes_.back());
+  const double low_limit = 1e7;
+  if (current_size <= low_limit) return false;
+
+  // The relative limit below is not enough on its own: in very deep branches
+  // the integer trail itself is huge, so the memory used by the explanations
+  // kept growing linearly with time (e.g. tens of GB after a few minutes on
+  // cost266-UUE with 32 workers, mostly in workers that almost never
+  // backtrack). So we also use an absolute limit of about 1-2 GB per LP.
+  const double high_limit = 1e8;
+  if (current_size > high_limit) return true;
+
+  // We only propagate if we use less than 100 times the number of current
+  // integer literal enqueued.
+  const double num_enqueues = static_cast<double>(integer_trail_->Index());
+  return (current_size - low_limit) > 100 * num_enqueues;
+}
+
+bool LinearProgrammingConstraint::IncrementalPropagate(
+    absl::Span<const int> watch_indices) {
+  if (!enabled_) return true;
+  if (OptimalConstraintsUseTooMuchMemory()) return true;
 
   if (!lp_solution_is_set_ || num_force_lp_call_on_next_propagate_ > 0) {
     return Propagate();
@@ -2623,6 +2633,10 @@ bool LinearProgrammingConstraint::Propagate() {
   num_force_lp_call_on_next_propagate_ = 0;
   if (!enabled_) return true;
   if (time_limit_->LimitReached()) return true;
+  if (trail_->CurrentDecisionLevel() > 0 &&
+      OptimalConstraintsUseTooMuchMemory()) {
+    return true;
+  }
   const int64_t timestamp_at_function_start = integer_trail_->num_enqueues();
 
   // Because of AlwaysCallAtLevelZero(), this function might be called many
