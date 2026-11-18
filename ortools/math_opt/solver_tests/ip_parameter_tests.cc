@@ -1084,7 +1084,12 @@ TEST_P(LargeInstanceIpParameterTest, TimeLimit) {
   // Solvers do not stop very precisely, use a large number to avoid flaky
   // tests. Do NOT try to fine tune this to be small, it is hard to get right
   // for all compilation modes (e.g. debug, asan).
+#ifdef __ANDROID__
+  // Emulated Android targets on Forge are significantly slower.
+  EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(5));
+#else
   EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(1));
+#endif
 }
 
 TEST_P(LargeInstanceIpParameterTest, IterationLimit) {
