@@ -38,23 +38,40 @@ namespace operations_research {
 
 // Function that is equivalent to std::nextafter(v, kInf), but significantly
 // faster since it doesn't need to set or check CPU flags.
-double FastStepUp(double v);
+constexpr double FastStepUp(double v);
 
 // Function that is equivalent to std::nextafter(v, -kInf), but significantly
 // faster since it doesn't need to set or check CPU flags.
-double FastStepDown(double v);
+constexpr double FastStepDown(double v);
 
 // Returns `e` such that `2^e <= |v| < 2^(e + 1)`.
 // For v = 0, returns `min_int`. For inf, returns `max_int`.
-int FastILogB(double v);
+constexpr int FastILogB(double v);
 
 // Returns `2^exponent` if representable, otherwise 0 or infinity (depending on
 // the sign of the exponent).
-double FastOneExp(int exponent);
+constexpr double FastTwoExp(int exponent);
 
 // Returns the closest double to `v * 2^exponent` (infinity if overflow).
 // It is truncated if the result is subnormal.
-double FastLdExp(double v, int exponent);
+constexpr double FastLdExp(double v, int exponent);
+
+// Returns `value` rounded to the nearest multiple of `2^precision_exponent`.
+constexpr double RoundToPrecision(double v, int precision_exponent);
+
+// Returns `value` rounded to the multiple of `2^precision_exponent` closest to
+// 0.
+constexpr double TruncToPrecision(double v, int precision_exponent);
+
+// Returns `value` rounded to the multiple of `2^precision_exponent` furthest
+// from 0.
+constexpr double RoundAwayFromZeroToPrecision(double v, int precision_exponent);
+
+// Returns `value` rounded to the previous multiple of `2^precision_exponent`.
+constexpr double FloorToPrecision(double v, int precision_exponent);
+
+// Returns `value` rounded to the next multiple of `2^precision_exponent`.
+constexpr double CeilToPrecision(double v, int precision_exponent);
 
 // Represents a power of two, i.e. 2^exponent. Used for the API of TightSum.
 // Supports between 2^-15 and 2^15 (the reason is to avoid overflows in the
@@ -311,7 +328,7 @@ std::pair<double, double> Int64DoubleBounds(int64_t n);
 // gives `{max_double, inf}` (or `{-inf, -max_double}`).
 std::pair<double, double> QuotientBounds(double a, double b);
 
-inline double FastStepUp(const double v) {
+constexpr double FastStepUp(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);
   static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
@@ -327,7 +344,7 @@ inline double FastStepUp(const double v) {
   return absl::bit_cast<double>(i);
 }
 
-inline double FastStepDown(const double v) {
+constexpr double FastStepDown(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);
   static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
@@ -343,7 +360,7 @@ inline double FastStepDown(const double v) {
   return absl::bit_cast<double>(i);
 }
 
-inline int FastILogB(const double v) {
+constexpr int FastILogB(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);
   static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
@@ -360,7 +377,7 @@ inline int FastILogB(const double v) {
   return -1011 - std::countl_zero(mantissa);
 }
 
-inline double FastOneExp(const int exponent) {
+constexpr double FastTwoExp(const int exponent) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);
   static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
@@ -375,7 +392,7 @@ inline double FastOneExp(const int exponent) {
   return 0.0;
 }
 
-inline double FastLdExp(const double v, const int exponent) {
+constexpr double FastLdExp(const double v, const int exponent) {
   static_assert(std::numeric_limits<double>::is_iec559);
   static_assert(std::numeric_limits<double>::radix == 2);
   static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
@@ -420,8 +437,99 @@ inline double FastLdExp(const double v, const int exponent) {
                                 (i & (uint64_t{1} << 63)));
 }
 
-// Inline implementation of class TightSum for cases where speed matters (short
-// functions).
+constexpr double RoundToPrecision(const double v,
+                                  const int precision_exponent) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  DCHECK(!std::isnan(v));
+
+  if (v == 0.0) return 0.0;
+  if (!std::isfinite(v)) return v;
+
+  const uint64_t i = absl::bit_cast<uint64_t>(v);
+  int64_t exp = ((i >> 52) & 0x7ff) - 1023;
+  const bool subnormal = exp == -1023;
+  if (subnormal) exp = -1022;
+  if (exp - 52 >= precision_exponent) return v;
+  if (exp + 1 < precision_exponent) return 0.0;
+  if (exp + 1 == precision_exponent) {
+    return subnormal ? 0.0
+           : v < 0   ? -FastTwoExp(precision_exponent)
+                     : FastTwoExp(precision_exponent);
+  }
+  const int first_lost_position = 51 + precision_exponent - exp;
+  const bool first_lost_bit = (i & (uint64_t{1} << first_lost_position)) != 0;
+  const uint64_t truncated = i & (~uint64_t{0} << (first_lost_position + 1));
+  // Note that the special case where we leak into the exponent works as well.
+  const double res =
+      first_lost_bit
+          ? absl::bit_cast<double>(truncated +
+                                   (uint64_t{1} << (first_lost_position + 1)))
+          : absl::bit_cast<double>(truncated);
+  return res == -0.0 ? 0.0 : res;
+}
+
+constexpr double TruncToPrecision(const double v,
+                                  const int precision_exponent) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  DCHECK(!std::isnan(v));
+
+  if (v == 0.0) return 0.0;
+  if (!std::isfinite(v)) return v;
+
+  const uint64_t i = absl::bit_cast<uint64_t>(v);
+  int64_t exp = ((i >> 52) & 0x7ff) - 1023;
+  if (exp == -1023) exp = -1022;
+  if (exp - 52 >= precision_exponent) return v;
+  if (exp + 1 <= precision_exponent) return 0.0;
+  const int first_kept_position = 52 + precision_exponent - exp;
+  const double res =
+      absl::bit_cast<double>(i & (~uint64_t{0} << first_kept_position));
+  return res == -0.0 ? 0.0 : res;
+}
+
+constexpr double RoundAwayFromZeroToPrecision(const double v,
+                                              const int precision_exponent) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  DCHECK(!std::isnan(v));
+
+  if (v == 0.0) return 0.0;
+  if (!std::isfinite(v)) return v;
+
+  const uint64_t i = absl::bit_cast<uint64_t>(v);
+  int64_t exp = ((i >> 52) & 0x7ff) - 1023;
+  if (exp == -1023) exp = -1022;
+  if (exp - 52 >= precision_exponent) return v;
+  if (exp + 1 <= precision_exponent) {
+    return v < 0 ? -FastTwoExp(precision_exponent)
+                 : FastTwoExp(precision_exponent);
+  }
+  const int first_kept_position = 52 + precision_exponent - exp;
+  const uint64_t lost_bits = (i & ((uint64_t{1} << first_kept_position) - 1));
+  const uint64_t truncated = i & (~uint64_t{0} << (first_kept_position));
+  // Note that the special case where we leak into the exponent works as well.
+  const double res =
+      lost_bits != 0 ? absl::bit_cast<double>(
+                           truncated + (uint64_t{1} << (first_kept_position)))
+                     : absl::bit_cast<double>(truncated);
+  return res == -0.0 ? 0.0 : res;
+}
+
+constexpr double FloorToPrecision(const double v,
+                                  const int precision_exponent) {
+  return v < 0 ? RoundAwayFromZeroToPrecision(v, precision_exponent)
+               : TruncToPrecision(v, precision_exponent);
+}
+
+constexpr double CeilToPrecision(const double v, const int precision_exponent) {
+  return v > 0 ? RoundAwayFromZeroToPrecision(v, precision_exponent)
+               : TruncToPrecision(v, precision_exponent);
+}
 
 inline PowerOfTwo::PowerOfTwo(const int exponent) : exponent(exponent) {
   DCHECK_LE(exponent, 1 << 15);
