@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 
-#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/base/file.h"
 #include "ortools/base/options.h"
@@ -76,7 +75,7 @@ bool RecordReader::Close() {
   return result;
 }
 
-void RecordReader::Uncompress(const char* const source, uint64_t source_size,
+bool RecordReader::Uncompress(const char* const source, uint64_t source_size,
                               char* const output_buffer,
                               uint64_t output_size) const {
   unsigned long result_size = output_size;  // NOLINT
@@ -85,8 +84,14 @@ void RecordReader::Uncompress(const char* const source, uint64_t source_size,
       uncompress(reinterpret_cast<unsigned char*>(output_buffer), &result_size,
                  reinterpret_cast<const unsigned char*>(source), source_size);
   if (result != Z_OK) {
-    LOG(FATAL) << "Uncompress error occurred! Error code: " << result;
+    LOG(DFATAL) << "Uncompress error occurred! Error code: " << result;
+    return false;
   }
-  CHECK_LE(result_size, static_cast<unsigned long>(output_size));  // NOLINT
+  if (uint64_t{result_size} != output_size) {
+    LOG(DFATAL) << "Uncompress size mismatch: got " << result_size
+                << ", expected " << output_size;
+    return false;
+  }
+  return true;
 }
 }  // namespace ORTOOLS_RECORDIO_NAMESPACE

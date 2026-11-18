@@ -294,7 +294,6 @@ or_cc_library(
         ":file",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
         "@zlib",
     ],
 )
