@@ -2327,5 +2327,21 @@ TEST(ComputeStatusesTest, CoverMoreCases) {
                           VariableStatus::BASIC, VariableStatus::FIXED_VALUE));
 }
 
+TEST(PrimalDualHybridGradientTest, RescaledBoundedQpNotDualInfeasible) {
+  QuadraticProgram qp(1, 1);
+  qp.objective_vector = VectorXd{{-2000.0}};
+  qp.objective_matrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>{{1.0e-3}};
+  qp.variable_lower_bounds = VectorXd{{0.0}};
+  qp.variable_upper_bounds = VectorXd{{kInfinity}};
+  qp.constraint_lower_bounds = VectorXd{{0.0}};
+  qp.constraint_upper_bounds = VectorXd{{kInfinity}};
+  qp.constraint_matrix.coeffRef(0, 0) = 1.0e4;
+  qp.constraint_matrix.makeCompressed();
+  const SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+  EXPECT_THAT(output.primal_solution, ElementsAre(DoubleNear(2.0e6, 1.0e-2)));
+}
+
 }  // namespace
 }  // namespace operations_research::pdlp

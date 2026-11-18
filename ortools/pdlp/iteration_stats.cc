@@ -542,10 +542,12 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
             0.0);
 
   if (l_inf_primal > 0.0) {
-    VectorXd scaled_objective_product =
+    VectorXd objective_product =
         ObjectiveProduct(scaled_sharded_qp, scaled_primal_ray);
+    CoefficientWiseQuotientInPlace(
+        col_scaling_vec, scaled_sharded_qp.PrimalSharder(), objective_product);
     result.set_primal_ray_quadratic_norm(
-        LInfNorm(scaled_objective_product, scaled_sharded_qp.PrimalSharder()) /
+        LInfNorm(objective_product, scaled_sharded_qp.PrimalSharder()) /
         l_inf_primal);
     result.set_max_primal_ray_infeasibility(primal_residuals.l_inf_residual /
                                             l_inf_primal);
