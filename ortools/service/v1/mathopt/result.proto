@@ -25,8 +25,6 @@ import "ortools/service/v1/mathopt/solution.proto";
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1.mathopt";
 
-option csharp_namespace = "Google.OrTools.Service";
-
 // Problem feasibility status as claimed by the solver (solver is not required
 // to return a certificate for the claim).
 enum FeasibilityStatusProto {
@@ -87,13 +85,9 @@ message SolveStatsProto {
 
   // Feasibility statuses for primal and dual problems.
   ProblemStatusProto problem_status = 4;
-
   int64 simplex_iterations = 5;
-
   int64 barrier_iterations = 6;
-
   int64 first_order_iterations = 8;
-
   int64 node_count = 7;
 
   // Next id: 9
@@ -303,13 +297,13 @@ message SolveResultProto {
   // The reason the solver stopped.
   TerminationProto termination = 2;
 
-  //  Basic solutions use, as of Nov 2021:
-  //    * All convex optimization solvers (LP, convex QP) return only one
-  //      solution as a primal dual pair.
-  //    * Only MI(Q)P solvers return more than one solution. MIP solvers do not
-  //      return any dual information, or primal infeasible solutions. Solutions
-  //      are returned in order of best primal objective first. Gurobi solves
-  //      nonconvex QP (integer or continuous) as MIQP.
+  // Basic solutions use, as of Nov 2021:
+  //   * All convex optimization solvers (LP, convex QP) return only one
+  //     solution as a primal dual pair.
+  //   * Only MI(Q)P solvers return more than one solution. MIP solvers do not
+  //     return any dual information, or primal infeasible solutions. Solutions
+  //     are returned in order of best primal objective first. Gurobi solves
+  //     nonconvex QP (integer or continuous) as MIQP.
 
   // The general contract for the order of solutions that future solvers should
   // implement is to order by:
@@ -334,6 +328,5 @@ message SolveResultProto {
   SolveStatsProto solve_stats = 6;
 
   reserved 7, 8, 9;
-
   reserved 1;  // Deleted fields.
 }
