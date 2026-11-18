@@ -217,6 +217,14 @@ void ComputeScalingErrors(absl::Span<const double> input,
 // Where each Xi is an integer in [input_lbs[i], input_ubs[i]]. This assumes we
 // scale it via std::round(input_coeffs[i] * scaling_factor) and it computes
 // "tight" errors. See the Get*Error() functions for more details.
+//
+// The exact scaled coefficient input_coeffs[i] * scaling_factor is usually not
+// representable as a double. Internally, each scaled coefficient is thus kept
+// as an interval [scaled_lb, scaled_ub] containing its exact value (computed
+// with ProdBounds()), and Optimize() picks, for each term and each bound, the
+// end of the interval that makes the computed error conservative. The errors
+// returned by this class are therefore valid with respect to the exact scaled
+// constraint, not just its double approximation.
 class TightScalingErrorHelper {
  public:
   // Loads an unscaled constraint. We use a class and this API so the memory
@@ -232,13 +240,28 @@ class TightScalingErrorHelper {
   // GetLowerBoundRoundingError() functions. The API is done like this so we can
   // compute the error for multiple scaling factor on the same constraint.
   // Checked preconditions: finite scaling_factor >= 0.
+  //
+  // The rounded coefficients are std::round(input_coeffs[i] * scaling_factor)
+  // (computed in double, like the callers do) while the scaled coefficients
+  // are the exact products input_coeffs[i] * scaling_factor, bounded with
+  // ProdBounds().
   void LoadScalingFactor(double scaling_factor);
 
   // Alternative to LoadUnscaledConstraint()/LoadScalingFactor(), this loads
   // directly the scaled/rounded pair. Note that we keep the same name, but the
   // two set of coeff can really be anything as long as they have the same size.
   // kint64min < input_lbs[i] <= input_ubs[i] < kint64max.
+  //
+  // The second version takes bounds [scaled_coeffs_lb[i], scaled_coeffs_ub[i]]
+  // on each exact scaled coefficient (for instance the output of ProdBounds())
+  // and the first one is the special case scaled_coeffs_lb == scaled_coeffs_ub.
+  // The bounds of a term must have the same sign.
   void LoadBothConstraints(absl::Span<const double> scaled_coeffs,
+                           absl::Span<const double> rounded_coeffs,
+                           absl::Span<const int64_t> input_lbs,
+                           absl::Span<const int64_t> input_ubs);
+  void LoadBothConstraints(absl::Span<const double> scaled_coeffs_lb,
+                           absl::Span<const double> scaled_coeffs_ub,
                            absl::Span<const double> rounded_coeffs,
                            absl::Span<const int64_t> input_lbs,
                            absl::Span<const int64_t> input_ubs);
@@ -251,6 +274,7 @@ class TightScalingErrorHelper {
   // Given
   //   SCALED_TERMS = sum xi * (input_coeffs[i] * scaling_factor)
   //   ROUNDED_TERMS = sum xi * std::round(input_coeffs[i] * scaling_factor)
+  // where the products of SCALED_TERMS are exact (not rounded to double).
   // For any feasible solution of:
   //   (SCALED_TERMS >= constraint_lb)
   // we should have:
@@ -258,8 +282,8 @@ class TightScalingErrorHelper {
   // Moreover, if x' is a solution of the above constraint, we have:
   //   (SCALED_TERMS' >= constraint_lb - rounding_error - unrounding_error)
   //
-  // Note: all computations are done with double, so these bounds are not exact,
-  // but should be relatively precise for reasonable constraints.
+  // Note: the final error is returned as a double rounded towards the
+  // conservative direction, see the TightSum versions below for full precision.
   //
   // Note: For the upper bound, the sign of the errors are inverted, so
   // we will have ROUNDED_TERMS <= constraints_ub + rounding_error.
@@ -271,25 +295,25 @@ class TightScalingErrorHelper {
     slack_.Clear();
     slack_.Add(constraint_lb);
     total_sum_.Clear();
-    return -Optimize<true>(scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
+    return -Optimize<true>(ScaledBounds(), RoundedBounds(), slack_, total_sum_);
   }
   double GetLowerBoundUnroundingError(double constraint_lb) {
     slack_.Clear();
     slack_.Add(constraint_lb);
     total_sum_.Clear();
-    return -Optimize<true>(rounded_coeffs_, scaled_coeffs_, slack_, total_sum_);
+    return -Optimize<true>(RoundedBounds(), ScaledBounds(), slack_, total_sum_);
   }
   double GetUpperBoundRoundingError(double constraint_ub) {
     slack_.Clear();
     slack_.Add(-constraint_ub);
     total_sum_.Clear();
-    return Optimize<false>(scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
+    return Optimize<false>(ScaledBounds(), RoundedBounds(), slack_, total_sum_);
   }
   double GetUpperBoundUnroundingError(double constraint_ub) {
     slack_.Clear();
     slack_.Add(-constraint_ub);
     total_sum_.Clear();
-    return Optimize<false>(rounded_coeffs_, scaled_coeffs_, slack_, total_sum_);
+    return Optimize<false>(RoundedBounds(), ScaledBounds(), slack_, total_sum_);
   }
 
   // Assuming ROUNDED_TERMS >= constraint_lb, returns a guaranteed lower bound
@@ -299,7 +323,7 @@ class TightScalingErrorHelper {
     total_sum_.Clear();
     total_sum_.Add(scaled_offset);
     return Optimize<true, /*minimize=*/true, /*compute_error=*/false>(
-        rounded_coeffs_, scaled_coeffs_, constraint_lb, total_sum_);
+        RoundedBounds(), ScaledBounds(), constraint_lb, total_sum_);
   }
 
   // Convenience wrappers around GetRoundingError() for the four combinations
@@ -323,6 +347,18 @@ class TightScalingErrorHelper {
   }
 
  private:
+  // Bounds [lb[i], ub[i]] on a vector of exact coefficients.
+  struct CoeffBounds {
+    absl::Span<const double> lb;
+    absl::Span<const double> ub;
+  };
+  CoeffBounds ScaledBounds() const {
+    return {scaled_coeffs_lb_, scaled_coeffs_ub_};
+  }
+  CoeffBounds RoundedBounds() const {
+    return {rounded_coeffs_, rounded_coeffs_};
+  }
+
   // Let `OP` be `>=` if `is_ge_constraint` is true and `<=` if false.
   // Returns `err` such that, for all xi in  [lbs[i], ubs[i]]:
   //   - if `minimize_error == is_ge_constraint` (relaxation):
@@ -342,7 +378,7 @@ class TightScalingErrorHelper {
     }
     total_sum_.Clear();
     Optimize<is_ge_constraint, minimize_error, /*compute_error=*/true>(
-        scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
+        ScaledBounds(), RoundedBounds(), slack_, total_sum_);
     return total_sum_;
   }
 
@@ -356,6 +392,11 @@ class TightScalingErrorHelper {
   //
   // If `compute_error` is false, optimizes (sum new_coeffs[i] * Xi) directly
   // instead of subtracting `coeffs[i] * Xi`.
+  //
+  // Each coefficient is only known to lie in the given interval. The returned
+  // value is a valid bound for any choice of the exact coefficients within
+  // their intervals, see the implementation for how the ends of the intervals
+  // are selected.
   //
   // If we declare that we have `ubs_[i] - lbs_[i]` items of cost
   // `new_coeffs[i]`, the problem we are solving can be seen as a knapsack
@@ -383,8 +424,7 @@ class TightScalingErrorHelper {
   // explicitly detect infeasibility and still return something in this case.
   template <bool is_ge_constraint, bool minimize = is_ge_constraint,
             bool compute_error = true>
-  double Optimize(absl::Span<const double> coeffs,
-                  absl::Span<const double> new_coeffs, TightSum& slack,
+  double Optimize(CoeffBounds coeffs, CoeffBounds new_coeffs, TightSum& slack,
                   TightSum& result_sum);
 
   // Input constraint data. only change on LoadConstraint().
@@ -394,14 +434,20 @@ class TightScalingErrorHelper {
 
   // Just to make the code shorter.
   // We shouldn't care too much about speed here.
-  std::vector<double> scaled_coeffs_;
+  //
+  // The exact scaled coefficients are in [scaled_coeffs_lb_, scaled_coeffs_ub_]
+  // and the rounded ones are exact doubles.
+  std::vector<double> scaled_coeffs_lb_;
+  std::vector<double> scaled_coeffs_ub_;
   std::vector<double> rounded_coeffs_;
   bool has_overflow_ = false;
 
-  // Temporary data for Optimize().
+  // Temporary data for Optimize(). The knapsack is expressed in the shifted
+  // variables Yi = +/-(Xi - initial_bound_i) in [0, range_i], but the result
+  // is accumulated as one term delta * Xi per variable, see Optimize().
   struct KnapsackItem {
-    double coeff;           // coeffs[i]
-    double delta;           // new_coeffs[i] - coeffs[i] (usually small)
+    double coeff;           // knapsack weight of one unit of Yi.
+    double delta;           // objective cost of one unit of Yi (before +/-).
     int64_t range;          // upper_bounds[i] - lower_bounds[i]
     int64_t initial_bound;  // lower_bounds[i] for >= constraint
     int64_t other_bound;    // upper_bounds[i] for >= constraint

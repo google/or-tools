@@ -2220,28 +2220,28 @@ TEST(FastOneExpTest, NormalSubnormalAndOutOfRangeExponents) {
   constexpr double kMinNormal = std::numeric_limits<double>::min();
 
   // Underflow (< -1074).
-  EXPECT_EQ(FastOneExp(std::numeric_limits<int>::min()), 0.0);
-  EXPECT_EQ(FastOneExp(-10000), 0.0);
-  EXPECT_EQ(FastOneExp(-1075), 0.0);
+  EXPECT_EQ(FastTwoExp(std::numeric_limits<int>::min()), 0.0);
+  EXPECT_EQ(FastTwoExp(-10000), 0.0);
+  EXPECT_EQ(FastTwoExp(-1075), 0.0);
 
   // Subnormal powers of two [-1074, -1023].
-  EXPECT_EQ(FastOneExp(-1074), kDenormMin);
-  EXPECT_EQ(FastOneExp(-1073), 2.0 * kDenormMin);
-  EXPECT_EQ(FastOneExp(-1050), std::ldexp(1.0, -1050));
-  EXPECT_EQ(FastOneExp(-1023), std::ldexp(1.0, -1023));
+  EXPECT_EQ(FastTwoExp(-1074), kDenormMin);
+  EXPECT_EQ(FastTwoExp(-1073), 2.0 * kDenormMin);
+  EXPECT_EQ(FastTwoExp(-1050), std::ldexp(1.0, -1050));
+  EXPECT_EQ(FastTwoExp(-1023), std::ldexp(1.0, -1023));
 
   // Normal powers of two [-1022, 1023].
-  EXPECT_EQ(FastOneExp(-1022), kMinNormal);
-  EXPECT_EQ(FastOneExp(-1), 0.5);
-  EXPECT_EQ(FastOneExp(0), 1.0);
-  EXPECT_EQ(FastOneExp(1), 2.0);
-  EXPECT_EQ(FastOneExp(52), std::ldexp(1.0, 52));
-  EXPECT_EQ(FastOneExp(1023), std::ldexp(1.0, 1023));
+  EXPECT_EQ(FastTwoExp(-1022), kMinNormal);
+  EXPECT_EQ(FastTwoExp(-1), 0.5);
+  EXPECT_EQ(FastTwoExp(0), 1.0);
+  EXPECT_EQ(FastTwoExp(1), 2.0);
+  EXPECT_EQ(FastTwoExp(52), std::ldexp(1.0, 52));
+  EXPECT_EQ(FastTwoExp(1023), std::ldexp(1.0, 1023));
 
   // Overflow (> 1023).
-  EXPECT_EQ(FastOneExp(1024), kInf);
-  EXPECT_EQ(FastOneExp(10000), kInf);
-  EXPECT_EQ(FastOneExp(std::numeric_limits<int>::max()), kInf);
+  EXPECT_EQ(FastTwoExp(1024), kInf);
+  EXPECT_EQ(FastTwoExp(10000), kInf);
+  EXPECT_EQ(FastTwoExp(std::numeric_limits<int>::max()), kInf);
 }
 
 TEST(FastLdExpTest, ZeroAndInfinities) {
@@ -2332,6 +2332,180 @@ TEST(FastLdExpTest, SubnormalInputsToZeroSubnormalNormalAndOverflow) {
   EXPECT_EQ(FastLdExp(-kDenormMin, 2098), -kInf);
   EXPECT_EQ(FastLdExp(kDenormMin, std::numeric_limits<int>::max()), kInf);
   EXPECT_EQ(FastLdExp(-kDenormMin, std::numeric_limits<int>::max()), -kInf);
+}
+
+void ExpectAllFivePrecisionFunctions(const double v, const int p,
+                                     const double expected_round,
+                                     const double expected_trunc,
+                                     const double expected_away) {
+  const double expected_floor = v < 0.0 ? expected_away : expected_trunc;
+  const double expected_ceil = v > 0.0 ? expected_away : expected_trunc;
+
+  const double r_round = RoundToPrecision(v, p);
+  const double r_trunc = TruncToPrecision(v, p);
+  const double r_away = RoundAwayFromZeroToPrecision(v, p);
+  const double r_floor = FloorToPrecision(v, p);
+  const double r_ceil = CeilToPrecision(v, p);
+
+  EXPECT_EQ(r_round, expected_round) << "v=" << v << " p=" << p;
+  EXPECT_EQ(r_trunc, expected_trunc) << "v=" << v << " p=" << p;
+  EXPECT_EQ(r_away, expected_away) << "v=" << v << " p=" << p;
+  EXPECT_EQ(r_floor, expected_floor) << "v=" << v << " p=" << p;
+  EXPECT_EQ(r_ceil, expected_ceil) << "v=" << v << " p=" << p;
+
+  if (r_round == 0.0) EXPECT_FALSE(std::signbit(r_round));
+  if (r_trunc == 0.0) EXPECT_FALSE(std::signbit(r_trunc));
+  if (r_away == 0.0) EXPECT_FALSE(std::signbit(r_away));
+  if (r_floor == 0.0) EXPECT_FALSE(std::signbit(r_floor));
+  if (r_ceil == 0.0) EXPECT_FALSE(std::signbit(r_ceil));
+}
+
+TEST(ToPrecisionTest, ZeroAndInfinities) {
+  for (const int p :
+       {std::numeric_limits<int>::min(), -2000, -1074, -1022, -1, 0, 1, 1023,
+        1024, 2000, std::numeric_limits<int>::max()}) {
+    ExpectAllFivePrecisionFunctions(0.0, p, 0.0, 0.0, 0.0);
+    ExpectAllFivePrecisionFunctions(-0.0, p, 0.0, 0.0, 0.0);
+    ExpectAllFivePrecisionFunctions(kInf, p, kInf, kInf, kInf);
+    ExpectAllFivePrecisionFunctions(-kInf, p, -kInf, -kInf, -kInf);
+  }
+}
+
+TEST(ToPrecisionTest, NormalValuesAndTieBreaking) {
+  // Exact multiples remain unchanged across all 5 functions.
+  for (const int p : {std::numeric_limits<int>::min(), -1074, -52, -1}) {
+    ExpectAllFivePrecisionFunctions(1.5, p, 1.5, 1.5, 1.5);
+    ExpectAllFivePrecisionFunctions(-1.5, p, -1.5, -1.5, -1.5);
+  }
+  ExpectAllFivePrecisionFunctions(1.0, 0, 1.0, 1.0, 1.0);
+  ExpectAllFivePrecisionFunctions(-1.0, 0, -1.0, -1.0, -1.0);
+
+  // Ties at 0.5 * 2^p when exp + 1 == p (e.g. v = +/-0.5, p = 0) and when
+  // exp == p (e.g. v = +/-1.5, p = 0; v = +/-1.25, p = -1).
+  ExpectAllFivePrecisionFunctions(0.5, 0, 1.0, 0.0, 1.0);
+  ExpectAllFivePrecisionFunctions(-0.5, 0, -1.0, 0.0, -1.0);
+  ExpectAllFivePrecisionFunctions(1.5, 0, 2.0, 1.0, 2.0);
+  ExpectAllFivePrecisionFunctions(-1.5, 0, -2.0, -1.0, -2.0);
+  ExpectAllFivePrecisionFunctions(1.25, -1, 1.5, 1.0, 1.5);
+  ExpectAllFivePrecisionFunctions(-1.25, -1, -1.5, -1.0, -1.5);
+
+  // Non-ties below and above the midpoint.
+  ExpectAllFivePrecisionFunctions(1.25, 0, 1.0, 1.0, 2.0);
+  ExpectAllFivePrecisionFunctions(-1.25, 0, -1.0, -1.0, -2.0);
+  ExpectAllFivePrecisionFunctions(1.75, 0, 2.0, 1.0, 2.0);
+  ExpectAllFivePrecisionFunctions(-1.75, 0, -2.0, -1.0, -2.0);
+  ExpectAllFivePrecisionFunctions(std::nextafter(0.5, 0.0), 0, 0.0, 0.0, 1.0);
+  ExpectAllFivePrecisionFunctions(-std::nextafter(0.5, 0.0), 0, 0.0, 0.0, -1.0);
+  ExpectAllFivePrecisionFunctions(0.75, 0, 1.0, 0.0, 1.0);
+  ExpectAllFivePrecisionFunctions(-0.75, 0, -1.0, 0.0, -1.0);
+
+  // Bit positions across 32-bit boundary (first_lost_position in [0, 51]).
+  for (int k = 0; k <= 52; ++k) {
+    const double base = 1.0;
+    const double delta = std::ldexp(1.0, -k);
+    const double v = base + (k > 0 ? delta : 0.0);
+    // At precision_exponent = -k + 1, delta = 0.5 * 2^p (exact tie).
+    if (k >= 1) {
+      const double step = std::ldexp(1.0, -k + 1);
+      ExpectAllFivePrecisionFunctions(v, -k + 1, base + step, base,
+                                      base + step);
+      ExpectAllFivePrecisionFunctions(-v, -k + 1, -(base + step), -base,
+                                      -(base + step));
+    }
+    // At precision_exponent = -k, v is an exact multiple.
+    ExpectAllFivePrecisionFunctions(v, -k, v, v, v);
+    ExpectAllFivePrecisionFunctions(-v, -k, -v, -v, -v);
+  }
+}
+
+TEST(ToPrecisionTest, CarryIntoExponentAndOverflowToInfinity) {
+  constexpr double kMaxNormal = std::numeric_limits<double>::max();
+
+  // Carry across a normal power-of-two boundary: 2.0 - ulp rounded to 2^-51.
+  const double below_two = std::nextafter(2.0, 1.0);
+  ExpectAllFivePrecisionFunctions(below_two, -51, 2.0,
+                                  std::nextafter(below_two, 1.0), 2.0);
+  ExpectAllFivePrecisionFunctions(-below_two, -51, -2.0,
+                                  -std::nextafter(below_two, 1.0), -2.0);
+
+  // Carry out of maximum finite double (exp = 1023) into +/-infinity.
+  ExpectAllFivePrecisionFunctions(kMaxNormal, 971, kMaxNormal, kMaxNormal,
+                                  kMaxNormal);
+  ExpectAllFivePrecisionFunctions(-kMaxNormal, 971, -kMaxNormal, -kMaxNormal,
+                                  -kMaxNormal);
+  const double max_trunc_972 = std::nextafter(kMaxNormal, 0.0);
+  ExpectAllFivePrecisionFunctions(kMaxNormal, 972, kInf, max_trunc_972, kInf);
+  ExpectAllFivePrecisionFunctions(-kMaxNormal, 972, -kInf, -max_trunc_972,
+                                  -kInf);
+  ExpectAllFivePrecisionFunctions(kMaxNormal, 1023, kInf, std::ldexp(1.0, 1023),
+                                  kInf);
+  ExpectAllFivePrecisionFunctions(-kMaxNormal, 1023, -kInf,
+                                  -std::ldexp(1.0, 1023), -kInf);
+  ExpectAllFivePrecisionFunctions(kMaxNormal, 1024, kInf, 0.0, kInf);
+  ExpectAllFivePrecisionFunctions(-kMaxNormal, 1024, -kInf, 0.0, -kInf);
+  ExpectAllFivePrecisionFunctions(kMaxNormal, 1025, 0.0, 0.0, kInf);
+  ExpectAllFivePrecisionFunctions(-kMaxNormal, 1025, 0.0, 0.0, -kInf);
+  ExpectAllFivePrecisionFunctions(1.0, std::numeric_limits<int>::max(), 0.0,
+                                  0.0, kInf);
+  ExpectAllFivePrecisionFunctions(-1.0, std::numeric_limits<int>::max(), 0.0,
+                                  0.0, -kInf);
+}
+
+TEST(ToPrecisionTest, SubnormalValuesAndPromotionToNormal) {
+  constexpr double kDenormMin = std::numeric_limits<double>::denorm_min();
+  constexpr double kMinNormal = std::numeric_limits<double>::min();
+  const double kMaxSubnormal = std::nextafter(kMinNormal, 0.0);
+
+  // Smallest subnormal (2^-1074).
+  ExpectAllFivePrecisionFunctions(kDenormMin, std::numeric_limits<int>::min(),
+                                  kDenormMin, kDenormMin, kDenormMin);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, std::numeric_limits<int>::min(),
+                                  -kDenormMin, -kDenormMin, -kDenormMin);
+  ExpectAllFivePrecisionFunctions(kDenormMin, -1074, kDenormMin, kDenormMin,
+                                  kDenormMin);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, -1074, -kDenormMin, -kDenormMin,
+                                  -kDenormMin);
+  // At p = -1073, kDenormMin == 0.5 * 2^-1073 (exact tie).
+  ExpectAllFivePrecisionFunctions(kDenormMin, -1073, 2.0 * kDenormMin, 0.0,
+                                  2.0 * kDenormMin);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, -1073, -2.0 * kDenormMin, 0.0,
+                                  -2.0 * kDenormMin);
+  ExpectAllFivePrecisionFunctions(kDenormMin, -1072, 0.0, 0.0,
+                                  4.0 * kDenormMin);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, -1072, 0.0, 0.0,
+                                  -4.0 * kDenormMin);
+  ExpectAllFivePrecisionFunctions(kDenormMin, -1022, 0.0, 0.0, kMinNormal);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, -1022, 0.0, 0.0, -kMinNormal);
+  ExpectAllFivePrecisionFunctions(kDenormMin, -1021, 0.0, 0.0,
+                                  2.0 * kMinNormal);
+  ExpectAllFivePrecisionFunctions(-kDenormMin, -1021, 0.0, 0.0,
+                                  -2.0 * kMinNormal);
+
+  // 2^-1023 == 0.5 * kMinNormal (largest power-of-two subnormal).
+  const double half_min_normal = std::ldexp(1.0, -1023);
+  ExpectAllFivePrecisionFunctions(half_min_normal, -1023, half_min_normal,
+                                  half_min_normal, half_min_normal);
+  ExpectAllFivePrecisionFunctions(-half_min_normal, -1023, -half_min_normal,
+                                  -half_min_normal, -half_min_normal);
+  ExpectAllFivePrecisionFunctions(half_min_normal, -1022, kMinNormal, 0.0,
+                                  kMinNormal);
+  ExpectAllFivePrecisionFunctions(-half_min_normal, -1022, -kMinNormal, 0.0,
+                                  -kMinNormal);
+  ExpectAllFivePrecisionFunctions(half_min_normal, -1021, 0.0, 0.0,
+                                  2.0 * kMinNormal);
+  ExpectAllFivePrecisionFunctions(-half_min_normal, -1021, 0.0, 0.0,
+                                  -2.0 * kMinNormal);
+
+  // Largest subnormal (kMinNormal - kDenormMin) promoting into normal
+  // kMinNormal.
+  ExpectAllFivePrecisionFunctions(kMaxSubnormal, -1073, kMinNormal,
+                                  kMaxSubnormal - kDenormMin, kMinNormal);
+  ExpectAllFivePrecisionFunctions(-kMaxSubnormal, -1073, -kMinNormal,
+                                  -(kMaxSubnormal - kDenormMin), -kMinNormal);
+  ExpectAllFivePrecisionFunctions(kMaxSubnormal, -1022, kMinNormal, 0.0,
+                                  kMinNormal);
+  ExpectAllFivePrecisionFunctions(-kMaxSubnormal, -1022, -kMinNormal, 0.0,
+                                  -kMinNormal);
 }
 
 }  // namespace
