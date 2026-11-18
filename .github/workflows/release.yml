@@ -266,24 +266,31 @@ jobs:
         workload_identity_provider: 'projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github'
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
-    - name: Clean up stale releases from staging repo
+    - name: Clean up failed staging attempt for current version (if any)
       shell: bash
       run: |
-        packages=$(gcloud artifacts packages list \
-          --project="oss-exit-gate-prod" \
-          --location="us" \
-          --repository="or-tools--nuget" \
-          --format="value(name)" 2>/dev/null || true)
-        if [ -n "${packages}" ]; then
-          echo "${packages}" | xargs -r -I {} sh -c '
-            package_name=$(basename "{}")
-            echo "Deleting package: $package_name..."
-            gcloud artifacts packages delete "{}" \
+        shopt -s nullglob
+        for nupkg in nupkg/*.nupkg artifacts/*.nupkg **/*.nupkg; do
+          [[ -f "$nupkg" ]] || continue
+          [[ "$nupkg" == *.symbols.nupkg ]] && continue
+          base="$(basename "$nupkg" .nupkg)"
+          ver="$(echo "$base" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$' || true)"
+          [[ -n "$ver" ]] || continue
+          pkg_id="${base%.$ver}"
+          pkg_lower="$(echo "$pkg_id" | tr '[:upper:]' '[:lower:]')"
+          if gcloud artifacts versions describe "${ver}" \
+            --package="${pkg_lower}" \
+            --project="oss-exit-gate-prod" \
+            --location="us" \
+            --repository="or-tools--nuget" >/dev/null 2>&1; then
+            gcloud artifacts versions delete "${ver}" \
+              --package="${pkg_lower}" \
               --project="oss-exit-gate-prod" \
               --location="us" \
               --repository="or-tools--nuget" \
               --quiet
-          '
+          fi
+        done
         fi
     - name: Stage NuGet packages and upload OSS Exit Gate manifest
       shell: bash
