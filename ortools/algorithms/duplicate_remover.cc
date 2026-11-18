@@ -23,36 +23,37 @@ namespace operations_research {
 
 size_t DenseIntDuplicateRemover::RemoveDuplicatesInternal(
     absl::Span<int> span) {
-  // We use vector<uint8_t> because using vector<bool> would be potentially more
-  // expensive: writing in vector<bool> involves a read+write, and here we're
-  // directly writing.
+  // We use vector<uint64_t> because using vector<bool> would be potentially
+  // more expensive: writing in vector<bool> involves a read+write, and here we
+  // clear whole 64-bit words at once.
+  const absl::Span<uint64_t> tmp_mask = tmp_mask_;
   int num_unique_kept = -1;
   // Fast track for the leading portion without duplicates.
   while (++num_unique_kept < span.size()) {
     const int x = span[num_unique_kept];
     DCHECK_GE(x, 0);
-    DCHECK_LT(x, tmp_mask_.size() * 8);
-    // Bit #i = Bit #(i modulo 8) of Byte #(i / 8).
-    const uint8_t mask = 1u << (x & 7);      // Bit #(i modulo 8).
-    const uint8_t byte = tmp_mask_[x >> 3];  // .. of Byte #(i / 8).
-    if (mask & byte) break;                  // Already seen.
-    tmp_mask_[x >> 3] = byte | mask;
+    DCHECK_LT(x, tmp_mask.size() * 64);
+    // Bit #i = Bit #(i modulo 64) of Word #(i / 64).
+    const uint64_t mask = uint64_t{1} << (x & 63);  // Bit #(i modulo 64).
+    const uint64_t word = tmp_mask[x >> 6];         // .. of Word #(i / 64).
+    if (mask & word) break;                         // Already seen.
+    tmp_mask[x >> 6] = word | mask;
   }
   // The next portion is exactly the same, except that now we have to shift
   // the elements that we're keeping, making it slightly slower.
   for (int i = num_unique_kept + 1; i < span.size(); ++i) {
     const int x = span[i];
     DCHECK_GE(x, 0);
-    DCHECK_LT(x, tmp_mask_.size() * 8);
-    const uint8_t mask = 1 << (x & 7);
-    const uint8_t byte = tmp_mask_[x >> 3];
-    if (mask & byte) continue;  // Already seen.
-    tmp_mask_[x >> 3] = mask | byte;
+    DCHECK_LT(x, tmp_mask.size() * 64);
+    const uint64_t mask = uint64_t{1} << (x & 63);
+    const uint64_t word = tmp_mask[x >> 6];
+    if (mask & word) continue;  // Already seen.
+    tmp_mask[x >> 6] = mask | word;
     span[num_unique_kept++] = x;  // Keep x=[i], at its new (shifted) position.
   }
   span.remove_suffix(span.size() - num_unique_kept);
   // Clear the bit mask.
-  for (int x : span) tmp_mask_[x >> 3] = 0;
+  for (int x : span) tmp_mask[x >> 6] = 0;
   return num_unique_kept;
 }
 
