@@ -50,12 +50,16 @@ TEST(BinarySearchTest, DoubleExample) {
   // M_PI is problematic on windows.
   // std::numbers::pi is C++20 (incompatible with OR-Tools).
   const double kPi = 3.14159265358979323846;
-  const double x =
-      BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/kPi / 2,
-                           [](double x) { return cos(x) >= 2 * sin(x); });
+  const double x = BinarySearch(/*x_true=*/0.0, /*x_false=*/kPi / 2,
+                                [](double x) { return cos(x) >= 2 * sin(x); });
   EXPECT_GE(x, 0);
   EXPECT_LE(x, kPi / 2);
   EXPECT_EQ(cos(x), 2 * sin(x)) << x;
+}
+
+bool IsGreaterThan41(int x) { return x > 41; }
+TEST(BinarySearchTest, IntExample) {
+  EXPECT_EQ(BinarySearch(/*x_true=*/100, /*x_false=*/0, IsGreaterThan41), 42);
 }
 
 template <typename T>
@@ -104,7 +108,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, BinarySearchIntTest, MyTypes);
 TEST(BinarySearchTest, LargeInt128SearchDomain) {
   absl::int128 target = -1234567890123456789;
   target <<= 50;  // Make sure it does need more than 64 or even 96 bits.
-  EXPECT_EQ(BinarySearch<absl::int128>(
+  EXPECT_EQ(BinarySearch(
                 /*x_true=*/std::numeric_limits<absl::int128>::min(),
                 /*x_false=*/std::numeric_limits<absl::int128>::max(),
                 [target](absl::int128 x) { return x < target; }),
@@ -123,7 +127,7 @@ TEST(BinarySearchTest, VeryLongDoubleSearchDomain) {
 
 TEST(BinarySearchTest, InfinityCornerCases) {
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
-  EXPECT_THAT(BinarySearch<double>(
+  EXPECT_THAT(BinarySearch(
                   /*x_true=*/-kInfinity,
                   /*x_false=*/kInfinity, [](double x) { return x < 0; }),
               -kInfinity);
@@ -150,13 +154,13 @@ TEST(BinarySearchTest, NanCornerCases) {
 }
 
 TEST(BinarySearchTest, WithAbslDuration) {
-  EXPECT_THAT(BinarySearch<absl::Duration>(
+  EXPECT_THAT(BinarySearch(
                   /*x_true=*/absl::Hours(100000),
                   /*x_false=*/absl::ZeroDuration(),
                   [](absl::Duration x) { return x > absl::ZeroDuration(); }),
               // Smallest non-zero absl::Duration.
               absl::Nanoseconds(0.25));
-  EXPECT_EQ(BinarySearch<absl::Duration>(
+  EXPECT_EQ(BinarySearch(
                 /*x_true=*/absl::InfiniteDuration(),
                 /*x_false=*/-absl::Seconds(100),
                 [](absl::Duration t) { return t > absl::Seconds(1); }),
@@ -165,15 +169,15 @@ TEST(BinarySearchTest, WithAbslDuration) {
 
 TEST(BinarySearchDeathTest, DiesIfEitherBoundaryConditionViolatedInFastbuild) {
   if (!DEBUG_MODE) GTEST_SKIP();
-  EXPECT_DEATH(BinarySearch<int>(/*x_true=*/0, /*x_false=*/42,
-                                 [](int x) { return x < 999; }),
-               "");
-  EXPECT_DEATH(BinarySearch<int>(/*x_true=*/0, /*x_false=*/42,
-                                 [](int x) { return x < 0; }),
-               "");
-  EXPECT_DEATH(BinarySearch<int>(/*x_true=*/0, /*x_false=*/42,
-                                 [](int x) { return x > 20; }),
-               "");
+  EXPECT_DEATH(
+      BinarySearch(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 999; }),
+      "");
+  EXPECT_DEATH(
+      BinarySearch(/*x_true=*/0, /*x_false=*/42, [](int x) { return x < 0; }),
+      "");
+  EXPECT_DEATH(
+      BinarySearch(/*x_true=*/0, /*x_false=*/42, [](int x) { return x > 20; }),
+      "");
 }
 
 TEST(BinarySearchDeathTest, DiesIfBoundCheckIsEnabledAndABoundIsViolated) {
@@ -221,6 +225,62 @@ TEST(BinarySearchTest, NoDeathIfBoundCheckIsDisabled) {
         bs(/*x_true=*/42, /*x_false=*/0, [](int x) { return x < 20; });
     EXPECT_TRUE(x_transition == 42 || x_transition == 1);
   }
+}
+
+TEST(BinarySearchTest, DeducedPointWithInlineAndGenericLambda) {
+  EXPECT_EQ(BinarySearch(0, 100, [](int x) { return x <= 42; }), 42);
+  EXPECT_EQ(BinarySearch(0.0, 10.0, [](auto x) { return x <= 3.5; }), 3.5);
+  EXPECT_EQ(BinarySearch(0, 100, [](int x) -> bool { return x <= 42 ? 1 : 0; }),
+            42);
+}
+
+TEST(BinarySearchTest, ConstNonCopyableCallableLvalue) {
+  struct ConstPredicate {
+    explicit ConstPredicate(int threshold) : threshold(threshold) {}
+    ConstPredicate(const ConstPredicate&) = delete;
+    ConstPredicate& operator=(const ConstPredicate&) = delete;
+    ConstPredicate(ConstPredicate&&) = delete;
+    ConstPredicate& operator=(ConstPredicate&&) = delete;
+    bool operator()(int x) const { return x <= threshold; }
+    int threshold;
+  };
+  const ConstPredicate pred(42);
+  EXPECT_EQ(BinarySearch(0, 100, pred), 42);
+}
+
+TEST(BinarySearchTest, MutableNonCopyableCallableLvalue) {
+  struct MutablePredicate {
+    explicit MutablePredicate(int threshold) : threshold(threshold) {}
+    MutablePredicate(const MutablePredicate&) = delete;
+    MutablePredicate& operator=(const MutablePredicate&) = delete;
+    MutablePredicate(MutablePredicate&&) = delete;
+    MutablePredicate& operator=(MutablePredicate&&) = delete;
+    bool operator()(int x) {
+      ++num_calls;
+      return x <= threshold;
+    }
+    int threshold;
+    int num_calls = 0;
+  };
+  MutablePredicate pred(42);
+  EXPECT_EQ(BinarySearch(0, 100, pred), 42);
+  EXPECT_GT(pred.num_calls, 0);
+}
+
+TEST(BinarySearchTest, MutableRvalueLambda) {
+  int observed_calls = 0;
+  EXPECT_EQ(BinarySearch(0, 100,
+                         [count = 0, &observed_calls](int x) mutable {
+                           observed_calls = ++count;
+                           return x <= 42;
+                         }),
+            42);
+  EXPECT_GT(observed_calls, 0);
+}
+
+TEST(BinarySearchTest, FunctionReferenceAndPointer) {
+  EXPECT_EQ(BinarySearch(100, 0, IsGreaterThan41), 42);
+  EXPECT_EQ(BinarySearch(100, 0, &IsGreaterThan41), 42);
 }
 
 }  // namespace
