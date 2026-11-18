@@ -17,6 +17,7 @@
 #define ORTOOLS_BASE_RECORDIO_H_
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -43,6 +44,12 @@ class OR_DLL RecordWriter {
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
+  // Maximum size of a record.
+  //
+  // Protos are limited to an `int` size. We assume here that compressed protos
+  // should fit this size as well.
+  static constexpr uint64_t kMaxRecordSize = std::numeric_limits<int>::max();
+
   explicit RecordWriter(File* file);
   ~RecordWriter();
 
@@ -57,9 +64,21 @@ class OR_DLL RecordWriter {
       return false;
     }
     const uint64_t uncompressed_size = uncompressed_buffer.size();
+    if (uncompressed_size > kMaxRecordSize) {
+      LOG(DFATAL) << "SerializeToString() should have failed if ByteSizeLong() "
+                     "> INT_MAX but it returned a buffer of "
+                  << uncompressed_size << " bytes.";
+      return false;
+    }
     const std::string compressed_buffer =
         use_compression_ ? Compress(uncompressed_buffer) : "";
     const uint64_t compressed_size = compressed_buffer.size();
+    if (compressed_size > kMaxRecordSize) {
+      // We know that uncompressed_size <= kMaxRecordSize.
+      LOG(DFATAL) << "compressed_size = " << compressed_size
+                  << " does not fit in INT_MAX.";
+      return false;
+    }
     if (file_->Write(&kMagicNumber, sizeof(kMagicNumber)) !=
         sizeof(kMagicNumber)) {
       return false;
@@ -124,17 +143,24 @@ class RecordReader {
     if (file_->Read(&usize, sizeof(usize)) != sizeof(usize)) {
       return false;
     }
+    if (usize > RecordWriter::kMaxRecordSize) {
+      return false;
+    }
     if (file_->Read(&csize, sizeof(csize)) != sizeof(csize)) {
       return false;
     }
-    std::unique_ptr<char[]> buffer(new char[usize + 1]);
+    if (csize > RecordWriter::kMaxRecordSize) {
+      return false;
+    }
+    std::unique_ptr<char[]> buffer(new char[usize]);
     if (csize != 0) {  // The data is compressed.
-      std::unique_ptr<char[]> compressed_buffer(new char[csize + 1]);
+      std::unique_ptr<char[]> compressed_buffer(new char[csize]);
       if (file_->Read(compressed_buffer.get(), csize) != csize) {
         return false;
       }
-      compressed_buffer[csize] = '\0';
-      Uncompress(compressed_buffer.get(), csize, buffer.get(), usize);
+      if (!Uncompress(compressed_buffer.get(), csize, buffer.get(), usize)) {
+        return false;
+      }
     } else {
       if (file_->Read(buffer.get(), usize) != usize) {
         return false;
@@ -147,7 +173,7 @@ class RecordReader {
   bool Close();
 
  private:
-  void Uncompress(const char* const source, uint64_t source_size,
+  bool Uncompress(const char* const source, uint64_t source_size,
                   char* const output_buffer, uint64_t output_size) const;
 
   File* absl_nullable file_;

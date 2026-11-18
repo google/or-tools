@@ -15,7 +15,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "absl/base/attributes.h"
@@ -40,6 +42,10 @@ struct RecordReaderInvalidPayloadTestParams {
   // is correct enough so that valid data don't fail as well.%
   bool expect_failure = true;
 
+  // If set, reading the payload is expected to trigger LOG(DFATAL) matching
+  // this regex in debug builds and return false in NDEBUG builds.
+  std::optional<std::string> expected_dfatal_regex;
+
   // Change the value of RecordWriter::set_use_compression() used to create the
   // valid data.
   bool use_compression ABSL_REQUIRE_EXPLICIT_INIT;
@@ -57,12 +63,6 @@ class RecordReaderInvalidPayloadTest
     : public testing::TestWithParam<RecordReaderInvalidPayloadTestParams> {};
 
 TEST_P(RecordReaderInvalidPayloadTest, Read) {
-  // TODO: b/584406860 - Enable those when fixed.
-  if (GetParam().name == "csize_max" ||
-      GetParam().name == "usize_max_with_compression" ||
-      GetParam().name == "usize_max_without_compression") {
-    GTEST_SKIP() << "Skipping until b/584406860 is fixed.";
-  }
   ASSERT_OK_AND_ASSIGN(
       const std::string valid_file_name,
       file::MakeTempFilename(::testing::TempDir(), "valid_payload"));
@@ -102,7 +102,13 @@ TEST_P(RecordReaderInvalidPayloadTest, Read) {
 
   RecordReader reader(temp_file);
   ortools_recordio_test::SomeMessage msg;
-  ASSERT_NE(reader.ReadProtocolMessage(&msg), GetParam().expect_failure);
+  if (GetParam().expected_dfatal_regex.has_value()) {
+    EXPECT_DEBUG_DEATH(
+        EXPECT_NE(reader.ReadProtocolMessage(&msg), GetParam().expect_failure),
+        *GetParam().expected_dfatal_regex);
+  } else {
+    EXPECT_NE(reader.ReadProtocolMessage(&msg), GetParam().expect_failure);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -180,9 +186,117 @@ INSTANTIATE_TEST_SUITE_P(
                     contents[i] = '\xff';
                   }
                 },
+        },
+        RecordReaderInvalidPayloadTestParams{
+            .name = "usize_too_small_with_compression",
+            .expected_dfatal_regex = "Uncompress error occurred!",
+            .use_compression = true,
+            .update_data =
+                [](std::string& contents) {
+                  CHECK_GE(contents.size(),
+                           sizeof(int) +               // kMagicNumber
+                               2 * sizeof(uint64_t));  // usize + csize
+                  // SomeMessage{x=1} serializes to 2 bytes; set usize to 1 so
+                  // zlib uncompress() fails with Z_BUF_ERROR.
+                  const uint64_t new_usize = 1;
+                  std::memcpy(&contents[sizeof(int)], &new_usize,
+                              sizeof(new_usize));
+                },
+        },
+        RecordReaderInvalidPayloadTestParams{
+            .name = "usize_too_large_with_compression",
+            .expected_dfatal_regex = "Uncompress size mismatch",
+            .use_compression = true,
+            .update_data =
+                [](std::string& contents) {
+                  CHECK_GE(contents.size(),
+                           sizeof(int) +               // kMagicNumber
+                               2 * sizeof(uint64_t));  // usize + csize
+                  // Set usize larger than the actual decompressed payload.
+                  const uint64_t new_usize = 100;
+                  std::memcpy(&contents[sizeof(int)], &new_usize,
+                              sizeof(new_usize));
+                },
+        },
+        RecordReaderInvalidPayloadTestParams{
+            .name = "corrupted_compressed_payload",
+            .expected_dfatal_regex = "Uncompress error occurred!",
+            .use_compression = true,
+            .update_data =
+                [](std::string& contents) {
+                  constexpr size_t kHeaderSize =
+                      sizeof(int) + 2 * sizeof(uint64_t);
+                  CHECK_GT(contents.size(), kHeaderSize);
+                  for (size_t i = kHeaderSize; i < contents.size(); ++i) {
+                    contents[i] = '\xff';
+                  }
+                },
         }),
     [](const testing::TestParamInfo<RecordReaderInvalidPayloadTest::ParamType>&
            info) { return info.param.name; });
+
+// Fake protocol message wrapper for `RecordWriter::WriteProtocolMessage` that
+// returns raw bytes from `SerializeToString`. This lets tests write valid
+// compressed RecordIO records wrapping arbitrary (e.g. intentionally truncated)
+// serialized protobuf wire bytes.
+struct RawSerializedProto {
+  std::string serialized;
+  bool SerializeToString(std::string* output) const {
+    *output = serialized;
+    return true;
+  }
+};
+
+TEST(RecordReaderTest, RejectsMismatchedUncompressedSizeWithoutLeakingMemory) {
+  ortools_recordio_test::SomeMessage original;
+  original.set_data("0123456789");
+  std::string full_serialized;
+  ASSERT_TRUE(original.SerializeToString(&full_serialized));
+  ASSERT_GT(full_serialized.size(), 5);
+
+  ASSERT_OK_AND_ASSIGN(
+      const std::string valid_file_name,
+      file::MakeTempFilename(::testing::TempDir(), "truncated_proto"));
+  {
+    File* temp_file = nullptr;
+    ASSERT_OK(file::Open(valid_file_name, "wb", &temp_file, file::Defaults()));
+    ASSERT_NE(temp_file, nullptr);
+
+    RecordWriter writer(temp_file);
+    writer.set_use_compression(true);
+    // Write a compressed stream whose decompressed bytes start with a valid
+    // length-delimited `bytes` field header of length 10, but truncated after
+    // 5 payload bytes.
+    ASSERT_TRUE(writer.WriteProtocolMessage(RawSerializedProto{
+        full_serialized.substr(0, full_serialized.size() - 5)}));
+    ASSERT_TRUE(writer.Close());
+  }
+
+  ASSERT_OK_AND_ASSIGN(
+      const std::string invalid_file_name,
+      file::MakeTempFilename(::testing::TempDir(), "oversized_usize"));
+  {
+    ASSERT_OK_AND_ASSIGN(std::string contents,
+                         file::GetContents(valid_file_name, file::Defaults()));
+    ASSERT_GE(contents.size(), sizeof(int) + 2 * sizeof(uint64_t));
+    // Inflate `usize` in the record header to match `full_serialized.size()`.
+    // Without checking `result_size == usize`, `ParseFromArray` reads 5 bytes
+    // of uninitialized heap memory into `parsed.data()` and succeeds.
+    const uint64_t inflated_usize = full_serialized.size();
+    std::memcpy(&contents[sizeof(int)], &inflated_usize,
+                sizeof(inflated_usize));
+    ASSERT_OK(file::SetContents(invalid_file_name, contents, file::Defaults()));
+  }
+
+  File* temp_file = nullptr;
+  ASSERT_OK(file::Open(invalid_file_name, "rb", &temp_file, file::Defaults()));
+  ASSERT_NE(temp_file, nullptr);
+
+  RecordReader reader(temp_file);
+  ortools_recordio_test::SomeMessage parsed;
+  EXPECT_DEBUG_DEATH(EXPECT_FALSE(reader.ReadProtocolMessage(&parsed)),
+                     "Uncompress size mismatch");
+}
 
 }  // namespace
 }  // namespace ORTOOLS_RECORDIO_NAMESPACE

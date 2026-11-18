@@ -17,4 +17,5 @@ package ortools_recordio_test;
 
 message SomeMessage {
   int32 x = 1;
+  bytes data = 2;
 }
