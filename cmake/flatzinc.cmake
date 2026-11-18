@@ -61,15 +61,12 @@ add_library(flatzinc
   ortools/flatzinc/checker.h
   ortools/flatzinc/cp_model_fz_solver.cc
   ortools/flatzinc/cp_model_fz_solver.h
+  ortools/flatzinc/lexer.cc
+  ortools/flatzinc/lexer.h
   ortools/flatzinc/model.cc
   ortools/flatzinc/model.h
   ortools/flatzinc/parser.cc
   ortools/flatzinc/parser.h
-  ortools/flatzinc/parser.tab.cc
-  ortools/flatzinc/parser.tab.hh
-  ortools/flatzinc/parser.yy.cc
-  #ortools/flatzinc/parser_util.cc # Already #include in parser.tab.cc
-  ortools/flatzinc/parser_util.h
   )
 ## Includes
 target_include_directories(flatzinc PUBLIC
@@ -79,12 +76,12 @@ target_include_directories(flatzinc PUBLIC
   )
 ## Compile options
 set_target_properties(flatzinc PROPERTIES
-  CXX_STANDARD 17
+  CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   OUTPUT_NAME ${PROJECT_NAME}_flatzinc
   )
-target_compile_features(flatzinc PUBLIC cxx_std_17)
+target_compile_features(flatzinc PUBLIC cxx_std_20)
 target_compile_definitions(flatzinc PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
 target_compile_options(flatzinc PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 ## Properties
@@ -126,12 +123,12 @@ target_include_directories(fzn PRIVATE
   )
 ## Compile options
 set_target_properties(fzn PROPERTIES
-  CXX_STANDARD 17
+  CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   OUTPUT_NAME fzn-cp-sat
   )
-target_compile_features(fzn PUBLIC cxx_std_17)
+target_compile_features(fzn PUBLIC cxx_std_20)
 target_compile_definitions(fzn PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
 target_compile_options(fzn PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 ## Dependencies
@@ -162,18 +159,41 @@ target_include_directories(fzn-parser_test PRIVATE
   )
 ## Compile options
 set_target_properties(fzn-parser_test PROPERTIES
-  CXX_STANDARD 17
+  CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   OUTPUT_NAME fzn-parser-cp-sat
   )
-target_compile_features(fzn-parser_test PUBLIC cxx_std_17)
+target_compile_features(fzn-parser_test PUBLIC cxx_std_20)
 target_compile_definitions(fzn-parser_test PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
 target_compile_options(fzn-parser_test PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 ## Dependencies
 target_link_libraries(fzn-parser_test PRIVATE ${PROJECT_NAMESPACE}::flatzinc)
 ## Alias
 add_executable(${PROJECT_NAME}::fzn-parser_test ALIAS fzn-parser_test)
+
+if(BUILD_CXX_TESTING)
+  ortools_cxx_test(
+    NAME
+      flatzinc_lexer_test
+    SOURCES
+      ortools/flatzinc/lexer_test.cc
+    LINK_LIBRARIES
+      ${PROJECT_NAMESPACE}::flatzinc
+      GTest::gmock
+      GTest::gtest_main
+  )
+  ortools_cxx_test(
+    NAME
+      flatzinc_parser_test
+    SOURCES
+      ortools/flatzinc/parser_test.cc
+    LINK_LIBRARIES
+      ${PROJECT_NAMESPACE}::flatzinc
+      GTest::gmock
+      GTest::gtest_main
+  )
+endif()
 
 
 # MiniZinc solver configuration

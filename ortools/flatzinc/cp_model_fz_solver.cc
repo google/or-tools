@@ -4157,21 +4157,12 @@ CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
       SOLVER_LOG(logger, "  - setting up free search.");
       m.parameters.set_interleave_search(true);
       m.parameters.set_use_rins_lns(false);
-      if (has_objective) {
-        if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
-        m.parameters.add_subsolvers("no_lp");
-        m.parameters.add_subsolvers("max_lp_sym");
-        m.parameters.add_subsolvers("quick_restart_no_lp");
-        m.parameters.add_subsolvers("core_or_shaving_no_lp");
-        m.parameters.set_num_violation_ls(1);  // Off if no objective.
-      } else {                                 // SAT problem.
-        if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
-        m.parameters.add_subsolvers("no_lp");
-        m.parameters.add_subsolvers("max_lp_sym");
-        m.parameters.add_subsolvers("quick_restart_no_lp");
-        m.parameters.add_subsolvers("shaving_no_lp");
-        m.parameters.set_num_violation_ls(0);  // Off if no objective.
-      }
+      if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
+      m.parameters.add_subsolvers("no_lp");
+      m.parameters.add_subsolvers("max_lp_sym");
+      m.parameters.add_subsolvers("quick_restart_no_lp");
+      m.parameters.add_subsolvers("core_or_shaving_no_lp");
+      m.parameters.set_num_violation_ls(1);
     } else {
       // Enumerate all solutions in minizinc mode.
       m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
