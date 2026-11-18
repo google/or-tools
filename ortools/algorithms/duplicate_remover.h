@@ -52,7 +52,7 @@ class DenseIntDuplicateRemover {
  public:
   explicit DenseIntDuplicateRemover(int n)
       : n_(n),
-        tmp_mask_storage_((n + 7) / 8, 0),
+        tmp_mask_storage_((n + 63) / 64, 0),
         tmp_mask_(tmp_mask_storage_) {}
 
   template <class IntContainer>
@@ -72,8 +72,8 @@ class DenseIntDuplicateRemover {
 
   absl::BitGen random_;
   const int n_;
-  std::vector<uint8_t> tmp_mask_storage_;
-  const absl::Span<uint8_t> tmp_mask_;
+  std::vector<uint64_t> tmp_mask_storage_;
+  const absl::Span<uint64_t> tmp_mask_;
 };
 
 // _____________________________________________________________________________
