@@ -35,6 +35,7 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/base_export.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -286,9 +287,9 @@ struct ConstraintCanonicalizationState {
   }
 
   // Constraints in [0, size()) marked dirty explicitly (via
-  // MarkConstraintForCanonicalization or UpdateConstraintVariableUsage) or via
-  // vars_invalidating_canonicality_. Constraints in [size(), NumConstraints())
-  // are newly appended and implicitly need initial canonicalization.
+  // MarkConstraintForCanonicalization) or via vars_invalidating_canonicality_.
+  // Non-empty constraints in [size(), NumConstraints()) are newly appended and
+  // implicitly need initial canonicalization.
   SparseBitset<int> constraints_to_canonicalize;
 
   // Indices of kRoutes constraints with non-empty dimensions, tracked
@@ -327,7 +328,8 @@ class PresolveContext {
         working_model_(cp_model),
         canonicalization_(cp_model->GetArena()),
         solution_crush_(solution_crush_proto),
-        graph_(cp_model, &solution_crush_) {}
+        graph_(cp_model, &solution_crush_),
+        canonical_checker_(&domains_, MakeCanonicalCheckerOptions()) {}
 
   // Helpers to add new variables to the presolved model.
 
@@ -370,6 +372,18 @@ class PresolveContext {
 
   // a => b.
   void AddImplication(int a, int b);
+
+  // Same as AddImplication(), except that this is a no-op and returns false if
+  // a == b or if the same implication (or its contrapositive not(b) => not(a))
+  // was already added by a previous call since the last ResetAfterCopy().
+  //
+  // WARNING: Only use this for optional strengthening implications where no
+  // existing constraint is deleted or weakened under the assumption that the
+  // implication is added. SAT and clique presolve passes clear and rewrite
+  // bool_and constraints across iterations, so a previously seen implication
+  // may no longer be syntactically present if an earlier constraint that made
+  // it redundant is later rewritten.
+  bool AddNeverSeenBeforeImplication(int a, int b);
 
   // b => (x ∈ domain).
   void AddImplyInDomain(int b, int x, const Domain& domain);
@@ -463,26 +477,26 @@ class PresolveContext {
     }
   };
 
-  // Canonicalizes a linear constraint into: lb <= sum_k magnitude_k * X_k <= ub
+  // Projects a linear constraint into: lb <= sum_k magnitude_k * X_k <= ub
   // with X_k in [0, range_k] (range_k > 0), sorted by increasing magnitude and
   // with equal-magnitude terms merged. Terms with range == 0 are absorbed into
   // `lb` and `ub` and omitted from `terms`. Additionally, `max_variation` is
   // `max_activity - min_activity`, and `lb` and `ub` are clamped to
   // `[0, max_variation]`.
-  struct MergedCanonicalLinearConstraint {
+  struct MergedLinearConstraintView {
     std::vector<CanonicalTerm> terms;
     int64_t lb = 0;
     int64_t ub = 0;
     int64_t max_variation = 0;
   };
 
-  // Canonicalizes the given constraint into a MergedCanonicalLinearConstraint.
-  // Returns an infeasible constraint `lb = 1 < 0 = ub` if min/max activity
-  // proves infeasibility.
+  // Projects the given constraint into a MergedLinearConstraintView.
+  // Returns an infeasible view `lb = 1 < 0 = ub` if min/max activity proves
+  // infeasibility.
   //
   // Precondition: the rhs of the input constraint should be "simple" with a
   // domain of size exactly 2.
-  MergedCanonicalLinearConstraint BuildMergedCanonicalLinearConstraint(
+  MergedLinearConstraintView BuildMergedLinearConstraintView(
       const LinearConstraintProto& linear) const;
 
   // Utility function.
@@ -511,28 +525,41 @@ class PresolveContext {
   // Graph-free structural canonicalization of a single constraint using
   // current domains and affine relations. Returns true if `*ct` was mutated in
   // a way that may change its variable usage or structure.
+  // TODO(user): Make this private once callers use the index overload.
   bool CanonicalizeConstraint(ConstraintProto* ct);
+
+  // Canonicalizes constraint `c` in `working_model_` and, if mutated (or if
+  // `force_variable_usage_update` is true because `c` was already mutated in
+  // place beforehand), marks it for lazy variable-graph update.
+  bool CanonicalizeConstraint(int c, bool force_variable_usage_update = false);
 
   // Lazy pass-entry canonicalization of all dirty constraints, cascading until
   // quiescence or UNSAT.
   bool NeedsCanonicalization() const;
   void CanonicalizeConstraintsLazily();
+
+  // Marks constraint `c` as potentially non-canonical and needing lazy
+  // variable-graph update. Empty (cleared) constraints are already canonical
+  // and only update the variable graph.
   void MarkConstraintForCanonicalization(int c) {
-    if (c < canonicalization_.constraints_to_canonicalize.size()) {
+    if (is_unsat_) return;
+    graph_.MarkForLazyUpdate(c);
+    if (c < canonicalization_.constraints_to_canonicalize.size() &&
+        !ConstraintIsEmpty(c)) {
       canonicalization_.constraints_to_canonicalize.Set(c);
     }
   }
 
-  // These methods are not fully optimized and must only be used for debug
-  // checks (e.g., DCHECK) and tests. ModelProtoIsCanonical() checks the proto
-  // on a fresh presolve context and does not require any sort order.
+  // Debug/test wrappers around `canonical_checker_`.
   bool ConstraintIsCanonical(const ConstraintProto& ct,
-                             bool check_sorted = true) const;
-  bool ConstraintIsCanonical(int c, bool check_sorted = true) const;
-  bool AllConstraintsAreCanonical(bool check_sorted = true) const;
-  // TODO(user): move this outside of PresolveContext and take a const
-  // CpModelProto as parameter.
-  bool ModelProtoIsCanonical(CpModelProto* proto) const;
+                             bool check_sorted = true) const {
+    if (ModelIsUnsat()) return true;
+    return canonical_checker_.ConstraintIsCanonical(ct, check_sorted);
+  }
+  bool ConstraintIsCanonical(int c, bool check_sorted = true) const {
+    return ConstraintIsCanonical(Constraint(c), check_sorted);
+  }
+  bool ModelProtoIsCanonical(bool check_sorted = true) const;
 
   // This method only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
@@ -621,18 +648,12 @@ class PresolveContext {
   // what the presolve did at the end.
   void UpdateRuleStats(std::string_view name, int num_times = 1);
 
-  // Updates the constraints <-> variables graph. This needs to be called each
-  // time a constraint is modified.
-  //
-  // TODO(user): Remove and call MarkForLazyUpdate() from MutableConstraint()
-  // instead. Note that this will require some refactoring to make sure we only
-  // call MutableConstraint() when we are about to change the constraint though,
-  // and not all the time. It is also still tricky because if one calls
-  // MutableConstraint() just once, and uses one of the functions from this
-  // class, it would need to be called again later...
+  // Updates the constraints <-> variables graph and marks `c` for lazy
+  // canonicalization (if non-empty).
+  // TODO(user): Remove once callers are migrated to
+  // MarkConstraintForCanonicalization, CanonicalizeConstraint, or
+  // ClearConstraint.
   void UpdateConstraintVariableUsage(int c) {
-    if (is_unsat_) return;
-    graph_.MarkForLazyUpdate(c);
     MarkConstraintForCanonicalization(c);
   }
 
@@ -1003,7 +1024,10 @@ class PresolveContext {
     DCHECK_NE(c, canonicalization_.detached_constraint_index);
     return working_model_->mutable_constraints(c);
   }
-  void ClearConstraint(int c) { MutableConstraint(c)->Clear(); }
+  void ClearConstraint(int c) {
+    MutableConstraint(c)->Clear();
+    graph_.MarkForLazyUpdate(c);
+  }
 
   // Sometimes we start creating a constraint but bail out, this is a "safe"
   // pattern and shouldn't break invariants.
@@ -1062,18 +1086,12 @@ class PresolveContext {
                                         absl::string_view file, int line);
 
  private:
-  PresolveContext(const PresolveContext& other, CpModelProto* cp_model,
-                  CpModelProto* mapping)
-      : mapping_model(mapping),
-        lrat_proof_handler(other.lrat_proof_handler),
-        logger_(other.logger_),
-        params_(other.params_),
-        time_limit_(other.time_limit_),
-        random_(other.random_),
-        working_model_(cp_model),
-        canonicalization_(cp_model->GetArena()),
-        solution_crush_(nullptr),
-        graph_(cp_model, &solution_crush_) {}
+  bool ConstraintIsEmpty(int c) const {
+    const ConstraintProto& ct = Constraint(c);
+    return ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET &&
+           ct.enforcement_literal().empty();
+  }
+  CanonicalizationChecker::Options MakeCanonicalCheckerOptions() const;
 
   class ConstraintCanonicalizer {
    public:
@@ -1093,6 +1111,9 @@ class PresolveContext {
     void CanonicalizeExactlyOne();
     void CanonicalizeBoolXor();
     void CanonicalizeLinMax();
+    template <typename GraphProto>
+    void CanonicalizeGraph(bool is_routes, GraphProto* proto);
+    void CanonicalizeReservoir();
 
     // Shared helpers.
     void ExploitEquivalenceRelations();
@@ -1133,15 +1154,6 @@ class PresolveContext {
   // Returns false if this makes the problem infeasible.
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
-
-  // These methods are not fully optimized and must only be used for debug
-  // checks (e.g., DCHECK) and tests.
-  bool LiteralsAreCanonical(absl::Span<const int> lits,
-                            const absl::flat_hash_set<int>& enforcements = {},
-                            bool check_sorted = true) const;
-  bool LinearExpressionIsCanonical(const absl::flat_hash_set<int>& enforcements,
-                                   const LinearExpressionProto& expr,
-                                   bool check_sorted = true) const;
 
   SolverLogger* logger_;
   const SatParameters& params_;
@@ -1216,6 +1228,10 @@ class PresolveContext {
                       int>
       reified_precedences_cache_;
 
+  // Canonical (a, b) pairs for implications added via
+  // AddNeverSeenBeforeImplication(), cleared in ResetAfterCopy().
+  absl::flat_hash_set<std::pair<int, int>> added_implications_;
+
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name_;
 
@@ -1223,6 +1239,8 @@ class PresolveContext {
   std::vector<std::pair<int, int64_t>> tmp_terms_;
 
   bool model_is_expanded_ = false;
+
+  CanonicalizationChecker canonical_checker_;
 };
 
 // Utility function to load the current problem into an in-memory representation

@@ -57,6 +57,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraint_presolve.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_expand.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -369,9 +370,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
     for (const int lit : must_be_true) {
       if (!context_->SetLiteralToTrue(lit)) return;
     }
-    (void)context_->CanonicalizeConstraint(ct);
-    if (context_->ModelIsUnsat()) return;
-    context_->UpdateConstraintVariableUsage(ct_index);
+    context_->CanonicalizeConstraint(ct_index);
     return;
   }
 
@@ -1147,6 +1146,7 @@ void CpModelPresolver::Probe() {
         if (clique.empty()) continue;
         num_new_cliques++;
         num_literals_after += clique.size();
+        const int new_c = context_->NumConstraints();
         ConstraintProto* ct = context_->AddConstraint();
         for (const Literal literal : clique) {
           const int var =
@@ -1163,7 +1163,7 @@ void CpModelPresolver::Probe() {
         //
         // Tricky: note that it is important to not use dual reduction here as
         // not all constraints are in the proto during the loop.
-        (void)context_->CanonicalizeConstraint(ct);
+        context_->CanonicalizeConstraint(new_c);
       }
       timer.Advance(num_literals_after);
     }
@@ -2640,6 +2640,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     if (clique.empty()) continue;
     num_new_cliques++;
     num_literals_after += clique.size();
+    const int new_c = context_->NumConstraints();
     ConstraintProto* ct = context_->AddConstraint();
     for (const Literal literal : clique) {
       if (literal.IsPositive()) {
@@ -2654,7 +2655,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     //
     // Tricky: note that it is important to not use dual reduction here as not
     // all constraints are in the proto during the loop.
-    (void)context_->CanonicalizeConstraint(ct);
+    context_->CanonicalizeConstraint(new_c);
   }
   if (num_new_cliques != num_old_cliques) {
     context_->UpdateRuleStats("at_most_one: transformed into max clique");
@@ -3985,10 +3986,12 @@ void CpModelPresolver::DetectDuplicateConstraints() {
           context_->UpdateConstraintVariableUsage(rep);
         }
 
-        (void)context_->CanonicalizeConstraint(new_ct);
+        context_->CanonicalizeConstraint(new_ct_index);
         if (context_->ModelIsUnsat()) return;
-        constraint_presolver_->PresolveSmallLinear(new_ct);
-        context_->UpdateConstraintVariableUsage(new_ct_index);
+        if (constraint_presolver_->PresolveSmallLinear(
+                context_->MutableConstraint(new_ct_index))) {
+          context_->MarkConstraintForCanonicalization(new_ct_index);
+        }
       }
     }
 
@@ -4077,6 +4080,7 @@ void CpModelPresolver::DetectComplementaryLinMaxConstraints() {
       // Found `rep_ct` with T1 = max(A, B) and `ct` with T2 = max(-A, -B).
       // Replace `ct` with the linear equality T1 - T2 - A - B == 0.
       const ConstraintProto& rep_ct = context_->Constraint(it->second);
+      const int new_ct_index = context_->NumConstraints();
       ConstraintProto* new_ct = context_->AddConstraint();
       LinearConstraintProto* lin = new_ct->mutable_linear();
       lin->add_domain(0);
@@ -4095,7 +4099,7 @@ void CpModelPresolver::DetectComplementaryLinMaxConstraints() {
         context_->RemoveLastConstraint();
         continue;
       }
-      (void)context_->CanonicalizeConstraint(new_ct);
+      context_->CanonicalizeConstraint(new_ct_index);
       if (context_->ModelIsUnsat()) return;
       if (new_ct->constraint_case() == ConstraintProto::kLinear &&
           PossibleIntegerOverflow(context_->WorkingModel(), lin->vars(),
@@ -4103,8 +4107,9 @@ void CpModelPresolver::DetectComplementaryLinMaxConstraints() {
         context_->RemoveLastConstraint();
         continue;
       }
-      constraint_presolver_->PresolveSmallLinear(new_ct);
-      context_->UpdateConstraintVariableUsage(context_->NumConstraints() - 1);
+      if (constraint_presolver_->PresolveSmallLinear(new_ct)) {
+        context_->MarkConstraintForCanonicalization(new_ct_index);
+      }
       context_->ClearConstraint(c);
       context_->UpdateConstraintVariableUsage(c);
       context_->UpdateRuleStats(
@@ -4158,11 +4163,9 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     // also change the constraint body (e.g. when an enforcement literal also
     // appears in a linear expression), in which case the two constraints might
     // no longer be duplicates of each other, so we skip this pair.
-    const bool dup_changed = context_->CanonicalizeConstraint(dup_ct);
-    if (dup_changed) context_->UpdateConstraintVariableUsage(dup);
+    const bool dup_changed = context_->CanonicalizeConstraint(dup);
     if (context_->ModelIsUnsat()) return;
-    const bool rep_changed = context_->CanonicalizeConstraint(rep_ct);
-    if (rep_changed) context_->UpdateConstraintVariableUsage(rep);
+    const bool rep_changed = context_->CanonicalizeConstraint(rep);
     if (context_->ModelIsUnsat()) return;
     if (dup_changed || rep_changed) continue;
 
@@ -6891,8 +6894,8 @@ void CpModelPresolver::PresolveVarOnlyInLinMaxAndLinear(int var,
       expr->set_offset(expr->offset() - linear.domain(0) * multiplier);
     }
   }
-  context_->CanonicalizeConstraint(
-      context_->MutableConstraint(lin_max_ct_index));
+  context_->CanonicalizeConstraint(lin_max_ct_index,
+                                   /*force_variable_usage_update=*/true);
   context_->NewMappingConstraint(context_->Constraint(linear_ct_index),
                                  __FILE__, __LINE__);
 
@@ -6916,11 +6919,10 @@ void CpModelPresolver::PresolveVarOnlyInLinMaxAndLinear(int var,
 
   // There is a good chance that the linear constraint is trivial now. Let's
   // handle it here instead of waiting for the fixpoint.
-  (void)context_->CanonicalizeConstraint(mut_lin);
+  context_->CanonicalizeConstraint(linear_ct_index,
+                                   /*force_variable_usage_update=*/true);
   if (context_->ModelIsUnsat()) return;
 
-  context_->UpdateConstraintVariableUsage(lin_max_ct_index);
-  context_->UpdateConstraintVariableUsage(linear_ct_index);
   context_->MarkVariableAsRemoved(var);
   context_->UpdateRuleStats(
       "degree2: removed intermediate variable in lin_max and equality");
@@ -7908,7 +7910,7 @@ void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
 bool CpModelPresolver::CanonicalizeConstraintsLazily() {
   context_->CanonicalizeConstraintsLazily();
   if (context_->ModelIsUnsat()) return false;
-  DCHECK(context_->AllConstraintsAreCanonical());
+  DCHECK(context_->ModelProtoIsCanonical());
   return true;
 }
 
@@ -8552,8 +8554,10 @@ CpSolverStatus CpModelPresolver::LogAndValidatePresolvedModel() {
       return CpSolverStatus::MODEL_INVALID;
     }
   }
-  DCHECK(
-      context_->ModelProtoIsCanonical(context_->UnsafeMutableWorkingModel()));
+  const bool lrat_mode = context_->lrat_proof_handler != nullptr &&
+                         (!context_->params().cp_model_presolve() ||
+                          context_->params().cp_model_pure_sat_presolve());
+  DCHECK(ModelProtoIsCanonical(context_->WorkingModel(), lrat_mode));
 
   return CpSolverStatus::UNKNOWN;
 }

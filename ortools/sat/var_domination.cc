@@ -893,16 +893,24 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
 
         if (context->CanBeUsedAsLiteral(positive_ref)) {
-          // If we have a literal, we always add the implication.
-          // This seems like a good thing to do.
-          CannotMove({enf, positive_ref});
-          context->UpdateRuleStats("dual: add implication");
-          // The new implication can break the hint if hint(enf) is 0 and
-          // hint(ref) is 1. In this case the only locking constraint `ct` does
-          // not apply and thus does not prevent decreasing the hint of ref in
-          // order to preserve the hint feasibility.
-          crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
-          context->AddImplication(NegatedRef(enf), NegatedRef(ref));
+          // If we have a literal, we always add the implication ~enf => ~ref.
+          // Because this implication only locks `ref` against increasing rather
+          // than decreasing, `ct` remains the unique constraint locking `ref`
+          // from decreasing on later presolve passes, and SAT/clique presolve
+          // clears and rewrites bool_and constraints across passes. We
+          // deduplicate with AddNeverSeenBeforeImplication() so we do not
+          // re-add the same implication, bump num_presolve_operations, or
+          // append duplicate solution-crush steps on every pass.
+          if (context->AddNeverSeenBeforeImplication(NegatedRef(enf),
+                                                     NegatedRef(ref))) {
+            CannotMove({enf, positive_ref});
+            context->UpdateRuleStats("dual: add implication");
+            // The new implication can break the hint if hint(enf) is 0 and
+            // hint(ref) is 1. In this case the only locking constraint `ct`
+            // does not apply and thus does not prevent decreasing the hint of
+            // ref in order to preserve the hint feasibility.
+            crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
+          }
           continue;
         }
 

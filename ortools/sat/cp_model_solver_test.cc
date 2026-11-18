@@ -6774,6 +6774,65 @@ TEST(SolveCpModelTest, EnforcedNoOverlapDoesNotLeakUnconditionalPrecedences) {
   }
 }
 
+TEST(SolveCpModelTest, PresolveCircuitSingletonFixesIncidentSelfLoop) {
+  CpModelProto m;
+  AddVariable(0, 1, &m);
+  AddVariable(0, 1, &m);
+  AddVariable(0, 1, &m);
+  AddVariable(0, 50, &m);
+
+  ConstraintProto* lin_ct = m.add_constraints();
+  lin_ct->add_enforcement_literal(1);
+  lin_ct->add_enforcement_literal(1);
+  LinearConstraintProto* lin = lin_ct->mutable_linear();
+  lin->add_vars(0);
+  lin->add_vars(3);
+  lin->add_coeffs(1);
+  lin->add_coeffs(-4096);
+  lin->add_domain(int64_t{-8796093022209});
+  lin->add_domain(6);
+
+  CircuitConstraintProto* circuit = m.add_constraints()->mutable_circuit();
+  struct Arc {
+    int tail;
+    int head;
+    int lit;
+  };
+  for (const Arc arc : {Arc{2147483647, -1, -3}, Arc{-1, 2147483647, -3},
+                        Arc{-1, 2147483647, -1}, Arc{-1, -1, -2}, Arc{0, 0, 0},
+                        Arc{-1, 0, -1}, Arc{-1, 2147483647, -1}}) {
+    circuit->add_tails(arc.tail);
+    circuit->add_heads(arc.head);
+    circuit->add_literals(arc.lit);
+  }
+
+  FloatObjectiveProto* obj = m.mutable_floating_point_objective();
+  obj->add_vars(2);
+  obj->add_coeffs(-1.6329101671064191e+19);
+  obj->set_offset(-8.2406890687576834e+19);
+
+  SatParameters params;
+  params.set_num_workers(1);
+  Model model_with_presolve;
+  *model_with_presolve.GetOrCreate<SatParameters>() = params;
+  const CpSolverResponse response = SolveCpModel(m, &model_with_presolve);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(m, response.solution()));
+  EXPECT_EQ(response.solution(0), 1);
+  EXPECT_EQ(response.solution(1), 1);
+  EXPECT_EQ(response.solution(2), 0);
+
+  Model model_without_presolve;
+  model_without_presolve.GetOrCreate<SharedResponseManager>()
+      ->LoadDebugSolution(response.solution());
+  params.set_cp_model_presolve(false);
+  *model_without_presolve.GetOrCreate<SatParameters>() = params;
+  const CpSolverResponse response_no_presolve =
+      SolveCpModel(m, &model_without_presolve);
+  ASSERT_EQ(response_no_presolve.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(m, response_no_presolve.solution()));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

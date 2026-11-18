@@ -89,7 +89,7 @@ class CpConstraintPresolver {
   // See go/cp-two-term-tilting for more details.
   bool DetectTwoTermTilting(
       ConstraintProto* ct,
-      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
+      const PresolveContext::MergedLinearConstraintView& view);
 
   void TryToSimplifyDomain(int var);
 
@@ -173,16 +173,16 @@ class CpConstraintPresolver {
   // Booleans decouples into "b1 - b2 == 0" and "x + y == 1".
   void TryToReduceCoefficientsOfLinearConstraint(
       int c, ConstraintProto* ct,
-      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
+      const PresolveContext::MergedLinearConstraintView& view);
 
   // Splits linear constraint `ct` (at index `c`, preserving enforcement
   // literals) when all terms with `|coeff| >= magnitude` (whose coefficients
-  // have GCD `big_gcd`) are forced by `canonical` bounds to take the single
+  // have GCD `big_gcd`) are forced by `view` bounds to take the single
   // shifted value `forced_big`, leaving `max_error` as the total variation of
   // the remaining smaller-magnitude terms.
   void DecoupleForcedBigMSuffix(
       int c, ConstraintProto* ct,
-      const PresolveContext::MergedCanonicalLinearConstraint& canonical,
+      const PresolveContext::MergedLinearConstraintView& view,
       int64_t magnitude, int64_t big_gcd, int64_t forced_big,
       int64_t max_error);
 
@@ -195,9 +195,8 @@ class CpConstraintPresolver {
   // TODO(user): We could probably handle other simple coefficient reduction
   // case. In particular, look at the case of only two different coefficient
   // magnitude.
-  bool DetectSimpleSum(
-      ConstraintProto* ct,
-      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
+  bool DetectSimpleSum(ConstraintProto* ct,
+                       const PresolveContext::MergedLinearConstraintView& view);
 
   // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
   // framed by exactly four fixed rectangles and at most one single box can fit
@@ -227,15 +226,21 @@ class CpConstraintPresolver {
   bool ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);
 
+  // Fixes variables whose coefficient magnitude exceeds the active upper- or
+  // lower-bound slack on an unenforced linear constraint. If any domain is
+  // modified, re-canonicalizes `ct` to remove the fixed variables and updates
+  // `*view` in place (if `ct` remains an active linear constraint).
+  // Returns true when a domain on at least one variable is modified (without
+  // proving UNSAT).
+  bool FixVariablesExceedingRhs(
+      ConstraintProto* ct, PresolveContext::MergedLinearConstraintView* view);
+
   // Strengthens or reduces coefficients of a one-sided linear constraint (with
   // at least 3 distinct coefficient magnitudes) when large terms force all
-  // other terms to their bounds (a "partial at-most-one" structure), or fixes
-  // variables whose coefficient exceeds the slack on unenforced constraints.
-  // Updates `*canonical` in place and returns true if `ct` or variable domains
-  // are modified.
+  // other terms to their bounds (a "partial at-most-one" structure). Updates
+  // `*view` in place and returns true if `ct` is modified.
   bool LowerThanCoeffStrengthening(
-      ConstraintProto* ct,
-      PresolveContext::MergedCanonicalLinearConstraint* canonical);
+      ConstraintProto* ct, PresolveContext::MergedLinearConstraintView* view);
 
   void RunPropagatorsForConstraint(const ConstraintProto& ct);
 

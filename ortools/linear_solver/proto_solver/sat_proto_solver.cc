@@ -282,13 +282,19 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     // ExtractEnforcementLiterals() because all extracted enforcement variables
     // are integer and therefore external here.
     std::vector<sat::ModularConstraintScaling> modular_scalings;
+    bool is_tum_or_2mod = false;
     if (compo.continuous_vars.size() == 1) {
       sat::ScaleOneVariableResidualMatrix(params, compo, mp_model_wrapper,
                                           absl::MakeSpan(*states),
                                           &one_var_stats);
     } else {
+      const int prev_modular_components =
+          tum_stats.num_tum_components + tum_stats.num_2_modular_components;
       modular_scalings = sat::MarkComponentTotallyUnimodularAsInteger(
           params, compo, mp_model_wrapper, absl::MakeSpan(*states), &tum_stats);
+      is_tum_or_2mod =
+          tum_stats.num_tum_components + tum_stats.num_2_modular_components >
+          prev_modular_components;
     }
 
     // Same as MakeBoundsInteger() for the newly detected integers.
@@ -321,9 +327,12 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
     if (compo_has_continuous) {
       if (params.mip_scale_for_precision()) {
+        const sat::PrecisionHeadroomMode headroom_mode =
+            is_tum_or_2mod ? sat::PrecisionHeadroomMode::kUniformPerConstraint
+                           : sat::PrecisionHeadroomMode::kPerTerm;
         sat::ScaleComponentContinuousVariablesForGivenPrecision(
             params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-            &precision_scaling_stats);
+            &precision_scaling_stats, headroom_mode);
       } else if (params.mip_var_scaling() != 1.0) {
         sat::ScaleComponentContinuousVariables(params, compo,
                                                absl::MakeSpan(*states));
@@ -354,8 +363,11 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
-  sat::PopulateCpModelFloatingPointObjective(mp_model_wrapper, *states,
-                                             cp_model);
+  if (!sat::PopulateCpModelFloatingPointObjective(mp_model_wrapper, *states,
+                                                  cp_model)) {
+    return InvalidModelResponse(*logger,
+                                "Objective overflow during CP-SAT conversion");
+  }
 
   // Display all the stats.
   sat::LogOneVariableComponentStats(one_var_stats, logger);
