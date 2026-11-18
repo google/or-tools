@@ -28,7 +28,9 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/integer_resolution.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_literal.h"
@@ -336,6 +338,187 @@ TEST(IntegerTrailTest, LazyReason) {
   EXPECT_FALSE(
       p->Enqueue(IntegerLiteral::LowerOrEqual(a, IntegerValue(1)), {}, {}));
   EXPECT_TRUE(mock.called);
+}
+
+TEST(IntegerTrailTest, SameLazyLinearReason) {
+  Model model;
+  IntegerTrail* p = model.GetOrCreate<IntegerTrail>();
+  const IntegerVariable a = p->AddIntegerVariable(0, 10);
+  const IntegerVariable b = p->AddIntegerVariable(0, 10);
+  const IntegerVariable c = p->AddIntegerVariable(0, 10);
+  const IntegerVariable d = p->AddIntegerVariable(0, 10);
+
+  Trail* trail = model.GetOrCreate<Trail>();
+  trail->Resize(10);
+  trail->EnqueueSearchDecision(Literal(+1));
+  EXPECT_TRUE(p->Propagate(trail));
+
+  LazyReasonForTest explainer1;
+  LazyReasonForTest explainer2;
+  const int start = p->Index();
+
+  // Same explainer, id, and explicit trail_index_with_same_linear_reason.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(a, 1),
+                                       /*id=*/0, 0, &explainer1, start));
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(b, 1),
+                                       /*id=*/0, 0, &explainer1, start));
+
+  // Same explainer and id, but no trail_index_with_same_linear_reason.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(c, 1),
+                                       /*id=*/0, 0, &explainer1));
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(d, 1),
+                                       /*id=*/0, 0, &explainer1));
+
+  // Second propagation of explainer1/id=0 with a new start index.
+  const int start2 = p->Index();
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(a, 2),
+                                       /*id=*/0, 0, &explainer1, start2));
+  // Different id with same start2.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(b, 2),
+                                       /*id=*/1, 0, &explainer1, start2));
+  // Different explainer with same start2 and id.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(c, 2),
+                                       /*id=*/0, 0, &explainer2, start2));
+  // Non-lazy reason.
+  EXPECT_TRUE(
+      p->Enqueue(IntegerLiteral::GreaterOrEqual(d, 2), {Literal(-1)}, {}));
+  ASSERT_EQ(p->Index(), start + 8);
+
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start));
+  EXPECT_TRUE(p->SameLazyLinearReason(start, start + 1));
+  EXPECT_TRUE(p->SameLazyLinearReason(start + 1, start));
+
+  // Without explicit trail_index_with_same_linear_reason, never matches.
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start + 2));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 2, start + 3));
+
+  // Different propagation start index, id, explainer, or non-lazy reason.
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start + 4));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 5));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 6));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 7));
+}
+
+TEST(IntegerConflictResolutionTest, CombinedLinearReasonRelaxesWithMinSlack) {
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_create_1uip_boolean_during_icr(false);
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* icr = model.GetOrCreate<IntegerConflictResolution>();
+  auto* linear = model.GetOrCreate<LinearPropagator>();
+
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 10));
+  linear->AddConstraint({}, {x1, x2, x3}, {1, 1, 1}, 10);
+
+  const Literal d1(model.Add(NewBooleanVariable()), true);
+  const Literal d2(model.Add(NewBooleanVariable()), true);
+  const Literal d3(model.Add(NewBooleanVariable()), true);
+  ASSERT_TRUE(sat_solver->Propagate());
+
+  // Level 1: d1 => x1 >= 4.
+  trail->EnqueueSearchDecision(d1);
+  ASSERT_TRUE(integer_trail->Propagate(trail));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x1, 4),
+                                     {d1.Negated()}, {}));
+
+  // Level 2: d2 => x2 >= 4.
+  trail->EnqueueSearchDecision(d2);
+  ASSERT_TRUE(integer_trail->Propagate(trail));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x2, 4),
+                                     {d2.Negated()}, {}));
+
+  // Level 3: d3 => x3 >= 1 (highest trail index among {x1, x2, x3}, relaxable
+  // down to x3 >= 0). Now x1 + x2 + x3 <= 10 propagates x1 <= 5 and x2 <= 5
+  // with the same linear reason (slack = 1, propagation_slack = 0).
+  trail->EnqueueSearchDecision(d3);
+  ASSERT_TRUE(integer_trail->Propagate(trail));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x3, 1),
+                                     {d3.Negated()}, {}));
+  ASSERT_TRUE(sat_solver->Propagate());
+  EXPECT_EQ(integer_trail->UpperBound(x1), 5);
+  EXPECT_EQ(integer_trail->UpperBound(x2), 5);
+
+  // Case 1: conflict requiring x1 <= 5 (slack 0) and x2 <= 6 (slack 1) has
+  // min_slack = 0, so x3 >= 1 cannot be relaxed and ~d3 must stay.
+  EXPECT_FALSE(
+      integer_trail->ReportConflict({}, {IntegerLiteral::LowerOrEqual(x1, 5),
+                                         IntegerLiteral::LowerOrEqual(x2, 6)}));
+  std::vector<Literal> conflict;
+  std::vector<Literal> reason_used;
+  icr->ComputeFirstUIPConflict(&conflict, &reason_used);
+  EXPECT_THAT(conflict, ElementsAre(d3.Negated(), d2.Negated(), d1.Negated()));
+
+  // Case 2: conflict requiring only x1 <= 6 (slack 1) and x2 <= 6 (slack 1)
+  // has min_slack = 1, relaxing x3 >= 1 down to level-zero x3 >= 0 and
+  // dropping d3 completely.
+  EXPECT_FALSE(
+      integer_trail->ReportConflict({}, {IntegerLiteral::LowerOrEqual(x1, 6),
+                                         IntegerLiteral::LowerOrEqual(x2, 6)}));
+  icr->ComputeFirstUIPConflict(&conflict, &reason_used);
+  EXPECT_THAT(conflict, ElementsAre(d2.Negated(), d1.Negated()));
+}
+
+TEST(IntegerConflictResolutionTest,
+     CombinedLinearReasonSettledBatchVarDoesNotOverRelax) {
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_create_1uip_boolean_during_icr(false);
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* icr = model.GetOrCreate<IntegerConflictResolution>();
+  auto* linear = model.GetOrCreate<LinearPropagator>();
+
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 14));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 14));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 14));
+  linear->AddConstraint({}, {x1, x2, x3}, {1, 1, 1}, 14);
+
+  const Literal d1(model.Add(NewBooleanVariable()), true);
+  const Literal d3(model.Add(NewBooleanVariable()), true);
+  // Associated literal d2 <=> (x1 >= 5).
+  const Literal d2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x1, 5));
+  ASSERT_TRUE(sat_solver->Propagate());
+
+  // Level 1: d1 => x1 >= 4 and x2 >= 4.
+  trail->EnqueueSearchDecision(d1);
+  ASSERT_TRUE(integer_trail->Propagate(trail));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x1, 4),
+                                     {d1.Negated()}, {}));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x2, 4),
+                                     {d1.Negated()}, {}));
+  ASSERT_TRUE(sat_solver->Propagate());
+
+  // Level 2: d3 => x3 >= 4. Now x1 + x2 + x3 <= 14 propagates x1 <= 6 and
+  // x2 <= 6 (slack = 2, propagation_slack = 0).
+  trail->EnqueueSearchDecision(d3);
+  ASSERT_TRUE(integer_trail->Propagate(trail));
+  ASSERT_TRUE(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(x3, 4),
+                                     {d3.Negated()}, {}));
+  ASSERT_TRUE(sat_solver->Propagate());
+  EXPECT_EQ(integer_trail->UpperBound(x1), 6);
+  EXPECT_EQ(integer_trail->UpperBound(x2), 6);
+
+  // Level 3: decision d2 (x1 >= 5). Note that (x1=7, x2=4, x3=3) satisfies
+  // x1 + x2 + x3 <= 14, d1 (x1>=4, x2>=4), and d2 (x1>=5), while falsifying
+  // x1 <= 6, so ~d3 must remain in the learned conflict.
+  trail->EnqueueSearchDecision(d2);
+  ASSERT_TRUE(sat_solver->Propagate());
+
+  EXPECT_FALSE(integer_trail->ReportConflict(
+      {d2.Negated()}, {IntegerLiteral::LowerOrEqual(x1, 6),
+                       IntegerLiteral::LowerOrEqual(x2, 6)}));
+
+  std::vector<Literal> conflict;
+  std::vector<Literal> reason_used;
+  icr->ComputeFirstUIPConflict(&conflict, &reason_used);
+  EXPECT_THAT(conflict,
+              UnorderedElementsAre(d2.Negated(), d3.Negated(), d1.Negated()));
+  EXPECT_EQ(conflict[0], d2.Negated());
 }
 
 TEST(IntegerTrailTest, LazyReasonAtLevelZeroDoesNotLeak) {

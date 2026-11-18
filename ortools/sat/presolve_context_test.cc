@@ -22,6 +22,7 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/solution_crush.h"
@@ -1237,7 +1238,7 @@ TEST(PresolveContextTest, ComputeMinMaxActivity) {
   EXPECT_EQ(stats.max_coeff_magnitude, 4);
 }
 
-TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraint) {
+TEST(PresolveContextTest, BuildMergedLinearConstraintView) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 5 ] }
@@ -1264,29 +1265,29 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraint) {
   //   magnitude 7  -> 2
   //   magnitude 10 -> 5 + 4 = 9
   // min_activity = 10*0 - 10*1 + 3*2 + 7*0 - 3*10 + 5*4 = -14.
-  const PresolveContext::MergedCanonicalLinearConstraint canonical =
-      context.BuildMergedCanonicalLinearConstraint(
+  const PresolveContext::MergedLinearConstraintView view =
+      context.BuildMergedLinearConstraintView(
           working_model.constraints(0).linear());
-  EXPECT_THAT(canonical.terms,
+  EXPECT_THAT(view.terms,
               testing::ElementsAre(
                   PresolveContext::CanonicalTerm{.range = 11, .magnitude = 3},
                   PresolveContext::CanonicalTerm{.range = 2, .magnitude = 7},
                   PresolveContext::CanonicalTerm{.range = 9, .magnitude = 10}));
-  EXPECT_EQ(canonical.lb, 14);
-  EXPECT_EQ(canonical.ub, 114);
-  EXPECT_EQ(canonical.max_variation, 137);
+  EXPECT_EQ(view.lb, 14);
+  EXPECT_EQ(view.ub, 114);
+  EXPECT_EQ(view.max_variation, 137);
 
   const LinearConstraintProto empty_proto =
       ParseTestProto(R"pb(domain: [ 0, 0 ])pb");
-  const PresolveContext::MergedCanonicalLinearConstraint empty =
-      context.BuildMergedCanonicalLinearConstraint(empty_proto);
+  const PresolveContext::MergedLinearConstraintView empty =
+      context.BuildMergedLinearConstraintView(empty_proto);
   EXPECT_THAT(empty.terms, testing::IsEmpty());
   EXPECT_EQ(empty.lb, 0);
   EXPECT_EQ(empty.ub, 0);
   EXPECT_EQ(empty.max_variation, 0);
 }
 
-TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintClampsBounds) {
+TEST(PresolveContextTest, BuildMergedLinearConstraintViewClampsBounds) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 4 ] }
@@ -1306,19 +1307,19 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintClampsBounds) {
   // min_activity = 2*1 - 3*3 = -7, max_activity = 2*4 - 3*(-2) = 14.
   // Bounds [-100, 100] are clamped to
   // [0, max_activity - min_activity] = [0, 21].
-  const PresolveContext::MergedCanonicalLinearConstraint canonical =
-      context.BuildMergedCanonicalLinearConstraint(
+  const PresolveContext::MergedLinearConstraintView view =
+      context.BuildMergedLinearConstraintView(
           working_model.constraints(0).linear());
-  EXPECT_THAT(canonical.terms,
+  EXPECT_THAT(view.terms,
               testing::ElementsAre(
                   PresolveContext::CanonicalTerm{.range = 3, .magnitude = 2},
                   PresolveContext::CanonicalTerm{.range = 5, .magnitude = 3}));
-  EXPECT_EQ(canonical.lb, 0);
-  EXPECT_EQ(canonical.ub, 21);
-  EXPECT_EQ(canonical.max_variation, 21);
+  EXPECT_EQ(view.lb, 0);
+  EXPECT_EQ(view.ub, 21);
+  EXPECT_EQ(view.max_variation, 21);
 }
 
-TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
+TEST(PresolveContextTest, BuildMergedLinearConstraintViewInfeasible) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 4 ] }
@@ -1344,8 +1345,8 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
 
   // min_activity = -7, max_activity = 14.
   // Constraint 0 has ct_lb = 15 > max_activity.
-  const PresolveContext::MergedCanonicalLinearConstraint above_max =
-      context.BuildMergedCanonicalLinearConstraint(
+  const PresolveContext::MergedLinearConstraintView above_max =
+      context.BuildMergedLinearConstraintView(
           working_model.constraints(0).linear());
   EXPECT_THAT(above_max.terms, testing::IsEmpty());
   EXPECT_EQ(above_max.lb, 1);
@@ -1353,8 +1354,8 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
   EXPECT_EQ(above_max.max_variation, 0);
 
   // Constraint 1 has ct_ub = -8 < min_activity.
-  const PresolveContext::MergedCanonicalLinearConstraint below_min =
-      context.BuildMergedCanonicalLinearConstraint(
+  const PresolveContext::MergedLinearConstraintView below_min =
+      context.BuildMergedLinearConstraintView(
           working_model.constraints(1).linear());
   EXPECT_THAT(below_min.terms, testing::IsEmpty());
   EXPECT_EQ(below_min.lb, 1);
@@ -1538,7 +1539,7 @@ TEST(PresolveContextTest, CanonicalizeLinMaxSortsTermsAndExpressions) {
   context.InitializeNewDomains();
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
     lin_max {
@@ -1592,7 +1593,7 @@ TEST(PresolveContextTest, CanonicalizeLinMaxCancelsZeroCoefficientTerms) {
   context.InitializeNewDomains();
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
     lin_max {
@@ -1635,7 +1636,7 @@ TEST(PresolveContextTest, CanonicalizeLinMaxEnforcementLiterals) {
   context.InitializeNewDomains();
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
     enforcement_literal: [ -1, 1 ]
@@ -1712,9 +1713,9 @@ TEST(PresolveContextTest, CanonicalizeLinMaxLiteralAndNegationInInitialProto) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  ConstraintProto* ct = context.MutableConstraint(0);
-  EXPECT_TRUE(context.CanonicalizeConstraint(ct));
-  EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_TRUE(context.CanonicalizeConstraint(0));
+  EXPECT_EQ(context.Constraint(0).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
 }
 
 TEST(PresolveContextTest,
@@ -1743,9 +1744,9 @@ TEST(PresolveContextTest,
   context.InitializeNewDomains();
   // Substitute literal 1 with not(0) (-1).
   EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -2));
-  ConstraintProto* ct = context.MutableConstraint(0);
-  EXPECT_TRUE(context.CanonicalizeConstraint(ct));
-  EXPECT_EQ(ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_TRUE(context.CanonicalizeConstraint(0));
+  EXPECT_EQ(context.Constraint(0).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
 }
 
 TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
@@ -1879,7 +1880,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
       routes {
         tails: [ 0, 1 ]
         heads: [ 1, 0 ]
-        literals: [ 2, 3 ]
+        literals: [ 0, 1 ]
         dimensions {
           exprs {
             vars: [ 7, 9 ]
@@ -1902,7 +1903,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
   // Initial sync canonicalizes unsorted inputs.
   context.CanonicalizeConstraintsLazily();
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
   // Now mutate variable state:
@@ -1911,7 +1912,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
   // - Fix var 5 = 1 (flips parity in c5).
   // - Fix var 9 = 3 (folds constant into c0, c6, c8, c9, c10, c11).
   // - Link var 7 = 2 * var 6 + 1 (wakes up c0, c6, c8, c9, c10, and c11!).
-  // - Link literal 3 == literal 2 (wakes up c1, c2, c3, c4, c5, c11).
+  // - Link literal 3 == literal 2 (wakes up c1, c2, c3, c4, c5).
   ASSERT_TRUE(context.SetLiteralToFalse(4));
   ASSERT_TRUE(context.SetLiteralToTrue(5));
   ASSERT_TRUE(context.IntersectDomainWith(9, Domain(3)));
@@ -1922,7 +1923,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
   context.CanonicalizeConstraintsLazily();
   ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // Verify unperformed kInterval stub (c7) kept kInterval active with cleared
   // start/size/end and a single false enforcement literal.
@@ -1999,7 +2000,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyCascadingPropagation) {
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // Fix a = 1; a single CanonicalizeConstraintsLazily() call must cascade
   // a=1 -> b=1 -> x=4 -> canonicalize interval c2.
@@ -2017,7 +2018,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyCascadingPropagation) {
   EXPECT_THAT(context.Constraint(2).interval().start().vars(),
               testing::ElementsAre(3));
   EXPECT_EQ(context.Constraint(2).interval().start().offset(), 4);
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 }
 
 TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
@@ -2045,16 +2046,16 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   context.InitializeNewDomains();
   context.CanonicalizeConstraintsLazily();
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+
+  const uint64_t space_after_first_sync = arena.SpaceUsed();
 
   // Re-running CanonicalizeConstraint on already-canonical constraints is a
   // pure read-only no-op returning false.
   for (int c = 0; c < context.NumConstraints(); ++c) {
-    ConstraintProto copy = context.Constraint(c);
-    EXPECT_FALSE(context.CanonicalizeConstraint(&copy));
+    EXPECT_FALSE(context.CanonicalizeConstraint(c));
   }
 
-  const uint64_t space_after_first_sync = arena.SpaceUsed();
   for (int iter = 0; iter < 10; ++iter) {
     context.CanonicalizeConstraintsLazily();
   }
@@ -2080,7 +2081,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   ASSERT_TRUE(context.IntersectDomainWith(2, Domain(0, 2)));
   ASSERT_TRUE(context.IntersectDomainWith(3, Domain(0, 2)));
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 }
 
 TEST(PresolveContextTest,
@@ -2105,7 +2106,7 @@ TEST(PresolveContextTest,
   PresolveContext context(&model, &working_model, &mapping_model);
   context.InitializeNewDomains();
   context.CanonicalizeConstraintsLazily();
-  ASSERT_TRUE(context.AllConstraintsAreCanonical());
+  ASSERT_TRUE(context.ModelProtoIsCanonical());
 
   // Map var 4 -> var 0 while both are unfixed, then fix var 0 (the
   // representative) before CanonicalizeConstraintsLazily() runs. Note that
@@ -2118,7 +2119,7 @@ TEST(PresolveContextTest,
   EXPECT_TRUE(context.IsFixed(0));
 
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
                 vars: [ 1, 2, 3 ]
                 coeffs: [ 1, 1, 1 ]
@@ -2145,7 +2146,7 @@ TEST(PresolveContextTest,
   context.InitializeNewDomains();
 
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
                 vars: [ 1 ]
                 coeffs: [ 1 ]
@@ -2153,9 +2154,9 @@ TEST(PresolveContextTest,
               )pb"));
 
   // Re-canonicalizing is a no-op and preserves the simplified 2-interval RHS.
-  ConstraintProto copy = working_model.constraints(0);
-  EXPECT_FALSE(context.CanonicalizeConstraint(&copy));
-  EXPECT_THAT(copy.linear().domain(), testing::ElementsAre(0, 0, 4, 8));
+  EXPECT_FALSE(context.CanonicalizeConstraint(0));
+  EXPECT_THAT(working_model.constraints(0).linear().domain(),
+              testing::ElementsAre(0, 0, 4, 8));
 }
 
 TEST(PresolveContextTest,
@@ -2266,7 +2267,7 @@ TEST(PresolveContextTest,
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // Fix z = 3 and link y = 2 * x + 1.
   ASSERT_TRUE(context.IntersectDomainWith(3, Domain(3)));
@@ -2276,7 +2277,7 @@ TEST(PresolveContextTest,
   context.CanonicalizeConstraintsLazily();
   ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // c1 (b = 1): y + z + b = (2*x + 1) + 3 + 1 = 2*x + 5, sorted after x.
   EXPECT_THAT(context.Constraint(1).all_diff().exprs(0),
@@ -2310,7 +2311,8 @@ TEST(PresolveContextTest,
                 coeffs: [ 1 ]
                 offset: 6
               )pb"));
-  // c4 (b = 1): time = (2*x + 1) + 3 = 2*x + 4; level_change = 2 + x = x + 2.
+  // c4 (b = 1): time = (2*x + 1) + 3 = 2*x + 4; level_change = 2 + x = x + 2;
+  // active_literals[0] = b = true.
   EXPECT_THAT(context.Constraint(4).reservoir().time_exprs(0),
               testing::EqualsProto(R"pb(
                 vars: [ 1 ]
@@ -2323,6 +2325,8 @@ TEST(PresolveContextTest,
                 coeffs: [ 1 ]
                 offset: 2
               )pb"));
+  EXPECT_THAT(context.Constraint(4).reservoir().active_literals(),
+              testing::ElementsAre(context.GetTrueLiteral()));
   // c5: f_expr_direct[0] = 2*x + 1; f_expr_inverse[0] = 3.
   EXPECT_THAT(context.Constraint(5).inverse().f_expr_direct(0),
               testing::EqualsProto(R"pb(
@@ -2395,7 +2399,7 @@ TEST(PresolveContextTest,
 
   ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
   EXPECT_EQ(context.Constraint(0).constraint_case(),
@@ -2479,7 +2483,7 @@ TEST(PresolveContextTest,
 
   ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
   EXPECT_THAT(context.Constraint(0), testing::EqualsProto(R"pb(
@@ -2545,19 +2549,331 @@ TEST(PresolveContextTest, CheckSortedParameterInConstraintIsCanonical) {
   for (int c = 0; c < context.NumConstraints(); ++c) {
     EXPECT_FALSE(context.ConstraintIsCanonical(c, /*check_sorted=*/true));
   }
-  EXPECT_TRUE(context.AllConstraintsAreCanonical(/*check_sorted=*/false));
-  EXPECT_TRUE(context.ModelProtoIsCanonical(&permuted_model));
+  EXPECT_FALSE(context.ModelProtoIsCanonical(/*check_sorted=*/true));
+  EXPECT_TRUE(context.ModelProtoIsCanonical(/*check_sorted=*/false));
+  EXPECT_TRUE(ModelProtoIsCanonical(permuted_model));
+}
 
-  // Duplicate or complementary variables are still rejected when
-  // check_sorted = false.
-  CpModelProto dup_bool_or = permuted_model;
-  dup_bool_or.mutable_constraints(1)->mutable_bool_or()->add_literals(-3);
-  EXPECT_FALSE(context.ModelProtoIsCanonical(&dup_bool_or));
+TEST(PresolveContextTest,
+     CanonicalizeEnforcedCircuitRoutesAndReservoirLiterals) {
+  Model model;
+  // Variables:
+  // 0, 1: enforcement booleans e0, e1 in [0, 1]
+  // 2: arc/active boolean a in [0, 1] (will later be linked a == ~e1)
+  // 3: uninvolved boolean b in [0, 1]
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    # c0: single-enforced sparse kCircuit (~e0 => circuit on nodes -10 and 5).
+    # Arc -10->5 has literal ~e0 (true), 5->-10 has literal b, and self-loop
+    # -10->-10 has literal e0 (false -> removed).
+    constraints {
+      enforcement_literal: [ -1 ]
+      circuit {
+        tails: [ -10, -10, 5 ]
+        heads: [ 5, -10, -10 ]
+        literals: [ -1, 0, 3 ]
+      }
+    }
+    # c1: multi-enforced kRoutes ((e0 /\ e1) => routes).
+    # Arc 0->1 has literal e0 (true), 1->0 has literal b, and self-loops 1->1
+    # have literal ~e1 (false -> removed) on node 1? No: keep 1->1 as `a` and a
+    # parallel/extra arc 0->1 with `~e1` (false -> removed). When `a` later
+    # maps to `~e1`, 1->1 is also removed while node 1 still has 0->1 and 1->0.
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      routes {
+        tails: [ 0, 0, 1, 1 ]
+        heads: [ 1, 1, 0, 1 ]
+        literals: [ 0, -2, 3, 2 ]
+      }
+    }
+    # c2: multi-enforced kReservoir ((e0 /\ e1) => reservoir).
+    # Event 0 has active `e1` (replaced by true_lit), event 1 has `~e0`
+    # (unperformed -> removed), event 2 has `a`, event 3 has `b`.
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      reservoir {
+        min_level: -5
+        max_level: 10
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        time_exprs { offset: 3 }
+        level_changes { offset: 1 }
+        level_changes { offset: 9 }
+        level_changes { offset: 2 }
+        level_changes { offset: -3 }
+        active_literals: [ 1, -1, 2, 3 ]
+      }
+    }
+  )pb");
 
-  CpModelProto dup_linear = permuted_model;
-  dup_linear.mutable_constraints(0)->mutable_linear()->add_vars(4);
-  dup_linear.mutable_constraints(0)->mutable_linear()->add_coeffs(1);
-  EXPECT_FALSE(context.ModelProtoIsCanonical(&dup_linear));
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  EXPECT_FALSE(context.ConstraintIsCanonical(0));
+  EXPECT_FALSE(context.ConstraintIsCanonical(1));
+  EXPECT_FALSE(context.ConstraintIsCanonical(2));
+
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  const int true_lit = context.GetTrueLiteral();
+  EXPECT_THAT(context.Constraint(0).circuit().tails(),
+              testing::ElementsAre(-10, 5));
+  EXPECT_THAT(context.Constraint(0).circuit().heads(),
+              testing::ElementsAre(5, -10));
+  EXPECT_THAT(context.Constraint(0).circuit().literals(),
+              testing::ElementsAre(true_lit, 3));
+
+  EXPECT_THAT(context.Constraint(1).routes().tails(),
+              testing::ElementsAre(0, 1, 1));
+  EXPECT_THAT(context.Constraint(1).routes().heads(),
+              testing::ElementsAre(1, 0, 1));
+  EXPECT_THAT(context.Constraint(1).routes().literals(),
+              testing::ElementsAre(true_lit, 3, 2));
+
+  EXPECT_THAT(context.Constraint(2).reservoir().active_literals(),
+              testing::ElementsAre(true_lit, 2, 3));
+  ASSERT_EQ(context.Constraint(2).reservoir().level_changes_size(), 3);
+  EXPECT_EQ(context.Constraint(2).reservoir().level_changes(0).offset(), 1);
+  EXPECT_EQ(context.Constraint(2).reservoir().level_changes(1).offset(), 2);
+  EXPECT_EQ(context.Constraint(2).reservoir().level_changes(2).offset(), -3);
+
+  // Link `var 2 == ~var 1` (`2 -> -2`), mapping literal `2` onto `~e1` in c1
+  // and c2; lazy re-canonicalization must remove the newly false arc/event.
+  ASSERT_TRUE(context.StoreBooleanEqualityRelation(2, -2));
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  EXPECT_THAT(context.Constraint(1).routes().tails(),
+              testing::ElementsAre(0, 1));
+  EXPECT_THAT(context.Constraint(1).routes().heads(),
+              testing::ElementsAre(1, 0));
+  EXPECT_THAT(context.Constraint(1).routes().literals(),
+              testing::ElementsAre(true_lit, 3));
+
+  EXPECT_THAT(context.Constraint(2).reservoir().active_literals(),
+              testing::ElementsAre(true_lit, 3));
+  ASSERT_EQ(context.Constraint(2).reservoir().level_changes_size(), 2);
+  EXPECT_EQ(context.Constraint(2).reservoir().level_changes(0).offset(), 1);
+  EXPECT_EQ(context.Constraint(2).reservoir().level_changes(1).offset(), -3);
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeCircuitRoutesAndReservoirInfeasibleAndEmptyDepotCases) {
+  Model model;
+  // Variables:
+  // 0: e0 in [0, 1]
+  // 1: e1 in [0, 1]
+  // 2: e2 in [0, 1]
+  // 3: a in [0, 1]
+  // 4: b in [0, 1]
+  // 5: false_var in [0, 0]
+  // 6: true_var in [1, 1]
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0 ] }
+    variables { domain: [ 1, 1 ] }
+    # c0: enforced kCircuit where removing false arc 1->0 leaves node 0 with
+    # in_degree == 0 -> forces e0 = 0 and clears c0.
+    constraints {
+      enforcement_literal: [ 0 ]
+      circuit {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 3, 5 ]
+      }
+    }
+    # c1: enforced kRoutes with two true outgoing arcs from non-depot node 1
+    # -> forces e1 = 0 and clears c1.
+    constraints {
+      enforcement_literal: [ 1 ]
+      routes {
+        tails: [ 0, 1, 1 ]
+        heads: [ 1, 0, 1 ]
+        literals: [ 3, 6, 1 ]
+      }
+    }
+    # c2: enforced kRoutes where depot incoming arc 1->0 is false (`5`), while
+    # 0->1 has literal `a` (`3`) and self-loop 1->1 has literal `b` (`4`)
+    # -> rewritten into `e2 => (~a /\ b)` (`kBoolAnd` with `[-4, 4]`).
+    constraints {
+      enforcement_literal: [ 2 ]
+      routes {
+        tails: [ 0, 1, 1 ]
+        heads: [ 1, 0, 1 ]
+        literals: [ 3, 5, 4 ]
+      }
+    }
+    # c3: kReservoir whose events are all inactive (`5`) -> trivially feasible
+    # and removed.
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 5
+        time_exprs { offset: 0 }
+        level_changes { offset: 10 }
+        active_literals: [ 5 ]
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  EXPECT_TRUE(context.LiteralIsFalse(0));
+  EXPECT_TRUE(context.LiteralIsFalse(1));
+  EXPECT_EQ(context.Constraint(0).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_EQ(context.Constraint(1).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  EXPECT_THAT(context.Constraint(2), testing::EqualsProto(R"pb(
+                enforcement_literal: [ 2 ]
+                bool_and { literals: [ -4, 4 ] }
+              )pb"));
+  EXPECT_EQ(context.Constraint(3).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+}
+
+TEST(PresolveContextTest,
+     CanonicalizeByIndexAndClearUpdateGraphWithoutDirtyingCanonicalization) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_or { literals: [ 0, 1, 2 ] } }
+    constraints { at_most_one { literals: [ 1, 2, 3 ] } }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.NeedsCanonicalization());
+
+  // Mutating c0 into a smaller already-canonical clause and calling
+  // CanonicalizeConstraint(0, /*force_variable_usage_update=*/true) updates
+  // VarToConstraints without marking c0 for re-canonicalization.
+  context.MutableConstraint(0)->mutable_bool_or()->mutable_literals()->Truncate(
+      2);
+  EXPECT_FALSE(
+      context.CanonicalizeConstraint(0, /*force_variable_usage_update=*/true));
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_THAT(context.VarToConstraints(2), testing::ElementsAre(1));
+
+  // Clearing c1 updates VarToConstraints without marking c1 for
+  // canonicalization (even if MarkConstraintForCanonicalization is also called
+  // on the cleared constraint).
+  context.ClearConstraint(1);
+  context.MarkConstraintForCanonicalization(1);
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_THAT(context.VarToConstraints(2), testing::IsEmpty());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  // MarkConstraintForCanonicalization on a non-empty mutated constraint marks
+  // BOTH the variable graph and lazy canonicalization.
+  context.MutableConstraint(0)->mutable_bool_or()->add_literals(3);
+  context.MutableConstraint(0)->mutable_bool_or()->add_literals(2);
+  context.MarkConstraintForCanonicalization(0);
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  EXPECT_THAT(context.VarToConstraints(3), testing::ElementsAre(0));
+
+  // CanonicalizeConstraint(int c) normalizes c0 in-place and updates the graph
+  // without leaving NeedsCanonicalization() set when no other dirty state
+  // exists. Flush first, then test AddConstraint() + CanonicalizeConstraint.
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.NeedsCanonicalization());
+
+  // Appending a single constraint and immediately calling
+  // CanonicalizeConstraint advances the watermark without scheduling redundant
+  // lazy canonicalization.
+  ConstraintProto* c2 = context.AddConstraint();
+  c2->mutable_bool_or()->add_literals(3);
+  c2->mutable_bool_or()->add_literals(1);
+  c2->mutable_bool_or()->add_literals(1);
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.CanonicalizeConstraint(2));
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_THAT(context.Constraint(2), testing::EqualsProto(R"pb(
+                bool_or { literals: [ 1, 3 ] }
+              )pb"));
+  EXPECT_THAT(context.VarToConstraints(3), testing::UnorderedElementsAre(0, 2));
+
+  // Appending an uncanonicalized c3 followed by an eagerly canonicalized c4
+  // still leaves c3 marked for lazy canonicalization while c4 is canonical, and
+  // RemoveLastConstraint() on a speculative c5 keeps state consistent.
+  ConstraintProto* c3 = context.AddConstraint();
+  c3->mutable_bool_or()->add_literals(2);
+  c3->mutable_bool_or()->add_literals(0);
+  ConstraintProto* c4 = context.AddConstraint();
+  c4->mutable_at_most_one()->add_literals(3);
+  c4->mutable_at_most_one()->add_literals(1);
+  EXPECT_TRUE(context.CanonicalizeConstraint(4));
+  ConstraintProto* c5 = context.AddConstraint();
+  c5->mutable_bool_or()->add_literals(0);
+  c5->mutable_bool_or()->add_literals(1);
+  context.CanonicalizeConstraint(5);
+  context.RemoveLastConstraint();
+
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_THAT(context.Constraint(3), testing::EqualsProto(R"pb(
+                bool_or { literals: [ 0, 2 ] }
+              )pb"));
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+}
+
+TEST(PresolveContextTest, AddNeverSeenBeforeImplication) {
+  Model model;
+  CpModelProto working_model;
+  PresolveContext context(&model, &working_model, nullptr);
+  const int a = context.NewBoolVar("a");
+  const int b = context.NewBoolVar("b");
+
+  // First time seeing a => b adds the constraint and returns true.
+  EXPECT_TRUE(context.AddNeverSeenBeforeImplication(a, b));
+  ASSERT_EQ(context.NumConstraints(), 1);
+  EXPECT_THAT(context.Constraint(0), testing::EqualsProto(R"pb(
+                enforcement_literal: 0
+                bool_and { literals: 1 }
+              )pb"));
+
+  // Exact repeat and contrapositive (~b => ~a) are both rejected.
+  EXPECT_FALSE(context.AddNeverSeenBeforeImplication(a, b));
+  EXPECT_FALSE(
+      context.AddNeverSeenBeforeImplication(NegatedRef(b), NegatedRef(a)));
+  EXPECT_EQ(context.NumConstraints(), 1);
+
+  // Converse implication b => a is distinct and accepted once.
+  EXPECT_TRUE(context.AddNeverSeenBeforeImplication(b, a));
+  EXPECT_FALSE(
+      context.AddNeverSeenBeforeImplication(NegatedRef(a), NegatedRef(b)));
+  EXPECT_EQ(context.NumConstraints(), 2);
+
+  // ResetAfterCopy() clears the seen set so remapped models start fresh.
+  context.ResetAfterCopy();
+  context.InitializeNewDomains();
+  EXPECT_TRUE(context.AddNeverSeenBeforeImplication(a, b));
+  EXPECT_EQ(context.NumConstraints(), 3);
 }
 
 }  // namespace

@@ -449,6 +449,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
       const int active = reservoir.active_literals().empty()
                              ? true_literal
                              : reservoir.active_literals(i);
+      if (context->LiteralIsFalse(active)) continue;
       const LinearExpressionProto& demand = reservoir.level_changes(i);
       if (context->IsFixed(demand)) {
         const int64_t change = context->FixedValue(reservoir.level_changes(i));

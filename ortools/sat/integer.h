@@ -827,11 +827,20 @@ class IntegerTrail final : public SatPropagator {
   }
 
   // Lazy reason API.
+  //
+  // When a single propagation of a linear constraint pushes many bounds, it can
+  // pass the same `trail_index_with_same_linear_reason` (usually Index() before
+  // the first push) for all of them. The conflict resolution can then explain
+  // these bounds at once. This requires that the explanation of all these
+  // bounds only differ by the propagated variable and slack: same Boolean
+  // reason, no integer literals, same linear expression without duplicates.
   ABSL_MUST_USE_RESULT bool EnqueueWithLazyReason(
       IntegerLiteral i_lit, int id, IntegerValue propagation_slack,
-      LazyReasonInterface* explainer) {
+      LazyReasonInterface* explainer,
+      int trail_index_with_same_linear_reason = kint32max) {
     if (i_lit.bound <= var_lbs_[i_lit.var]) return true;
-    const int trail_index = integer_trail_.size();
+    const int trail_index = std::min(trail_index_with_same_linear_reason,
+                                     static_cast<int>(integer_trail_.size()));
     lazy_reasons_.push_back(
         LazyReasonEntry{explainer, propagation_slack, i_lit, id, trail_index});
     if (integer_search_levels_.empty()) {
@@ -934,6 +943,22 @@ class IntegerTrail final : public SatPropagator {
     }
     return integer_trail_[integer_trail_index].prev_trail_index;
   }
+
+  // Returns true iff the two distinct trail entries were pushed by the same
+  // propagation with a lazy reason and the same
+  // `trail_index_with_same_linear_reason` (see EnqueueWithLazyReason()).
+  bool SameLazyLinearReason(int index1, int index2) const {
+    if (index1 == index2) return false;
+    const ReasonIndex r1 = integer_trail_[index1].reason_index;
+    const ReasonIndex r2 = integer_trail_[index2].reason_index;
+    if (r1 >= 0 || r2 >= 0) return false;
+    const LazyReasonEntry& e1 = lazy_reasons_[-r1 - 1];
+    const LazyReasonEntry& e2 = lazy_reasons_[-r2 - 1];
+    return e1.explainer == e2.explainer && e1.id == e2.id &&
+           e1.trail_index_at_propagation_time ==
+               e2.trail_index_at_propagation_time;
+  }
+
   GlobalTrailIndex GlobalIndexAt(int integer_index) const {
     CHECK_GE(integer_index, var_lbs_.size());
     CHECK_NE(integer_trail_[integer_index].var, kNoIntegerVariable);

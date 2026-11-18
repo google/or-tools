@@ -849,7 +849,7 @@ TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
     CpConstraintPresolver presolver(&context);
     context.InitializeNewDomains();
     presolver.DetectTwoTermTilting(model_proto.mutable_constraints(0),
-                                   context.BuildMergedCanonicalLinearConstraint(
+                                   context.BuildMergedLinearConstraintView(
                                        model_proto.constraints(0).linear()));
 
     const auto& new_lin = model_proto.constraints(0).linear();
@@ -2164,11 +2164,11 @@ TEST(PresolveCpModelTest,
               )pb"));
 }
 
-TEST(PresolveCpModelTest, LowerThanCoeffStrengtheningFixesVariableToBound) {
+TEST(PresolveCpModelTest, FixVariablesExceedingRhsFixesVariableToBound) {
   // PropagateDomainsInLinear narrows x9 from {0, 3, 4} to [3, 4] (not fixed,
   // so the constraint is not recanonicalized), raising min_activity from 0 to
   // 33 and reducing the effective upper-bound slack rhs = 44 - 33 = 11.
-  // LowerThanCoeffStrengthening then sees coeff(x8) = 12 > rhs = 11 on an
+  // FixVariablesExceedingRhs then sees coeff(x8) = 12 > rhs = 11 on an
   // unenforced constraint and fixes x8 to its lower bound 0.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -2309,15 +2309,14 @@ TEST(PresolveCpModelTest, TwoTermTiltingRunsBeforeApproximateGcd) {
               )pb"));
 }
 
-TEST(PresolveCpModelTest,
-     LowerThanCoeffStrengtheningFixesVarEnablingTwoTermTilting) {
+TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesTwoTermTilting) {
   // With 10 variables, PropagateDomainsInLinear runs in fast mode and narrows
   // x9 from {0, 9, 10} to [9, 10] (not fixed, so the constraint is not
   // recanonicalized), raising min_activity from 0 to 45 and reducing the
   // effective upper-bound slack rhs = 53 - 45 = 8.
-  // LowerThanCoeffStrengthening fixes x8 (coeff = 12 > 8) to 0 and updates
-  // `canonical` in place from 3 magnitudes {3, 5, 12} down to 2 magnitudes
-  // {3, 5}. DetectTwoTermTilting then immediately tilts
+  // FixVariablesExceedingRhs fixes x8 (coeff = 12 > 8) to 0, removes x8 via
+  // CanonicalizeConstraint, and refreshes `view` from 3 magnitudes {3, 5, 12}
+  // down to 2 magnitudes {3, 5}. DetectTwoTermTilting then immediately tilts
   // 3*(x0+...+x5) + 5*(x6+x7+(x9-9)) <= 8 to
   // 2*(x0+...+x5) + 3*(x6+x7+(x9-9)) <= 5.
   const CpModelProto initial_model = ParseTestProto(R"pb(
@@ -2345,8 +2344,8 @@ TEST(PresolveCpModelTest,
   EXPECT_THAT(presolved.variables(9).domain(), ElementsAre(9, 10));
   ASSERT_EQ(presolved.constraints_size(), 1);
   EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
-                vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-                coeffs: [ 2, 2, 2, 2, 2, 2, 3, 3, 3, 3 ]
+                vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 9 ]
+                coeffs: [ 2, 2, 2, 2, 2, 2, 3, 3, 3 ]
                 domain: [ 27, 32 ]
               )pb"));
 }
@@ -2384,12 +2383,170 @@ TEST(PresolveCpModelTest,
   EXPECT_FALSE(presolver.PresolveOneConstraint(1));
   EXPECT_FALSE(context.NeedsCanonicalization());
   context.CanonicalizeConstraintsLazily();
-  EXPECT_TRUE(context.AllConstraintsAreCanonical());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear().domain(),
               ElementsAre(0, 0, 4, 8));
   EXPECT_TRUE(context.HasVarValueEncoding(1, 2, nullptr));
 }
 
+TEST(PresolveCpModelTest,
+     PresolveCircuitSingletonFixesReachFixedPointBeforeRemoval) {
+  // Singleton outgoing arcs on nodes 0 and 2147483647 fix x0 = 1 and x2 = 0
+  // after incoming_arcs has already been scanned. Reaching the fixed point must
+  // revisit node -1 and set its competing self-loop literal -2 (~x1) to false
+  // (x1 = 1) before removing the fully specified circuit.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      circuit {
+        tails: [ 2147483647, -1, -1, -1, 0, -1, -1 ]
+        heads: [ -1, 2147483647, 2147483647, -1, 0, 0, 2147483647 ]
+        literals: [ -3, -3, -1, -2, 0, -1, -1 ]
+      }
+    }
+  )pb");
+
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0), EqualsProto(R"pb(
+                variables { domain: [ 1, 1 ] }
+                variables { domain: [ 1, 1 ] }
+                variables { domain: [ 0, 0 ] }
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     PresolveCircuitSingleNonFalseArcPropagatesToFixedPoint) {
+  // x2 is already fixed to 0, leaving literal 0 (x0) as the only non-false
+  // outgoing arc of node 1; fixing x0 = 1 must cascade to falsify literal 1
+  // (x1 = 0) on node 0's self-loop before removing the circuit.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0 ] }
+    constraints {
+      circuit {
+        tails: [ 0, 1, 1, 0 ]
+        heads: [ 1, 0, 1, 0 ]
+        literals: [ 0, 0, 2, 1 ]
+      }
+    }
+  )pb");
+
+  EXPECT_THAT(PresolveOneConstraint(initial_model, 0), EqualsProto(R"pb(
+                variables { domain: [ 1, 1 ] }
+                variables { domain: [ 0, 0 ] }
+                variables { domain: [ 0, 0 ] }
+              )pb"));
+}
+
+TEST(PresolveCpModelTest,
+     PresolveCircuitDuplicateTrueLiteralOnSameNodeMarksModelUnsat) {
+  // Singleton incoming arc 0 -> 1 fixes x0 = 1, activating both 1 -> 0 and
+  // 2 -> 0 into node 0 with the same literal 0.
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      circuit {
+        tails: [ 2, 0, 1, 2, 0 ]
+        heads: [ 0, 1, 0, 2, 2 ]
+        literals: [ 0, 0, 0, 1, 2 ]
+      }
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+
+  presolver.PresolveOneConstraint(0);
+  EXPECT_TRUE(context.ModelIsUnsat());
+}
+
+TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesSimpleSumAndTwoSided) {
+  // Case 1: With 10 variables, PropagateDomainsInLinear narrows x9 from
+  // {0, 11, 12} to [11, 12] without recanonicalizing, leaving slack ub = 5.
+  // FixVariablesExceedingRhs fixes x8 (coeff = 12 > 5) to 0, removes x8 via
+  // CanonicalizeConstraint, and refreshes the merged view before
+  // DetectSimpleSum reduces {3, 4, 5} <= 5 to unit coefficients.
+  {
+    const CpModelProto initial_model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 0, 11, 12 ] }
+      constraints {
+        linear {
+          vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+          coeffs: [ 3, 3, 3, 4, 4, 4, 5, 5, 12, 5 ]
+          domain: [ 44, 60 ]
+        }
+      }
+    )pb");
+
+    const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+    EXPECT_THAT(presolved.variables(8).domain(), ElementsAre(0, 0));
+    EXPECT_THAT(presolved.variables(9).domain(), ElementsAre(11, 12));
+    ASSERT_EQ(presolved.constraints_size(), 1);
+    EXPECT_THAT(presolved.constraints(0).linear(), EqualsProto(R"pb(
+                  vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 9 ]
+                  coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                  domain: [ 11, 12 ]
+                )pb"));
+  }
+
+  // Case 2: Two-sided constraint (`lb = 2 > 0` and `ub = 11 < max_variation`).
+  // FixVariablesExceedingRhs still fixes x8 (coeff = 12 > 11) to 0 and
+  // immediately removes x8 via CanonicalizeConstraint even though
+  // LowerThanCoeffStrengthening skips two-sided constraints.
+  {
+    CpModelProto working_model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 0, 3, 4 ] }
+      constraints {
+        linear {
+          vars: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+          coeffs: [ 2, 2, 2, 2, 2, 2, 2, 3, 12, 11 ]
+          domain: [ 35, 44 ]
+        }
+      }
+    )pb");
+    CpModelProto mapping_model;
+    Model model;
+    model.GetOrCreate<SatParameters>()
+        ->set_keep_all_feasible_solutions_in_presolve(true);
+    PresolveContext context(&model, &working_model, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    context.CanonicalizeConstraintsLazily();
+
+    EXPECT_FALSE(presolver.PresolveOneConstraint(0));
+    EXPECT_EQ(context.DomainOf(8), Domain(0));
+    EXPECT_EQ(context.DomainOf(9), Domain(3, 4));
+    EXPECT_THAT(working_model.constraints(0).linear().vars(),
+                ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 9));
+    EXPECT_TRUE(context.ConstraintIsCanonical(0));
+    context.CanonicalizeConstraintsLazily();
+    EXPECT_TRUE(context.ModelProtoIsCanonical());
+  }
+}
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

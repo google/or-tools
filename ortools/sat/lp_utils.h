@@ -66,11 +66,15 @@ struct MipVariableState {
   double error_ub = 0.0;
 };
 
-// Multiplies the current domain of `state` by `scaling`.
+// Multiplies the current domain of `state` by `scaling`, rounding finite bounds
+// outward so no feasible value is lost when `scaling` is not a power of two.
 inline void ScaleVariableState(double scaling, MipVariableState* state) {
   if (scaling == 1.0) return;
-  state->lb *= scaling;
-  state->ub *= scaling;
+  DCHECK_GT(scaling, 0.0);
+  state->lb = std::isfinite(state->lb) ? ProdBounds(state->lb, scaling).first
+                                       : state->lb * scaling;
+  state->ub = std::isfinite(state->ub) ? ProdBounds(state->ub, scaling).second
+                                       : state->ub * scaling;
   state->scaling *= scaling;
 }
 
@@ -154,6 +158,25 @@ inline int MaxPowerOfTwoExponentWithinBound(double magnitude,
 int64_t FindRationalFactor(double x, int64_t limit = 1e4,
                            double tolerance = 1e-6);
 
+// A linear expression `sum_i coeffs[i] * X_i` together with the domain
+// `[var_lbs[i], var_ubs[i]]` of each variable `X_i`.
+struct BoundedLinearExpression {
+  std::vector<double> coeffs;
+  std::vector<double> var_lbs;
+  std::vector<double> var_ubs;
+
+  void Clear() {
+    coeffs.clear();
+    var_lbs.clear();
+    var_ubs.clear();
+  }
+  void AddTerm(double coeff, double var_lb, double var_ub) {
+    coeffs.push_back(coeff);
+    var_lbs.push_back(var_lb);
+    var_ubs.push_back(var_ub);
+  }
+};
+
 // Given a linear expression Sum_i c_i * X_i with each X_i in [lb_i, ub_i],
 // this returns a scaling factor f such that
 // 1/ the rounded expression cannot overflow given the domains of the X_i:
@@ -180,6 +203,27 @@ double FindBestScalingAndComputeErrors(
     absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error, double* max_scaling_factor = nullptr);
+inline double FindBestScalingAndComputeErrors(
+    const BoundedLinearExpression& expr, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error, double* max_scaling_factor = nullptr) {
+  return FindBestScalingAndComputeErrors(
+      expr.coeffs, expr.var_lbs, expr.var_ubs, max_absolute_activity,
+      wanted_absolute_activity_precision, relative_coeff_error,
+      scaled_sum_error, max_scaling_factor);
+}
+
+// Same as operations_research::ComputeScalingErrors() from fp_utils.h for a
+// BoundedLinearExpression. Since this hides the fp_utils.h function in this
+// namespace, the latter must be called with its namespace.
+inline void ComputeScalingErrors(const BoundedLinearExpression& expr,
+                                 double scaling_factor,
+                                 double* max_relative_coeff_error,
+                                 double* max_scaled_sum_error) {
+  operations_research::ComputeScalingErrors(
+      expr.coeffs, expr.var_lbs, expr.var_ubs, scaling_factor,
+      max_relative_coeff_error, max_scaled_sum_error);
+}
 
 // Prescribed scaling of a constraint of a residual component that was made
 // integral by MarkComponentTotallyUnimodularAsInteger(). The component matrix
@@ -269,9 +313,7 @@ struct ConstraintScaler {
 
   // Private temporary field to reuse memory.
   std::vector<int> var_indices;
-  std::vector<double> coefficients;
-  std::vector<double> lower_bounds;
-  std::vector<double> upper_bounds;
+  BoundedLinearExpression bounded_expr;
   std::vector<int64_t> int_lower_bounds;
   std::vector<int64_t> int_upper_bounds;
   std::vector<double> tmp_transformed_coeffs;
@@ -315,6 +357,17 @@ struct OneVariableComponentStats {
   int num_pow2_preferred = 0;
   int num_missed = 0;
   double max_scaling = 0.0;
+
+  // For any constraint-tolerant MIP solution x, crushing the integerized
+  // single-variable components increases the minimization objective by at most
+  //   objective_error_bound +
+  //   max_violation_sensitivity * sum_{1-var compo c} max_{r in c} viol_r(x),
+  // which is at most
+  // `objective_error_bound + mip_tight_precision * num_integers *
+  // max_violation_sensitivity` when every constraint holds within the
+  // configured mip_tight_precision tolerance.
+  double objective_error_bound = 0.0;
+  double max_violation_sensitivity = 0.0;
 };
 void LogOneVariableComponentStats(const OneVariableComponentStats& stats,
                                   SolverLogger* logger);
@@ -391,16 +444,28 @@ ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
     const ResidualContinuousComponent& compo,
     absl::Span<const MipVariableState> states, double max_target_bound);
 
-// For each constraint, computes the scaling factor that allows to satisfy
-// mip_wanted_precision and records the power-of-two headroom left up to
-// mip_max_activity_exponent. Then scales each continuous variable by the
-// minimum headroom across all constraints in which it appears, capped by the
-// maximum scaling needed for mip_wanted_precision and the maximum valid CP-SAT
-// variable domain.
+// Controls how constraint headroom is computed in
+// ScaleComponentContinuousVariablesForGivenPrecision():
+// - kPerTerm computes each continuous variable's headroom from its own
+//   coefficient and domain in the constraint, so exact/dyadic coefficients or
+//   small-domain terms are not penalized by scaling needed for other terms.
+// - kUniformPerConstraint caps every variable in a constraint by the uniform
+//   row headroom `max_scaling_factor / scaling_factor`.
+enum class PrecisionHeadroomMode {
+  kPerTerm,
+  kUniformPerConstraint,
+};
+
+// For each constraint, computes the power-of-two headroom left up to
+// mip_max_activity_exponent while satisfying mip_wanted_precision. Then scales
+// each continuous variable by the minimum headroom across all constraints in
+// which it appears, capped by the maximum scaling needed for
+// mip_wanted_precision and the maximum valid CP-SAT variable domain.
 void ScaleComponentContinuousVariablesForGivenPrecision(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    PrecisionScalingStats* stats);
+    PrecisionScalingStats* stats,
+    PrecisionHeadroomMode headroom_mode = PrecisionHeadroomMode::kPerTerm);
 
 // Shifts the domain of each variable in `vars` by `get_shift(state)` (expressed
 // in the current scaled space) so that it ends up closer to zero. The shift of
@@ -432,10 +497,10 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          int64_t* num_changes,
                                          SolverLogger* logger);
 
-// Helpers used in bound propagation. We special case the coefficient == 1.0 as
+// Helpers used in bound propagation. We special case the divisor == 1.0 as
 // this is frequent and we don't want to artificially add a really small error.
 double ExactScaledSumUb(double a, double b, double divisor);  // Forward.
-inline double ExactScaledSumLb(double a, double b, double divisor = 1.0) {
+inline double ExactScaledSumLb(double a, double b, double divisor) {
   DCHECK(std::isfinite(divisor));
   if (divisor < 0.0) return ExactScaledSumUb(-a, -b, -divisor);
   if (!std::isfinite(a)) return a;
@@ -443,7 +508,7 @@ inline double ExactScaledSumLb(double a, double b, double divisor = 1.0) {
   const double exact_sum_lb = TightSum().Add(a).Add(b).TightLowerBound();
   return divisor == 1.0 ? exact_sum_lb : FastStepDown(exact_sum_lb / divisor);
 }
-inline double ExactScaledSumUb(double a, double b, double divisor = 1.0) {
+inline double ExactScaledSumUb(double a, double b, double divisor) {
   DCHECK(std::isfinite(divisor));
   if (divisor < 0.0) return ExactScaledSumLb(-a, -b, -divisor);
   if (!std::isfinite(a)) return a;
@@ -451,11 +516,22 @@ inline double ExactScaledSumUb(double a, double b, double divisor = 1.0) {
   const double exact_sum_ub = TightSum().Add(a).Add(b).TightUpperBound();
   return divisor == 1.0 ? exact_sum_ub : FastStepUp(exact_sum_ub / divisor);
 }
+inline double ExactSumLb(double a, double b) {
+  if (!std::isfinite(a)) return a;
+  if (!std::isfinite(b)) return b;
+  return TightSum().Add(a).Add(b).TightLowerBound();
+}
+inline double ExactSumUb(double a, double b) {
+  if (!std::isfinite(a)) return a;
+  if (!std::isfinite(b)) return b;
+  return TightSum().Add(a).Add(b).TightUpperBound();
+}
 inline std::pair<double, double> DivInterval(double lb, double ub,
                                              double divisor) {
   if (divisor < 0.0) return DivInterval(-ub, -lb, -divisor);
-  return {lb == 0.0 ? 0.0 : ExactScaledSumLb(lb, 0.0, divisor),
-          ub == 0.0 ? 0.0 : ExactScaledSumUb(ub, 0.0, divisor)};
+  return {
+      std::isfinite(lb) ? QuotientBounds(lb, divisor).first : lb / divisor,
+      std::isfinite(ub) ? QuotientBounds(ub, divisor).second : ub / divisor};
 }
 inline double MaxAbsScaledTightSum(const TightSum& sum,
                                    double pos_divisor = 1.0) {
@@ -617,8 +693,12 @@ void DisplayConstraintScalingStats(const SatParameters& params,
                                    SolverLogger* logger);
 
 // Populates `cp_model->floating_point_objective()` from `mp_model` transformed
-// according to `states`.
-void PopulateCpModelFloatingPointObjective(
+// according to `states`, using the integer variable domains already populated
+// in `cp_model` so that non-exact scaled coefficients and offset sums never
+// overestimate a minimization objective (or underestimate a maximization
+// objective). Returns false if a scaled objective coefficient or offset
+// overflows `double`.
+bool PopulateCpModelFloatingPointObjective(
     const MPModelProtoWrapper& mp_model,
     absl::Span<const MipVariableState> states, CpModelProto* cp_model);
 

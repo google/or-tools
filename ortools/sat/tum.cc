@@ -541,7 +541,7 @@ void TightenComponentBounds(
                                .Add(-tightest_magnitude)
                                .TightUpperBound();
       const double second = all_external_integer
-                                ? ExactScaledSumUb(tightest, -min_external_step)
+                                ? ExactSumUb(tightest, -min_external_step)
                                 : tightest;
       if (second < 0.0) {
         droppable.push_back({drop_limit_for(second), delta, local_row});
@@ -830,8 +830,8 @@ bool TryScaleModularComponent(
     }
     double relative_coeff_error;
     double scaled_sum_error;
-    ComputeScalingErrors(coeffs, lbs, ubs, factor, &relative_coeff_error,
-                         &scaled_sum_error);
+    operations_research::ComputeScalingErrors(
+        coeffs, lbs, ubs, factor, &relative_coeff_error, &scaled_sum_error);
     if (scaled_sum_error > params.mip_check_precision() * factor) return false;
     scalings.push_back(
         {.scaling_factor = factor, .modular_factor = modular_factor});

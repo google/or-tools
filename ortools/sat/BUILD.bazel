@@ -876,6 +876,35 @@ or_cc_test(
 )
 
 or_cc_library(
+    name = "cp_model_canonical_checker",
+    srcs = ["cp_model_canonical_checker.cc"],
+    hdrs = ["cp_model_canonical_checker.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "cp_model_canonical_checker_test",
+    size = "small",
+    srcs = ["cp_model_canonical_checker_test.cc"],
+    deps = [
+        ":cp_model_canonical_checker",
+        ":cp_model_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
+
+or_cc_library(
     name = "constraint_violation",
     srcs = ["constraint_violation.cc"],
     hdrs = ["constraint_violation.h"],
@@ -1484,6 +1513,7 @@ or_cc_library(
     srcs = ["presolve_context.cc"],
     hdrs = ["presolve_context.h"],
     deps = [
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_loader",
@@ -1529,6 +1559,7 @@ or_cc_test(
     size = "small",
     srcs = ["presolve_context_test.cc"],
     deps = [
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":model",
@@ -1719,6 +1750,7 @@ or_cc_library(
     deps = [
         ":clause",
         ":cp_constraint_presolve",
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_expand",
@@ -1790,6 +1822,7 @@ or_cc_test(
         "oss:no_ci",  # Disabled on OSS CI: too long (60.1s)
     ],
     deps = [
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_presolve",
@@ -2509,9 +2542,11 @@ or_cc_test(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_utils",
         ":integer_base",
         ":model",
         ":presolve_context",
+        ":solution_crush_cc_proto",
         ":var_domination",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
@@ -2978,7 +3013,9 @@ or_cc_test(
     deps = [
         ":integer",
         ":integer_base",
+        ":integer_resolution",
         ":integer_search",
+        ":linear_propagation",
         ":model",
         ":sat_assignment",
         ":sat_literal",
@@ -3803,6 +3840,7 @@ or_cc_library(
         "//ortools/graph:max_flow",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:flat_hash_map",

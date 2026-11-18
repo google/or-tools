@@ -156,8 +156,7 @@ class ComponentPipeline {
         }
       }
     }
-    PopulateCpModelFloatingPointObjective(wrapper_, states_, cp_model);
-    return true;
+    return PopulateCpModelFloatingPointObjective(wrapper_, states_, cp_model);
   }
 
  private:

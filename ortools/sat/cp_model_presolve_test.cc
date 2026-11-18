@@ -33,6 +33,7 @@
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -126,12 +127,6 @@ CpModelProto PresolveForTest(
   CpModelPresolver presolver(&context, &mapping);
   EXPECT_EQ(presolver.Presolve(), expected_status);
   return presolved_model;
-}
-
-bool ModelProtoIsCanonical(CpModelProto model_proto) {
-  Model model;
-  PresolveContext context(&model, &model_proto, nullptr);
-  return context.ModelProtoIsCanonical(&model_proto);
 }
 
 // This expects the presolve to remove everything and return the mapping model.
@@ -10589,6 +10584,90 @@ TEST(PresolveCpModelTest,
   ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(response.solution(0), response.solution(1));
   EXPECT_TRUE(response.solution(1) == 1 || response.solution(2) == 1);
+}
+
+TEST(PresolveCpModelTest,
+     EnforcedCircuitRoutesAndReservoirReplaceEnforcementLiterals) {
+  // Variables:
+  // 0: enf in [0, 1]
+  // 1, 2: boolean arc/active literals in [0, 1]
+  // 3, 4: integer time/demand vars in [1, 5]
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 5 ] }
+    variables { domain: [ 1, 5 ] }
+    # Enforced circuit where arc 0->1 has literal `enf` and self-loop 0->0 has
+    # literal `~enf`. When `enf` is true, 0->1->0 must form a 2-cycle (so var 1
+    # must be 1).
+    constraints {
+      enforcement_literal: [ 0 ]
+      circuit {
+        tails: [ 0, 1, 0, 1 ]
+        heads: [ 1, 0, 0, 1 ]
+        literals: [ 0, 1, -1, 2 ]
+      }
+    }
+    # Enforced routes where 0->1 uses `enf` and 1->1 uses `~enf`.
+    constraints {
+      enforcement_literal: [ 0 ]
+      routes {
+        tails: [ 0, 1, 1 ]
+        heads: [ 1, 0, 1 ]
+        literals: [ 0, 1, -1 ]
+      }
+    }
+    # Enforced reservoir (same-sign sum expansion with unfixed demand and `~enf`
+    # inactive event).
+    constraints {
+      enforcement_literal: [ 0 ]
+      reservoir {
+        min_level: 0
+        max_level: 4
+        time_exprs { vars: 3 coeffs: 1 }
+        time_exprs { vars: 4 coeffs: 1 }
+        level_changes { vars: 3 coeffs: 1 }
+        level_changes { vars: 4 coeffs: 10 }
+        active_literals: [ 0, -1 ]
+      }
+    }
+    # Enforced unexpanded variable-demand mixed-sign reservoir.
+    constraints {
+      enforcement_literal: [ 0 ]
+      reservoir {
+        min_level: -5
+        max_level: 5
+        time_exprs { vars: 3 coeffs: 1 }
+        time_exprs { vars: 4 coeffs: 1 }
+        level_changes { vars: 3 coeffs: 1 }
+        level_changes { vars: 4 coeffs: -1 }
+        active_literals: [ 0, -1 ]
+      }
+    }
+    # Force `enf = 1` via objective to check feasible enforced solutions.
+    objective {
+      vars: [ 0, 3 ]
+      coeffs: [ -10, 1 ]
+    }
+  )pb");
+
+  for (const bool enable_presolve : {true, false}) {
+    SatParameters params;
+    params.set_cp_model_presolve(enable_presolve);
+    const CpModelProto presolved = PresolveForTest(initial_model, params);
+    EXPECT_EQ(ValidateCpModel(presolved, /*after_presolve=*/true), "");
+    EXPECT_TRUE(ModelProtoIsCanonical(presolved));
+
+    Model model;
+    *model.GetOrCreate<SatParameters>() = params;
+    const CpSolverResponse response = SolveCpModel(initial_model, &model);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    EXPECT_EQ(response.solution(0), 1);
+    EXPECT_EQ(response.solution(1), 1);
+    EXPECT_EQ(response.solution(2), 0);
+    EXPECT_EQ(response.solution(3), 1);
+  }
 }
 
 }  // namespace
