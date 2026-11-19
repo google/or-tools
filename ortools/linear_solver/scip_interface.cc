@@ -414,6 +414,11 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
         scip_, scip_variables_[var_index],
         integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS));
 #endif  // SCIP_VERSION >= 210
+    if (!integer) {
+      // Restore the model bounds that SCIP rounded for the integer variable.
+      const MPVariable* const var = solver_->variables_[var_index];
+      SetVariableBounds(var_index, var->lb(), var->ub());
+    }
   } else {
     sync_status_ = MUST_RELOAD;
   }
