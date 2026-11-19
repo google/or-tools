@@ -2629,8 +2629,8 @@ void ScanModelAndDecideAllDiffExpansion(
 
     // Check cache.
     if (!processed_variables.insert(var).second) {
-      at_least_one_var_domain_is_used = bounds_of_var_are_used.contains(var);
-      at_least_one_var_bound_is_used = domain_of_var_is_used.contains(var);
+      at_least_one_var_domain_is_used = domain_of_var_is_used.contains(var);
+      at_least_one_var_bound_is_used = bounds_of_var_are_used.contains(var);
     } else {
       bool domain_is_used = false;
       bool bounds_are_used = false;
