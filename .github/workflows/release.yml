@@ -53,7 +53,7 @@ jobs:
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -73,7 +73,7 @@ jobs:
     - name: Check export dir
       run: ls -R export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: |
@@ -108,7 +108,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: native_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -116,7 +116,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Tarball Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: .
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: native_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -155,7 +155,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Native Artifacts
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-*-${{matrix.target.name}}"
         merge-multiple: true
@@ -167,7 +167,7 @@ jobs:
     - name: Check export_meta
       run: ls -R export_meta
     - name: Upload Meta Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ortools-meta-${{matrix.target.name}}
         path: |
@@ -201,7 +201,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: meta_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -209,13 +209,13 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Native Artifacts
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-*-${{matrix.target.name}}"
         merge-multiple: true
         path: .
     - name: Download Meta Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: ortools-meta-${{matrix.target.name}}
         path: .
@@ -385,7 +385,7 @@ jobs:
     name: Distro(${{matrix.arch}}•${{matrix.os}}•${{matrix.lang}})
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: retrieve or-tools.snk
       run: >
         openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN"
@@ -400,7 +400,7 @@ jobs:
     - name: Check Export dir
       run: ls -R tools/docker/export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           tools/docker/export/archives/*.tar.gz
@@ -428,7 +428,7 @@ jobs:
     name: Python(${{matrix.arch}}•${{matrix.distro}}•cp${{matrix.python}})
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Build Whl
       run: >
         make --directory=tools/docker
@@ -440,7 +440,7 @@ jobs:
     - name: Check Export dir
       run: ls -R tools/docker/export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           tools/docker/export/python/ortools-*${{matrix.distro}}*.whl
@@ -472,7 +472,7 @@ jobs:
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -492,7 +492,7 @@ jobs:
     - name: Check export dir
       run: ls -R export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           export/*.whl
@@ -525,7 +525,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: python_mac_win
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -533,7 +533,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Tarball Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-cp3${{matrix.target.version}}-${{matrix.platform.py_os}}_*${{matrix.platform.py_arch}}.whl"
         path: export/
