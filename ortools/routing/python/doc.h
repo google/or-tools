@@ -453,6 +453,8 @@ static const char *mkd_doc_operations_research_routing_Dimension_SlackVar = R"do
 
 static const char *mkd_doc_operations_research_routing_Dimension_TransitVar = R"doc()doc";
 
+static const char *mkd_doc_operations_research_routing_Dimension_VariableTransitVar = R"doc()doc";
+
 static const char *mkd_doc_operations_research_routing_Dimension_VehicleLinearConstraintsInfo = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_VehicleLinearConstraintsInfo_bitset =
@@ -551,6 +553,8 @@ static const char *mkd_doc_operations_research_routing_Dimension_transits = R"do
 static const char *mkd_doc_operations_research_routing_Dimension_transits_2 = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_variable_transits = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Dimension_variable_transits_2 = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_vehicle_break_distance_duration = R"doc()doc";
 
@@ -920,6 +924,8 @@ static const char *mkd_doc_operations_research_routing_Model_AppendArcCosts = R"
 static const char *mkd_doc_operations_research_routing_Model_AppendAssignmentIfFeasible = R"doc(Append an assignment to a vector of assignments if it is feasible.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuildersForOptimizingCumulsWithTransitTargets = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_AppendDecisionBuildersForPackingCumuls = R"doc()doc";
 
@@ -1429,7 +1435,9 @@ static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeig
 R"doc(Returns neighbors of all nodes for every cost class. The result is
 cached and is computed once. The number of neighbors considered is
 based on a ratio of non-vehicle nodes, specified by neighbors_ratio,
-with a minimum of min-neighbors node considered.)doc";
+with a minimum of min_neighbors and a maximum of max_neighbors nodes
+considered. Note that min_neighbors should be less than or equal to
+max_neighbors.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeighborsByCostClass_2 =
 R"doc(Returns parameters.num_neighbors neighbors of all nodes for every cost
@@ -1745,6 +1753,8 @@ scheduling w.r.t the original costs in the model, while also
 minimizing the "error" in the transit value considered between
 consecutive nodes compared to the given piecewise linear formulations.)doc";
 
+static const char *mkd_doc_operations_research_routing_Model_OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo = R"doc()doc";
+
 static const char *mkd_doc_operations_research_routing_Model_PackCumulsOfOptimizerDimensionsFromAssignment =
 R"doc(For every dimension in the model with an optimizer in
 local/global_dimension_optimizers_info_.dimension_optimizers, this
@@ -2055,8 +2065,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_EXTENDED_SWAP_ACTIVE = R"doc()doc";
 
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_FULL_PATH_LNS = R"doc()doc";
-
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS = R"doc()doc";
@@ -2064,8 +2072,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_INACTIVE_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_LIGHT_RELOCATE_PAIR = R"doc()doc";
 
@@ -2092,8 +2098,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_NODE_PAIR_SWAP = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_OR_OPT = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_RELOCATE = R"doc()doc";
 
@@ -2390,6 +2394,20 @@ static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSig
 static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSign_kTransitEvaluatorSignPositiveOrZero = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_TransitEvaluatorSign_kTransitEvaluatorSignUnknown = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_cost_coefficient_above_threshold = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_cost_coefficient_below_threshold = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetCost_threshold_ratio = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo_transit_target_cost = R"doc()doc";
+
+static const char *mkd_doc_operations_research_routing_Model_TransitTargetInfo_transit_targets = R"doc(Stores the transit target value for each node on a route.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_UnaryTransitCallbackOrNull = R"doc()doc";
 
@@ -2973,8 +2991,6 @@ visited on the route. If positive, the type is considered on the
 vehicle from the start of the route until this position.)doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_TypeRegulationsChecker = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_current_route_visits = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_model = R"doc()doc";
 

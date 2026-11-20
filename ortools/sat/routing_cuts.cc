@@ -68,6 +68,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_dump_routes_support_graphs, false,
           "DEBUG ONLY. When set to true, SolveCpModel() dumps the arcs with "
@@ -130,6 +131,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
       root_level_bounds_(*model->GetOrCreate<RootLevelLinear2Bounds>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       in_subset_(num_nodes, false),
       index_in_subset_(num_nodes, -1),
       incoming_arc_indices_(num_nodes),
@@ -159,12 +161,14 @@ MinOutgoingFlowHelper::~MinOutgoingFlowHelper() {
   shared_stats_->AddStats(stats);
 }
 
-// TODO(user): This is costly and we might do it more than once per subset.
-// fix.
 void MinOutgoingFlowHelper::PrecomputeDataForSubset(
     absl::Span<const int> subset) {
   cannot_be_first_.clear();
   cannot_be_last_.clear();
+  if (absl::MakeSpan(precomputed_subset_) == subset) {
+    return;
+  }
+  precomputed_subset_.assign(subset.begin(), subset.end());
 
   const int num_nodes = in_subset_.size();
   in_subset_.assign(num_nodes, false);
@@ -947,7 +951,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
   }
 
   while (!states.empty()) {
-    if (allocated_memory_estimate > 1e7) {
+    if (allocated_memory_estimate > 1e7 || time_limit_->LimitReached()) {
       ++num_full_dp_work_abort_;
       return true;  // Abort.
     }
@@ -1424,12 +1428,18 @@ class RouteRelationsBuilder {
     const auto& root_level_bounds =
         *model->GetOrCreate<RootLevelLinear2Bounds>();
     const auto& implied_bounds = *model->GetOrCreate<ImpliedBounds>();
+    TimeLimitCheckEveryNCalls time_limit_check(1024,
+                                               model->GetOrCreate<TimeLimit>());
     DCHECK_EQ(trail.CurrentDecisionLevel(), 0);
 
     flat_arc_dim_relations_ = std::vector<HeadMinusTailBounds>(
         num_arcs_ * num_dimensions_, HeadMinusTailBounds());
     binary_implication_graph.ResetWorkDone();
+    absl::flat_hash_set<IntegerVariable> implied_views;
+    absl::flat_hash_set<IntegerVariable> negated_implied_views;
+    absl::flat_hash_map<IntegerVariable, IntegerValue> implied_lower_bounds;
     for (int i = 0; i < num_arcs_; ++i) {
+      if (time_limit_check.LimitReached()) return;
       const int tail = tails_[i];
       const int head = heads_[i];
       if (tail == head) continue;
@@ -1443,9 +1453,9 @@ class RouteRelationsBuilder {
       // The integer view of the implied literals (resp. of their negation), and
       // the variable lower bounds implied directly or indirectly by the arc
       // literal.
-      absl::flat_hash_set<IntegerVariable> implied_views;
-      absl::flat_hash_set<IntegerVariable> negated_implied_views;
-      absl::flat_hash_map<IntegerVariable, IntegerValue> implied_lower_bounds;
+      implied_views.clear();
+      negated_implied_views.clear();
+      implied_lower_bounds.clear();
       for (const Literal implied : implied_literals) {
         implied_views.insert(integer_encoder.GetLiteralView(implied));
         negated_implied_views.insert(
@@ -1895,9 +1905,8 @@ int ToNodeVariableIndex(IntegerVariable var) {
 // is the only information needed to infer the mapping from variables to nodes
 // in routes constraints.
 ConditionalLinear2Bounds ComputePartialConditionalLinear2Bounds(
-    const CpModelProto& model) {
-  Model empty_model;
-  ConditionalLinear2Bounds repository(&empty_model);
+    const CpModelProto& model, Model* empty_model) {
+  ConditionalLinear2Bounds repository(empty_model);
   for (const ConstraintProto& ct : model.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const absl::Span<const int> vars = ct.linear().vars();
@@ -1965,8 +1974,9 @@ std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
   if (routes_to_fill.empty()) return {0, 0};
 
   int total_num_dimensions = 0;
+  Model empty_model;
   const ConditionalLinear2Bounds partial_repository =
-      ComputePartialConditionalLinear2Bounds(input_model);
+      ComputePartialConditionalLinear2Bounds(input_model, &empty_model);
   for (RoutesConstraintProto* routes : routes_to_fill) {
     total_num_dimensions +=
         MaybeFillRoutesConstraintNodeExpressions(*routes, partial_repository);
@@ -1996,6 +2006,7 @@ class RoutingCutHelper {
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         root_level_bounds_(*model->GetOrCreate<RootLevelLinear2Bounds>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         in_subset_(num_nodes, false),
         self_arc_literal_(num_nodes_),
         self_arc_lp_value_(num_nodes_),
@@ -2023,6 +2034,8 @@ class RoutingCutHelper {
   absl::Span<const std::pair<int, int>> ordered_arcs() const {
     return ordered_arcs_;
   }
+
+  TimeLimit* time_limit() const { return time_limit_; }
 
   // This should be called each time a new LP solution is available, before
   // using the other methods.
@@ -2131,6 +2144,7 @@ class RoutingCutHelper {
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;
   const RootLevelLinear2Bounds& root_level_bounds_;
+  TimeLimit* time_limit_;
 
   std::vector<bool> in_subset_;
 
@@ -2172,6 +2186,7 @@ void RoutingCutHelper::FilterFalseArcsAtLevelZero() {
     tails_.resize(new_size);
     heads_.resize(new_size);
     literals_.resize(new_size);
+    min_outgoing_flow_helper_.ClearCachedSubset();
     if (route_relations_helper_ != nullptr) {
       route_relations_helper_->RemoveArcs(removed_arcs);
     }
@@ -2763,6 +2778,7 @@ void RoutingCutHelper::TryInfeasiblePathCuts(LinearConstraintManager* manager) {
 
   TopNCuts top_n_cuts(5);
   for (int i = 1; i < num_nodes_; ++i) {
+    if (time_limit_->LimitReached()) break;
     GenerateCutsForInfeasiblePaths(
         i, max_path_length, outgoing_arcs_with_lp_values, manager, top_n_cuts);
   }
@@ -2983,7 +2999,8 @@ void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
 }
 
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs) {
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs,
+    TimeLimit* time_limit) {
   // Initialize the graph. Note that we use only arcs with a relevant lp
   // value, so this should be small in practice.
   SimpleMaxFlow max_flow;
@@ -2997,6 +3014,7 @@ std::vector<int> ComputeGomoryHuTree(
   std::vector<int> min_cut_subset;
   std::vector<int> parent(num_nodes, 0);
   for (int s = 1; s < num_nodes; ++s) {
+    if (time_limit != nullptr && time_limit->LimitReached()) break;
     const int t = parent[s];
     if (max_flow.Solve(s, t) != SimpleMaxFlow::OPTIMAL) break;
     max_flow.GetSourceSideMinCut(&min_cut_subset);
@@ -3058,6 +3076,7 @@ int TryAllSubsets(std::string cut_name, absl::Span<const int> subset_data,
 
   int num_added = 0;
   for (const absl::Span<const int> subset : subsets) {
+    if (helper.time_limit()->LimitReached()) break;
     if (subset.size() <= 1) continue;
     if (subset.size() == num_nodes) continue;
 
@@ -3140,10 +3159,11 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   // the course of the algorithm. This could also be interesting. But it is
   // hard to tell with our current benchmark setup.
   if (num_added != 0) return;
+  if (helper.time_limit()->LimitReached()) return;
   absl::Span<const ArcWithLpValue> symmetrized_relevant_arcs =
       helper.SymmetrizedRelevantArcs();
-  std::vector<int> parent =
-      ComputeGomoryHuTree(num_nodes, symmetrized_relevant_arcs);
+  std::vector<int> parent = ComputeGomoryHuTree(
+      num_nodes, symmetrized_relevant_arcs, helper.time_limit());
 
   // Try all interesting subsets from the Gomory-Hu tree.
   ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
@@ -3154,6 +3174,7 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   // paper: "A Faster Exact Separation Algorithm for Blossom Inequalities", Adam
   // N. Letchford, Gerhard Reinelt, Dirk Oliver Theis, 2004.
   if (num_added != 0) return;
+  if (helper.time_limit()->LimitReached()) return;
   if (num_nodes <= 2) return;
   std::vector<ArcWithLpValue> for_blossom;
   for_blossom.reserve(symmetrized_relevant_arcs.size());
@@ -3162,10 +3183,11 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
     if (arc.lp_value < 1e-6) continue;
     for_blossom.push_back(arc);
   }
-  parent = ComputeGomoryHuTree(num_nodes, for_blossom);
+  parent = ComputeGomoryHuTree(num_nodes, for_blossom, helper.time_limit());
   ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
   int last_added_start = -1;
   for (const absl::Span<const int> subset : subsets) {
+    if (helper.time_limit()->LimitReached()) break;
     if (subset.size() <= 1) continue;
     if (subset.size() == num_nodes) continue;
     const int start = static_cast<int>(subset.data() - subset_data.data());

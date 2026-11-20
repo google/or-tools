@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -154,6 +155,10 @@ class TspLibParser final {
   bool ParseSections(absl::Span<const std::string> words);
   void ProcessNewLine(const std::string& line);
   void SetExplicitCost(int from, int to, int64_t cost) {
+    CHECK_GE(from, 0);
+    CHECK_LT(from, size_);
+    CHECK_GE(to, 0);
+    CHECK_LT(to, size_);
     if (explicit_costs_.size() != size_ * size_) {
       explicit_costs_.resize(size_ * size_, 0);
     }

@@ -47,7 +47,8 @@ namespace operations_research::routing {
 // Returns false if some cumul.min exceeds the capacity, or if the sum of
 // travels exceeds the span_upper_bound.
 bool FillDimensionValuesFromDimension(
-    int path, int64_t capacity, int64_t span_upper_bound,
+    int path, const PathState* absl_nullable path_state, int64_t capacity,
+    int64_t span_upper_bound, absl::Span<const int> path_class,
     absl::Span<const DimensionValues::Interval> cumul_of_node,
     absl::Span<const DimensionValues::Interval> slack_of_node,
     absl::AnyInvocable<int64_t(int64_t, int64_t) const> evaluator,
@@ -71,9 +72,6 @@ bool PropagateLightweightVehicleBreaks(
     absl::Span<const std::pair<int64_t, int64_t>> interbreaks,
     bool breaks_are_ordered = false);
 
-/// Returns a filter tracking route constraints.
-IntVarLocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model);
-
 /// Returns a filter ensuring that max active vehicles constraints are enforced.
 IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
     const Model& routing_model);
@@ -91,27 +89,13 @@ IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(const Model& routing_model,
                                                    bool filter_cost);
 
-/// Returns a filter computing vehicle amortized costs.
-IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const Model& routing_model);
-
 /// Returns a filter computing same vehicle costs.
-IntVarLocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model);
+LocalSearchFilter* MakeSameVehicleCostFilter(const Model& routing_model,
+                                             const PathState* path_state);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
-IntVarLocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model);
-
-/// Returns a filter handling dimension costs and constraints.
-IntVarLocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
-                                             bool propagate_own_objective_value,
-                                             bool filter_objective_cost,
-                                             bool may_use_optimizers);
-
-/// Version of dimension path filter in O(length of moved chains). Currently
-/// only supports dimensions without costs (global and local span cost, soft
-/// bounds) and with unconstrained cumul variables except overall capacity and
-/// cumul variables of path ends.
-IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension);
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& routing_model,
+                                             const PathState* path_state);
 
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
@@ -153,6 +137,21 @@ LocalSearchFilter* MakePickupDeliveryFilter(
     const Model& routing_model, const PathState* path_state,
     absl::Span<const PickupDeliveryPair> pairs,
     const std::vector<Model::PickupAndDeliveryPolicy>& vehicle_policies);
+
+/// Returns a filter enforcing dimension cumul constraints and costs.
+LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
+                                       const PathState* path_state,
+                                       bool propagate_own_objective_value,
+                                       bool filter_objective_cost,
+                                       bool may_use_optimizers);
+
+/// Returns a filter tracking route constraints.
+LocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model,
+                                             const PathState* path_state);
+
+/// Returns a filter computing vehicle amortized costs.
+LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& routing_model,
+                                                  const PathState* path_state);
 
 // This checker enforces dimension requirements.
 // A dimension requires that there is some valuation of
@@ -268,6 +267,9 @@ class DimensionChecker {
 LocalSearchFilter* MakeDimensionFilter(
     Solver* solver, std::unique_ptr<DimensionChecker> checker,
     absl::string_view dimension_name);
+
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension,
+                                       const PathState* path_state);
 #endif  // !defined(SWIG)
 
 class LightVehicleBreaksChecker {
@@ -617,9 +619,8 @@ void AppendLightWeightDimensionFilters(
     std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
 void AppendDimensionCumulFilters(
-    const std::vector<Dimension*>& dimensions,
+    const PathState* path_state, const std::vector<Dimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
 /// Generic path-based filter class.

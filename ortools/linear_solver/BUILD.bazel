@@ -146,7 +146,9 @@ config_setting(
 proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
-    deps = ["//ortools/util:optional_boolean_proto"],
+    deps = [
+        "//ortools/util:optional_boolean_proto",
+    ],
 )
 
 java_proto_library(
@@ -167,7 +169,9 @@ py_proto_library(
 proto_library(
     name = "iis_proto",
     srcs = ["iis.proto"],
-    deps = ["//ortools/util:status_proto"],
+    deps = [
+        "//ortools/util:status_proto",
+    ],
 )
 
 cc_proto_library(
@@ -739,12 +743,10 @@ or_cc_library(
         ":linear_solver_cc_proto",
         "//ortools/base:accurate_sum",
         "//ortools/base:map_util",
-        "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -753,7 +755,6 @@ or_cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
-        "@abseil-cpp//absl/types:optional",
         "@protobuf",
     ],
 )
@@ -779,6 +780,7 @@ or_cc_binary(
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:file_util",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sigint",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",

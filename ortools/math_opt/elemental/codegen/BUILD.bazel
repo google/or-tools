@@ -43,7 +43,7 @@ or_cc_library(
 
 or_cc_library(
     name = "testing",
-    testonly = 1,
+    testonly = True,
     hdrs = ["testing.h"],
     deps = [":gen"],
 )

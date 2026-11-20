@@ -234,6 +234,42 @@ TEST(ShavingGraphTest, NoOverlap2DPairRespectsVariableBudget) {
   EXPECT_EQ(neighborhood.num_active_constraints, 1);
 }
 
+TEST(ShavingGraphTest, ChargesBothIntervalsBeforeSelectingNoOverlap2DPair) {
+  CpModelProto model;
+  const int root = AddVariable(0, 10, &model);
+  const int y = AddVariable(0, 10, &model);
+  const int middle = AddVariable(0, 10, &model);
+  const int last = AddVariable(0, 10, &model);
+  const int x_interval = AddInterval(root, &model);
+  const int y_interval = AddInterval(y, &model);
+  const int no_overlap = model.constraints_size();
+  auto* boxes = model.add_constraints()->mutable_no_overlap_2d();
+  boxes->add_x_intervals(x_interval);
+  boxes->add_y_intervals(y_interval);
+  AddLinearConstraint(root, middle, &model);
+  const int fallback = model.constraints_size();
+  AddLinearConstraint(middle, last, &model);
+
+  ShavingGraph graph(model);
+  const auto domains = GetDomains(model);
+  // The root interval and first linear constraint are already selected.
+  // One remaining slot cannot buy both the 2-D constraint and the y interval.
+  const auto tight = graph.Extract(root, domains, 0, 3);
+  EXPECT_FALSE(graph.IsNoOverlap2DPairActive(0, tight));
+  EXPECT_FALSE(graph.IsNoOverlap2DConstraintActive(no_overlap, tight));
+  EXPECT_FALSE(graph.IsConstraintActive(y_interval, tight));
+  EXPECT_TRUE(graph.IsConstraintActive(fallback, tight));
+  EXPECT_EQ(tight.num_active_constraints, 3);
+
+  // With two slots, the complete pair fits even though the fallback is queued.
+  const auto exact = graph.Extract(root, domains, 0, 4);
+  EXPECT_TRUE(graph.IsNoOverlap2DPairActive(0, exact));
+  EXPECT_TRUE(graph.IsConstraintActive(x_interval, exact));
+  EXPECT_TRUE(graph.IsConstraintActive(y_interval, exact));
+  EXPECT_FALSE(graph.IsConstraintActive(fallback, exact));
+  EXPECT_EQ(exact.num_active_constraints, 4);
+}
+
 TEST(ShavingGraphTest, NoOverlap2DNeighborhoodSelectsOnlyReachedPairs) {
   CpModelProto model;
   const int x_start = AddVariable(0, 10, &model);

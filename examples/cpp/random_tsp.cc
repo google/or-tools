@@ -53,11 +53,7 @@ ABSL_FLAG(int, tsp_random_forbidden_connections, 0,
           "Number of random forbidden connections.");
 ABSL_FLAG(bool, tsp_use_deterministic_random_seed, false,
           "Use deterministic random seeds.");
-ABSL_FLAG(std::string, routing_search_parameters,
-          "local_search_operators {"
-          "  use_path_lns:BOOL_TRUE"
-          "  use_inactive_lns:BOOL_TRUE"
-          "}",
+ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 

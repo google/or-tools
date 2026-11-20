@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -59,6 +61,55 @@ inline int NegatedRef(int ref) { return -ref - 1; }
 inline int PositiveRef(int ref) { return std::max(ref, NegatedRef(ref)); }
 inline bool RefIsPositive(int ref) { return ref >= 0; }
 
+// If `lits` (sorted in ascending signed-int order) contains both `~x` and `x`
+// for some variable `x`, returns `x >= 0`; otherwise returns -1.
+inline int FindComplementaryVarInSortedLiterals(absl::Span<const int> lits) {
+  DCHECK(absl::c_is_sorted(lits));
+  // Since `lits` is sorted ascending, negated literals (`-var - 1 < 0`) at the
+  // front and positive literals (`var >= 0`) at the back both appear in
+  // descending `var` order as `left` advances and `right` retreats.
+  int left = 0;
+  int right = static_cast<int>(lits.size()) - 1;
+  while (left < right && !RefIsPositive(lits[left]) &&
+         RefIsPositive(lits[right])) {
+    const int neg_var = PositiveRef(lits[left]);
+    const int pos_var = lits[right];
+    if (neg_var == pos_var) return pos_var;
+    if (neg_var > pos_var) {
+      ++left;
+    } else {
+      --right;
+    }
+  }
+  return -1;
+}
+
+inline bool SortedLiteralsHaveOppositePair(absl::Span<const int> lits) {
+  return FindComplementaryVarInSortedLiterals(lits) != -1;
+}
+
+// Returns true iff sorted literal lists `a` and `b` contain complementary
+// literals (`lit` in `a` and `NegatedRef(lit)` in `b`).
+inline bool SortedLiteralsHaveOppositeAcross(absl::Span<const int> a,
+                                             absl::Span<const int> b) {
+  DCHECK(absl::c_is_sorted(a));
+  DCHECK(absl::c_is_sorted(b));
+  // Since `b` is sorted ascending, `NegatedRef(b[j])` is sorted ascending as
+  // `j` decreases.
+  int i = 0;
+  int j = static_cast<int>(b.size()) - 1;
+  while (i < a.size() && j >= 0) {
+    const int neg_b = NegatedRef(b[j]);
+    if (a[i] == neg_b) return true;
+    if (a[i] < neg_b) {
+      ++i;
+    } else {
+      --j;
+    }
+  }
+  return false;
+}
+
 // Small utility functions to deal with half-reified constraints.
 inline bool HasEnforcementLiteral(const ConstraintProto& ct) {
   return !ct.enforcement_literal().empty();
@@ -68,6 +119,18 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 }
 
 struct AffineExpr {
+  static constexpr AffineExpr Const(int64_t cst) {
+    return {.var = -1, .coeff = 0, .offset = cst};
+  }
+  static constexpr AffineExpr Var(int var) {
+    return {.var = var, .coeff = 1, .offset = 0};
+  }
+  constexpr bool is_constant() const { return var < 0 || coeff == 0; }
+  int64_t constant_value() const {
+    DCHECK(is_constant());
+    return offset;
+  }
+
   // The variable in the CpModelProto (-1 if constant).
   int var = -1;
   // Coefficient of the variable.
@@ -133,8 +196,19 @@ void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
                               ConstraintProto* ct);
+// If `filter` is true, entries mapped to -1 are removed (along with their
+// paired interval in `no_overlap_2d` or demand in `cumulative`).
 void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
-                               ConstraintProto* ct);
+                               ConstraintProto* ct, bool filter = false);
+
+// Applies the given function to all LinearExpressionProto fields of the
+// constraint.
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(LinearExpressionProto* expr)> function,
+    ConstraintProto* ct);
+void ApplyToAllLinearExpressions(
+    absl::FunctionRef<void(const LinearExpressionProto& expr)> function,
+    const ConstraintProto& ct);
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
 // NOTE(user): There is no such function in the proto API as of 16/01/2017.

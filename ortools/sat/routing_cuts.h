@@ -43,6 +43,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -475,6 +476,9 @@ class MinOutgoingFlowHelper {
   // Just for stats reporting.
   void ReportDpSkip() { num_full_dp_skips_++; }
 
+  // Invalidates the cached subset data when arcs are removed.
+  void ClearCachedSubset() { precomputed_subset_.clear(); }
+
  private:
   void PrecomputeDataForSubset(absl::Span<const int> subset);
 
@@ -551,6 +555,7 @@ class MinOutgoingFlowHelper {
   const IntegerEncoder& integer_encoder_;
   const RootLevelLinear2Bounds& root_level_bounds_;
   SharedStatistics* shared_stats_;
+  TimeLimit* time_limit_;
 
   // Temporary data used by ComputeMinOutgoingFlow(). Always contains default
   // values, except while ComputeMinOutgoingFlow() is running.
@@ -563,6 +568,7 @@ class MinOutgoingFlowHelper {
   // position i+1.
 
   std::vector<int> tmp_subset_;
+  std::vector<int> precomputed_subset_;
   std::vector<bool> in_subset_;
   std::vector<int> index_in_subset_;
 
@@ -710,7 +716,8 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 // Pairs Network Flow Analysis", Dan Gusfield, 1990,
 // https://ranger.uta.edu/~weems/NOTES5311/LAB/LAB2SPR21/gusfield.huGomory.pdf
 std::vector<int> ComputeGomoryHuTree(
-    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs);
+    int num_nodes, absl::Span<const ArcWithLpValue> relevant_arcs,
+    TimeLimit* time_limit = nullptr);
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the

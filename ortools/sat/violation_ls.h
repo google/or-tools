@@ -1,0 +1,659 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef ORTOOLS_SAT_VIOLATION_LS_H_
+#define ORTOOLS_SAT_VIOLATION_LS_H_
+
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/btree_map.h"
+#include "absl/functional/any_invocable.h"
+#include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
+#include "ortools/base/types.h"
+#include "ortools/sat/constraint_violation.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_copy.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/restart.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
+#include "ortools/sat/stat_tables.h"
+#include "ortools/sat/subsolver.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
+
+namespace operations_research::sat {
+
+class CompoundMoveBuilder;
+
+// This class lazily caches the results of `compute_jump(var)` which returns a
+// <delta, score> pair.
+// Variables' scores can be manually modified using MutableScores (if the
+// optimal jump is known not to change), or marked for recomputation on the next
+// call to GetJump(var) by calling Recompute.
+class JumpTable {
+ public:
+  JumpTable() = default;
+
+  void SetComputeFunction(
+      absl::AnyInvocable<std::pair<int64_t, double>(int) const> compute_jump);
+
+  void RecomputeAll(int num_variables);
+
+  // Gets the current jump delta and score, recomputing if necessary.
+  std::pair<int64_t, double> GetJump(int var);
+
+  // If the new optimum value and score are known, users can update them
+  // directly. e.g. after weight rescaling, or after changing a binary variable.
+  void SetJump(int var, int64_t delta, double score);
+
+  // Recompute the jump for `var` when `GetJump(var)` is next called.
+  void Recompute(int var);
+
+  bool NeedRecomputation(int var) const { return needs_recomputation_[var]; }
+
+  double Score(int var) const { return scores_[var]; }
+
+  // Advanced usage, allows users to read possibly stale deltas for incremental
+  // score updates.
+  absl::Span<const int64_t> Deltas() const {
+    return absl::MakeConstSpan(deltas_);
+  }
+  absl::Span<const double> Scores() const {
+    return absl::MakeConstSpan(scores_);
+  }
+
+  absl::Span<double> MutableScores() { return absl::MakeSpan(scores_); }
+
+  // For debugging and testing.
+  //
+  // Note if you have very high weights (e.g. when using decay), the tolerances
+  // in this function are likely too tight.
+  bool JumpIsUpToDate(int var) const;
+
+ private:
+  absl::AnyInvocable<std::pair<int64_t, double>(int) const> compute_jump_;
+
+  // For each variable, we store:
+  // - A jump delta which represents a change in variable value:
+  //   new_value = old + delta, which is non-zero except for fixed variables.
+  // - The associated weighted feasibility violation change if we take this
+  //   jump.
+  std::vector<int64_t> deltas_;
+  std::vector<double> scores_;
+  std::vector<bool> needs_recomputation_;
+};
+
+// Local search counters. This can either be the stats of one run without
+// restart or some aggregation of such runs.
+struct LsCounters {
+  int64_t num_batches = 0;
+  int64_t num_perturbations = 0;
+  int64_t num_linear_evals = 0;
+  int64_t num_linear_moves = 0;
+  int64_t num_general_evals = 0;
+  int64_t num_general_moves = 0;
+  int64_t num_backtracks = 0;
+  int64_t num_compound_moves = 0;
+  int64_t num_weight_updates = 0;
+  int64_t num_scores_computed = 0;
+
+  void AddFrom(const LsCounters& o) {
+    num_batches += o.num_batches;
+    num_perturbations += o.num_perturbations;
+    num_linear_evals += o.num_linear_evals;
+    num_linear_moves += o.num_linear_moves;
+    num_general_evals += o.num_general_evals;
+    num_general_moves += o.num_general_moves;
+    num_backtracks += o.num_backtracks;
+    num_compound_moves += o.num_compound_moves;
+    num_weight_updates += o.num_weight_updates;
+    num_scores_computed += o.num_scores_computed;
+  }
+};
+
+// The parameters used by the local search code.
+struct LsOptions {
+  // This one never changes.
+  // - If true, each restart is independent from the other. This is nice because
+  //   it plays well with the theoretical Luby restart sequence.
+  // - If false, we always "restart" from the current state, but we perturb it
+  //   or just reset the constraint weight. We currently use this one way less
+  //   often.
+  bool use_restart = true;
+
+  // These are randomized each restart by Randomize().
+  double perturbation_probability = 0.0;
+  bool use_decay = true;
+  bool use_compound_moves = true;
+  bool start_with_random_weights = true;
+  bool use_objective = true;  // No effect if there is no objective.
+
+  // Allows identifying which options worked well.
+  std::string name() const {
+    std::vector<absl::string_view> parts;
+    parts.reserve(5);
+    if (use_restart) parts.push_back("restart");
+    if (use_decay) parts.push_back("decay");
+    if (use_compound_moves) parts.push_back("compound");
+    if (perturbation_probability > 0) parts.push_back("perturb");
+    if (start_with_random_weights) parts.push_back("rweights");
+    if (use_objective) parts.push_back("obj");
+    return absl::StrJoin(parts, "_");
+  }
+
+  void Randomize(const SatParameters& params, absl::BitGenRef random) {
+    perturbation_probability =
+        absl::Bernoulli(random, 0.5)
+            ? 0.0
+            : params.feasibility_jump_var_randomization_probability();
+    use_decay = absl::Bernoulli(random, 0.5);
+    use_compound_moves = absl::Bernoulli(
+        random, params.violation_ls_compound_move_probability());
+    start_with_random_weights = absl::Bernoulli(random, 0.5);
+    use_objective = absl::Bernoulli(random, 0.5);
+  }
+};
+
+// Each ViolationLsSolver works on many LsStates in an interleaved parallel
+// fashion. Each "batch of moves" will update one of these states. Restart
+// heuristics are also on a per state basis.
+//
+// This allows avoiding O(problem size) per state while having a more
+// diverse set of heuristics.
+struct LsState {
+  // Contains a value for each variable of the ViolationLsSolver's
+  // input_model_proto_.
+  std::vector<int64_t> input_solution;
+
+  // Contains a value for each variable of the ViolationLsSolver's
+  // dense_model_. This can be recomputed from `input_solution` when the mapping
+  // between the two models changes.
+  std::vector<int64_t> solution;
+
+  // The score of a solution is the sum of infeasibility of each constraint of
+  // the ViolationLsSolver's dense_model_, weighted by `weights`.
+  std::vector<double> weights;
+
+  // This is used when we find a new solution to compute a "delta" with it.
+  // This starts equal to input_solution, but it is set to the last solution
+  // found if we find many solutions during the same run.
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+      base_solution;
+
+  // Depending on the options, we use an exponentially decaying constraint
+  // weight like for SAT activities.
+  double bump_value = 1.0;
+
+  // If using compound moves, these will be discounted on a new incumbent then
+  // re-converge to weights after some exploration. Search will repeatedly pick
+  // moves with negative WeightedViolationDelta using these weights.
+  //
+  // We limit the discrepancy in compound move search (i.e. limit the number of
+  // backtracks to any ancestor of the current leaf). This is set to 0 whenever
+  // a new incumbent is found or weights are updated, and increased at fixed
+  // point. Weights are only increased if no moves are found with discrepancy 2.
+  // Empirically we have seen very few moves applied with discrepancy > 2.
+  int compound_move_max_discrepancy = 0;
+  std::vector<double> compound_weights;
+  std::vector<bool> in_compound_weight_changed;
+  std::vector<int> compound_weight_changed;
+  std::unique_ptr<CompoundMoveBuilder> move;
+
+  // Counters for a "non-restarted" run.
+  LsCounters counters;
+
+  // Strategy
+  LsOptions options;
+
+  // Timestamps of the bounds and equivalences used to compute this state.
+  int64_t bounds_timestamp = -2;
+  int64_t equivalences_timestamp = -2;
+
+  // Global counters, incremented across restarts.
+  int64_t num_restarts = 0;
+  int64_t num_solutions_imported = 0;
+
+  // When this reaches zero, we restart / perturb or trigger something.
+  int64_t num_batches_before_change = 0;
+
+  // Used by LS to know the rank of the starting solution for this state.
+  int64_t last_solution_rank = kint64max;
+
+  // Tricky: If this changed since last time, we need to recompute the
+  // compound moves as the objective constraint bound changed.
+  IntegerValue saved_inner_objective_lb = 0;
+  IntegerValue saved_inner_objective_ub = 0;
+};
+
+// Shared set of local search states that we work on.
+//
+// Note that we can have more than one set of SharedLsStates. For instance the
+// ViolationLsSolvers that do not use the same linearization level do not share
+// the same set of states. This is done like this because the number of weights
+// can be different between these workers.
+class SharedLsStates {
+ public:
+  SharedLsStates(absl::string_view name, const SatParameters& params,
+                 SharedStatTables* stat_tables)
+      : name_(name), params_(params), stat_tables_(stat_tables) {
+    // We always start with at least 8 states.
+    // We will create more if there are more parallel workers as needed.
+    for (int i = 0; i < 8; ++i) CreateNewState();
+  }
+
+  ~SharedLsStates();
+
+  // Returns the next available state in round-robin fashion, preferring states
+  // compatible with `(bounds_timestamp, equivalences_timestamp)`.
+  //
+  // If all states are currently worked on, this will create a new one.
+  // So this will always return a valid state.
+  LsState* GetNextState(int64_t bounds_timestamp = kint64max,
+                        int64_t equivalences_timestamp = kint64max) {
+    absl::MutexLock mutex_lock(mutex_);
+    int next = -1;
+    int fallback = -1;
+    const int num_states = states_.size();
+    for (int i = 0; i < num_states; ++i) {
+      const int index = round_robin_index_;
+      round_robin_index_ = (round_robin_index_ + 1) % num_states;
+      if (taken_[index]) continue;
+      if (fallback == -1 || num_selected_[index] < num_selected_[fallback]) {
+        fallback = index;
+      }
+      if (states_[index]->num_restarts == 0 ||
+          (states_[index]->bounds_timestamp <= bounds_timestamp &&
+           states_[index]->equivalences_timestamp <= equivalences_timestamp)) {
+        if (next == -1 || num_selected_[index] < num_selected_[next]) {
+          next = index;
+        }
+      }
+    }
+    if (next == -1) next = fallback;
+
+    if (next == -1) {
+      // We need more parallelism and create a new state.
+      next = num_states;
+      CreateNewState();
+    }
+
+    --states_[next]->num_batches_before_change;
+    taken_[next] = true;
+    num_selected_[next]++;
+    return states_[next].get();
+  }
+
+  void Release(LsState* state) {
+    absl::MutexLock mutex_lock(mutex_);
+    for (int i = 0; i < states_.size(); ++i) {
+      if (state == states_[i].get()) {
+        taken_[i] = false;
+        break;
+      }
+    }
+  }
+
+  void ResetLubyCounter() {
+    absl::MutexLock mutex_lock(mutex_);
+    luby_counter_ = 0;
+  }
+
+  // We share a global running Luby sequence for all the "restart" states.
+  // Note that we randomize the parameters on each restart.
+  //
+  // Hack: options.use_restart is constant, so we are free to inspect it.
+  // Also if options.use_restart, then num_batches_before_change is only
+  // modified under lock, so this code should be thread safe.
+  void ConfigureNextLubyRestart(LsState* state) {
+    absl::MutexLock mutex_lock(mutex_);
+    const int factor = std::max(1, params_.feasibility_jump_restart_factor());
+    CHECK(state->options.use_restart);
+    const int64_t next = factor * SUniv(++luby_counter_);
+    state->num_batches_before_change = next;
+  }
+
+  // Accumulate in the relevant bucket the counters of the given states.
+  void CollectStatistics(const LsState& state) {
+    if (state.counters.num_batches == 0) return;
+
+    const std::string stat_name =
+        absl::StrCat(name_, "_", state.options.name());
+    absl::MutexLock mutex_lock(mutex_);
+    name_to_stats_[stat_name].AddFrom(state.counters);
+    name_to_num_restarts_[stat_name]++;
+  }
+
+ private:
+  void CreateNewState() {
+    const int index = states_.size();
+    states_.emplace_back(new LsState());
+    taken_.push_back(false);
+    num_selected_.push_back(0);
+
+    // We add one no-restart per 16 states and put it last.
+    states_.back()->options.use_restart = (index % 16 != 15);
+  }
+
+  const std::string name_;
+  const SatParameters& params_;
+  SharedStatTables* stat_tables_;
+
+  mutable absl::Mutex mutex_;
+  int round_robin_index_ = 0;
+  std::vector<std::unique_ptr<LsState>> states_;
+  std::vector<bool> taken_;
+  std::vector<int> num_selected_;
+  int luby_counter_ = 0;
+
+  absl::btree_map<std::string, LsCounters> name_to_stats_;
+  absl::btree_map<std::string, int> name_to_num_restarts_;
+};
+
+// Implements a heuristic similar to the one described in the paper:
+// "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
+// Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
+//
+// This is basically a Guided local search (GLS) with a nice algo to know what
+// value an integer variable should move to (its jump value). For binary, it
+// can only be swapped, so the situation is easier.
+//
+// TODO(user): If we have more than one of these solvers, we might want to share
+// the evaluator memory between them. Right now we basically keep a copy of the
+// model and its transpose for each ViolationLsSolver.
+class ViolationLsSolver : public SubSolver {
+ public:
+  // TODO(user): Use an options struct for the constructor.
+  ViolationLsSolver(absl::string_view name, bool find_first_solution,
+                    bool improve_solutions,
+                    const CpModelProto& input_model_proto, SatParameters params,
+                    std::shared_ptr<SharedLsStates> ls_states,
+                    ModelSharedTimeLimit* shared_time_limit,
+                    SharedResponseManager* shared_response,
+                    SharedBoundsManager* shared_bounds,
+                    SharedClausesManager* shared_clauses,
+                    SharedLsSolutionRepository* shared_hints,
+                    SharedStatTables* stat_tables,
+                    std::function<bool(int)> active_constraints = nullptr)
+      : SubSolver(name, SubSolver::INCOMPLETE),
+        find_first_solution_(find_first_solution),
+        improve_solutions_(improve_solutions),
+        input_model_proto_(input_model_proto),
+        dense_model_(name, input_model_proto, shared_bounds, shared_clauses,
+                     std::move(active_constraints)),
+        params_(std::move(params)),
+        states_(std::move(ls_states)),
+        shared_time_limit_(shared_time_limit),
+        shared_response_(shared_response),
+        shared_hints_(shared_hints),
+        stat_tables_(stat_tables),
+        random_engine_(params_),
+        random_(random_engine_.bit_gen_ref()) {}
+
+  // If VLOG_IS_ON(1), it will export a bunch of statistics.
+  ~ViolationLsSolver() override;
+
+  void Synchronize() final;
+
+  // Shall we delete this subsolver?
+  bool IsDone() final {
+    if (!model_is_supported_.load()) return true;
+    return !improve_solutions_ &&
+           shared_response_->first_solution_solvers_should_stop()->load();
+  }
+
+  bool TaskIsAvailable() final {
+    if (IsDone()) return false;
+    if (task_generated_.load()) return false;
+    if (shared_response_->ProblemIsSolved()) return false;
+    if (shared_time_limit_->LimitReached()) return false;
+    return shared_response_->HasFeasibleSolution() ? improve_solutions_
+                                                   : find_first_solution_;
+  }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) final;
+
+ private:
+  friend class ViolationLsSolverTestPeer;
+
+  void ImportState();
+  void FinishTask();
+  bool ShouldImportNewSolution();
+  bool ShouldStop();
+
+  // Return false if we could not initialize the evaluator in the time limit.
+  bool Initialize();
+  void ResetCurrentSolution(bool use_hint, bool use_objective,
+                            double perturbation_probability);
+  void PerturbateCurrentSolution(double perturbation_probability);
+  std::string OneLineStats() const;
+
+  absl::Span<const double> ScanWeights() const {
+    return absl::MakeConstSpan(state_->options.use_compound_moves
+                                   ? state_->compound_weights
+                                   : state_->weights);
+  }
+
+  // Returns the weighted violation delta plus epsilon * the objective delta.
+  double ComputeScore(absl::Span<const double> weights, int var, int64_t delta,
+                      bool linear_only);
+
+  // Computes the optimal value for variable v, considering only the violation
+  // of linear constraints.
+  std::pair<int64_t, double> ComputeLinearJump(int var);
+
+  // Computes the optimal value for variable v, considering all constraints
+  // (assuming violation functions are convex).
+  std::pair<int64_t, double> ComputeGeneralJump(int var);
+
+  // Marks all variables whose jump value may have changed due to the last
+  // update, except for `changed_var`.
+  void MarkJumpsThatNeedToBeRecomputed(int changed_var);
+
+  // Moves.
+  bool DoSomeLinearIterations();
+  bool DoSomeGeneralIterations();
+
+  // Returns true if an improving move was found.
+  bool ScanRelevantVariables(int num_to_scan, int* var, int64_t* value,
+                             double* score);
+
+  // Increases the weight of the currently infeasible constraints.
+  // Ensures jumps remain consistent.
+  void UpdateViolatedConstraintWeights();
+
+  // Returns true if it is possible that `var` may have a value that reduces
+  // weighted violation or improves the objective.
+  // Note that this is independent of the actual weights used.
+  bool ShouldScan(int var) const;
+
+  void AddVarToScan(int var);
+  void RecomputeVarsToScan();
+
+  // Tricky: this must be called on solution value change or domains update.
+  void OnValueChange(int var, int64_t value);
+
+  // Resets the weights used to find compound moves.
+  // Ensures the following invariant holds afterwards:
+  // compound_weights[c] = weights_[c] if c is violated, and epsilon *
+  // weights_[c] otherwise.
+  void ResetChangedCompoundWeights();
+
+  // Returns true if we should push this change to move_.
+  // `novelty` is the total discount applied to the score due to using
+  // `cumulative_weights_`, should always be positive (modulo floating-point
+  // errors).
+  bool ShouldExtendCompoundMove(double score, double novelty);
+
+  // Validates each element in num_violated_constraints_per_var_ against
+  // evaluator_->ViolatedConstraints.
+  bool SlowCheckNumViolatedConstraints() const;
+
+  double DeterministicTime() const {
+    return (evaluator_ == nullptr ? 0.0 : evaluator_->DeterministicTime()) +
+           dtime_.GetElapsedDeterministicTime();
+  }
+
+  const bool find_first_solution_;
+  const bool improve_solutions_;
+  const CpModelProto& input_model_proto_;
+
+  // A dense `input_model_proto_` copy, with fixed and non-representative
+  // variables removed. Unless stated otherwise with an explicit mention to the
+  // 'input' model, the fields, methods, and method parameters in this class
+  // operate on the variables and constraints of this model.
+  DenseModelCopy dense_model_;
+
+  const SatParameters params_;
+  const std::shared_ptr<SharedLsStates> states_;
+  ModelSharedTimeLimit* const shared_time_limit_;
+  SharedResponseManager* const shared_response_;
+  SharedLsSolutionRepository* const shared_hints_;
+  SharedStatTables* const stat_tables_;
+
+  // We don't have a local Model* here, so we need to keep the underlying memory
+  // for our random_ generator, and we want to initialize it like in other
+  // places.
+  ModelRandomGenerator::ModelRandomEngine random_engine_;
+  absl::BitGenRef random_;
+
+  // Whether each `dense_model_` variable occurs in a positive/negative term in
+  // the objective.
+  std::vector<bool> objective_is_positive_;
+  std::vector<bool> objective_is_negative_;
+  // Depends on the current solution value (one element per `dense_model_`
+  // variable).
+  std::vector<bool> has_better_objective_value_;
+
+  // Synchronization Booleans.
+  //
+  // Note that we don't fully support all types of models, and we will abort by
+  // setting the model_is_supported_ bool to false when we detect this.
+  std::atomic<bool> model_is_supported_ = true;
+  std::atomic<bool> task_generated_ = false;
+  bool time_limit_crossed_ = false;
+  double last_time_limit_check_dtime_ = 0.0;
+  int should_stop_calls_since_last_check_ = 0;
+
+  std::unique_ptr<LsEvaluator> evaluator_;
+  const SchedulingRelaxation* scheduling_relaxation_ = nullptr;
+  std::vector<bool> var_occurs_in_non_linear_constraint_;
+
+  // The jumps for the `dense_model_` variables.
+  JumpTable jumps_;
+  std::vector<double> for_weight_update_;
+
+  // The current state we work on, based on the `dense_model_` variables.
+  // In interleaved search it stays reserved until the next Synchronize().
+  LsState* state_ = nullptr;
+
+  // A list of `dense_model_` variables that might be relevant to check for
+  // improving jumps.
+  std::vector<bool> in_vars_to_scan_;
+  FixedCapacityVector<int> vars_to_scan_;
+
+  std::vector<int64_t> tmp_breakpoints_;
+
+  // Used for tracking the deterministic time only. See DeterministicTime().
+  TimeLimit dtime_;
+  std::optional<ModelStats> model_stats_;
+  double search_dtime_since_rebuild_ = 0.0;
+};
+
+// This class helps keep track of moves that change more than one variable.
+// Mainly this class keeps track of how to backtrack back to the local minimum
+// as you make a sequence of exploratory moves, so in order to commit a compound
+// move, you just need to call `Clear` instead of Backtracking over the changes.
+class CompoundMoveBuilder {
+ public:
+  explicit CompoundMoveBuilder(int num_variables)
+      : var_on_stack_(num_variables, false) {}
+
+  // Adds an atomic move to the stack.
+  // `var` must not be on the stack (this is DCHECKed).
+  void Push(int var, int64_t prev_value, double score);
+
+  // Sets var, val and score to a move that will revert the most recent atomic
+  // move on the stack, and pops this move from the stack.
+  // Returns false if the stack is empty.
+  bool Backtrack(int* var, int64_t* value, double* score);
+
+  // Removes all moves on the stack.
+  void Clear();
+
+  // Returns the number of variables in the move.
+  int Size() const { return stack_.size(); }
+
+  // Returns the number of dense variables supported by this move builder.
+  int NumVariables() const { return var_on_stack_.size(); }
+
+  // Returns true if this var has been set in this move already,
+  bool OnStack(int var) const;
+
+  // Returns the sum of scores of atomic moves pushed to this compound move.
+  double Score() const {
+    return stack_.empty() ? 0.0 : stack_.back().cumulative_score;
+  }
+
+  double BestChildScore() const {
+    return stack_.empty() ? 0.0 : stack_.back().best_child_score;
+  }
+
+  // Returns the number of backtracks to any ancestor of the current leaf.
+  int Discrepancy() const {
+    return stack_.empty() ? 0 : stack_.back().discrepancy;
+  }
+
+  // Returns true if all prev_values on the stack are in the appropriate domain.
+  bool StackValuesInDomains(absl::Span<const Domain> var_domains) const;
+
+ private:
+  struct UnitMove {
+    int var;
+    int64_t prev_value;
+    // Note that this stores the score of reverting to prev_value.
+    double score;
+    // Instead of tracking this on the compound move, we store the partial sums
+    // to avoid numerical issues causing negative scores after backtracking.
+    double cumulative_score;
+
+    // Used to avoid infinite loops, this tracks the best score of any immediate
+    // children (and not deeper descendants) to avoid re-exploring the same
+    // prefix.
+    double best_child_score = 0.0;
+    int discrepancy = 0;
+  };
+  std::vector<bool> var_on_stack_;
+  std::vector<UnitMove> stack_;
+};
+
+}  // namespace operations_research::sat
+
+#endif  // ORTOOLS_SAT_VIOLATION_LS_H_

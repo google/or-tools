@@ -144,6 +144,7 @@ bool LiteralValue(int lit, absl::Span<const int64_t> solution) {
 
 int LinearIncrementalEvaluator::NewConstraint(Domain domain) {
   DCHECK(creation_phase_);
+  DCHECK(!domain.IsEmpty());
   domains_.push_back(std::move(domain));
   offsets_.push_back(0);
   activities_.push_back(0);
@@ -723,13 +724,14 @@ bool LinearIncrementalEvaluator::IsViolated(int c) const {
 
 bool LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub,
                                               bool& reduced) {
+  DCHECK(!domains_[c].IsEmpty());
+  DCHECK_EQ(rows_[c].num_neg_literal + rows_[c].num_pos_literal, 0);
   reduced = false;
+  if (lb > ub) return false;
   if (domains_[c].Min() >= lb && domains_[c].Max() <= ub) return true;
-  domains_[c] = domains_[c].IntersectionWith(Domain(lb, ub));
-  if (domains_[c].IsEmpty() &&
-      rows_[c].num_neg_literal + rows_[c].num_pos_literal == 0) {
-    return false;
-  }
+  Domain new_domain = domains_[c].IntersectionWith(Domain(lb, ub));
+  if (new_domain.IsEmpty()) return false;
+  domains_[c] = std::move(new_domain);
   distances_[c] = domains_[c].Distance(activities_[c]);
   reduced = true;
   return true;
@@ -1941,11 +1943,17 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       // This constraint is split into linear precedences and its max
       // maintenance.
       const LinearExpressionProto& target = ct.lin_max().target();
+      const int64_t target_max = ExprMax(target, cp_model_);
       for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
-        const int64_t max_value =
-            ExprMax(target, cp_model_) - ExprMin(expr, cp_model_);
-        const int precedence_index =
-            linear_evaluator_.NewConstraint({0, max_value});
+        const int64_t expr_min = ExprMin(expr, cp_model_);
+        int64_t max_value = target_max;
+        if (expr_min == kint64min || AddIntoOverflow(-expr_min, &max_value)) {
+          continue;
+        }
+        // Clamp to 0 when target_max < expr_min so the domain stays non-empty
+        // while still penalizing target < expr.
+        const int precedence_index = linear_evaluator_.NewConstraint(
+            {0, std::max<int64_t>(0, max_value)});
         linear_evaluator_.AddLinearExpression(precedence_index, target, 1);
         linear_evaluator_.AddLinearExpression(precedence_index, expr, -1);
       }
@@ -1970,6 +1978,13 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kLinear: {
       const Domain domain = ReadDomainFromProto(ct.linear());
+      if (domain.IsEmpty()) {
+        const int ct_index = linear_evaluator_.NewConstraint(Domain(1, 1));
+        for (const int lit : ct.enforcement_literal()) {
+          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+        }
+        break;
+      }
       const int ct_index = linear_evaluator_.NewConstraint(domain);
       for (const int lit : ct.enforcement_literal()) {
         linear_evaluator_.AddEnforcementLiteral(ct_index, lit);

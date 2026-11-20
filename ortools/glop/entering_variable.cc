@@ -362,7 +362,10 @@ ColIndex EnteringVariable::DualPhaseIChooseEnteringColumn(
       improvement -= top.coeff_magnitude;
     }
 
-    if (improvement <= 0.0) break;
+    // We use a tolerance here as `improvement` is the derivate of the function
+    // we want to maximize. This function can have a flat spot at peak, and thus
+    // be close to zero but not exactly zero due to numerical errors.
+    if (improvement <= harris_tolerance) break;
     std::pop_heap(breakpoints_.begin(), breakpoints_.end());
     breakpoints_.pop_back();
   }

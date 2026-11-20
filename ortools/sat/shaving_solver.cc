@@ -499,7 +499,26 @@ VariablesShavingSolver::ShavingGraph::Extract(
         ++new_variables;
       }
     }
-    if (!fits_budget(new_variables, new_constraint ? 1 : 0)) return;
+    int new_constraints = new_constraint ? 1 : 0;
+    if (max_constraints > 0) {
+      // A rectangle can only be copied when both defining intervals are
+      // copied. Charge and select them together so another queued node cannot
+      // consume the last slot before the second interval is visited.
+      if (ConstraintIsInactive(pair.x_interval, domains) ||
+          ConstraintIsInactive(pair.y_interval, domains)) {
+        return;
+      }
+      if (!IsConstraintActive(pair.x_interval, result)) ++new_constraints;
+      if (pair.y_interval != pair.x_interval &&
+          !IsConstraintActive(pair.y_interval, result)) {
+        ++new_constraints;
+      }
+    }
+    if (!fits_budget(new_variables, new_constraints)) return;
+    if (max_constraints > 0) {
+      add_constraint(pair.x_interval);
+      add_constraint(pair.y_interval);
+    }
 
     active_no_overlap_2d_pairs_epoch_[pair_id] = result.epoch;
     if (new_constraint) {

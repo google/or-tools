@@ -76,7 +76,7 @@ CMake as a standalone project or incorporate it into an existing CMake project.
 ## Requirement
 You'll need:
 
-*   `CMake >= 3.24`.
+*   `CMake >= 3.25`.
 *   A C++20 compiler (GCC 10 or later, MSVC 2022 or later).
 
 ## Supported solvers

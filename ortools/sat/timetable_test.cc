@@ -579,6 +579,118 @@ TEST(ReservoirTimeTablingTest, WithUnassignedEnforcementLiteral) {
   EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
 }
 
+TEST(TimeTablingPerTaskTest, PruneDemandMaxCompulsoryTaskWithDemandMinZero) {
+  Model model;
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  PrecedencesPropagator* precedences =
+      model.GetOrCreate<PrecedencesPropagator>();
+  IntervalsRepository* intervals = model.GetOrCreate<IntervalsRepository>();
+
+  const int capacity = 3;
+  const AffineExpression capacity_expr =
+      AffineExpression(IntegerValue(capacity));
+
+  // Task 0: fixed in [0, 10), duration 10, fixed demand 2.
+  IntervalVariable t0 = model.Add(NewInterval(0, 10, 10));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t0).GreaterOrEqual(0), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t0).LowerOrEqual(10), {}, {}));
+
+  // Task 1: start in [0, 2], duration 8, end in [8, 10].
+  // Compulsory part is [2, 8).
+  // Demand is variable d1 with domain [0, 3].
+  IntervalVariable t1 = model.Add(NewInterval(0, 10, 8));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t1).GreaterOrEqual(0), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t1).LowerOrEqual(2), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t1).GreaterOrEqual(8), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t1).LowerOrEqual(10), {}, {}));
+
+  IntegerVariable d1_var = model.Add(NewIntegerVariable(0, 3));
+
+  std::vector<IntervalVariable> interval_vars = {t0, t1};
+  std::vector<AffineExpression> demands = {AffineExpression(IntegerValue(2)),
+                                           AffineExpression(d1_var)};
+
+  EXPECT_TRUE(precedences->Propagate());
+
+  SchedulingConstraintHelper* helper =
+      intervals->GetOrCreateHelper(/*enforcement_literals=*/{}, interval_vars);
+  SchedulingDemandHelper* demands_helper =
+      model.TakeOwnership(new SchedulingDemandHelper(demands, helper, &model));
+
+  TimeTablingPerTask timetabling(capacity_expr, helper, demands_helper, &model);
+  timetabling.RegisterWith(model.GetOrCreate<GenericLiteralWatcher>());
+
+  EXPECT_TRUE(timetabling.Propagate());
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+
+  // During [2, 8), t0 has demand 2. Capacity is 3.
+  // t1 is compulsory during [2, 8), so its demand cannot exceed 3 - 2 = 1.
+  // DemandMax of d1 should be pruned from 3 to 1!
+  EXPECT_EQ(integer_trail->LowerBound(d1_var), IntegerValue(0));
+  EXPECT_EQ(integer_trail->UpperBound(d1_var), IntegerValue(1));
+}
+
+TEST(TimeTablingPerTaskTest,
+     PruneDemandMaxCompulsoryTaskWithPositiveDemandMin) {
+  Model model;
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  PrecedencesPropagator* precedences =
+      model.GetOrCreate<PrecedencesPropagator>();
+  IntervalsRepository* intervals = model.GetOrCreate<IntervalsRepository>();
+
+  const int capacity = 3;
+  const AffineExpression capacity_expr =
+      AffineExpression(IntegerValue(capacity));
+
+  // Task 0: fixed in [0, 10), duration 10, fixed demand 1.
+  IntervalVariable t0 = model.Add(NewInterval(0, 10, 10));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t0).GreaterOrEqual(0), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t0).LowerOrEqual(10), {}, {}));
+
+  // Task 1: start in [0, 2], duration 8, end in [8, 10].
+  // Compulsory part is [2, 8). Demand is variable d1 with domain [1, 3].
+  // Profile height on [2, 8) is 1 + 1 = 2 == capacity - DemandMin(t1), so
+  // StartMin cannot be pushed, but DemandMax can still be pruned from 3 to 2.
+  IntervalVariable t1 = model.Add(NewInterval(0, 10, 8));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t1).GreaterOrEqual(0), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->Start(t1).LowerOrEqual(2), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t1).GreaterOrEqual(8), {}, {}));
+  EXPECT_TRUE(
+      integer_trail->Enqueue(intervals->End(t1).LowerOrEqual(10), {}, {}));
+
+  IntegerVariable d1_var = model.Add(NewIntegerVariable(1, 3));
+
+  std::vector<IntervalVariable> interval_vars = {t0, t1};
+  std::vector<AffineExpression> demands = {AffineExpression(IntegerValue(1)),
+                                           AffineExpression(d1_var)};
+
+  EXPECT_TRUE(precedences->Propagate());
+
+  SchedulingConstraintHelper* helper =
+      intervals->GetOrCreateHelper(/*enforcement_literals=*/{}, interval_vars);
+  SchedulingDemandHelper* demands_helper =
+      model.TakeOwnership(new SchedulingDemandHelper(demands, helper, &model));
+
+  TimeTablingPerTask timetabling(capacity_expr, helper, demands_helper, &model);
+  timetabling.RegisterWith(model.GetOrCreate<GenericLiteralWatcher>());
+
+  EXPECT_TRUE(timetabling.Propagate());
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+
+  EXPECT_EQ(integer_trail->UpperBound(d1_var), IntegerValue(2));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

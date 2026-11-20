@@ -42,6 +42,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -110,23 +111,76 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
 }
 
 void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
-                            std::vector<Literal>* core) {
+                            std::vector<Literal>* core,
+                            BinaryImplicationGraph* implications) {
   if (solver->ModelIsUnsat()) return;
-
-  // TODO(user): tune.
-  if (core->size() > 100 || core->size() == 1) return;
+  if (core->size() <= 1 || core->size() > 500) return;
+  if (!solver->ResetToLevelZero()) return;
 
   const bool old_log_state = solver->mutable_logger()->LoggingIsEnabled();
   solver->mutable_logger()->EnableLogging(false);
 
   const int old_size = core->size();
   std::vector<Literal> assumptions;
-  absl::flat_hash_set<LiteralIndex> removed_once;
+  const double original_dtime_limit = limit->GetDeterministicLimit();
+  constexpr double kMaxDTimePerCore = 3.5;
+  const double deterministic_limit =
+      std::min(original_dtime_limit,
+               limit->GetElapsedDeterministicTime() + kMaxDTimePerCore);
+  const double phase1_deterministic_limit =
+      std::min(deterministic_limit, limit->GetElapsedDeterministicTime() + 1.8);
 
-  // We stop as soon as the core size is one since there is nothing more
-  // to minimize then.
-  while (core->size() > 1) {
-    if (limit->LimitReached()) break;
+  // Phase 1: If the core contains multiple literals from the same AtMostOne
+  // constraint, try removing an entire AMO group at a time first.
+  if (implications != nullptr && core->size() > 2) {
+    std::vector<Literal> negated_core;
+    negated_core.reserve(core->size());
+    for (const Literal lit : *core) negated_core.push_back(lit.Negated());
+    const std::vector<absl::Span<const Literal>> amos =
+        implications->HeuristicAmoPartition(&negated_core);
+    absl::flat_hash_set<LiteralIndex> to_remove_set;
+    for (int amo_index = amos.size(); --amo_index >= 0;) {
+      limit->ChangeDeterministicLimit(original_dtime_limit);
+      if (solver->ModelIsUnsat() || core->size() <= 1 ||
+          limit->LimitReached() ||
+          limit->GetElapsedDeterministicTime() >= phase1_deterministic_limit) {
+        break;
+      }
+      to_remove_set.clear();
+      for (const Literal negated_lit : amos[amo_index]) {
+        to_remove_set.insert(negated_lit.NegatedIndex());
+      }
+      int num_in_core = 0;
+      for (const Literal lit : *core) {
+        if (to_remove_set.contains(lit.Index())) ++num_in_core;
+      }
+      if (num_in_core < 3 || num_in_core == core->size()) continue;
+
+      assumptions.clear();
+      for (const Literal lit : *core) {
+        if (to_remove_set.contains(lit.Index())) continue;
+        assumptions.push_back(lit);
+      }
+
+      limit->ChangeDeterministicLimit(
+          std::min(phase1_deterministic_limit,
+                   limit->GetElapsedDeterministicTime() + 0.6));
+      const auto status = solver->ResetAndSolveWithGivenAssumptions(
+          assumptions, /*max_number_of_conflicts=*/500);
+      if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+        *core = solver->GetLastIncompatibleDecisions();
+      }
+    }
+  }
+
+  // Phase 2: Try removing individual literals.
+  absl::flat_hash_set<LiteralIndex> removed_once;
+  while (core->size() > 1 && core->size() <= 100) {
+    limit->ChangeDeterministicLimit(original_dtime_limit);
+    if (solver->ModelIsUnsat() || limit->LimitReached() ||
+        limit->GetElapsedDeterministicTime() >= deterministic_limit) {
+      break;
+    }
 
     // Find a not yet removed literal to remove.
     // We prefer to remove high indices since these are more likely to be of
@@ -150,12 +204,14 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
       assumptions.push_back((*core)[i]);
     }
 
+    limit->ChangeDeterministicLimit(deterministic_limit);
     const auto status = solver->ResetAndSolveWithGivenAssumptions(
         assumptions, /*max_number_of_conflicts=*/1000);
     if (status == SatSolver::ASSUMPTIONS_UNSAT) {
       *core = solver->GetLastIncompatibleDecisions();
     }
   }
+  limit->ChangeDeterministicLimit(original_dtime_limit);
 
   if (core->size() < old_size) {
     VLOG(1) << "minimization with search " << old_size << " -> "
@@ -839,7 +895,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
     }
     if (parameters_->core_minimization_level() > 1) {
-      MinimizeCoreWithSearch(time_limit_, sat_solver_, &core);
+      MinimizeCoreWithSearch(time_limit_, sat_solver_, &core, implications_);
     }
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     FilterAssignedLiteral(sat_solver_->Assignment(), &core);
@@ -1036,6 +1092,304 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   }
 }
 
+bool CoreBasedOptimizer::CompressObjectiveWithAtMostOne(
+    std::vector<Literal>* literals, std::vector<Coefficient>* coefficients) {
+  CHECK_EQ(literals->size(), coefficients->size());
+  if (literals->size() <= 1) return true;
+  if (!sat_solver_->ResetToLevelZero()) return false;
+
+  const int initial_num_literals = implications_->literal_size();
+  util_intops::StrongVector<LiteralIndex, Coefficient> weights(
+      initial_num_literals, Coefficient(0));
+  util_intops::StrongVector<LiteralIndex, int> original_position(
+      initial_num_literals, -1);
+  for (int i = 0; i < literals->size(); ++i) {
+    const Literal lit = (*literals)[i];
+    CHECK_GT((*coefficients)[i], 0);
+    weights[lit] = (*coefficients)[i];
+    original_position[lit] = i;
+  }
+
+  // Stage 1: Partition objective literals into heuristic AMO groups and
+  // identify large disjoint "primary" AMO constraints in implications_.
+  std::vector<Literal> partition_literals = *literals;
+  std::vector<absl::Span<const Literal>> amos =
+      implications_->HeuristicAmoPartition(&partition_literals);
+  if (amos.empty()) return true;
+
+  // Identify large primary AtMostOne constraints in implications_ and check if
+  // smaller objective literals target_lit (for instance created by shifting
+  // costs across table column-support ExactlyOne constraints ~target_lit +
+  // sum_{lit in supporting_literals} lit = 1) can be folded back into their
+  // primary AtMostOne M (via w(target_lit) * target_lit = sum_{lit in
+  // supporting_literals} w(target_lit) * lit when every lit in
+  // supporting_literals implies target_lit and every lit in M \
+  // supporting_literals implies ~target_lit).
+  absl::flat_hash_set<int> primary_amo_indices;
+  util_intops::StrongVector<LiteralIndex, int> literal_to_primary_amo_index(
+      initial_num_literals, -1);
+  for (const absl::Span<const Literal> amo : amos) {
+    if (amo.size() < 100) continue;
+    int best_index = -1;
+    int best_size = 0;
+    for (const int amo_index : implications_->AtMostOneIndices(amo[0])) {
+      const int amo_size = implications_->AtMostOne(amo_index).size();
+      if (amo_size < amo.size() || amo_size <= best_size) continue;
+      const auto indices1 = implications_->AtMostOneIndices(amo[1]);
+      if (std::find(indices1.begin(), indices1.end(), amo_index) !=
+          indices1.end()) {
+        best_index = amo_index;
+        best_size = amo_size;
+      }
+    }
+    if (best_index != -1) {
+      bool disjoint = true;
+      for (const Literal lit : implications_->AtMostOne(best_index)) {
+        if (lit.Index() >= initial_num_literals ||
+            literal_to_primary_amo_index[lit] != -1) {
+          disjoint = false;
+          break;
+        }
+      }
+      if (disjoint) {
+        primary_amo_indices.insert(best_index);
+        for (const Literal lit : implications_->AtMostOne(best_index)) {
+          literal_to_primary_amo_index[lit] = best_index;
+        }
+      }
+    }
+  }
+
+  // Stage 2: Scan problem clauses to determine which primary AMOs have a
+  // matching positive clause (making them ExactlyOne constraints).
+  absl::flat_hash_set<int> exact_primary_amos;
+  if (!primary_amo_indices.empty()) {
+    const auto& assignment = sat_solver_->Assignment();
+    for (const SatClause* clause : clauses_->AllClausesInCreationOrder()) {
+      if (clause->empty() || clauses_->IsRemovable(clause)) continue;
+      int primary_amo_index = -1;
+      bool all_in_primary_amo = true;
+      for (const Literal lit : clause->AsSpan()) {
+        if (assignment.LiteralIsFalse(lit)) continue;
+        if (lit.Index() >= initial_num_literals ||
+            literal_to_primary_amo_index[lit] == -1) {
+          all_in_primary_amo = false;
+          break;
+        }
+        if (primary_amo_index == -1) {
+          primary_amo_index = literal_to_primary_amo_index[lit];
+        } else if (literal_to_primary_amo_index[lit] != primary_amo_index) {
+          all_in_primary_amo = false;
+          break;
+        }
+      }
+      if (all_in_primary_amo && primary_amo_index != -1) {
+        exact_primary_amos.insert(primary_amo_index);
+      }
+    }
+  }
+
+  // Stage 3: Fold smaller objective literals (target_lit) into an ExactlyOne
+  // primary AMO when a subset supporting_literals of the primary AMO implies
+  // target_lit and all other literals in the primary AMO imply ~target_lit (so
+  // target_lit == sum_{lit in supporting_literals} lit).
+  int num_folded = 0;
+  if (!exact_primary_amos.empty()) {
+    std::vector<Literal> supporting_literals;
+    std::vector<int> candidate_primary_amos;
+    for (const absl::Span<const Literal> amo : amos) {
+      if (amo.size() >= 500) continue;
+      for (const Literal target_lit : amo) {
+        const Coefficient target_weight = weights[target_lit];
+        if (target_weight == 0) continue;
+        if (sat_solver_->Assignment().LiteralIsAssigned(target_lit)) continue;
+        if (literal_to_primary_amo_index[target_lit] != -1) continue;
+
+        // Find which primary AMO (if any) supports target_lit.
+        candidate_primary_amos.clear();
+        for (const Literal implied_lit :
+             implications_->GetAllImpliedLiterals(target_lit.Negated())) {
+          const Literal lit = implied_lit.Negated();
+          if (lit.Index() < initial_num_literals &&
+              literal_to_primary_amo_index[lit] != -1) {
+            const int primary_amo_index = literal_to_primary_amo_index[lit];
+            if (!exact_primary_amos.contains(primary_amo_index)) continue;
+            if (std::find(candidate_primary_amos.begin(),
+                          candidate_primary_amos.end(),
+                          primary_amo_index) == candidate_primary_amos.end()) {
+              candidate_primary_amos.push_back(primary_amo_index);
+            }
+          }
+        }
+        if (candidate_primary_amos.empty()) continue;
+
+        for (const int candidate_primary_amo : candidate_primary_amos) {
+          const absl::Span<const Literal> primary_amo =
+              implications_->AtMostOne(candidate_primary_amo);
+          supporting_literals.clear();
+          (void)implications_->GetAllImpliedLiterals(target_lit.Negated());
+          for (const Literal lit : primary_amo) {
+            if (implications_->LiteralIsImplied(lit.Negated())) {
+              supporting_literals.push_back(lit);
+            }
+          }
+          if (supporting_literals.empty()) continue;
+
+          (void)implications_->GetAllImpliedLiterals(target_lit);
+          bool all_others_imply_not_target_lit = true;
+          int support_index = 0;
+          for (const Literal lit : primary_amo) {
+            if (support_index < supporting_literals.size() &&
+                supporting_literals[support_index] == lit) {
+              ++support_index;
+              continue;
+            }
+            if (!implications_->LiteralIsImplied(lit.Negated())) {
+              all_others_imply_not_target_lit = false;
+              break;
+            }
+          }
+          if (!all_others_imply_not_target_lit) continue;
+
+          bool can_fold = true;
+          for (const Literal lit : supporting_literals) {
+            if (sat_solver_->Assignment().LiteralIsAssigned(lit) ||
+                weights[lit.Negated()] > 0) {
+              can_fold = false;
+              break;
+            }
+          }
+          if (!can_fold) continue;
+
+          // Fold target_lit's weight onto supporting_literals.
+          for (const Literal lit : supporting_literals) {
+            if (weights[lit] == 0 && original_position[lit] == -1) {
+              original_position[lit] = literals->size();
+              literals->push_back(lit);
+              coefficients->push_back(Coefficient(0));
+            }
+            weights[lit] += target_weight;
+            (*coefficients)[original_position[lit]] = weights[lit];
+          }
+          weights[target_lit] = Coefficient(0);
+          (*coefficients)[original_position[target_lit]] = Coefficient(0);
+          ++num_folded;
+          break;
+        }
+      }
+    }
+    implications_->ClearImpliedLiterals();
+  }
+
+  // Stage 4: Re-compact the objective and recompute the AMO partition if any
+  // literals were folded.
+  if (num_folded > 0) {
+    int new_size = 0;
+    for (int i = 0; i < literals->size(); ++i) {
+      if ((*coefficients)[i] == 0) continue;
+      original_position[(*literals)[i]] = new_size;
+      (*literals)[new_size] = (*literals)[i];
+      (*coefficients)[new_size] = (*coefficients)[i];
+      ++new_size;
+    }
+    literals->resize(new_size);
+    coefficients->resize(new_size);
+    partition_literals = *literals;
+    amos = implications_->HeuristicAmoPartition(&partition_literals);
+  }
+
+  // Stage 5: Within each large AMO (size >= 32), group literals that share the
+  // exact same objective weight into a single representative bucket_literal
+  // (bucket_literal <=> OR(equal-weight literals)), replacing their individual
+  // objective terms with one term on bucket_literal and registering a new AMO
+  // over the bucket literals.
+  struct ObjectiveLiteralTerm {
+    Literal literal;
+    Coefficient weight;
+    int position;
+  };
+  std::vector<ObjectiveLiteralTerm> terms;
+  std::vector<Literal> bucket_amo;
+  std::vector<Literal> clause;
+
+  bool any_compressed = false;
+  for (const absl::Span<const Literal> amo : amos) {
+    if (amo.size() < 32) continue;
+
+    terms.clear();
+    terms.reserve(amo.size());
+    for (const Literal lit : amo) {
+      terms.push_back({lit, weights[lit], original_position[lit]});
+    }
+    std::sort(terms.begin(), terms.end(),
+              [](const ObjectiveLiteralTerm& a, const ObjectiveLiteralTerm& b) {
+                if (a.weight != b.weight) return a.weight < b.weight;
+                return a.position < b.position;
+              });
+
+    bool has_equal_weights = false;
+    for (int i = 1; i < terms.size(); ++i) {
+      if (terms[i].weight == terms[i - 1].weight) {
+        has_equal_weights = true;
+        break;
+      }
+    }
+    if (!has_equal_weights) continue;
+    any_compressed = true;
+
+    bucket_amo.clear();
+    for (int start = 0; start < terms.size();) {
+      int end = start + 1;
+      while (end < terms.size() && terms[end].weight == terms[start].weight) {
+        ++end;
+      }
+      if (end - start == 1) {
+        bucket_amo.push_back(terms[start].literal);
+      } else {
+        const Literal bucket_literal(sat_solver_->NewBooleanVariable(), true);
+        clause.assign({bucket_literal.Negated()});
+        for (int j = start; j < end; ++j) {
+          const Literal lit = terms[j].literal;
+          clause.push_back(lit);
+          sat_solver_->AddBinaryClause(lit.Negated(), bucket_literal);
+        }
+        sat_solver_->AddProblemClause(clause);
+        (*literals)[terms[start].position] = bucket_literal;
+        (*coefficients)[terms[start].position] = terms[start].weight;
+        for (int j = start + 1; j < end; ++j) {
+          (*coefficients)[terms[j].position] = Coefficient(0);
+        }
+        bucket_amo.push_back(bucket_literal);
+      }
+      start = end;
+    }
+
+    if (bucket_amo.size() > 1) {
+      if (!implications_->AddAtMostOne(bucket_amo)) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return false;
+      }
+    }
+    if (sat_solver_->ModelIsUnsat()) return false;
+  }
+
+  if (any_compressed) {
+    int new_size = 0;
+    for (int i = 0; i < literals->size(); ++i) {
+      if ((*coefficients)[i] == 0) continue;
+      (*literals)[new_size] = (*literals)[i];
+      (*coefficients)[new_size] = (*coefficients)[i];
+      ++new_size;
+    }
+    literals->resize(new_size);
+    coefficients->resize(new_size);
+  }
+  VLOG(2) << "CompressObjectiveWithAtMostOne: num_folded=" << num_folded
+          << " num_amos=" << amos.size()
+          << " final_literals=" << literals->size();
+  return true;
+}
+
 SatSolver::Status CoreBasedOptimizer::Optimize() {
   // Hack: If the objective is fully Boolean, we use the
   // OptimizeWithSatEncoding() version as it seems to be better.
@@ -1083,6 +1437,9 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       // such core, we can always try to see if the "at most one" can be
       // extended.
       PresolveObjectiveWithAtMostOne(&literals, &coefficients, &offset);
+      if (!CompressObjectiveWithAtMostOne(&literals, &coefficients)) {
+        return SatSolver::INFEASIBLE;
+      }
       return OptimizeWithSatEncoding(literals, {}, coefficients, offset);
     }
     if (range < 1e8) {

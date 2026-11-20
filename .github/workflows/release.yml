@@ -328,7 +328,8 @@ jobs:
           { name: "python311", lang: "python", version: "11" },
           { name: "python312", lang: "python", version: "12" },
           { name: "python313", lang: "python", version: "13" },
-          { name: "python314", lang: "python", version: "14" }
+          { name: "python314", lang: "python", version: "14" },
+          { name: "python315", lang: "python", version: "15" }
         ]
         exclude:
           # setup/python do not provide python 3.10 alias
@@ -380,7 +381,8 @@ jobs:
           { name: "python311", lang: "python", version: "11" },
           { name: "python312", lang: "python", version: "12" },
           { name: "python313", lang: "python", version: "13" },
-          { name: "python314", lang: "python", version: "14" }
+          { name: "python314", lang: "python", version: "14" },
+          { name: "python315", lang: "python", version: "15" }
         ]
         exclude:
           # setup/python do not provide python 3.10 alias

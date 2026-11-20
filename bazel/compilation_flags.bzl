@@ -13,6 +13,13 @@
 
 """Compilation flags for ORTools."""
 
+# -frounding-math is needed for code that uses IEEE-754 rounding modes.
+FP_ROUNDING_CODE = select({
+    "@rules_cc//cc/compiler:clang": ["-frounding-math"],
+    "@rules_cc//cc/compiler:gcc": ["-frounding-math"],
+    "//conditions:default": [],
+})
+
 # Enable a warning to check for floating point to integer conversions.
 SAFE_FP_CODE = select({
     "@platforms//os:android": [],

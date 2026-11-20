@@ -157,10 +157,10 @@ TEST_BINARY_OPERATOR(CapSubGeneric, "-", ReferenceCapSub);
 TEST_BINARY_OPERATOR(CapProd, "*", ReferenceCapProd);
 TEST_BINARY_OPERATOR(CapProdGeneric, "*", ReferenceCapProd);
 
-#if defined(__GNUC__) && defined(__x86_64__)
-TEST_BINARY_OPERATOR(CapAddAsm, "+", ReferenceCapAdd);
-TEST_BINARY_OPERATOR(CapSubAsm, "-", ReferenceCapSub);
-TEST_BINARY_OPERATOR(CapProdAsm, "*", ReferenceCapProd);
+#if defined(__GNUC__) || defined(__clang__)
+TEST_BINARY_OPERATOR(CapAddBuiltIn, "+", ReferenceCapAdd);
+TEST_BINARY_OPERATOR(CapSubBuiltIn, "-", ReferenceCapSub);
+TEST_BINARY_OPERATOR(CapProdBuiltIn, "*", ReferenceCapProd);
 #endif
 
 TEST_F(SaturatedArithmeticTest, CapOpp) {
@@ -207,6 +207,46 @@ TEST_F(SaturatedArithmeticTest, CapSubFrom) {
       int64_t result = a;
       CapSubFrom(/*amount=*/b, /*target=*/&result);
       ASSERT_EQ(result, CapSub(a, b)) << a << " + " << b;
+    }
+  }
+}
+
+TEST_F(SaturatedArithmeticTest, MulIntoOverflow) {
+  std::vector<int64_t> values = int64_values_;
+  for (int64_t extra :
+       {int64_t{-7}, int64_t{7}, kint64max / 7, -(kint64max / 7),
+        kint64max / 7 + 1, -(kint64max / 7 + 1), kint64max / 7 - 1,
+        -(kint64max / 7 - 1), int64_t{3} << 60, -(int64_t{3} << 60),
+        int64_t{3} << 61, -(int64_t{3} << 61)}) {
+    values.push_back(extra);
+  }
+  for (int k = 0; k < 63; ++k) {
+    values.push_back(int64_t{1} << k);
+    values.push_back(-(int64_t{1} << k));
+  }
+
+  for (int64_t a : values) {
+    for (int64_t b : values) {
+      const absl::int128 exact = absl::int128(a) * absl::int128(b);
+      const bool expected_overflow =
+          exact <= absl::int128(kint64min) || exact > absl::int128(kint64max);
+
+      int64_t result = 0;
+      const bool overflow = MulIntoOverflow(a, b, &result);
+      ASSERT_EQ(overflow, expected_overflow) << a << " * " << b;
+      if (!overflow) {
+        ASSERT_NE(result, kint64min) << a << " * " << b;
+        ASSERT_EQ(result, static_cast<int64_t>(exact)) << a << " * " << b;
+      }
+
+      // Also verify the CapProd-based fallback used without builtins.
+      const int64_t prod = CapProd(a, b);
+      const bool fallback_overflow =
+          prod == kint64min || (prod == kint64max && kint64max / a != b);
+      ASSERT_EQ(fallback_overflow, expected_overflow) << a << " * " << b;
+      if (!fallback_overflow) {
+        ASSERT_EQ(prod, static_cast<int64_t>(exact)) << a << " * " << b;
+      }
     }
   }
 }

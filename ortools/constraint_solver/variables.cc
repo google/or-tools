@@ -14,6 +14,7 @@
 #include "ortools/constraint_solver/variables.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
@@ -1782,6 +1783,13 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 // In that case, there are no offset to compute.
 // Overflows are caught by the robust ClosedIntervalNoLargerThan() method.
 class SmallBitSet : public DomainIntVar::BitSet {
+  static uint64_t OneRange64(uint64_t s, uint64_t e) {
+    DCHECK_LE(s, 63);
+    DCHECK_LE(e, 63);
+    DCHECK_LE(s, e);
+    return (~uint64_t{0} << s) & (~uint64_t{0} >> (63 - e));
+  }
+
  public:
   SmallBitSet(Solver* s, int64_t vmin, int64_t vmax)
       : BitSet(s),
@@ -1834,7 +1842,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     const uint64_t new_bits = bits_ & OneRange64(nmin - omin_, cmax - omin_);
     if (new_bits != uint64_t{0}) {
       // Compute new size and new min
-      size_.SetValue(solver_, BitCount64(new_bits));
+      size_.SetValue(solver_, std::popcount(new_bits));
       if (bit(nmin)) {  // Common case, the new min is inside the bitset
         return nmin;
       }
@@ -1858,7 +1866,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     const uint64_t new_bits = bits_ & OneRange64(cmin - omin_, nmax - omin_);
     if (new_bits != uint64_t{0}) {
       // Compute new size and new min
-      size_.SetValue(solver_, BitCount64(new_bits));
+      size_.SetValue(solver_, std::popcount(new_bits));
       if (bit(nmax)) {  // Common case, the new max is inside the bitset
         return nmax;
       }

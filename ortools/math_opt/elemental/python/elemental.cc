@@ -39,6 +39,7 @@
 #include "ortools/math_opt/elemental/attributes.h"
 #include "ortools/math_opt/elemental/derived_data.h"
 #include "ortools/math_opt/elemental/elements.h"
+#include "ortools/math_opt/model.pb.h"
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"

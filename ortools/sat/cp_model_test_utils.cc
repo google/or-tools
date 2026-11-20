@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include <optional>
 #include <vector>
 
 #include "absl/random/random.h"
@@ -24,6 +25,35 @@
 
 namespace operations_research {
 namespace sat {
+
+CpModelProto PigeonholeProblem(int num_pigeons, std::optional<int> num_holes) {
+  const int holes = num_holes.value_or(num_pigeons - 1);
+  CpModelProto result;
+  result.set_name("Pigeonhole problem");
+  for (int i = 0; i < num_pigeons * holes; ++i) {
+    sat::IntegerVariableProto* var = result.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+  // Each pigeon is in at least one hole.
+  for (int i = 0; i < num_pigeons; ++i) {
+    BoolArgumentProto* clause = result.add_constraints()->mutable_bool_or();
+    for (int j = 0; j < holes; ++j) {
+      clause->add_literals(i * holes + j);
+    }
+  }
+  // Each hole contains at most one pigeon.
+  for (int j = 0; j < holes; ++j) {
+    for (int i1 = 0; i1 < num_pigeons; ++i1) {
+      for (int i2 = i1 + 1; i2 < num_pigeons; ++i2) {
+        BoolArgumentProto* clause = result.add_constraints()->mutable_bool_or();
+        clause->add_literals(NegatedRef(i1 * holes + j));
+        clause->add_literals(NegatedRef(i2 * holes + j));
+      }
+    }
+  }
+  return result;
+}
 
 CpModelProto Random3SatProblem(int num_variables,
                                double proportion_of_constraints) {

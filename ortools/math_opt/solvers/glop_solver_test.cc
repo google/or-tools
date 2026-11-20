@@ -67,6 +67,9 @@ SimpleLpTestParameters PrimalSimplexWithRays() {
       /*disallows_infeasible_or_unbounded=*/true);
 }
 
+// Returns the parameters that force using dual-simplex and produce rays:
+// * primal ray: when dual infeasible,
+// * dual ray: when dual unbounded.
 SolveParameters ForceDualRaysSolveParameters() {
   return SolveParameters{
       .lp_algorithm = LPAlgorithm::kDualSimplex,
@@ -74,12 +77,16 @@ SolveParameters ForceDualRaysSolveParameters() {
   };
 }
 
+// Returns the parameters for SimpleLpTest to use the dual simplex and produce
+// rays:
+// * primal ray: when dual infeasible,
+// * dual ray: when dual unbounded.
 SimpleLpTestParameters DualSimplexWithRays() {
   return SimpleLpTestParameters(
       SolverType::kGlop, ForceDualRaysSolveParameters(),
       /*supports_duals=*/true,
       /*supports_basis=*/true,
-      /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/true,
+      /*ensures_primal_ray=*/true, /*ensures_dual_ray=*/true,
       /*disallows_infeasible_or_unbounded=*/false);
 }
 

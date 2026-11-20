@@ -1063,11 +1063,6 @@ std::vector<testing::Matcher<Fractional>> PrimalRaySignsMatchers(
 }
 
 TEST_P(LPSolverPrimalRayTest, Optimize) {
-  if (algorithm() == TestAlgorithm::kDualSimplex) {
-    // TODO: b/553095297 - Add support of primal rays on dual infeasibility.
-    GTEST_SKIP() << "Currently only primal simplex returns primal rays.";
-  }
-
   LinearProgram lp;
   ASSERT_TRUE(
       ParseLp(std::get<LPSolverPrimalRayTestModel>(GetParam()).lp_model, &lp));

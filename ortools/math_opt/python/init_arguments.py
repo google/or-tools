@@ -42,7 +42,7 @@ class GurobiISVKey:
     name: str = ""
     application_name: str = ""
     expiration: int = 0
-    key: str = ""
+    key: str = dataclasses.field(repr=False, default="")
 
     def to_proto(self) -> gurobi_pb2.GurobiInitializerProto.ISVKey:
         """Returns a protocol buffer equivalent of this."""

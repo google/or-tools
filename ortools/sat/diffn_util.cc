@@ -780,8 +780,9 @@ IntegerValue CapacityProfile::GetBoundingArea() {
     const IntegerValue new_height =
         max_pq.IsEmpty() ? IntegerValue(0)
                          : max_pq.Top().value + min_pq.Top().value;
-    if (previous_height != 0) {
-      area += previous_height * (current_time - previous_time);
+    if (previous_height != 0 &&
+        !AddProductTo(previous_height, current_time - previous_time, &area)) {
+      return kMaxIntegerValue;
     }
     previous_time = current_time;
     previous_height = new_height;
@@ -1908,10 +1909,7 @@ struct SweepLineIntervalTree {
         continue;
       }
 
-      // Since everything is intersecting the current box, all descendants
-      // must be in one single component.
       const int previous_component = child_node.component_if_single;
-      child_node.component_if_single = component_index;
       if (previous_component == BinaryTreeNode::kEmpty) {
         continue;  // No need to recurse.
       }
@@ -1928,6 +1926,7 @@ struct SweepLineIntervalTree {
           !union_find.Connected(previous_component, component_index)) {
         UpdateChildrenIntersecting(child_idx, sweep_line_x_pos, component_index,
                                    new_connections);
+        RecomputeConnectedComponents(child_idx);
       }
     }
   }

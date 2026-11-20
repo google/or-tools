@@ -524,6 +524,164 @@ TEST(ComputeFloatObjectiveValueTest, ExactWithLargeInt64Solution) {
   EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
 }
 
+TEST(AffineExprTest, ConstAndVarHelpers) {
+  constexpr AffineExpr c = AffineExpr::Const(42);
+  EXPECT_EQ(c.var, -1);
+  EXPECT_EQ(c.coeff, 0);
+  EXPECT_EQ(c.offset, 42);
+  EXPECT_TRUE(c.is_constant());
+  EXPECT_EQ(c.constant_value(), 42);
+
+  constexpr AffineExpr v = AffineExpr::Var(7);
+  EXPECT_EQ(v.var, 7);
+  EXPECT_EQ(v.coeff, 1);
+  EXPECT_EQ(v.offset, 0);
+  EXPECT_FALSE(v.is_constant());
+
+  AffineExpr scaled{.var = 5, .coeff = 0, .offset = 10};
+  EXPECT_TRUE(scaled.is_constant());
+  EXPECT_EQ(scaled.constant_value(), 10);
+}
+
+TEST(CpModelUtilsTest, ApplyToAllLinearExpressions) {
+  // Unperformed optional interval stub: mutable visitor must not materialize
+  // start/size/end submessages.
+  ConstraintProto unperformed_interval = ParseTestProto(R"pb(
+    enforcement_literal: [ 0 ]
+    interval {}
+  )pb");
+  int visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](LinearExpressionProto* /*expr*/) { ++visited; },
+      &unperformed_interval);
+  EXPECT_EQ(visited, 0);
+  EXPECT_FALSE(unperformed_interval.interval().has_start());
+  EXPECT_FALSE(unperformed_interval.interval().has_size());
+  EXPECT_FALSE(unperformed_interval.interval().has_end());
+
+  // Routes node expressions are visited by both mutable and const overloads.
+  ConstraintProto routes_ct = ParseTestProto(R"pb(
+    routes {
+      tails: [ 0 ]
+      heads: [ 1 ]
+      literals: [ 0 ]
+      dimensions {
+        exprs {
+          vars: [ 1 ]
+          coeffs: [ 2 ]
+          offset: 3
+        }
+      }
+    }
+  )pb");
+  int routes_visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](LinearExpressionProto* expr) {
+        expr->set_offset(expr->offset() + 10);
+        ++routes_visited;
+      },
+      &routes_ct);
+  EXPECT_EQ(routes_visited, 1);
+  EXPECT_EQ(routes_ct.routes().dimensions(0).exprs(0).offset(), 13);
+
+  const ConstraintProto& const_routes = routes_ct;
+  int const_visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](const LinearExpressionProto& expr) {
+        EXPECT_EQ(expr.offset(), 13);
+        ++const_visited;
+      },
+      const_routes);
+  EXPECT_EQ(const_visited, 1);
+
+  // Legacy table with vars populated should not visit exprs.
+  ConstraintProto legacy_table = ParseTestProto(R"pb(
+    table {
+      vars: [ 0, 1 ]
+      values: [ 0, 1 ]
+    }
+  )pb");
+  visited = 0;
+  ApplyToAllLinearExpressions(
+      [&](const LinearExpressionProto& /*expr*/) { ++visited; },
+      static_cast<const ConstraintProto&>(legacy_table));
+  EXPECT_EQ(visited, 0);
+}
+
+TEST(CpModelUtilsTest, SortedLiteralComplementaryHelpers) {
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-3, -1}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({0, 2}), -1);
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-4, -2, 0, 2}), -1);
+  EXPECT_FALSE(SortedLiteralsHaveOppositePair({-4, -2, 0, 2}));
+
+  // NegatedRef(2) == -3, so {-5, -3, 0, 2, 5} has complementary var 2.
+  EXPECT_EQ(FindComplementaryVarInSortedLiterals({-5, -3, 0, 2, 5}), 2);
+  EXPECT_TRUE(SortedLiteralsHaveOppositePair({-5, -3, 0, 2, 5}));
+
+  EXPECT_FALSE(SortedLiteralsHaveOppositeAcross({}, {0, 1}));
+  EXPECT_FALSE(SortedLiteralsHaveOppositeAcross({-4, -2, 0}, {-3, 2, 5}));
+  // NegatedRef(-3) == 2 and NegatedRef(2) == -3.
+  EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-5, -3, 0}, {-2, 2, 4}));
+  EXPECT_TRUE(SortedLiteralsHaveOppositeAcross({-2, 2, 4}, {-5, -3, 0}));
+}
+
+TEST(CpModelUtilsTest, ApplyToAllIntervalIndicesWithFilter) {
+  auto remap = [](int* ref) { *ref = (*ref == 1) ? -1 : *ref + 10; };
+
+  ConstraintProto no_overlap =
+      ParseTestProto(R"pb(no_overlap { intervals: [ 0, 1, 2 ] })pb");
+  ApplyToAllIntervalIndices(remap, &no_overlap, /*filter=*/true);
+  EXPECT_THAT(no_overlap, testing::EqualsProto(R"pb(
+                no_overlap { intervals: [ 10, 12 ] }
+              )pb"));
+
+  ConstraintProto no_overlap_2d = ParseTestProto(R"pb(
+    no_overlap_2d {
+      x_intervals: [ 0, 1, 2 ]
+      y_intervals: [ 2, 0, 1 ]
+    }
+  )pb");
+  ApplyToAllIntervalIndices(remap, &no_overlap_2d, /*filter=*/true);
+  EXPECT_THAT(no_overlap_2d, testing::EqualsProto(R"pb(
+                no_overlap_2d {
+                  x_intervals: [ 10 ]
+                  y_intervals: [ 12 ]
+                }
+              )pb"));
+
+  ConstraintProto cumulative = ParseTestProto(R"pb(
+    cumulative {
+      capacity { offset: 5 }
+      intervals: [ 0, 1, 2 ]
+      demands { offset: 2 }
+      demands { offset: 3 }
+      demands { offset: 4 }
+    }
+  )pb");
+  ApplyToAllIntervalIndices(remap, &cumulative, /*filter=*/true);
+  EXPECT_THAT(cumulative, testing::EqualsProto(R"pb(
+                cumulative {
+                  capacity { offset: 5 }
+                  intervals: [ 10, 12 ]
+                  demands { offset: 2 }
+                  demands { offset: 4 }
+                }
+              )pb"));
+}
+
+TEST(ApplyToAllVariableIndicesTest, DoesNotPopulateUnsetIntervalSubmessages) {
+  ConstraintProto unperformed_interval_stub = ParseTestProto(R"pb(
+    enforcement_literal: [ -1 ]
+    interval {}
+  )pb");
+  ApplyToAllVariableIndices([](int* ref) { *ref += 1; },
+                            &unperformed_interval_stub);
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_start());
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_size());
+  EXPECT_FALSE(unperformed_interval_stub.interval().has_end());
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

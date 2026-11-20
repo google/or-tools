@@ -1181,27 +1181,18 @@ std::vector<SatParameters> GetFirstSolutionBaseParams(
     const SatParameters& base_params) {
   std::vector<SatParameters> result;
 
-  const auto get_base = [&result, &base_params](bool fj) {
+  const auto get_base = [&result, &base_params]() {
     SatParameters new_params = base_params;
     new_params.set_log_search_progress(false);
-    new_params.set_use_feasibility_jump(fj);
 
     const int base_seed = base_params.random_seed();
     new_params.set_random_seed(CombineSeed(base_seed, result.size()));
     return new_params;
   };
 
-  // Add one feasibility jump.
-  if (base_params.use_feasibility_jump()) {
-    SatParameters new_params = get_base(true);
-    new_params.set_name("fj");
-    new_params.set_feasibility_jump_linearization_level(0);
-    result.push_back(new_params);
-  }
-
   // Random search.
   for (int i = 0; i < 2; ++i) {
-    SatParameters new_params = get_base(false);
+    SatParameters new_params = get_base();
     new_params.set_search_random_variable_pool_size(5);
     new_params.set_search_branching(SatParameters::RANDOMIZED_SEARCH);
     if (i % 2 == 0) {
@@ -1213,17 +1204,9 @@ std::vector<SatParameters> GetFirstSolutionBaseParams(
     result.push_back(new_params);
   }
 
-  // Add a second feasibility jump.
-  if (base_params.use_feasibility_jump()) {
-    SatParameters new_params = get_base(true);
-    new_params.set_name("fj");
-    new_params.set_feasibility_jump_linearization_level(0);
-    result.push_back(new_params);
-  }
-
   // Random quick restart.
   for (int i = 0; i < 2; ++i) {
-    SatParameters new_params = get_base(false);
+    SatParameters new_params = get_base();
     new_params.set_search_random_variable_pool_size(5);
     new_params.set_search_branching(
         SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
@@ -1233,16 +1216,6 @@ std::vector<SatParameters> GetFirstSolutionBaseParams(
     } else {
       new_params.set_name("fs_random_quick_restart");
     }
-    result.push_back(new_params);
-  }
-
-  // Add a linear feasibility jump.
-  // This one seems to perform worse, so we add only 1 for 2 normal LS, and we
-  // add this late.
-  if (base_params.use_feasibility_jump()) {
-    SatParameters new_params = get_base(true);
-    new_params.set_name("fj_lin");
-    new_params.set_feasibility_jump_linearization_level(2);
     result.push_back(new_params);
   }
 
@@ -1282,12 +1255,12 @@ SubsolverNameFilter::SubsolverNameFilter(const SatParameters& params) {
   // Hack for backward compatibility and ease of use.
   if (params.use_ls_only()) {
     filter_patterns_.push_back("ls*");
-    filter_patterns_.push_back("fj*");
   }
 
   if (params.use_lns_only()) {
     // Still add first solution solvers.
-    filter_patterns_.push_back("fj*");
+    filter_patterns_.push_back("ls");
+    filter_patterns_.push_back("ls_lin");
     filter_patterns_.push_back("fs*");
     filter_patterns_.push_back("lns*");
   }

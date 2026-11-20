@@ -205,7 +205,9 @@ struct EnergyEvent {
         return false;
       }
     }
-    linearized_energy = tmp_energy.BuildExpression();
+    if (!tmp_energy.BuildIntoExpressionAndCheckOverflow(&linearized_energy)) {
+      return false;
+    }
     linearized_energy_lp_value = linearized_energy.LpValue(lp_values);
     return true;
   }
@@ -439,17 +441,23 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
         }
       }
 
-      const IntegerValue energy_in_strip =
-          (window_end - strip_start) * max_reachable_capacity_in_current_strip;
-      cumulated_max_energy += energy_in_strip;
+      const IntegerValue strip_size = window_end - strip_start;
+      if (!AddProductTo(strip_size, max_reachable_capacity_in_current_strip,
+                        &cumulated_max_energy)) {
+        break;
+      }
       if (window_end <= makespan_min) {
-        cumulated_max_energy_before_makespan_min += energy_in_strip;
+        if (!AddProductTo(strip_size, max_reachable_capacity_in_current_strip,
+                          &cumulated_max_energy_before_makespan_min)) {
+          break;
+        }
       }
 
       if (window_start >= makespan_min) {
         DCHECK_EQ(cumulated_max_energy_before_makespan_min, 0);
       }
-      DCHECK_LE(cumulated_max_energy, capacity * (window_end - window_start));
+      DCHECK_LE(cumulated_max_energy,
+                CapProdI(capacity, window_end - window_start));
       const double max_energy_up_to_makespan_lp =
           strip_start >= makespan_min
               ? ToDouble(cumulated_max_energy_before_makespan_min) +
@@ -475,7 +483,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
           use_makespan ? use_subset_sum_before_makespan_min : use_subset_sum;
 
       if (use_makespan) {  // Add the energy from makespan_min to makespan.
-        temp_builder.AddConstant(makespan_min * capacity);
+        temp_builder.AddConstant(CapProdI(makespan_min, capacity));
         temp_builder.AddTerm(makespan, -capacity);
       }
 
@@ -497,8 +505,11 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
       const IntegerValue energy_rhs =
           use_makespan ? cumulated_max_energy_before_makespan_min
                        : cumulated_max_energy;
-      LinearConstraint potential_cut =
-          temp_builder.BuildConstraint(kMinIntegerValue, energy_rhs);
+      LinearConstraint potential_cut;
+      if (!temp_builder.BuildIntoConstraintAndCheckOverflow(
+              kMinIntegerValue, energy_rhs, &potential_cut)) {
+        continue;
+      }
 
       if (potential_cut.NormalizedViolation(lp_values) >= kMinCutViolation) {
         std::string full_name(cut_name);
@@ -589,8 +600,11 @@ void GenerateCumulativeEnergeticCuts(
       if (!cut_generated) break;
 
       // Build the cut to evaluate its efficacy.
-      LinearConstraint potential_cut =
-          temp_builder.BuildConstraint(kMinIntegerValue, 0);
+      LinearConstraint potential_cut;
+      if (!temp_builder.BuildIntoConstraintAndCheckOverflow(
+              kMinIntegerValue, IntegerValue(0), &potential_cut)) {
+        continue;
+      }
 
       if (potential_cut.NormalizedViolation(lp_values) >= kMinCutViolation) {
         std::string full_name(cut_name);
@@ -795,7 +809,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
         LinearConstraintBuilder builder(model);
         // Ignore the interval if the linearized demand fails.
         if (!demands_helper->AddLinearizedDemand(i, &builder)) continue;
-        e1->demand = builder.BuildExpression();
+        if (!builder.BuildIntoExpressionAndCheckOverflow(&e1->demand)) continue;
       }
       e1->demand_lp = e1->demand.LpValue(lp_values);
       e1->is_positive = true;
@@ -862,7 +876,10 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           std::string cut_name = "CumulativeTimeTable";
           if (use_optional) cut_name += "_optional";
           if (use_decomposed_energy_min) cut_name += "_energy";
-          top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+          LinearConstraint built_cut;
+          if (cut.BuildIntoConstraintAndCheckOverflow(&built_cut)) {
+            top_n_cuts.AddCut(std::move(built_cut), cut_name, lp_values);
+          }
         }
       }
 
@@ -938,9 +955,12 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
         }
         const IntegerValue coeff_1 = duration_min_1 + start_min_1 - start_min_2;
         const IntegerValue coeff_2 = duration_min_2 + start_min_2 - start_min_1;
-        const IntegerValue rhs = duration_min_1 * duration_min_2 +
-                                 duration_min_1 * start_min_2 +
-                                 duration_min_2 * start_min_1;
+        IntegerValue rhs(0);
+        if (!AddProductTo(duration_min_1, duration_min_2, &rhs) ||
+            !AddProductTo(duration_min_1, start_min_2, &rhs) ||
+            !AddProductTo(duration_min_2, start_min_1, &rhs)) {
+          return;
+        }
 
         if (ToDouble(coeff_1) * start_1.LpValue(lp_values) +
                 ToDouble(coeff_2) * start_2.LpValue(lp_values) <=
@@ -948,7 +968,10 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
           LinearConstraintBuilder cut(model, rhs, kMaxIntegerValue);
           cut.AddTerm(start_1, coeff_1);
           cut.AddTerm(start_2, coeff_2);
-          top_n_cuts.AddCut(cut.Build(), local_cut_name, lp_values);
+          LinearConstraint built_cut;
+          if (cut.BuildIntoConstraintAndCheckOverflow(&built_cut)) {
+            top_n_cuts.AddCut(std::move(built_cut), local_cut_name, lp_values);
+          }
         }
       };
 
@@ -1194,9 +1217,11 @@ bool CtExhaustiveHelper::PermutationIsCompatibleWithPrecedences(
 
 namespace {
 
+// Returns false and sets overflow to true if one of the sums overflows.
 bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
     absl::Span<CompletionTimeEvent*> events, absl::Span<const int> permutation,
-    IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends) {
+    IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
+    bool& overflow) {
   // Reset the two sums.
   sum_of_ends = 0;
   sum_of_weighted_ends = 0;
@@ -1210,8 +1235,12 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
     if (event->start_max < task_start_min) return false;  // Infeasible.
 
     end_min_of_previous_task = task_start_min + event->size_min;
-    sum_of_ends += end_min_of_previous_task;
-    sum_of_weighted_ends += event->energy_min * end_min_of_previous_task;
+    if (!AddTo(end_min_of_previous_task, &sum_of_ends) ||
+        !AddProductTo(event->energy_min, end_min_of_previous_task,
+                      &sum_of_weighted_ends)) {
+      overflow = true;
+      return false;
+    }
   }
   return true;
 }
@@ -1223,17 +1252,18 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
 // It ensures that if event_j is after event_i in the permutation, then
 // event_j starts exactly at the same time or after event_i.
 //
-// It returns false if one event cannot start before event->start_max.
+// It returns false if one event cannot start before event->start_max, or if
+// one of the sums overflows (in which case overflow is set to true).
 bool ComputeWeightedSumOfEndMinsOfOnePermutation(
     absl::Span<CompletionTimeEvent*> events, absl::Span<const int> permutation,
     IntegerValue capacity_max, CtExhaustiveHelper& helper,
     IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
-    bool& cut_use_precedences) {
+    bool& overflow, bool& cut_use_precedences) {
   DCHECK_EQ(permutation.size(), events.size());
 
   if (capacity_max == 1) {
     return ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
-        events, permutation, sum_of_ends, sum_of_weighted_ends);
+        events, permutation, sum_of_ends, sum_of_weighted_ends, overflow);
   }
 
   // Reset the two sums.
@@ -1314,8 +1344,11 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
 
     // Bookkeeping.
     helper.assigned_ends_[event->task_index] = actual_end;
-    sum_of_ends += actual_end;
-    sum_of_weighted_ends += event->energy_min * actual_end;
+    if (!AddTo(actual_end, &sum_of_ends) ||
+        !AddProductTo(event->energy_min, actual_end, &sum_of_weighted_ends)) {
+      overflow = true;
+      return false;
+    }
     start_of_previous_task = actual_start;
 
     // No need to update the profile on the last loop.
@@ -1362,12 +1395,12 @@ const int kExplorationLimit = 873;  // 1! + 2! + 3! + 4! + 5! + 6!
 CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     absl::Span<CompletionTimeEvent*> events, IntegerValue capacity_max,
     double unweighted_threshold, double weighted_threshold,
-    CtExhaustiveHelper& helper, double& min_sum_of_ends,
-    double& min_sum_of_weighted_ends, bool& cut_use_precedences,
+    CtExhaustiveHelper& helper, IntegerValue& min_sum_of_ends,
+    IntegerValue& min_sum_of_weighted_ends, bool& cut_use_precedences,
     int& exploration_credit) {
   // Reset the events based sums.
-  min_sum_of_ends = std::numeric_limits<double>::max();
-  min_sum_of_weighted_ends = std::numeric_limits<double>::max();
+  min_sum_of_ends = kMaxIntegerValue;
+  min_sum_of_weighted_ends = kMaxIntegerValue;
   helper.task_to_index_.assign(helper.max_task_index() + 1, -1);
   for (int i = 0; i < events.size(); ++i) {
     helper.task_to_index_[events[i]->task_index] = i;
@@ -1393,19 +1426,22 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
 
     IntegerValue sum_of_ends = 0;
     IntegerValue sum_of_weighted_ends = 0;
-
+    bool overflow = false;
     if (ComputeWeightedSumOfEndMinsOfOnePermutation(
             events, permutation, capacity_max, helper, sum_of_ends,
-            sum_of_weighted_ends, cut_use_precedences)) {
-      min_sum_of_ends = std::min(ToDouble(sum_of_ends), min_sum_of_ends);
+            sum_of_weighted_ends, overflow, cut_use_precedences)) {
+      min_sum_of_ends = std::min(sum_of_ends, min_sum_of_ends);
       min_sum_of_weighted_ends =
-          std::min(ToDouble(sum_of_weighted_ends), min_sum_of_weighted_ends);
+          std::min(sum_of_weighted_ends, min_sum_of_weighted_ends);
       ++num_valid_permutations;
 
-      if (min_sum_of_ends <= unweighted_threshold &&
-          min_sum_of_weighted_ends <= weighted_threshold) {
+      if (ToDouble(min_sum_of_ends) <= unweighted_threshold &&
+          ToDouble(min_sum_of_weighted_ends) <= weighted_threshold) {
         break;
       }
+    } else if (overflow) {
+      // We cannot compute valid bounds, so we just abort the exploration.
+      return CompletionTimeExplorationStatus::ABORTED;
     }
   }
   if (!is_dag) {
@@ -1486,8 +1522,8 @@ namespace {
     double sum_of_weighted_ends_lp = 0.0;
     IntegerValue sum_of_demands = 0;
     double sum_of_square_energies = 0;
-    double min_sum_of_ends = std::numeric_limits<double>::max();
-    double min_sum_of_weighted_ends = std::numeric_limits<double>::max();
+    IntegerValue min_sum_of_ends = kMaxIntegerValue;
+    IntegerValue min_sum_of_weighted_ends = kMaxIntegerValue;
     int exploration_limit = kExplorationLimit;
     const int kMaxSize = std::min<int>(helper.residual_events_.size(), 12);
 
@@ -1523,9 +1559,10 @@ namespace {
       }
 
       const double unweighted_violation =
-          (min_sum_of_ends - sum_of_ends_lp) / std::sqrt(ToDouble(i + 1));
+          (ToDouble(min_sum_of_ends) - sum_of_ends_lp) /
+          std::sqrt(ToDouble(i + 1));
       const double weighted_violation =
-          (min_sum_of_weighted_ends - sum_of_weighted_ends_lp) /
+          (ToDouble(min_sum_of_weighted_ends) - sum_of_weighted_ends_lp) /
           std::sqrt(sum_of_square_energies);
 
       // Unweighted cuts.
@@ -1541,7 +1578,10 @@ namespace {
         std::string full_name(cut_name);
         if (cut_use_precedences) full_name.append("_prec");
         if (is_lifted) full_name.append("_lifted");
-        top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+        LinearConstraint built_cut;
+        if (cut.BuildIntoConstraintAndCheckOverflow(&built_cut)) {
+          top_n_cuts.AddCut(std::move(built_cut), full_name, lp_values);
+        }
       }
 
       // Weighted cuts.
@@ -1559,7 +1599,10 @@ namespace {
         if (is_lifted) full_name.append("_lifted");
         if (cut_use_precedences) full_name.append("_prec");
         full_name.append("_weighted");
-        top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+        LinearConstraint built_cut;
+        if (cut.BuildIntoConstraintAndCheckOverflow(&built_cut)) {
+          top_n_cuts.AddCut(std::move(built_cut), full_name, lp_values);
+        }
       }
     }
   }
@@ -1841,7 +1884,10 @@ void GenerateCompletionTimeCutsWithEnergy(
       if (add_energy_to_name) full_name.append("_energy");
       if (is_lifted) full_name.append("_lifted");
       if (best_uses_subset_sum) full_name.append("_subsetsum");
-      top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+      LinearConstraint built_cut;
+      if (cut.BuildIntoConstraintAndCheckOverflow(&built_cut)) {
+        top_n_cuts.AddCut(std::move(built_cut), full_name, lp_values);
+      }
     }
   }
 }

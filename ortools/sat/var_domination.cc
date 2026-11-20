@@ -893,16 +893,24 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
 
         if (context->CanBeUsedAsLiteral(positive_ref)) {
-          // If we have a literal, we always add the implication.
-          // This seems like a good thing to do.
-          CannotMove({enf, positive_ref});
-          context->UpdateRuleStats("dual: add implication");
-          // The new implication can break the hint if hint(enf) is 0 and
-          // hint(ref) is 1. In this case the only locking constraint `ct` does
-          // not apply and thus does not prevent decreasing the hint of ref in
-          // order to preserve the hint feasibility.
-          crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
-          context->AddImplication(NegatedRef(enf), NegatedRef(ref));
+          // If we have a literal, we always add the implication ~enf => ~ref.
+          // Because this implication only locks `ref` against increasing rather
+          // than decreasing, `ct` remains the unique constraint locking `ref`
+          // from decreasing on later presolve passes, and SAT/clique presolve
+          // clears and rewrites bool_and constraints across passes. We
+          // deduplicate with AddNeverSeenBeforeImplication() so we do not
+          // re-add the same implication, bump num_presolve_operations, or
+          // append duplicate solution-crush steps on every pass.
+          if (context->AddNeverSeenBeforeImplication(NegatedRef(enf),
+                                                     NegatedRef(ref))) {
+            CannotMove({enf, positive_ref});
+            context->UpdateRuleStats("dual: add implication");
+            // The new implication can break the hint if hint(enf) is 0 and
+            // hint(ref) is 1. In this case the only locking constraint `ct`
+            // does not apply and thus does not prevent decreasing the hint of
+            // ref in order to preserve the hint feasibility.
+            crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
+          }
           continue;
         }
 
@@ -928,14 +936,12 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           }
           CannotMove({ref, var});
           context->ClearConstraint(ct_index);
-          context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
         if (rhs == var_domain) {
           context->UpdateRuleStats("linear1: always true");
           CannotMove({ref, var});
           context->ClearConstraint(ct_index);
-          context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
 
@@ -984,7 +990,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               }
             }
             context->ClearConstraint(ct_index);
-            context->UpdateConstraintVariableUsage(ct_index);
             CannotMove({ref, var});
             // `encoding_lit` was maybe a new variable added during this loop,
             // so make sure we cannot go out-of-bound.
@@ -1090,7 +1095,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // now.
               ++num_deleted_constraints_;
               context->ClearConstraint(ct_index);
-              context->UpdateConstraintVariableUsage(ct_index);
               continue;
             }
           }
@@ -1272,8 +1276,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 
   // First scan: update the partition.
   const int num_constraints = cp_model.constraints_size();
-  std::vector<bool> c_is_free_to_increase(num_constraints);
-  std::vector<bool> c_is_free_to_decrease(num_constraints);
+  std::vector<int64_t> linear_lb_slack(num_constraints, 0);
+  std::vector<int64_t> linear_ub_slack(num_constraints, 0);
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
     switch (ct.constraint_case()) {
@@ -1288,21 +1292,28 @@ void ScanModelForDominanceDetection(PresolveContext& context,
                                                 /*coeffs=*/{});
         break;
       case ConstraintProto::kLinear: {
-        // TODO(user): Maybe we should avoid recomputing that here.
-        const auto [min_activity, max_activity] =
-            context.ComputeMinMaxActivity(ct.linear());
-        const bool domain_is_simple = ct.linear().domain().size() == 2;
-        const bool free_to_increase =
-            domain_is_simple && ct.linear().domain(1) >= max_activity;
-        const bool free_to_decrease =
-            domain_is_simple && ct.linear().domain(0) <= min_activity;
-        c_is_free_to_increase[c] = free_to_increase;
-        c_is_free_to_decrease[c] = free_to_decrease;
-        if (free_to_decrease && free_to_increase) break;
-        if (!free_to_increase && !free_to_decrease) {
+        if (ct.linear().domain().size() != 2) {
           var_domination->ActivityShouldNotChange(ct.linear().vars(),
                                                   ct.linear().coeffs());
+          break;
         }
+        const PresolveContext::LinearStats stats =
+            context.ComputeLinearStats(ct.linear());
+        const int64_t lb = ct.linear().domain(0);
+        const int64_t ub = ct.linear().domain(1);
+        const bool has_lb = lb > stats.min_activity;
+        const bool has_ub = ub < stats.max_activity;
+        if (!has_lb && !has_ub) break;
+        const int64_t lb_slack = has_lb ? lb - stats.min_activity : 0;
+        const int64_t ub_slack = has_ub ? stats.max_activity - ub : 0;
+        if (has_lb && has_ub && ct.enforcement_literal().empty() &&
+            stats.max_coeff_magnitude <= std::min(lb_slack, ub_slack)) {
+          var_domination->ActivityShouldNotChange(ct.linear().vars(),
+                                                  ct.linear().coeffs());
+          break;
+        }
+        linear_lb_slack[c] = lb_slack;
+        linear_ub_slack[c] = ub_slack;
         break;
       }
       default:
@@ -1336,6 +1347,20 @@ void ScanModelForDominanceDetection(PresolveContext& context,
   // - the phase_ = 0 initializes candidate lists, then EndFirstPhase()
   // - the phase_ = 1 filters them, then EndSecondPhase();
   std::vector<int> tmp;
+  // Clamping |coeff| to a bound's slack is always valid for dominance moves
+  // (in particular on boxed constraints lb <= expr <= ub where
+  // CpConstraintPresolver cannot strengthen |coeff| > slack in the proto).
+  std::vector<int64_t> clamped_coeffs;
+  const auto get_coeffs = [&clamped_coeffs](
+                              const LinearConstraintProto& linear,
+                              int64_t slack) -> absl::Span<const int64_t> {
+    const auto& coeffs = linear.coeffs();
+    clamped_coeffs.resize(coeffs.size());
+    for (int i = 0; i < coeffs.size(); ++i) {
+      clamped_coeffs[i] = std::clamp(coeffs[i], -slack, slack);
+    }
+    return clamped_coeffs;
+  };
   for (int phase = 0; phase < 2; phase++) {
     for (int c = 0; c < num_constraints; ++c) {
       const ConstraintProto& ct = cp_model.constraints(c);
@@ -1371,22 +1396,23 @@ void ScanModelForDominanceDetection(PresolveContext& context,
                                                     /*coeffs=*/{});
           break;
         case ConstraintProto::kLinear: {
-          const bool free_to_increase = c_is_free_to_increase[c];
-          const bool free_to_decrease = c_is_free_to_decrease[c];
-          if (free_to_decrease && free_to_increase) break;
-          if (free_to_increase) {
-            var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
-                                                      ct.linear().vars(),
-                                                      ct.linear().coeffs());
-          } else if (free_to_decrease) {
-            var_domination->ActivityShouldNotIncrease(ct.enforcement_literal(),
-                                                      ct.linear().vars(),
-                                                      ct.linear().coeffs());
-          } else {
-            if (!ct.enforcement_literal().empty()) {
-              var_domination->ActivityShouldNotIncrease(
-                  /*enforcements=*/{}, ct.enforcement_literal(), /*coeffs=*/{});
-            }
+          const int64_t lb_slack = linear_lb_slack[c];
+          const int64_t ub_slack = linear_ub_slack[c];
+          if (lb_slack > 0) {
+            var_domination->ActivityShouldNotDecrease(
+                ct.enforcement_literal(), ct.linear().vars(),
+                get_coeffs(ct.linear(), lb_slack));
+          }
+          if (ub_slack > 0) {
+            var_domination->ActivityShouldNotIncrease(
+                ct.enforcement_literal(), ct.linear().vars(),
+                get_coeffs(ct.linear(), ub_slack));
+          }
+          if (lb_slack == 0 && ub_slack == 0 &&
+              ct.linear().domain().size() != 2 &&
+              !ct.enforcement_literal().empty()) {
+            var_domination->ActivityShouldNotIncrease(
+                /*enforcements=*/{}, ct.enforcement_literal(), /*coeffs=*/{});
           }
           break;
         }

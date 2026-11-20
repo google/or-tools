@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -197,8 +198,17 @@ void ExpandEnforcedAtMostOneOrExactlyOneConstraint(ConstraintProto* ct, int c,
     LiteralsToLinear(ct->exactly_one().literals(), /*lb=*/1, /*ub=*/1, &linear);
   }
   ct->mutable_linear()->Swap(&linear);
-  context->CanonicalizeLinearConstraint(ct);
-  context->UpdateConstraintVariableUsage(c);
+  context->MarkConstraintForCanonicalization(c);
+}
+
+void ExpandAllEnforcedAtMostOneAndExactlyOne(PresolveContext* context) {
+  for (int c = 0; c < context->NumConstraints(); ++c) {
+    ConstraintProto* ct = context->MutableConstraint(c);
+    if (!ct->enforcement_literal().empty() &&
+        (ct->has_at_most_one() || ct->has_exactly_one())) {
+      ExpandEnforcedAtMostOneOrExactlyOneConstraint(ct, c, context);
+    }
+  }
 }
 
 // Different encoding that supports general demands. This is usually a pretty
@@ -259,7 +269,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
         lin->add_coeffs(1);
         AddLinearExpressionToLinearConstraint(reservoir.level_changes(i), -1,
                                               lin);
-        context->CanonicalizeLinearConstraint(new_ct);
       }
 
       // Circuit ends at i, no extra constraint there.
@@ -295,7 +304,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
         FillDomainInProto(0, kint64max, lin);
         AddLinearExpressionToLinearConstraint(reservoir.time_exprs(j), 1, lin);
         AddLinearExpressionToLinearConstraint(reservoir.time_exprs(i), -1, lin);
-        context->CanonicalizeLinearConstraint(new_ct);
       }
 
       // Add enforced linear for demand.
@@ -310,7 +318,6 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
         lin->add_coeffs(-1);
         AddLinearExpressionToLinearConstraint(reservoir.level_changes(j), -1,
                                               lin);
-        context->CanonicalizeLinearConstraint(new_ct);
       }
     }
   }
@@ -387,16 +394,79 @@ void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
     } else {
       FillDomainInProto(reservoir.min_level() - offset, kint64max, new_linear);
     }
-
-    // Canonicalize the newly created constraint.
-    context->CanonicalizeLinearConstraint(new_cumul);
-
-    DCHECK(!PossibleIntegerOverflow(context->WorkingModel(), new_linear->vars(),
-                                    new_linear->coeffs()));
   }
 
   reservoir_ct->Clear();
   context->UpdateRuleStats("reservoir: expanded using precedences");
+}
+
+// Checks that single-sign reservoir expansion into a sum linear constraint
+// (plus optional per-event `new_var - demand == 0` constraints) cannot overflow
+// LinearOverflowChecker or saturate the sum constraint's domain bounds.
+bool CanExpandReservoirWithSum(const ReservoirConstraintProto& reservoir,
+                               PresolveContext* context) {
+  const int true_literal = context->GetTrueLiteral();
+  LinearOverflowChecker sum_checker;
+  int64_t min_sum_domain = reservoir.min_level();
+  int64_t max_sum_domain = reservoir.max_level();
+  for (int i = 0; i < reservoir.time_exprs_size(); ++i) {
+    const int active = reservoir.active_literals().empty()
+                           ? true_literal
+                           : reservoir.active_literals(i);
+    if (context->LiteralIsFalse(active)) continue;
+    const LinearExpressionProto& demand = reservoir.level_changes(i);
+    const int64_t min_demand = context->MinOf(demand);
+    const int64_t max_demand = context->MaxOf(demand);
+    if (context->IsFixed(demand)) {
+      if (RefIsPositive(active)) {
+        if (!sum_checker.AddTerm(min_demand, 0, 1)) return false;
+      } else {
+        // Negated active adds true_literal * change + not(active) * (-change).
+        if (!sum_checker.AddTerm(min_demand, 1, 1) ||
+            !sum_checker.AddTerm(-min_demand, 0, 1)) {
+          return false;
+        }
+      }
+    } else if (context->LiteralIsTrue(active)) {
+      // Non-zero offsets shift sum's domain; CapSub is not sticky at min/max.
+      if (demand.offset() != 0) {
+        if (AtMinOrMaxInt64(min_sum_domain) ||
+            AtMinOrMaxInt64(max_sum_domain)) {
+          return false;
+        }
+        min_sum_domain = CapSub(min_sum_domain, demand.offset());
+        max_sum_domain = CapSub(max_sum_domain, demand.offset());
+        if (AtMinOrMaxInt64(min_sum_domain) ||
+            AtMinOrMaxInt64(max_sum_domain)) {
+          return false;
+        }
+      }
+      for (int j = 0; j < demand.vars_size(); ++j) {
+        const int var = demand.vars(j);
+        if (!sum_checker.AddTerm(demand.coeffs(j), context->MinOf(var),
+                                 context->MaxOf(var))) {
+          return false;
+        }
+      }
+    } else {
+      if (!sum_checker.AddTerm(1, std::min(int64_t{0}, min_demand),
+                               std::max(int64_t{0}, max_demand))) {
+        return false;
+      }
+      // Also guard the enforced constraint `new_var - demand == 0`.
+      LinearOverflowChecker checker;
+      checker.sum_min = std::min(int64_t{0}, min_demand);
+      checker.sum_max = std::max(int64_t{0}, max_demand);
+      for (int j = 0; j < demand.vars_size(); ++j) {
+        const int var = demand.vars(j);
+        if (!checker.AddTerm(-demand.coeffs(j), context->MinOf(var),
+                             context->MaxOf(var))) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
 void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
@@ -441,7 +511,8 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
   // If all level_changes have the same sign, we do not care about the order,
   // just the sum. We might need to create intermediate variables for quadratic
   // terms though.
-  if (num_negatives == 0 || num_positives == 0) {
+  if ((num_negatives == 0 || num_positives == 0) &&
+      CanExpandReservoirWithSum(reservoir, context)) {
     const int true_literal = context->GetTrueLiteral();
     ConstraintProto* new_ct = context->AddEnforcedConstraint(reservoir_ct);
     LinearConstraintProto* sum = new_ct->mutable_linear();
@@ -450,6 +521,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
       const int active = reservoir.active_literals().empty()
                              ? true_literal
                              : reservoir.active_literals(i);
+      if (context->LiteralIsFalse(active)) continue;
       const LinearExpressionProto& demand = reservoir.level_changes(i);
       if (context->IsFixed(demand)) {
         const int64_t change = context->FixedValue(reservoir.level_changes(i));
@@ -480,7 +552,6 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
           lin->add_vars(new_var);
           lin->add_coeffs(1);
           AddLinearExpressionToLinearConstraint(demand, -1, lin);
-          context->CanonicalizeLinearConstraint(demand_ct);
           context->solution_crush().SetVarToLinearExpressionIf(new_var, demand,
                                                                {active});
         }
@@ -491,7 +562,6 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
                                                   NegatedRef(active));
       }
     }
-    context->CanonicalizeLinearConstraint(new_ct);
 
     context->UpdateRuleStats("reservoir: simple expansion with sum");
     reservoir_ct->Clear();
@@ -841,7 +911,6 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     FillDomainInProto(0, kint64max, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(expr, -1, lin);
-    context->CanonicalizeLinearConstraint(new_ct);
   }
 
   // Second, for each expr, create a new boolean bi, and add bi => target <= ai
@@ -869,7 +938,6 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     FillDomainInProto(kint64min, 0, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().exprs(i), -1, lin);
-    context->CanonicalizeLinearConstraint(new_ct);
   }
 
   context->solution_crush().SetLinMaxExpandedVars(ct->lin_max(),
@@ -900,7 +968,6 @@ void ExpandElementWhenTargetShareVarWithIndex(
         context->GetOrCreateVarValueEncoding(index_var, v));
     FillDomainInProto(target_value, imply->mutable_linear());
     AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
-    context->CanonicalizeLinearConstraint(imply);
   }
 
   context->UpdateRuleStats(
@@ -977,32 +1044,11 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
   const int index_var = index.vars(0);
   const LinearExpressionProto& target = element.linear_target();
 
-  bool has_out_of_bounds = false;
-  for (const int64_t v : context->DomainOf(index_var).Values()) {
-    const int64_t index_value = AffineExpressionValueAt(index, v);
-    if (index_value < 0 || index_value >= element.exprs_size()) {
-      has_out_of_bounds = true;
-      break;
-    }
-  }
-
-  if (has_out_of_bounds) {
-    DCHECK(!ct->enforcement_literal().empty())
-        << "Unenforced element constraint with out of bounds index";
-    ConstraintProto* index_in_domain_ct = context->AddEnforcedConstraint(ct);
-    index_in_domain_ct->mutable_linear()->add_domain(0);
-    index_in_domain_ct->mutable_linear()->add_domain(element.exprs_size() - 1);
-    AddLinearExpressionToLinearConstraint(index, 1,
-                                          index_in_domain_ct->mutable_linear());
-    context->CanonicalizeLinearConstraint(index_in_domain_ct);
-    context->UpdateRuleStats(
-        "element: expanded enforced index domain with a linear");
-  }
-
   // Uniqueness is only valid if presolve is on.
   const bool presolve_is_on = context->params().cp_model_presolve();
 
-  if (presolve_is_on && context->VariableIsUniqueAndRemovable(index_var)) {
+  if (presolve_is_on && ct->enforcement_literal().empty() &&
+      context->VariableIsUniqueAndRemovable(index_var)) {
     // Check index_var does not appear in the array of expressions.
     bool is_unique = true;
     for (int i = 0; i < element.exprs_size(); ++i) {
@@ -1012,7 +1058,7 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
       }
     }
     if (is_unique) {
-      const int64_t min_index = context->DomainOf(index_var).Min();
+      const int64_t min_index = reduced_index_var_domain.Min();
       ConstraintProto* mapping_ct =
           context->NewMappingConstraint(__FILE__, __LINE__);
       mapping_ct->mutable_linear()->add_vars(index_var);
@@ -1022,8 +1068,7 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
       BoolArgumentProto* exactly_one =
           context->AddEnforcedConstraint(ct)->mutable_exactly_one();
 
-      const Domain index_domain = context->DomainOf(index_var);
-      for (const int64_t v : index_domain.Values()) {
+      for (const int64_t v : reduced_index_var_domain.Values()) {
         const int64_t literal =
             context->NewBoolVar("element with unused index expansion");
         context->solution_crush().MaybeSetLiteralToValueEncoding(literal,
@@ -1047,18 +1092,15 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
 
         // Element expansion.
         const int64_t index_value = AffineExpressionValueAt(index, v);
-        if (index_value < 0 || index_value >= element.exprs_size()) {
-          // Handled by the has_out_of_bounds logic above.
-          continue;
-        }
-        const LinearExpressionProto& expr = ct->element().exprs(index_value);
+        DCHECK_GE(index_value, 0);
+        DCHECK_LT(index_value, element.exprs_size());
+        const LinearExpressionProto& expr = element.exprs(index_value);
         ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
         imply->add_enforcement_literal(literal);
         FillDomainInProto(0, imply->mutable_linear());
         AddLinearExpressionToLinearConstraint(target, -1,
                                               imply->mutable_linear());
         AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
-        context->CanonicalizeLinearConstraint(imply);
       }
 
       mapping_ct->mutable_linear()->add_domain(mapping_offset);
@@ -1091,22 +1133,18 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
     }
 
     if (domain_is_exact && is_unique) {
-      const Domain index_domain = context->DomainOf(index_var);
-      for (const int64_t v : index_domain.Values()) {
+      for (const int64_t v : reduced_index_var_domain.Values()) {
+        const int64_t index_value = AffineExpressionValueAt(index, v);
+        DCHECK_GE(index_value, 0);
+        DCHECK_LT(index_value, element.exprs_size());
         const int64_t index_lit =
             context->GetOrCreateVarValueEncoding(index_var, v);
-        const int64_t index_value = AffineExpressionValueAt(index, v);
-        if (index_value < 0 || index_value >= ct->element().exprs_size()) {
-          // Handled by the has_out_of_bounds logic above.
-          continue;
-        }
-        const LinearExpressionProto& expr = ct->element().exprs(index_value);
+        const LinearExpressionProto& expr = element.exprs(index_value);
 
         ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
         imply->add_enforcement_literal(index_lit);
         FillDomainInProto(target_domain, imply->mutable_linear());
         AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
-        context->CanonicalizeLinearConstraint(imply);
       }
       context->UpdateRuleStats(
           "element: expanded variable element with unused target");
@@ -1134,18 +1172,11 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
   };
 
   std::vector<int64_t> invalid_index_values;
-  context->CanonicalizeLinearExpression(
-      {}, ct->mutable_element()->mutable_linear_target());
   for (const int64_t v : reduced_index_var_domain.Values()) {
     const int64_t index_value = AffineExpressionValueAt(index, v);
+    DCHECK_GE(index_value, 0);
+    DCHECK_LT(index_value, element.exprs_size());
 
-    if (index_value < 0 || index_value >= element.exprs_size()) {
-      // Handled by the has_out_of_bounds logic above.
-      continue;
-    }
-
-    context->CanonicalizeLinearExpression(
-        {}, ct->mutable_element()->mutable_exprs(index_value));
     const LinearExpressionProto& expr = element.exprs(index_value);
     const bool index_is_valid =
         context->IntersectionOfAffineExprsIsNotEmpty(target, expr);
@@ -1175,13 +1206,6 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
         AddLinearExpressionToLinearConstraint(target, -1,
                                               imply->mutable_linear());
         AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
-        context->CanonicalizeLinearConstraint(imply);
-
-        // Note that this should have been checked at model validation.
-        DCHECK(!PossibleIntegerOverflow(context->WorkingModel(),
-                                        imply->mutable_linear()->vars(),
-                                        imply->mutable_linear()->coeffs()))
-            << google::protobuf::ShortFormat(*imply);
       }
     }
   }
@@ -1239,7 +1263,6 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     ConstraintProto* const index_ct = context->AddEnforcedConstraint(ct);
     FillDomainInProto(0, size - 1, index_ct->mutable_linear());
     AddLinearExpressionToLinearConstraint(index, 1, index_ct->mutable_linear());
-    context->CanonicalizeLinearConstraint(index_ct);
   }
 
   const bool reduced_index_domain_is_fixed =
@@ -1257,7 +1280,6 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     AddLinearExpressionToLinearConstraint(
         ct->element().exprs(reduced_index_fixed_value), -1,
         eq->mutable_linear());
-    context->CanonicalizeLinearConstraint(eq);
     context->UpdateRuleStats("element: expanded with fixed index");
     ct->Clear();
     return;
@@ -2593,7 +2615,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
 
   context->UpdateRuleStats("linear: expanded complex rhs");
   context->InitializeNewDomains();
-  context->UpdateConstraintVariableUsage(c);
+  context->MarkConstraintForCanonicalization(c);
 }
 
 bool IsVarEqOrNeqValue(PresolveContext* context,
@@ -2632,9 +2654,8 @@ void ScanModelAndDecideAllDiffExpansion(
     absl::flat_hash_set<int>& bounds_of_var_are_used,
     absl::flat_hash_set<int>& processed_variables, bool& expand, bool& keep) {
   CHECK_EQ(all_diff_ct.constraint_case(), ConstraintProto::kAllDiff);
-
-  bool at_least_one_var_domain_is_used = false;
-  bool at_least_one_var_bound_is_used = false;
+  expand = false;
+  keep = false;
 
   // Scan variables.
   for (const LinearExpressionProto& expr : all_diff_ct.all_diff().exprs()) {
@@ -2645,14 +2666,8 @@ void ScanModelAndDecideAllDiffExpansion(
     DCHECK(RefIsPositive(var));
     if (context->IsFixed(var)) continue;
 
-    bool at_least_one_var_domain_is_used = false;
-    bool at_least_one_var_bound_is_used = false;
-
-    // Check cache.
-    if (!processed_variables.insert(var).second) {
-      at_least_one_var_domain_is_used = bounds_of_var_are_used.contains(var);
-      at_least_one_var_bound_is_used = domain_of_var_is_used.contains(var);
-    } else {
+    // Populate cache on first visit.
+    if (processed_variables.insert(var).second) {
       bool domain_is_used = false;
       bool bounds_are_used = false;
 
@@ -2747,18 +2762,15 @@ void ScanModelAndDecideAllDiffExpansion(
       if (domain_is_used) domain_of_var_is_used.insert(var);
       if (bounds_are_used) bounds_of_var_are_used.insert(var);
 
-      // Update the usage of the variable.
-      at_least_one_var_domain_is_used |= domain_is_used;
-      at_least_one_var_bound_is_used |= bounds_are_used;
-    }  // End of model scanning.
-
-    if (at_least_one_var_domain_is_used && at_least_one_var_bound_is_used) {
-      break;  // No need to scan the rest of the all_diff.
+      expand |= domain_is_used;
+      keep |= bounds_are_used;
+    } else {
+      expand |= domain_of_var_is_used.contains(var);
+      keep |= bounds_of_var_are_used.contains(var);
     }
-  }  // End of var processing.
 
-  expand = at_least_one_var_domain_is_used;
-  keep = at_least_one_var_bound_is_used;
+    if (expand && keep) break;  // No need to scan the rest of the all_diff.
+  }
 }
 
 void MaybeExpandAllDiff(int c, PresolveContext* context,
@@ -2865,8 +2877,11 @@ void ExpandCpModel(PresolveContext* context) {
   // create constraints that need to be expanded during presolve.
   if (context->ModelIsExpanded()) return;
 
-  // Make sure all domains are initialized.
+  // Make sure all domains are initialized and constraints are canonical.
   context->InitializeNewDomains();
+  if (context->ModelIsUnsat()) return;
+  ExpandAllEnforcedAtMostOneAndExactlyOne(context);
+  context->CanonicalizeConstraintsLazily();
   if (context->ModelIsUnsat()) return;
 
   // Clear the precedence cache.
@@ -2926,6 +2941,8 @@ void ExpandCpModel(PresolveContext* context) {
         if (ct.lin_max().exprs().size() <=
             context->params().max_lin_max_size_for_expansion()) {
           ExpandLinMax(context->MutableConstraint(c), context);
+        } else {
+          skip = true;
         }
         break;
       default:
@@ -2935,9 +2952,7 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      context->UpdateConstraintVariableUsage(c);
-    }
+    context->MarkConstraintForCanonicalization(c);
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {
@@ -2946,6 +2961,11 @@ void ExpandCpModel(PresolveContext* context) {
       return;
     }
   }
+
+  context->InitializeNewDomains();
+  ExpandAllEnforcedAtMostOneAndExactlyOne(context);
+  context->CanonicalizeConstraintsLazily();
+  if (context->ModelIsUnsat()) return;
 
   // Second pass. We may decide to expand constraints if all their variables
   // are fully encoded.
@@ -2977,9 +2997,7 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      context->UpdateConstraintVariableUsage(c);
-    }
+    context->MarkConstraintForCanonicalization(c);
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {
@@ -2996,6 +3014,8 @@ void ExpandCpModel(PresolveContext* context) {
 
   // Make sure the context is consistent and the proto domains are up to date.
   context->InitializeNewDomains();
+  context->CanonicalizeConstraintsLazily();
+  if (context->ModelIsUnsat()) return;
   context->WriteVariableDomainsToProto();
   context->NotifyThatModelIsExpanded();
 }

@@ -865,10 +865,11 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
     }
   }
   if (!FillDimensionValuesFromDimension(
-          vehicle, dimension_->vehicle_capacities()[vehicle],
-          dimension_->vehicle_span_upper_bounds()[vehicle], cumul_intervals_,
-          slack_intervals_, dimension_->transit_evaluator(vehicle),
-          dimension_values_)) {
+          vehicle, /*path_state=*/nullptr,
+          dimension_->vehicle_capacities()[vehicle],
+          dimension_->vehicle_span_upper_bounds()[vehicle], {},
+          cumul_intervals_, slack_intervals_,
+          dimension_->transit_evaluator(vehicle), dimension_values_)) {
     solver()->Fail();
   }
   if (!PropagateTransitAndSpan(vehicle, dimension_values_)) {

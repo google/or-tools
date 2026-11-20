@@ -29,6 +29,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraint_presolve.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
@@ -116,9 +117,9 @@ class CpModelPresolver {
   void Probe();
 
   // Runs the expansion and fix constraints that became non-canonical.
-  void ExpandCpModelAndCanonicalizeConstraints();
+  [[nodiscard]] bool ExpandCpModelAndCanonicalizeConstraints();
 
-  ABSL_MUST_USE_RESULT bool CanonicalizeAllLinears();
+  ABSL_MUST_USE_RESULT bool CanonicalizeConstraintsLazily();
 
   // This detects and converts constraints of the form:
   // "X = sum Boolean * value", with "sum Boolean <= 1".
@@ -133,6 +134,7 @@ class CpModelPresolver {
   // Remove duplicate constraints. This also merges domains of linear
   // constraints with duplicate linear expressions.
   void DetectDuplicateConstraints();
+  void DetectComplementaryLinMaxConstraints();
   void DetectDuplicateConstraintsWithDifferentEnforcements(
       const CpModelMapping* mapping = nullptr,
       BinaryImplicationGraph* implication_graph = nullptr,
@@ -148,11 +150,28 @@ class CpModelPresolver {
   //
   // then we can remove var, and transform the constraint to
   // literal => linear_terms \in tighter_domain.
-  void MaybeRemoveLinkingVariable(int var, int c_linear1, int c_linear);
+  FeasibilityStatus MaybeRemoveLinkingVariable(int var, int c_linear1,
+                                               int c_linear);
 
   // Detects if a linear constraint is "included" in another one, and does
   // related presolve.
   void DetectDominatedLinearConstraints();
+
+  // Detects linear constraints that are redundant once the activity bounds are
+  // computed using one other "knapsack" linear constraint in addition to the
+  // variable domains.
+  //
+  // For a constraint C: lb <= sum a_j x_j <= ub, and a constraint D with one
+  // side reading sum b_i x_i <= K, the maximum of the activity of C subject to
+  // D and the variable domains is bounded by the optimum of the continuous
+  // single-constraint knapsack relaxation, computed greedily. If, with such
+  // bounds, the activity of C is always in [lb, ub], then C is redundant and
+  // is removed.
+  //
+  // The typical case is a dense constraint sum w_j x_j <= W over non-negative
+  // variables together with a cardinality constraint sum x_j <= K where
+  // K * max(w_j) <= W.
+  void DetectLinearRedundantUnderKnapsack();
 
   // Detects encodings of the form:
   //   b1 => x \in Domain1
@@ -185,8 +204,8 @@ class CpModelPresolver {
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.
   void ProcessAtMostOneAndLinear();
-  void ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
-                               ActivityBoundHelper* helper);
+  FeasibilityStatus ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
+                                            ActivityBoundHelper* helper);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -240,6 +259,11 @@ class CpModelPresolver {
   // objective (but with a same trivial lower bound) should help.
   void ExpandObjective();
 
+  // Transforms unenforced `lin_max` constraints whose target variable only
+  // appears in the objective (with matching optimization direction) into a
+  // series of linear inequalities (`target >= expr_i`).
+  void ExpandLinMaxInObjective();
+
   // This makes a big difference on the flatzinc mznc2017_aes_opt* problems.
   // Where, with this, the core-based approach can find small cores and close
   // them quickly.
@@ -259,7 +283,7 @@ class CpModelPresolver {
   void PresolveVarOnlyInLinMaxAndLinear(int var, int lin_max_ct_index,
                                         int linear_ct_index);
 
-  void ProcessVariableInTwoAtMostOrExactlyOne(int var);
+  FeasibilityStatus ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
   bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
                                     std::string_view entry_name,

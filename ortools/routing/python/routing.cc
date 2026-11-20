@@ -947,7 +947,7 @@ PYBIND11_MODULE(routing, m) {
   rm.def(
       "add_route_constraint",
       [](Model* model,
-         std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+         std::function<std::optional<int64_t>(absl::Span<const int64_t>)>
              route_evaluator,
          bool costs_are_homogeneous_across_vehicles) {
         model->AddRouteConstraint(std::move(route_evaluator),

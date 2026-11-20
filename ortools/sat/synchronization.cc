@@ -47,7 +47,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/timer.h"
@@ -484,7 +483,11 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   if (!best_bound_callbacks_.empty()) {
     if (lb_change) {
       const CpObjectiveProto& obj = *objective_or_null_;
-      double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
+      const double new_lb =
+          best_bound_postprocessor_ != nullptr
+              ? best_bound_postprocessor_(PostsolveInnerObjectiveValue(
+                    obj, inner_objective_lower_bound_))
+              : ScaleObjectiveValue(obj, inner_objective_lower_bound_);
       for (const auto& callback_entry : best_bound_callbacks_) {
         callback_entry.second(new_lb);
       }
@@ -612,19 +615,19 @@ void SharedResponseManager::AddSolutionPostprocessor(
 void SharedResponseManager::AddResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
   absl::MutexLock mutex_lock(mutex_);
-  postprocessors_.push_back(postprocessor);
+  postprocessors_.push_back(std::move(postprocessor));
 }
 
 void SharedResponseManager::AddFinalResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
   absl::MutexLock mutex_lock(mutex_);
-  final_postprocessors_.push_back(postprocessor);
+  final_postprocessors_.push_back(std::move(postprocessor));
 }
 
 void SharedResponseManager::AddStatisticsPostprocessor(
     std::function<void(Model*, CpSolverResponse*)> postprocessor) {
   absl::MutexLock mutex_lock(mutex_);
-  statistics_postprocessors_.push_back(postprocessor);
+  statistics_postprocessors_.push_back(std::move(postprocessor));
 }
 
 int SharedResponseManager::AddSolutionCallback(
@@ -690,6 +693,12 @@ void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
   LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
 }
 
+void SharedResponseManager::SetBestBoundPostprocessor(
+    std::function<double(int64_t)> postprocessor) {
+  absl::MutexLock mutex_lock(mutex_);
+  best_bound_postprocessor_ = std::move(postprocessor);
+}
+
 CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
     absl::string_view solution_info) {
@@ -729,6 +738,14 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
       solution_postprocessors_[i](&solution);
     }
     result.mutable_solution()->Assign(solution.begin(), solution.end());
+  }
+
+  if ((result.status() == CpSolverStatus::OPTIMAL ||
+       result.status() == CpSolverStatus::FEASIBLE ||
+       result.status() == CpSolverStatus::UNKNOWN) &&
+      best_bound_postprocessor_ != nullptr) {
+    result.set_best_objective_bound(
+        best_bound_postprocessor_(result.inner_objective_lower_bound()));
   }
 
   // Apply response postprocessor to set things like timing information.
@@ -787,6 +804,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
     response->clear_objective_value();
     response->clear_best_objective_bound();
     response->clear_inner_objective_lower_bound();
+    response->clear_inner_objective_value();
     return;
   }
 
@@ -798,6 +816,8 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
   } else {
     response->set_objective_value(
         ScaleObjectiveValue(obj, best_solution_objective_value_));
+    response->set_inner_objective_value(
+        PostsolveInnerObjectiveValue(obj, best_solution_objective_value_));
   }
 
   // Update the best bound in the response.
@@ -1420,7 +1440,7 @@ int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
   return id;
 }
 
-int SharedLinear2Bounds::RegisterNewId(std::string worker_name) {
+int SharedLinear2Bounds::RegisterNewId(std::string_view worker_name) {
   absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_worker_name_.size();
 
@@ -1536,6 +1556,12 @@ std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
     *timestamp = num_equivalences_;
   }
   return GetRepresentativesImpl();
+}
+
+int64_t SharedClausesManager::NumEquivalences() const {
+  absl::ReaderMutexLock mutex_lock(mutex_);
+  return always_synchronize_ ? num_equivalences_
+                             : synchronized_num_equivalences_;
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
@@ -1707,10 +1733,10 @@ void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
   }
 }
 
-int SharedLinear2Bounds::RegisterNewImportId(std::string name) {
+int SharedLinear2Bounds::RegisterNewImportId(std::string_view name) {
   absl::MutexLock mutex_lock(mutex_);
   const int import_id = import_id_to_index_.size();
-  import_id_to_name_.push_back(name);
+  import_id_to_name_.push_back(std::string(name));
   import_id_to_index_.push_back(0);
   import_id_to_num_imported_.push_back(0);
   return import_id;

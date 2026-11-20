@@ -36,8 +36,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y ninja-build swig
-          swig -version
+          sudo apt install -y ninja-build
       - name: Setup Python
         uses: actions/setup-python@v7
         with:

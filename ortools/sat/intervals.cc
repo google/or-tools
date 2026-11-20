@@ -172,19 +172,23 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
       b_before_a_root_status != RelationStatus::IS_UNKNOWN &&
       a_before_b_root_status == b_before_a_root_status) {
     // We have "a before b" and "b before a" at root level (or similarly with
-    // "after"). This is UNSAT, except for two zero-size intervals.
-    if ((a.size.IsConstant() && a.size.constant != 0) ||
-        (b.size.IsConstant() && b.size.constant != 0)) {
+    // "after"). This is UNSAT, except for two zero-size intervals when both
+    // relations are true.
+    if (a_before_b_root_status == RelationStatus::IS_FALSE ||
+        integer_trail_->LevelZeroLowerBound(a.size) > 0 ||
+        integer_trail_->LevelZeroLowerBound(b.size) > 0) {
       sat_solver_->NotifyThatModelIsUnsat();
       return kNoLiteralIndex;
     }
-    if (!a.size.IsConstant()) {
-      if (!integer_trail_->Enqueue(a.size.LowerOrEqual(0))) {
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      if (!a.size.IsConstant() &&
+          !integer_trail_->Enqueue(a.size.LowerOrEqual(0))) {
+        sat_solver_->NotifyThatModelIsUnsat();
         return kNoLiteralIndex;
       }
-    }
-    if (!b.size.IsConstant()) {
-      if (!integer_trail_->Enqueue(b.size.LowerOrEqual(0))) {
+      if (!b.size.IsConstant() &&
+          !integer_trail_->Enqueue(b.size.LowerOrEqual(0))) {
+        sat_solver_->NotifyThatModelIsUnsat();
         return kNoLiteralIndex;
       }
     }
@@ -192,16 +196,18 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   }
 
   if (b_before_a_root_status == RelationStatus::IS_FALSE) {
-    if (!enforcement_literals.empty() ||
-        a_before_b_root_status == RelationStatus::IS_UNKNOWN) {
+    if (sat_solver_->CurrentDecisionLevel() == 0 &&
+        (!enforcement_literals.empty() ||
+         a_before_b_root_status == RelationStatus::IS_UNKNOWN)) {
       AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
                                      model_);
     }
     return kNoLiteralIndex;
   }
   if (a_before_b_root_status == RelationStatus::IS_FALSE) {
-    if (!enforcement_literals.empty() ||
-        b_before_a_root_status == RelationStatus::IS_UNKNOWN) {
+    if (sat_solver_->CurrentDecisionLevel() == 0 &&
+        (!enforcement_literals.empty() ||
+         b_before_a_root_status == RelationStatus::IS_UNKNOWN)) {
       AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
                                      model_);
     }
@@ -222,6 +228,29 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     return kNoLiteralIndex;
   }
 
+  if (expr_a_before_b == expr_b_before_a) {
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      if (ub_a_before_b >= ub_b_before_a) {
+        AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
+                                       model_);
+      } else {
+        AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
+                                       model_);
+      }
+      if (ub_a_before_b == ub_b_before_a) {
+        // Both a.end <= b.start and b.end <= a.start are equivalent here, so
+        // both must hold when enforced, forcing both sizes to be at most 0.
+        AddConditionalAffinePrecedence(enforcement_literals, a.size,
+                                       IntegerValue(0), model_);
+        if (b.size != a.size) {
+          AddConditionalAffinePrecedence(enforcement_literals, b.size,
+                                         IntegerValue(0), model_);
+        }
+      }
+    }
+    return kNoLiteralIndex;
+  }
+
   // Create a new literal.
   //
   // TODO(user): An alternative solution when it is enforced is to get/create
@@ -232,36 +261,69 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   Literal a_before_b;
   if (enforcement_literals.empty()) {
     // We don't have any enforcement literal, so we should use the existing
-    // ReifiedLinear2Bounds class.
+    // ReifiedLinear2Bounds class. Note that a.end <= b.start and
+    // b.end <= a.start are mutually exclusive only if at least one of the two
+    // intervals has a strictly positive size; if both can have size zero, both
+    // relations can hold simultaneously when the intervals are at the same
+    // point.
+    const bool cannot_both_be_true =
+        integer_trail_->LevelZeroLowerBound(a.size) > 0 ||
+        integer_trail_->LevelZeroLowerBound(b.size) > 0;
     LiteralIndex a_before_b_index = GetPrecedenceLiteral(a.end, b.start);
     const LiteralIndex b_before_a_index = GetPrecedenceLiteral(b.end, a.start);
+    const auto is_assigned = [this](LiteralIndex index) {
+      return index != kNoLiteralIndex &&
+             (assignment_.LiteralIsAssigned(Literal(index)) ||
+              assignment_.LiteralIsAssigned(
+                  implications_->RepresentativeOf(Literal(index))));
+    };
+    if (sat_solver_->CurrentDecisionLevel() > 0 &&
+        (is_assigned(a_before_b_index) || is_assigned(b_before_a_index))) {
+      return kNoLiteralIndex;
+    }
     if (a_before_b_index == kNoLiteralIndex &&
         b_before_a_index == kNoLiteralIndex) {
       CreatePrecedenceLiteralIfNonTrivial(a.end, b.start);
       a_before_b_index = GetPrecedenceLiteral(a.end, b.start);
       DCHECK_NE(a_before_b_index, kNoLiteralIndex);  // We tested not trivial.
-      // Now associate its negation with b.end <= a.start.
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index).Negated(), expr_b_before_a, ub_b_before_a);
+      if (cannot_both_be_true) {
+        // Now associate its negation with b.end <= a.start.
+        reified_precedences_->AddBoundEncodingIfNonTrivial(
+            Literal(a_before_b_index).Negated(), expr_b_before_a,
+            ub_b_before_a);
+      }
     } else if (a_before_b_index == kNoLiteralIndex &&
                b_before_a_index != kNoLiteralIndex) {
       // We already have a literal for b.end <= a.start.
       // We can just use the negation of that literal.
       a_before_b_index = Literal(b_before_a_index).NegatedIndex();
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index), expr_a_before_b, ub_a_before_b);
+      if (cannot_both_be_true) {
+        reified_precedences_->AddBoundEncodingIfNonTrivial(
+            Literal(a_before_b_index), expr_a_before_b, ub_a_before_b);
+      }
     } else if (a_before_b_index != kNoLiteralIndex &&
                b_before_a_index == kNoLiteralIndex) {
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index).Negated(), expr_b_before_a, ub_b_before_a);
-    } else if (integer_trail_->LevelZeroLowerBound(a.size) > 0 ||
-               integer_trail_->LevelZeroLowerBound(b.size) > 0) {
+      if (cannot_both_be_true) {
+        reified_precedences_->AddBoundEncodingIfNonTrivial(
+            Literal(a_before_b_index).Negated(), expr_b_before_a,
+            ub_b_before_a);
+      }
+    } else if (cannot_both_be_true) {
       // We have both literals. One must be the negation of the other if their
       // size is positive.
-      implications_->AddImplication(Literal(a_before_b_index),
-                                    Literal(b_before_a_index).Negated());
-      implications_->AddImplication(Literal(a_before_b_index).Negated(),
-                                    Literal(b_before_a_index));
+      if (implications_->RepresentativeOf(Literal(a_before_b_index)) ==
+          implications_->RepresentativeOf(Literal(b_before_a_index))) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return kNoLiteralIndex;
+      }
+      if (!implications_->AddImplication(Literal(a_before_b_index),
+                                         Literal(b_before_a_index).Negated()) ||
+          !implications_->AddImplication(Literal(a_before_b_index).Negated(),
+                                         Literal(b_before_a_index))) {
+        CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+        sat_solver_->NotifyThatModelIsUnsat();
+        return kNoLiteralIndex;
+      }
     }
     DCHECK_NE(a_before_b_index, kNoLiteralIndex);
     a_before_b = Literal(a_before_b_index);

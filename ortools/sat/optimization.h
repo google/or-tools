@@ -45,7 +45,8 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core);
 
 void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
-                            std::vector<Literal>* core);
+                            std::vector<Literal>* core,
+                            BinaryImplicationGraph* implications = nullptr);
 
 bool ProbeLiteral(Literal assumption, SatSolver* solver);
 
@@ -167,6 +168,12 @@ class CoreBasedOptimizer {
   void PresolveObjectiveWithAtMostOne(std::vector<Literal>* literals,
                                       std::vector<Coefficient>* coefficients,
                                       Coefficient* offset);
+
+  // Groups positive objective literals that belong to the same "at most one"
+  // constraint and share the same objective weight into a single representative
+  // literal. Returns false if the model is detected to be UNSAT.
+  bool CompressObjectiveWithAtMostOne(std::vector<Literal>* literals,
+                                      std::vector<Coefficient>* coefficients);
 
   SatParameters* parameters_;
   SatSolver* sat_solver_;

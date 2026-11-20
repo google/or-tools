@@ -918,7 +918,6 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     absl::c_sort(to_clear);
     for (const int c : to_clear) {
       context->ClearConstraint(c);
-      context->UpdateConstraintVariableUsage(c);
     }
   }
 

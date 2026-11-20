@@ -713,7 +713,8 @@ std::pair<SolveStatus, ProblemSolution> LPSolver::RunRevisedSimplex(
     solution.constraint_statuses[row] =
         revised_simplex_->GetConstraintStatus(row);
   }
-  if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>() ||
+      solve_status.Is<SolveStatus::DualInfeasible>()) {
     solution.primal_ray = revised_simplex_->GetPrimalRay();
     // Make sure we do not copy the slacks added by revised_simplex_.
     solution.primal_ray->resize(num_cols);

@@ -14,15 +14,21 @@
 #ifndef ORTOOLS_FLATZINC_PARSER_H_
 #define ORTOOLS_FLATZINC_PARSER_H_
 
-#include <string>
-
+#include "absl/strings/string_view.h"
 #include "ortools/flatzinc/model.h"
 
-namespace operations_research {
-namespace fz {
-// Public parsing API.
-bool ParseFlatzincFile(const std::string& filename, Model* model);
-bool ParseFlatzincString(const std::string& input, Model* model);
-}  // namespace fz
-}  // namespace operations_research
+namespace operations_research::fz {
+
+// Parses the FlatZinc (.fzn) file at `filename` into `*model` (which must be
+// non-null). On I/O, lexical, syntax, or semantic errors, logs a diagnostic
+// via `LOG(ERROR)` and returns false (`*model` may be partially populated).
+bool ParseFlatzincFile(absl::string_view filename, Model* model);
+
+// Parses an in-memory FlatZinc (.fzn) model text into `*model` (which must be
+// non-null). Logs `line:column` diagnostics via `LOG(ERROR)` and returns false
+// on malformed input (`*model` may be partially populated).
+bool ParseFlatzincString(absl::string_view input, Model* model);
+
+}  // namespace operations_research::fz
+
 #endif  // ORTOOLS_FLATZINC_PARSER_H_

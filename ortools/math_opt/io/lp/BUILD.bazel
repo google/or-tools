@@ -48,7 +48,7 @@ or_cc_test(
 
 or_cc_library(
     name = "matchers",
-    testonly = 1,
+    testonly = True,
     srcs = ["matchers.cc"],
     hdrs = ["matchers.h"],
     deps = [

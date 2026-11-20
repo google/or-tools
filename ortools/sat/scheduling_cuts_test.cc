@@ -417,8 +417,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
   events.push_back(
       std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
-  double min_sum_of_end_mins = 0;
-  double min_sum_of_weighted_end_mins = 0;
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
   CtExhaustiveHelper ct_helper;
   ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
@@ -477,8 +477,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
   events.push_back(
       std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
-  double min_sum_of_end_mins = 0;
-  double min_sum_of_weighted_end_mins = 0;
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
   CtExhaustiveHelper ct_helper;
   ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
@@ -536,8 +536,8 @@ TEST(ComputeMinSumOfEndMinsTest, Abort) {
   events.push_back(
       std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
-  double min_sum_of_end_mins = 0;
-  double min_sum_of_weighted_end_mins = 0;
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
   CtExhaustiveHelper ct_helper;
   ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
@@ -593,8 +593,8 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
   events.push_back(
       std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
-  double min_sum_of_end_mins = 0;
-  double min_sum_of_weighted_end_mins = 0;
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
   CtExhaustiveHelper ct_helper;
   ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
@@ -663,8 +663,8 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
         std::make_unique<CompletionTimeEvent>(i, helper, demands_helper));
   }
 
-  double min_sum_of_end_mins = 0;
-  double min_sum_of_weighted_end_mins = 0;
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
   CtExhaustiveHelper ct_helper;
   ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
@@ -678,7 +678,7 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
                 min_sum_of_end_mins, min_sum_of_weighted_end_mins,
                 cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
-  return min_sum_of_end_mins;
+  return ToDouble(min_sum_of_end_mins);
 }
 
 TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
@@ -730,6 +730,130 @@ TEST(SplitEventsInIndendentSetsTest, BasicTest) {
   EXPECT_EQ(ConvexHull(sets[0]), SimpleEvent({0, 12}));
   EXPECT_EQ(sets[1].size(), 2);
   EXPECT_EQ(ConvexHull(sets[1]), SimpleEvent({12, 21}));
+}
+
+TEST(ComputeMinSumOfEndMinsTest, WeightedOverflowAbortsExploration) {
+  Model model;
+  auto* intervals_repository = model.GetOrCreate<IntervalsRepository>();
+
+  const IntegerValue one(1);
+  const IntegerValue cap(2'000'000'000);
+  const IntegerValue size1(3'000'000'000);
+  const IntegerValue size2(4'000'000'000);
+
+  const IntegerVariable start1 =
+      model.Add(NewIntegerVariable(0, 5'000'000'000));
+  const IntervalVariable i1 = intervals_repository->CreateInterval(
+      start1, AffineExpression(start1, one, size1), size1, kNoLiteralIndex,
+      /*add_linear_relation=*/false);
+
+  const IntegerVariable start2 =
+      model.Add(NewIntegerVariable(0, 5'000'000'000));
+  const IntervalVariable i2 = intervals_repository->CreateInterval(
+      start2, AffineExpression(start2, one, size2), size2, kNoLiteralIndex,
+      /*add_linear_relation=*/false);
+
+  SchedulingConstraintHelper* helper = intervals_repository->GetOrCreateHelper(
+      /*enforcement_literals=*/{}, {i1, i2});
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper({cap, cap}, helper, &model);
+  model.TakeOwnership(demands_helper);
+
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(0, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(1, helper, demands_helper));
+
+  IntegerValue min_sum_of_end_mins(0);
+  IntegerValue min_sum_of_weighted_end_mins(0);
+  CtExhaustiveHelper ct_helper;
+  ct_helper.Init(absl::MakeSpan(events), &model);
+  bool cut_use_precedences = false;
+  int exploration_credit = 1000;
+
+  std::vector<CompletionTimeEvent*> events_ptr = {events[0].get(),
+                                                  events[1].get()};
+  // The weighted sum (3e9 * 6e18 + 7e9 * 8e18) overflows int64_t, so the
+  // exploration must be aborted rather than returning a wrapped-around bound.
+  EXPECT_EQ(ComputeMinSumOfWeightedEndMins(
+                absl::MakeSpan(events_ptr), cap, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
+            CompletionTimeExplorationStatus::ABORTED);
+}
+
+TEST(SchedulingCutsOverflowTest, ScaledAffineIntervalsDoNotProduceInvalidCuts) {
+  Model model;
+  auto* intervals_repository = model.GetOrCreate<IntervalsRepository>();
+
+  // Mimics mip_scale_for_precision scaling by 2^30 on continuous scheduling
+  // variables (reproducing the shipsched.pb.gz DivideByGCD + offset_ overflow).
+  const IntegerValue scale(1LL << 30);
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 5000));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 5000));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 5000));
+
+  const IntegerValue start_offset = IntegerValue(1000) * scale;
+  const IntegerValue size_val = IntegerValue(2000) * scale;
+  const IntegerValue end_offset = start_offset + size_val;
+
+  const IntervalVariable i1 = intervals_repository->CreateInterval(
+      AffineExpression(x1, scale, start_offset),
+      AffineExpression(x1, scale, end_offset), AffineExpression(size_val),
+      kNoLiteralIndex, /*add_linear_relation=*/false);
+  const IntervalVariable i2 = intervals_repository->CreateInterval(
+      AffineExpression(x2, scale, start_offset),
+      AffineExpression(x2, scale, end_offset), AffineExpression(size_val),
+      kNoLiteralIndex, /*add_linear_relation=*/false);
+  const IntervalVariable i3 = intervals_repository->CreateInterval(
+      AffineExpression(x3, scale, start_offset),
+      AffineExpression(x3, scale, end_offset), AffineExpression(size_val),
+      kNoLiteralIndex, /*add_linear_relation=*/false);
+
+  SchedulingConstraintHelper* helper = intervals_repository->GetOrCreateHelper(
+      /*enforcement_literals=*/{}, {i1, i2, i3});
+  CutGenerator prec_cuts =
+      CreateNoOverlapPrecedenceCutGenerator(helper, &model);
+  CutGenerator ct_cuts =
+      CreateNoOverlapCompletionTimeCutGenerator(helper, &model);
+
+  auto* manager = model.GetOrCreate<LinearConstraintManager>();
+  const IntegerVariable num_vars =
+      model.GetOrCreate<IntegerTrail>()->NumIntegerVariables();
+  auto& lp_values = *model.GetOrCreate<ModelLpValues>();
+  lp_values.resize(num_vars.value() * 2, 0.0);
+  // Fractional/overlapping LP point: all three intervals start at start_offset.
+  lp_values[x1] = 0.0;
+  lp_values[x2] = 0.0;
+  lp_values[x3] = 0.0;
+
+  // No DCHECK failure on overflow, and every generated cut must be valid.
+  EXPECT_TRUE(prec_cuts.generate_cuts(manager));
+  EXPECT_TRUE(ct_cuts.generate_cuts(manager));
+
+  // Feasible non-overlapping integer solution: x1 = 0, x2 = 2000, x3 = 4000.
+  util_intops::StrongVector<IntegerVariable, double> feasible_solution(
+      num_vars.value() * 2, 0.0);
+  feasible_solution[x1] = 0.0;
+  feasible_solution[NegationOf(x1)] = 0.0;
+  feasible_solution[x2] = 2000.0;
+  feasible_solution[NegationOf(x2)] = -2000.0;
+  feasible_solution[x3] = 4000.0;
+  feasible_solution[NegationOf(x3)] = -4000.0;
+
+  for (int i = 0; i < manager->AllConstraints().size(); ++i) {
+    const LinearConstraint& ct =
+        manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(i)]
+            .constraint;
+    const double activity = ComputeActivity(ct, feasible_solution);
+    if (ct.lb > kMinIntegerValue) {
+      EXPECT_GE(activity + 1e-6, ToDouble(ct.lb)) << ct.DebugString();
+    }
+    if (ct.ub < kMaxIntegerValue) {
+      EXPECT_LE(activity - 1e-6, ToDouble(ct.ub)) << ct.DebugString();
+    }
+  }
 }
 
 }  // namespace

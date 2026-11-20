@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -271,31 +272,53 @@ int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
 void TightScalingErrorHelper::LoadUnscaledConstraint(
     absl::Span<const double> input_coeffs, absl::Span<const int64_t> input_lbs,
     absl::Span<const int64_t> input_ubs) {
+  LoadUnscaledConstraint(input_coeffs, input_coeffs, input_coeffs, input_lbs,
+                         input_ubs);
+}
+
+void TightScalingErrorHelper::LoadUnscaledConstraint(
+    absl::Span<const double> input_coeffs,
+    absl::Span<const double> input_coeffs_lb,
+    absl::Span<const double> input_coeffs_ub,
+    absl::Span<const int64_t> input_lbs, absl::Span<const int64_t> input_ubs) {
   // To simplify code, lets make all coefficient positive.
   // Being super-fast here shouldn't matter that much since we will only
   // do that once per constraint.
   const int num_terms = input_coeffs.size();
+  DCHECK_EQ(input_coeffs_lb.size(), num_terms);
+  DCHECK_EQ(input_coeffs_ub.size(), num_terms);
   DCHECK_EQ(input_lbs.size(), num_terms);
   DCHECK_EQ(input_ubs.size(), num_terms);
   coeffs_.assign(input_coeffs.begin(), input_coeffs.end());
+  coeffs_lb_.assign(input_coeffs_lb.begin(), input_coeffs_lb.end());
+  coeffs_ub_.assign(input_coeffs_ub.begin(), input_coeffs_ub.end());
   lbs_.assign(input_lbs.begin(), input_lbs.end());
   ubs_.assign(input_ubs.begin(), input_ubs.end());
   has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
     DCHECK(std::isfinite(coeffs_[i]));
-    CHECK_NE(coeffs_[i], 0.0);
+    DCHECK(std::isfinite(coeffs_lb_[i]));
+    DCHECK(std::isfinite(coeffs_ub_[i]));
+    DCHECK_LE(coeffs_lb_[i], coeffs_[i]);
+    DCHECK_LE(coeffs_[i], coeffs_ub_[i]);
+    CHECK(coeffs_lb_[i] != 0.0 || coeffs_ub_[i] != 0.0);
     DCHECK_GT(lbs_[i], kint64min);
     DCHECK_LT(ubs_[i], kint64max);
     DCHECK_LE(lbs_[i], ubs_[i]);
 
-    // Canonicalized the domain and the coefficient.
-    // We only care about the set of integer feasible solution.
-    if (coeffs_[i] < 0) {
+    // Canonicalize the domain and the coefficient.
+    // We only care about the set of integer feasible solutions.
+    if (coeffs_ub_[i] < 0.0 || (coeffs_ub_[i] == 0.0 && coeffs_lb_[i] < 0.0)) {
       std::swap(lbs_[i], ubs_[i]);
       lbs_[i] = -lbs_[i];
       ubs_[i] = -ubs_[i];
       coeffs_[i] = -coeffs_[i];
+      std::swap(coeffs_lb_[i], coeffs_ub_[i]);
+      coeffs_lb_[i] = -coeffs_lb_[i];
+      coeffs_ub_[i] = -coeffs_ub_[i];
     }
+    CHECK_GE(coeffs_lb_[i], 0.0);
+    CHECK_GE(coeffs_[i], 0.0);
   }
 }
 
@@ -303,22 +326,36 @@ void TightScalingErrorHelper::LoadBothConstraints(
     absl::Span<const double> scaled_coeffs,
     absl::Span<const double> rounded_coeffs,
     absl::Span<const int64_t> input_lbs, absl::Span<const int64_t> input_ubs) {
+  LoadBothConstraints(scaled_coeffs, scaled_coeffs, rounded_coeffs, input_lbs,
+                      input_ubs);
+}
+
+void TightScalingErrorHelper::LoadBothConstraints(
+    absl::Span<const double> scaled_coeffs_lb,
+    absl::Span<const double> scaled_coeffs_ub,
+    absl::Span<const double> rounded_coeffs,
+    absl::Span<const int64_t> input_lbs, absl::Span<const int64_t> input_ubs) {
   // To simplify code, lets make all coefficient positive.
   // Being super-fast here shouldn't matter that much since we will only
   // do that once per constraint.
-  const int num_terms = scaled_coeffs.size();
+  const int num_terms = scaled_coeffs_lb.size();
+  DCHECK_EQ(scaled_coeffs_ub.size(), num_terms);
   DCHECK_EQ(rounded_coeffs.size(), num_terms);
   DCHECK_EQ(input_lbs.size(), num_terms);
   DCHECK_EQ(input_ubs.size(), num_terms);
-  scaled_coeffs_.assign(scaled_coeffs.begin(), scaled_coeffs.end());
+  scaled_coeffs_lb_.assign(scaled_coeffs_lb.begin(), scaled_coeffs_lb.end());
+  scaled_coeffs_ub_.assign(scaled_coeffs_ub.begin(), scaled_coeffs_ub.end());
   rounded_coeffs_.assign(rounded_coeffs.begin(), rounded_coeffs.end());
   lbs_.assign(input_lbs.begin(), input_lbs.end());
   ubs_.assign(input_ubs.begin(), input_ubs.end());
   has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
-    DCHECK(std::isfinite(scaled_coeffs[i]));
-    DCHECK(std::isfinite(rounded_coeffs[i]));
-    if (scaled_coeffs_[i] == 0.0 && rounded_coeffs_[i] == 0.0) {
+    DCHECK(std::isfinite(scaled_coeffs_lb_[i]));
+    DCHECK(std::isfinite(scaled_coeffs_ub_[i]));
+    DCHECK(std::isfinite(rounded_coeffs_[i]));
+    DCHECK_LE(scaled_coeffs_lb_[i], scaled_coeffs_ub_[i]);
+    if (scaled_coeffs_lb_[i] == 0.0 && scaled_coeffs_ub_[i] == 0.0 &&
+        rounded_coeffs_[i] == 0.0) {
       lbs_[i] = 0;
       ubs_[i] = 0;
       continue;
@@ -329,18 +366,22 @@ void TightScalingErrorHelper::LoadBothConstraints(
 
     // Canonicalize the domain and the coefficient.
     // We only care about the set of integer feasible solutions.
-    if (scaled_coeffs_[i] < 0.0 ||
-        (scaled_coeffs_[i] == 0.0 && rounded_coeffs_[i] < 0.0)) {
+    if (scaled_coeffs_ub_[i] < 0.0 ||
+        (scaled_coeffs_ub_[i] == 0.0 &&
+         (scaled_coeffs_lb_[i] < 0.0 || rounded_coeffs_[i] < 0.0))) {
       std::swap(lbs_[i], ubs_[i]);
       lbs_[i] = -lbs_[i];
       ubs_[i] = -ubs_[i];
-      scaled_coeffs_[i] = -scaled_coeffs_[i];
+      std::swap(scaled_coeffs_lb_[i], scaled_coeffs_ub_[i]);
+      scaled_coeffs_lb_[i] = -scaled_coeffs_lb_[i];
+      scaled_coeffs_ub_[i] = -scaled_coeffs_ub_[i];
       rounded_coeffs_[i] = -rounded_coeffs_[i];
     }
 
     // Coeff should be of the same sign!
+    CHECK_GE(scaled_coeffs_lb_[i], 0.0);
     CHECK_GE(rounded_coeffs_[i], 0.0);
-    if (!std::isfinite(scaled_coeffs_[i] * kint64max) ||
+    if (!std::isfinite(scaled_coeffs_ub_[i] * kint64max) ||
         !std::isfinite(rounded_coeffs_[i] * kint64max)) {
       has_overflow_ = true;
       return;
@@ -352,24 +393,31 @@ void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
   CHECK(std::isfinite(scaling_factor));
   CHECK_GE(scaling_factor, 0.0);
   const int num_terms = coeffs_.size();
-  scaled_coeffs_.resize(num_terms);
+  scaled_coeffs_lb_.resize(num_terms);
+  scaled_coeffs_ub_.resize(num_terms);
   rounded_coeffs_.resize(num_terms);
   has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
-    const double scaled = scaling_factor * coeffs_[i];
-    const double rounded = std::round(scaled);
-    if (!std::isfinite(rounded * kint64max)) {
+    // The callers scale with std::round(coeff * scaling_factor), where the
+    // product is rounded to the nearest double, while the exact unscaled
+    // coefficient lies in [coeffs_lb_[i], coeffs_ub_[i]].
+    const double rounded = std::round(coeffs_[i] * scaling_factor);
+    const double scaled_lb = ProdBounds(coeffs_lb_[i], scaling_factor).first;
+    const double scaled_ub = ProdBounds(coeffs_ub_[i], scaling_factor).second;
+    if (!std::isfinite(scaled_ub * kint64max) ||
+        !std::isfinite(rounded * kint64max)) {
       has_overflow_ = true;
       return;
     }
-    scaled_coeffs_[i] = scaled;
+    scaled_coeffs_lb_[i] = scaled_lb;
+    scaled_coeffs_ub_[i] = scaled_ub;
     rounded_coeffs_[i] = rounded;
   }
 }
 
 template <bool is_ge_constraint, bool minimize, bool compute_error>
-double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
-                                         absl::Span<const double> new_coeffs,
+double TightScalingErrorHelper::Optimize(CoeffBounds coeffs,
+                                         CoeffBounds new_coeffs,
                                          TightSum& slack,
                                          TightSum& result_sum) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
@@ -382,32 +430,100 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
   }
 
   // All coefficients have already been canonicalized to be non-negative:
-  // for >= constraints we start at the lower bound (x_i = lb_i + y_i) and
+  // for >= constraints we start at the lower bound (Xi = initial_i + Yi) and
   // greedily move variables toward their upper bound; the reverse for <=
-  // constraints (x_i = ub_i - y_i).
+  // constraints (Xi = initial_i - Yi). With kSign = 1 for >= constraints and
+  // -1 for <= constraints, Yi = kSign * (Xi - initial_i) is in [0, range_i]
+  // and the problem becomes the knapsack:
+  //   sum coeffs[i] * Yi >= slack  (relaxation, minimize == is_ge_constraint)
+  //   sum coeffs[i] * Yi <= slack  (restriction, minimize != is_ge_constraint)
+  // with slack = kSign * bound - sum coeffs[i] * (kSign * initial_i). At
+  // optimality, all variables but at most one are at one of their bounds, so
+  // the result is the sum of one term delta_i * Xi per variable.
+  //
+  // Each coefficient is only known within an interval, and we use for each
+  // quantity the end of the interval that keeps the result conservative:
+  // - The slack must be a lower bound (relaxation) or an upper bound
+  //   (restriction) of its exact value. This fixes the end of coeffs[i] used
+  //   for coeffs[i] * initial_i (coeff_at_initial below).
+  // - Since Yi >= 0, the feasible set only grows if we use the upper
+  //   (relaxation) or lower (restriction) end of coeffs[i] as knapsack weight,
+  //   and a larger feasible set only moves the optimum in the conservative
+  //   direction.
+  // - The objective is split as
+  //     sum (new_coeffs[i] - coeffs[i]) * initial_i + kSign * sum delta_i * Yi
+  //   where delta_i is a conservative bound on new_coeffs[i] - coeffs[i] (the
+  //   factor Yi is non-negative) and the constant part is bounded using, for
+  //   coeffs[i] * initial_i, the same end as in the slack so that both cancel
+  //   out exactly.
+  // The loop below adds, for each variable,
+  //   delta_i * Xi = delta_i * initial_i + kSign * delta_i * Yi,
+  // which is the bound above whenever delta_i * initial_i is the bound used
+  // for the constant part. This is the common case, and the rare exceptions
+  // (the coefficient interval is not a point and initial_i has the sign for
+  // which the slack uses the other end, or delta_i is not exact) are handled
+  // by adding the difference to result_sum.
   constexpr int64_t kSign = is_ge_constraint ? 1 : -1;
+  constexpr bool kRelaxation = (minimize == is_ge_constraint);
 
-  const int num_terms = coeffs.size();
+  const int num_terms = coeffs.lb.size();
   items_.clear();
   items_.reserve(num_terms);
   for (int i = 0; i < num_terms; ++i) {
-    const double coeff = coeffs[i];
-    DCHECK_GE(coeff, 0);
+    DCHECK_GE(coeffs.lb[i], 0);
+    DCHECK_LE(coeffs.lb[i], coeffs.ub[i]);
 
     // For >= constraint we start at the lower bound and greedily move
     // variables to their upper bound. The reverse for the <= constraints.
     const int64_t initial_bound = is_ge_constraint ? lbs_[i] : ubs_[i];
     const int64_t other_bound = is_ge_constraint ? ubs_[i] : lbs_[i];
-    slack.AddProd(-kSign * coeff, initial_bound);
+    const int64_t signed_initial_bound = kSign * initial_bound;
 
-    const double delta = compute_error ? new_coeffs[i] - coeff : new_coeffs[i];
+    // End of coeffs[i] used for coeffs[i] * initial_i: the slack must be a
+    // lower bound for a relaxation and an upper bound for a restriction.
+    const double coeff_at_initial = (kRelaxation == (signed_initial_bound >= 0))
+                                        ? coeffs.ub[i]
+                                        : coeffs.lb[i];
+    slack.AddProd(-coeff_at_initial, signed_initial_bound);
+
+    // Knapsack weight and cost of one unit of Yi (before the kSign factor). The
+    // cost new_coeffs[i] - coeffs[i] is rounded towards the conservative
+    // direction (it is exact in practice).
+    const double coeff = kRelaxation ? coeffs.ub[i] : coeffs.lb[i];
+    const double new_coeff =
+        ((kSign > 0) == minimize) ? new_coeffs.lb[i] : new_coeffs.ub[i];
+    double delta = new_coeff;
+
+    // Conservative bound on the constant part of the objective at
+    // Xi = initial_i, which is delta * initial_i except in rare cases.
+    const double new_coeff_at_initial = ((initial_bound >= 0) == minimize)
+                                            ? new_coeffs.lb[i]
+                                            : new_coeffs.ub[i];
+    bool constant_part_is_delta_initial = new_coeff == new_coeff_at_initial;
+    if constexpr (compute_error) {
+      const TightSum cost = TightSum().Add(new_coeff).Add(-coeff);
+      delta = kRelaxation ? cost.TightLowerBound() : cost.TightUpperBound();
+      constant_part_is_delta_initial =
+          constant_part_is_delta_initial && coeff == coeff_at_initial &&
+          cost.TightLowerBound() == cost.TightUpperBound();
+    }
+    if (initial_bound != 0 && !constant_part_is_delta_initial) {
+      // Replace the delta * initial_i added below by the conservative bound of
+      // (new_coeffs[i] - coeffs[i]) * initial_i.
+      result_sum.AddProd(new_coeff_at_initial, initial_bound);
+      if constexpr (compute_error) {
+        result_sum.AddProd(-coeff_at_initial, initial_bound);
+      }
+      result_sum.AddProd(-delta, initial_bound);
+    }
 
     // When maximizing the error on a >= constraint (or minimizing on a <=
     // constraint) for restriction mode, variables with new_coeffs[i] == 0 are
     // unconstrained in the rounded inequality: moving them increases the
     // original activity without changing the rounded one, so they must stay at
     // initial_bound and are not added as knapsack items.
-    if (is_ge_constraint != minimize && compute_error && new_coeffs[i] == 0.0) {
+    if (!kRelaxation && compute_error && new_coeffs.lb[i] == 0.0 &&
+        new_coeffs.ub[i] == 0.0) {
       result_sum.AddProd(delta, initial_bound);
       continue;
     }
@@ -427,7 +543,7 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
       if (u.coeff == 0.0 || w.coeff == 0.0) {
         return w.coeff == 0.0 && u.coeff > 0.0;
       }
-      if constexpr (is_ge_constraint == minimize) {
+      if constexpr (kRelaxation) {
         return TightSum().AddProd(u.delta, w.coeff).AddProd(-w.delta, u.coeff) <
                0.0;
       } else {
@@ -490,15 +606,17 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
   return minimize ? result_sum.TightLowerBound() : result_sum.TightUpperBound();
 }
 
-template double TightScalingErrorHelper::Optimize<true, true, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+template double TightScalingErrorHelper::Optimize<true, true, true>(CoeffBounds,
+                                                                    CoeffBounds,
+                                                                    TightSum&,
+                                                                    TightSum&);
 template double TightScalingErrorHelper::Optimize<true, false, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+    CoeffBounds, CoeffBounds, TightSum&, TightSum&);
 template double TightScalingErrorHelper::Optimize<false, false, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+    CoeffBounds, CoeffBounds, TightSum&, TightSum&);
 template double TightScalingErrorHelper::Optimize<false, true, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+    CoeffBounds, CoeffBounds, TightSum&, TightSum&);
 template double TightScalingErrorHelper::Optimize<true, true, false>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+    CoeffBounds, CoeffBounds, TightSum&, TightSum&);
 
 }  // namespace operations_research

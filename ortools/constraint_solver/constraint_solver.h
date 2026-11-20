@@ -556,24 +556,6 @@ class Solver : public ReversibleEngine {
     /// @endcode
     EXTENDEDSWAPACTIVE,
 
-    /// Operator which relaxes two sub-chains of three consecutive arcs each.
-    /// Each sub-chain is defined by a start node and the next three arcs. Those
-    /// six arcs are relaxed to build a new neighbor.
-    /// PATHLNS explores all possible pairs of starting nodes and so defines
-    /// n^2 neighbors, n being the number of nodes.
-    /// Note that the two sub-chains can be part of the same path; they even may
-    /// overlap.
-    PATHLNS,
-
-    /// Operator which relaxes one entire path and all inactive nodes, thus
-    /// defining num_paths neighbors.
-    FULLPATHLNS,
-
-    /// Operator which relaxes all inactive nodes and one sub-chain of six
-    /// consecutive arcs. That way the path can be improved by inserting
-    /// inactive nodes or swapping arcs.
-    UNACTIVELNS,
-
     /// Operator which defines one neighbor per variable. Each neighbor tries to
     /// increment by one the value of the corresponding variable. When a new
     /// solution is found the neighborhood is rebuilt from scratch, i.e., tries

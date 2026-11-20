@@ -352,7 +352,8 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   if (num_unassigned_enforcement_literal > 0) return true;
 
   // The lower bound of all the variables except one can be used to update the
-  // upper bound of the last one.
+  // upper bound of the last one. All these pushes share the same linear reason.
+  const int trail_index_at_start = shared_->integer_trail->Index();
   for (int i = num_fixed_vars; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
@@ -381,7 +382,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
     }
     if (!shared_->integer_trail->EnqueueWithLazyReason(
             IntegerLiteral::LowerOrEqual(var, new_ub), 0, propagation_slack,
-            this)) {
+            this, trail_index_at_start)) {
       // TODO(user): this is never supposed to happen since if we didn't have a
       // conflict above, we should be able to reduce the upper bound. It might
       // indicate an issue with our Boolean <-> integer encoding.
@@ -1687,16 +1688,24 @@ bool FixedDivisionPropagator::Propagate() {
       //   non-negative values, we apply this to get floor(-L/b) == -(c + 1). We
       //   want the smallest L, thus the highest (-L), so we choose
       //   -L = -(c + 1) * b + (b - 1). Thus L = c * b + 1.
-      const IntegerValue min_a_reason =
-          max_c >= 0 ? max_c * b_ + b_ : max_c * b_ + 1;
+      IntegerValue min_a_reason = max_c >= 0 ? b_ : IntegerValue(1);
+      if (!AddProductTo(max_c, b_, &min_a_reason) ||
+          min_a_reason <= integer_trail_.LevelZeroLowerBound(a_)) {
+        return enforcement_helper_.PropagateWhenFalse(
+            enforcement_id_, /*literal_reason=*/{}, {c_.LowerOrEqual(max_c)});
+      }
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
           {a_.GreaterOrEqual(min_a_reason), c_.LowerOrEqual(max_c)});
     }
     if (max_a / b_ < min_c) {
-      const IntegerValue max_a_reason =
-          min_c > 0 ? min_c * b_ - 1 : min_c * b_ - b_;
+      IntegerValue max_a_reason = min_c > 0 ? IntegerValue(-1) : -b_;
+      if (!AddProductTo(min_c, b_, &max_a_reason) ||
+          max_a_reason >= integer_trail_.LevelZeroUpperBound(a_)) {
+        return enforcement_helper_.PropagateWhenFalse(
+            enforcement_id_, /*literal_reason=*/{}, {c_.GreaterOrEqual(min_c)});
+      }
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
@@ -1709,14 +1718,22 @@ bool FixedDivisionPropagator::Propagate() {
   if (status != EnforcementStatus::IS_ENFORCED) return true;
   if (max_a / b_ < max_c) {
     max_c = max_a / b_;
+    if (max_c < integer_trail_.LevelZeroLowerBound(c_)) {
+      return enforcement_helper_.ReportConflict(
+          enforcement_id_, {integer_trail_.UpperBoundAsLiteral(a_)});
+    }
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_, c_.LowerOrEqual(max_c),
             {integer_trail_.UpperBoundAsLiteral(a_)})) {
       return false;
     }
   } else if (max_a / b_ > max_c) {
-    const IntegerValue new_max_a =
-        max_c >= 0 ? max_c * b_ + b_ - 1 : CapProdI(max_c, b_);
+    IntegerValue new_max_a = max_c >= 0 ? b_ - 1 : IntegerValue(0);
+    if (!AddProductTo(max_c, b_, &new_max_a) ||
+        new_max_a < integer_trail_.LevelZeroLowerBound(a_)) {
+      return enforcement_helper_.ReportConflict(
+          enforcement_id_, {integer_trail_.UpperBoundAsLiteral(c_)});
+    }
     CHECK_LT(new_max_a, max_a);
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_, a_.LowerOrEqual(new_max_a),
@@ -1727,14 +1744,22 @@ bool FixedDivisionPropagator::Propagate() {
 
   if (min_a / b_ > min_c) {
     min_c = min_a / b_;
+    if (min_c > integer_trail_.LevelZeroUpperBound(c_)) {
+      return enforcement_helper_.ReportConflict(
+          enforcement_id_, {integer_trail_.LowerBoundAsLiteral(a_)});
+    }
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_, c_.GreaterOrEqual(min_c),
             {integer_trail_.LowerBoundAsLiteral(a_)})) {
       return false;
     }
   } else if (min_a / b_ < min_c) {
-    const IntegerValue new_min_a =
-        min_c > 0 ? CapProdI(min_c, b_) : min_c * b_ - b_ + 1;
+    IntegerValue new_min_a = min_c > 0 ? IntegerValue(0) : -b_ + 1;
+    if (!AddProductTo(min_c, b_, &new_min_a) ||
+        new_min_a > integer_trail_.LevelZeroUpperBound(a_)) {
+      return enforcement_helper_.ReportConflict(
+          enforcement_id_, {integer_trail_.LowerBoundAsLiteral(c_)});
+    }
     CHECK_GT(new_min_a, min_a);
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_, a_.GreaterOrEqual(new_min_a),

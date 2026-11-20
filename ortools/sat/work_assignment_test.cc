@@ -27,6 +27,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_test_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -35,6 +36,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -55,7 +57,7 @@ TEST(SharedTreeEncoderTest, ImportAndSplit) {
             ProtoLiteral(0, 1).Negated());
 }
 
-TEST(SharedTreeEncoderTest, ProcessNewBoundPropagatesUp) {
+TEST(SharedTreeEncoderTest, ImportNodePropagatesObjectiveLbUp) {
   SharedTreeEncoder encoder(nullptr);
   encoder.ImportNode(
       {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
@@ -111,7 +113,7 @@ TEST(SharedTreeEncoderTest, ImportClosedRootNodeWithoutProofHandler) {
   EXPECT_TRUE(encoder.GetNode(NodeId(1))->shared().is_closed());
 }
 
-TEST(SharedTreeEncoderTest, ReasonLiterals) {
+TEST(SharedTreeEncoderTest, NegatedDecisions) {
   SharedTreeEncoder encoder(nullptr);
   encoder.ImportNode(
       {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
@@ -209,7 +211,7 @@ TEST(SharedTreeEncoderTest, SyncNodesOnPathImpliedNode) {
   EXPECT_TRUE(encoder2.GetNode(NodeId(3))->shared().is_closed());
 }
 
-TEST(SharedTreeEncoderTest, SyncNodesOnPathHandlesImpliedNodes) {
+TEST(SharedTreeEncoderTest, SyncNodesOnPathImpliedNodesLratProof) {
   SatParameters params;
   params.set_output_lrat_proof(true);
   params.set_check_lrat_proof(true);
@@ -284,44 +286,6 @@ TEST(SharedTreeEncoderTest, CloseSubtreeLratProof) {
   EXPECT_EQ(lrat->Check(), SharedLratProofStatus::VALID);
 }
 
-TEST(SharedTreeEncoderTest, SyncNodesOnPathClosesLratProofWithInvalidLeaf) {
-  SatParameters params;
-  params.set_output_lrat_proof(true);
-  params.set_check_lrat_proof(true);
-  params.set_debug_crash_if_lrat_check_fails(
-      false);  // Don't crash, return INVALID
-  params.set_shared_tree_num_workers(4);
-  Model model;
-  model.Add(NewSatParameters(params));
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  auto lrat1 = LratProofHandler::MaybeCreate(
-      params, model.GetOrCreate<SharedLratProofStatus>(),
-      model.GetOrCreate<SharedStatistics>());
-  SharedTreeEncoder worker1(lrat1.get());
-  auto lrat2 = LratProofHandler::MaybeCreate(
-      params, model.GetOrCreate<SharedLratProofStatus>(),
-      model.GetOrCreate<SharedStatistics>());
-  SharedTreeEncoder worker2(lrat2.get());
-  std::vector<ProtoLiteral> phase;
-
-  shared_tree_manager->ReplaceTree(kNoNodeId, worker1, phase);
-  shared_tree_manager->TrySplitTree(NodeId(1), {ProtoLiteral(0, 1)}, worker1);
-  const ClauseUniquePtr clause2 =
-      NewClausePtr({Literal(BooleanVariable(0), false)});
-  lrat1->AddProblemClause(clause2.get());
-  worker1.CloseNode(NodeId(2), {clause2.get()});
-  const ClauseUniquePtr clause3 =
-      NewClausePtr({Literal(BooleanVariable(0), true)});
-  lrat1->AddProblemClause(clause3.get());
-  worker1.CloseNode(NodeId(3), {clause3.get()});
-  shared_tree_manager->SyncTree(NodeId(2), worker1);
-  shared_tree_manager->SyncTree(NodeId(3), worker1);
-
-  EXPECT_EQ(lrat1->Check(), SharedLratProofStatus::VALID);
-  EXPECT_FALSE(shared_tree_manager->SyncTree(kNoNodeId, worker2));
-  EXPECT_EQ(lrat2->Check(), SharedLratProofStatus::VALID);
-}
-
 TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   SatParameters params;
   params.set_output_lrat_proof(true);
@@ -349,564 +313,6 @@ TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   encoder.CloseNode(NodeId(2), {});
 
   EXPECT_TRUE(encoder.GetNode(NodeId(2))->reason_clauses().empty());
-}
-
-class SharedTreeSolveTest : public testing::TestWithParam<absl::string_view> {
- public:
-  SatParameters GetParams() {
-    SatParameters params;
-    params.set_num_workers(4);
-    params.set_shared_tree_num_workers(4);
-    params.set_cp_model_presolve(false);
-    const SatParameters to_merge =
-        google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(GetParam());
-    params.MergeFrom(to_merge);
-    return params;
-  }
-};
-INSTANTIATE_TEST_SUITE_P(
-    SharedTreeParams, SharedTreeSolveTest,
-    testing::Values("shared_tree_worker_enable_trail_sharing:false,"
-                    "shared_tree_worker_propagate_intermediate_nodes:false",
-                    "shared_tree_worker_enable_trail_sharing:true,"
-                    "shared_tree_worker_propagate_intermediate_nodes:true",
-                    "shared_tree_worker_enable_trail_sharing:true,"
-                    "shared_tree_worker_propagate_intermediate_nodes:false",
-                    "shared_tree_worker_enable_trail_sharing:false,"
-                    "shared_tree_worker_propagate_intermediate_nodes:true"));
-
-TEST_P(SharedTreeSolveTest, SmokeTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var + 5 * bool_var);
-  Model model;
-  SatParameters params = GetParams();
-  model.Add(NewSatParameters(params));
-
-  CpSolverResponse response = SolveCpModel(model_builder.Build(), &model);
-
-  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(),
-            params.shared_tree_num_workers());
-  ASSERT_EQ(response.status(), OPTIMAL)
-      << "Validation: " << ValidateCpModel(model_builder.Build());
-  EXPECT_EQ(response.objective_value(), 5 + 3);
-  EXPECT_EQ(SolutionBooleanValue(response, bool_var), true);
-  EXPECT_EQ(SolutionIntegerValue(response, int_var), 3);
-}
-
-TEST_P(SharedTreeSolveTest, FeasiblePigeonHoleSmokeTest) {
-  CpModelBuilder model_builder;
-  const int pidgeons = 10;
-  const int holes = 10;
-  std::vector<LinearExpr> count_per_hole(holes);
-  IntVar max_pidgeon_hole_product =
-      model_builder.NewIntVar({0, pidgeons * holes});
-  for (int i = 0; i < pidgeons; ++i) {
-    LinearExpr count_per_pidgeon;
-    for (int j = 0; j < holes; ++j) {
-      auto var = model_builder.NewBoolVar();
-      count_per_hole[j] += LinearExpr(var);
-      count_per_pidgeon += LinearExpr(var);
-      model_builder
-          .AddGreaterOrEqual(max_pidgeon_hole_product, (i + 1) * (j + 1))
-          .OnlyEnforceIf(var);
-    }
-    model_builder.AddEquality(count_per_pidgeon, 1);
-  }
-  for (const auto& count : count_per_hole) {
-    model_builder.AddLessOrEqual(count, 1);
-  }
-  Model model;
-  SatParameters params = GetParams();
-  model.Add(NewSatParameters(params));
-
-  CpSolverResponse response = SolveCpModel(model_builder.Build(), &model);
-
-  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(), 4);
-  EXPECT_EQ(response.status(), OPTIMAL);
-}
-
-TEST_P(SharedTreeSolveTest, InfeasiblePigeonHoleSmokeTest) {
-  CpModelBuilder model_builder;
-  const int pidgeons = 10;
-  const int holes = 9;
-  std::vector<LinearExpr> count_per_hole(holes);
-  IntVar max_pidgeon_hole_product =
-      model_builder.NewIntVar({0, pidgeons * holes});
-  for (int i = 0; i < pidgeons; ++i) {
-    LinearExpr count_per_pidgeon;
-    for (int j = 0; j < holes; ++j) {
-      auto var = model_builder.NewBoolVar();
-      count_per_hole[j] += LinearExpr(var);
-      count_per_pidgeon += LinearExpr(var);
-      model_builder
-          .AddGreaterOrEqual(max_pidgeon_hole_product, (i + 1) * (j + 1))
-          .OnlyEnforceIf(var);
-    }
-    model_builder.AddEquality(count_per_pidgeon, 1);
-  }
-  for (const auto& count : count_per_hole) {
-    model_builder.AddLessOrEqual(count, 1);
-  }
-  Model model;
-  SatParameters params = GetParams();
-  model.Add(NewSatParameters(params));
-
-  CpSolverResponse response = SolveCpModel(model_builder.Build(), &model);
-
-  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(), 4);
-  EXPECT_EQ(response.status(), INFEASIBLE);
-}
-
-TEST_P(SharedTreeSolveTest, InfeasiblePigeonHolePureSatLratTest) {
-  SatParameters params =
-      google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(
-          "symmetry_level:1,"
-          "num_workers:6,"
-          "shared_tree_num_workers:6,"
-          "find_clauses_that_are_exactly_one:false,"
-          "debug_crash_if_lrat_check_fails:true,"
-          "check_lrat_proof:true,"
-          "output_lrat_proof:true,"
-          "check_merged_lrat_proof:true,"
-          "inprocessing_use_sat_sweeping:false,"
-          "cp_model_pure_sat_presolve:true");
-  // We use pure SAT encoding of the pigeon-hole problem.
-  const int pigeons = 5;
-  const int holes = 4;
-  CpModelBuilder model_builder;
-  std::vector<std::vector<BoolVar>> x(pigeons, std::vector<BoolVar>(holes));
-  for (int i = 0; i < pigeons; ++i) {
-    for (int j = 0; j < holes; ++j) {
-      x[i][j] = model_builder.NewBoolVar();
-    }
-  }
-  // Each pigeon is in at least one hole.
-  for (int i = 0; i < pigeons; ++i) {
-    std::vector<BoolVar> clause;
-    for (int j = 0; j < holes; ++j) {
-      clause.push_back(x[i][j]);
-    }
-    model_builder.AddBoolOr(clause);
-  }
-  // Each hole contains at most one pigeon.
-  for (int j = 0; j < holes; ++j) {
-    for (int i1 = 0; i1 < pigeons; ++i1) {
-      for (int i2 = i1 + 1; i2 < pigeons; ++i2) {
-        model_builder.AddBoolOr({x[i1][j].Not(), x[i2][j].Not()});
-      }
-    }
-  }
-  Model model;
-  model.Add(NewSatParameters(params));
-
-  CpSolverResponse response = SolveCpModel(model_builder.Build(), &model);
-
-  EXPECT_EQ(response.status(), INFEASIBLE);
-}
-
-TEST(SharedTreeManagerTest, SplitTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
-
-  EXPECT_EQ(shared_trail.Size(), 3);
-}
-
-TEST(SharedTreeManagerTest, RestartTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
-
-  shared_tree_manager->Restart();
-  shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-
-  EXPECT_EQ(shared_trail.Size(), 1);
-}
-
-TEST(SharedTreeManagerTest, RestartTestWithLevelZeroImplications) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  leaf_id = shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
-
-  shared_trail.CloseNode(NodeId(2), {});
-  shared_tree_manager->SyncTree(leaf_id, shared_trail);
-
-  shared_tree_manager->ReplaceTree(leaf_id, shared_trail, phase);
-  shared_tree_manager->Restart();
-
-  shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-
-  EXPECT_EQ(shared_trail.Size(), 1);
-}
-
-TEST(SharedTreeManagerTest, SharedBranchingTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(2);
-  params.set_shared_tree_num_workers(2);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}}, trail1);
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2).size(), 2);
-  const auto* leaf1 = trail1.GetNode(leaf_id1);
-  const auto* leaf2 = trail2.GetNode(leaf_id2);
-  EXPECT_EQ(leaf1->shared().decision, leaf2->shared().decision.Negated());
-  EXPECT_EQ(leaf1->decoded_decision(), leaf2->decoded_decision().Negated());
-}
-
-TEST(SharedTreeManagerTest, ObjectiveLbSplitTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  params.set_shared_tree_split_strategy(
-      SatParameters::SPLIT_STRATEGY_OBJECTIVE_LB);
-  model.Add(NewSatParameters(params));
-  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(model_builder.Build());
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}}, trail1);
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-  trail1.ImportNode({.id = leaf_id1, .objective_lb = 2});
-  trail2.ImportNode({.id = leaf_id2, .objective_lb = 1});
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-  shared_tree_manager->SyncTree(leaf_id2, trail2);
-  // This call should not be necessary, investigate.
-  response_manager->UpdateInnerObjectiveBounds("test", IntegerValue(1),
-                                               IntegerValue(100));
-
-  // Reject this split because it is not at the global lower bound.
-  EXPECT_EQ(shared_tree_manager->TrySplitTree(leaf_id1, {{int_var.index(), 3}},
-                                              trail1),
-            leaf_id1);
-
-  EXPECT_EQ(response_manager->GetInnerObjectiveLowerBound(), 1);
-}
-
-TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(5);
-  params.set_shared_tree_num_workers(5);
-  params.set_shared_tree_open_leaves_per_worker(1);
-  params.set_shared_tree_balance_tolerance(0);
-  params.set_cp_model_presolve(false);
-  params.set_shared_tree_split_strategy(
-      SatParameters::SPLIT_STRATEGY_DISCREPANCY);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(model_builder.Build());
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{-1, 0},
-                                                       {int_var.index(), 3},
-                                                       {int_var.index(), 4},
-                                                       {int_var.index(), 5}},
-                                                      trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
-
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
-
-  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
-}
-
-TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(2);
-  params.set_shared_tree_num_workers(2);
-  params.set_shared_tree_open_leaves_per_worker(2.5);
-  params.set_cp_model_presolve(false);
-  params.set_shared_tree_split_strategy(
-      SatParameters::SPLIT_STRATEGY_DISCREPANCY);
-  params.set_shared_tree_balance_tolerance(0);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(model_builder.Build());
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(
-      root_id, {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
-
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
-
-  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
-}
-
-TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(5);
-  params.set_shared_tree_num_workers(5);
-  params.set_shared_tree_open_leaves_per_worker(1);
-  params.set_cp_model_presolve(false);
-  params.set_shared_tree_split_strategy(
-      SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
-  params.set_shared_tree_balance_tolerance(0);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(model_builder.Build());
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{int_var.index(), 3},
-                                                       {int_var.index(), 2},
-                                                       {int_var.index(), 1},
-                                                       {int_var.index(), 0}},
-                                                      trail1);
-  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
-
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 5}, {int_var.index(), 4}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
-
-  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
-}
-
-TEST(SharedTreeManagerTest, BalancedSplitTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_shared_tree_open_leaves_per_worker(2);
-  params.set_cp_model_presolve(false);
-  params.set_shared_tree_split_strategy(
-      SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
-  params.set_shared_tree_balance_tolerance(0);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
-  response_manager->InitializeObjective(model_builder.Build());
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{int_var.index(), 3},
-                                                       {int_var.index(), 2},
-                                                       {int_var.index(), 1},
-                                                       {int_var.index(), 0}},
-                                                      trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
-
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  NodeId leaf_id2_new =
-      shared_tree_manager->TrySplitTree(leaf_id2,
-                                        {{int_var.index(), 6},
-                                         {int_var.index(), 5},
-                                         {int_var.index(), 4},
-                                         {int_var.index(), 3}},
-                                        trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 4);
-
-  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 11);
-}
-
-TEST(SharedTreeManagerTest, CloseTreeTest) {
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr);
-  SharedTreeEncoder trail2(nullptr);
-
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}, {1, 0}}, trail1);
-  EXPECT_EQ(trail1.Size(), 5);
-
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-
-  trail1.CloseNode(NodeId(2), {});
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-
-  shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
-
-  EXPECT_EQ(trail1.Size(), 0);
-  EXPECT_EQ(trail2.Size(), 3);
-
-  EXPECT_EQ(trail2.GetNode(leaf_id2)->shared().decision, ProtoLiteral(0, 1));
-}
-
-TEST(SharedTreeManagerTest, TrailSharing) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  auto bool_phase_var = model_builder.NewBoolVar();
-  model_builder.AddLessOrEqual(int_var, 6)
-      .OnlyEnforceIf({bool_var, bool_phase_var});
-  model_builder.Maximize(int_var + bool_phase_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder trail1(nullptr, model.GetOrCreate<CpModelMapping>(),
-                           model.GetOrCreate<IntegerEncoder>());
-  SharedTreeEncoder trail2(nullptr, model.GetOrCreate<CpModelMapping>(),
-                           model.GetOrCreate<IntegerEncoder>());
-  std::vector<ProtoLiteral> init_phase;
-  NodeId root_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, trail1, init_phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {ProtoLiteral(0, 1)}, trail1);
-  trail1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(2, IntegerValue(1)));
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-  std::vector<ProtoLiteral> phase = {ProtoLiteral(3, 1)};
-
-  shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
-  std::vector<ProtoLiteral> phase2;
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase2);
-
-  EXPECT_EQ(trail1.Size(), 3);
-  EXPECT_EQ(trail2.Size(), 3);
-  EXPECT_EQ(leaf_id2, leaf_id1);
-  EXPECT_THAT(trail2.GetNode(leaf_id2)->shared().var_lower_bounds,
-              testing::ElementsAre(testing::Pair(2, IntegerValue(1))));
-  EXPECT_THAT(phase2, testing::ElementsAre(ProtoLiteral(3, 1)));
 }
 
 TEST(SharedTreeEncoderTest, VariableBoundsResolution) {
@@ -1018,6 +424,565 @@ TEST(SharedTreeEncoderTest, SetObjectiveLowerBound) {
   EXPECT_EQ(encoder.GetNode(NodeId(3))->shared().objective_lb, 15);
   EXPECT_EQ(encoder.GetNode(NodeId(2))->shared().objective_lb, 12);
   EXPECT_EQ(encoder.GetNode(NodeId(1))->shared().objective_lb, 12);
+}
+
+TEST(SharedTreeEncoderTest, SyncNodesOnPathKeepsMostSampledLbd) {
+  // A worker with fewer LBD samples must not overwrite a newer estimate.
+  SharedTreeEncoder manager(nullptr);
+  SharedTreeEncoder worker1(nullptr);
+  SharedTreeEncoder worker2(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  manager.SyncNodesOnPath(NodeId(2), worker2);
+  worker1.GetNode(NodeId(2))->AddLbdSample(4.0);
+  worker1.GetNode(NodeId(2))->AddLbdSample(2.0);
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  worker2.GetNode(NodeId(2))->AddLbdSample(10.0);
+
+  manager.SyncNodesOnPath(NodeId(2), worker2);
+
+  const auto expected_lbd = testing::AllOf(
+      testing::Property(&IncrementalAverage::CurrentAverage, 3.0),
+      testing::Property(&IncrementalAverage::NumRecords, 2));
+  EXPECT_THAT(manager.GetNode(NodeId(2))->shared().lbd, expected_lbd);
+  EXPECT_THAT(worker2.GetNode(NodeId(2))->shared().lbd, expected_lbd);
+}
+
+class SharedTreeSolveTest : public testing::TestWithParam<absl::string_view> {
+ public:
+  SatParameters GetParams() {
+    SatParameters params;
+    params.set_num_workers(4);
+    params.set_shared_tree_num_workers(4);
+    params.set_shared_tree_worker_min_dtime_before_sync(1e-6);
+    params.set_cp_model_presolve(false);
+    const SatParameters to_merge =
+        google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(GetParam());
+    params.MergeFrom(to_merge);
+    return params;
+  }
+};
+INSTANTIATE_TEST_SUITE_P(
+    SharedTreeParams, SharedTreeSolveTest,
+    testing::Values("shared_tree_worker_enable_trail_sharing:false,"
+                    "shared_tree_worker_propagate_intermediate_nodes:false",
+                    "shared_tree_worker_enable_trail_sharing:true,"
+                    "shared_tree_worker_propagate_intermediate_nodes:true",
+                    "shared_tree_worker_enable_trail_sharing:true,"
+                    "shared_tree_worker_propagate_intermediate_nodes:false",
+                    "shared_tree_worker_enable_trail_sharing:false,"
+                    "shared_tree_worker_propagate_intermediate_nodes:true"));
+
+TEST_P(SharedTreeSolveTest, SmokeTest) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var + 5 * bool_var);
+  Model model;
+  SatParameters params = GetParams();
+  model.Add(NewSatParameters(params));
+
+  CpSolverResponse response = SolveCpModel(model_builder.Build(), &model);
+
+  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(),
+            params.shared_tree_num_workers());
+  ASSERT_EQ(response.status(), OPTIMAL)
+      << "Validation: " << ValidateCpModel(model_builder.Build());
+  EXPECT_EQ(response.objective_value(), 5 + 3);
+  EXPECT_EQ(SolutionBooleanValue(response, bool_var), true);
+  EXPECT_EQ(SolutionIntegerValue(response, int_var), 3);
+}
+
+TEST_P(SharedTreeSolveTest, FeasiblePigeonHoleSmokeTest) {
+  Model model;
+  SatParameters params = GetParams();
+  model.Add(NewSatParameters(params));
+
+  CpSolverResponse response = SolveCpModel(PigeonholeProblem(10, 10), &model);
+
+  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(), 4);
+  EXPECT_EQ(response.status(), OPTIMAL);
+}
+
+TEST_P(SharedTreeSolveTest, InfeasiblePigeonHoleSmokeTest) {
+  Model model;
+  SatParameters params = GetParams();
+  model.Add(NewSatParameters(params));
+
+  CpSolverResponse response = SolveCpModel(PigeonholeProblem(10), &model);
+
+  EXPECT_EQ(model.GetOrCreate<SharedTreeManager>()->NumWorkers(), 4);
+  EXPECT_EQ(response.status(), INFEASIBLE);
+}
+
+TEST_P(SharedTreeSolveTest, InfeasiblePigeonHolePureSatLratTest) {
+  SatParameters params = GetParams();
+  const SatParameters to_merge =
+      google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(
+          "symmetry_level:1,"
+          "num_workers:6,"
+          "shared_tree_num_workers:6,"
+          "find_clauses_that_are_exactly_one:false,"
+          "debug_crash_if_lrat_check_fails:true,"
+          "check_lrat_proof:true,"
+          "output_lrat_proof:true,"
+          "check_merged_lrat_proof:true,"
+          "inprocessing_use_sat_sweeping:false,"
+          "cp_model_pure_sat_presolve:true");
+  params.MergeFrom(to_merge);
+  Model model;
+  model.Add(NewSatParameters(params));
+
+  CpSolverResponse response = SolveCpModel(PigeonholeProblem(5), &model);
+
+  EXPECT_EQ(response.status(), INFEASIBLE);
+}
+
+TEST(SharedTreeManagerTest, SharedBranchingTest) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(2);
+  params.set_shared_tree_num_workers(2);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->TrySplitTree({-1, 0}, assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 2);
+  const auto* leaf1 = trail1.GetNode(assignment1.leaf_id);
+  const auto* leaf2 = trail2.GetNode(assignment2.leaf_id);
+  EXPECT_EQ(leaf1->shared().decision, leaf2->shared().decision.Negated());
+  EXPECT_EQ(leaf1->decoded_decision(), leaf2->decoded_decision().Negated());
+}
+
+TEST(SharedTreeManagerTest, ObjectiveLbSplitTest) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
+  params.set_cp_model_presolve(false);
+  params.set_shared_tree_split_strategy(
+      SatParameters::SPLIT_STRATEGY_OBJECTIVE_LB);
+  model.Add(NewSatParameters(params));
+  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(model_builder.Build());
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->TrySplitTree({-1, 0}, assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
+  trail1.ImportNode({.id = assignment1.leaf_id, .objective_lb = 2});
+  trail2.ImportNode({.id = assignment2.leaf_id, .objective_lb = 1});
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
+  // This call should not be necessary, investigate.
+  response_manager->UpdateInnerObjectiveBounds("test", IntegerValue(1),
+                                               IntegerValue(100));
+
+  // Reject this split because it is not at the global lower bound.
+  const NodeId old_leaf_id = assignment1.leaf_id;
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                 assignment1, trail1));
+  EXPECT_EQ(assignment1.leaf_id, old_leaf_id);
+
+  EXPECT_EQ(response_manager->GetInnerObjectiveLowerBound(), 1);
+}
+
+TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(5);
+  params.set_shared_tree_num_workers(5);
+  params.set_shared_tree_open_leaves_per_worker(1);
+  params.set_shared_tree_balance_tolerance(0);
+  params.set_cp_model_presolve(false);
+  params.set_shared_tree_split_strategy(
+      SatParameters::SPLIT_STRATEGY_DISCREPANCY);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(model_builder.Build());
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({-1, 0}, assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 4},
+                                                assignment1, trail1));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                 assignment1, trail1));
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment2, trail2));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                 assignment2, trail2));
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
+
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
+}
+
+TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(2);
+  params.set_shared_tree_num_workers(2);
+  params.set_shared_tree_open_leaves_per_worker(2.5);
+  params.set_cp_model_presolve(false);
+  params.set_shared_tree_split_strategy(
+      SatParameters::SPLIT_STRATEGY_DISCREPANCY);
+  params.set_shared_tree_balance_tolerance(0);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(model_builder.Build());
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({-1, 0}, assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                assignment1, trail1));
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment2, trail2));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                 assignment2, trail2));
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
+
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
+}
+
+TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(5);
+  params.set_shared_tree_num_workers(5);
+  params.set_shared_tree_open_leaves_per_worker(1);
+  params.set_cp_model_presolve(false);
+  params.set_shared_tree_split_strategy(
+      SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(model_builder.Build());
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 2},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 1},
+                                                assignment1, trail1));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 0},
+                                                 assignment1, trail1));
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
+
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                assignment2, trail2));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 4},
+                                                 assignment2, trail2));
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
+
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
+}
+
+TEST(SharedTreeManagerTest, BalancedSplitTest) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
+  model_builder.Maximize(int_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
+  params.set_shared_tree_open_leaves_per_worker(2);
+  params.set_cp_model_presolve(false);
+  params.set_shared_tree_split_strategy(
+      SatParameters::SPLIT_STRATEGY_BALANCED_TREE);
+  params.set_shared_tree_balance_tolerance(0);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(model_builder.Build());
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 3},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 2},
+                                                assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 1},
+                                                assignment1, trail1));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 0},
+                                                 assignment1, trail1));
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 6},
+                                                assignment2, trail2));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({int_var.index(), 5},
+                                                assignment2, trail2));
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({int_var.index(), 4},
+                                                 assignment2, trail2));
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 4);
+
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 11);
+}
+
+TEST(SharedTreeManagerTest, SyncTreePrunesClosedUnassignedLeaves) {
+  Model model;
+  SatParameters params;
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({-1, 0}, assignment1, trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree({1, 0}, assignment1, trail1));
+  EXPECT_EQ(trail1.Size(), 5);
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  trail1.CloseNode(NodeId(2), {});
+  shared_tree_manager->SyncTree(assignment1, trail1);
+
+  EXPECT_EQ(assignment1.leaf_id, kNoNodeId);
+  EXPECT_FALSE(shared_tree_manager->TrySplitTree({1, 0}, assignment1, trail1));
+  EXPECT_EQ(trail1.Size(), 1);
+  EXPECT_EQ(trail2.Size(), 3);
+
+  EXPECT_EQ(trail2.GetNode(assignment2.leaf_id)->shared().decision,
+            ProtoLiteral(0, 1));
+}
+
+TEST(SharedTreeManagerTest, ReplaceSubtreeSharesState) {
+  CpModelBuilder model_builder;
+  auto bool_var = model_builder.NewBoolVar();
+  auto int_var = model_builder.NewIntVar({0, 7});
+  auto bool_phase_var = model_builder.NewBoolVar();
+  model_builder.AddLessOrEqual(int_var, 6)
+      .OnlyEnforceIf({bool_var, bool_phase_var});
+  model_builder.Maximize(int_var + bool_phase_var);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  LoadVariables(model_builder.Build(), false, &model);
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr, model.GetOrCreate<CpModelMapping>(),
+                           model.GetOrCreate<IntegerEncoder>());
+  SharedTreeEncoder trail2(nullptr, model.GetOrCreate<CpModelMapping>(),
+                           model.GetOrCreate<IntegerEncoder>());
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  assignment1.phase = {ProtoLiteral(3, 1)};
+  shared_tree_manager->TrySplitTree(ProtoLiteral(0, 1), assignment1, trail1);
+  const NodeId leaf_id1 = assignment1.leaf_id;
+  trail1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(2, IntegerValue(1)));
+  trail1.GetNode(leaf_id1)->AddLbdSample(1.0);
+  // Prefer any leaf other than the current one.
+  shared_tree_manager->SyncTree(
+      assignment1, trail1, /*replace=*/true,
+      [leaf_id1](const SharedTreeNode& a, const SharedTreeNode& b) {
+        return a.id != leaf_id1 && b.id == leaf_id1;
+      });
+
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
+
+  EXPECT_EQ(trail1.Size(), 3);
+  EXPECT_EQ(trail2.Size(), 3);
+  EXPECT_THAT(assignment1.phase, testing::IsEmpty());
+  EXPECT_EQ(assignment2.leaf_id, leaf_id1);
+  EXPECT_THAT(trail2.GetNode(assignment2.leaf_id)->shared().lbd,
+              testing::AllOf(
+                  testing::Property(&IncrementalAverage::CurrentAverage, 1.0),
+                  testing::Property(&IncrementalAverage::NumRecords, 1)));
+  EXPECT_THAT(trail2.GetNode(assignment2.leaf_id)->shared().var_lower_bounds,
+              testing::ElementsAre(testing::Pair(2, IntegerValue(1))));
+  EXPECT_THAT(assignment2.phase, testing::ElementsAre(ProtoLiteral(3, 1)));
+}
+
+TEST(SharedTreeManagerTest, AssignsPreferredLeaf) {
+  Model model;
+  SatParameters params;
+  params.set_num_workers(8);
+  params.set_shared_tree_num_workers(8);
+  model.Add(NewSatParameters(params));
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  // Leaves 3, 5 and 7 are left unassigned.
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree(ProtoLiteral(0, 1), assignment1,
+                                                trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree(ProtoLiteral(1, 1), assignment1,
+                                                trail1));
+  EXPECT_TRUE(shared_tree_manager->TrySplitTree(ProtoLiteral(2, 1), assignment1,
+                                                trail1));
+
+  shared_tree_manager->SyncTree(
+      assignment2, trail2, /*replace=*/false,
+      [](const SharedTreeNode& a, const SharedTreeNode& b) {
+        return a.id == NodeId(5) && b.id != NodeId(5);
+      });
+
+  EXPECT_EQ(assignment2.leaf_id, NodeId(5));
+}
+
+TEST(SharedTreeManagerTest, SyncTreeClosesLratProofWithInvalidLeaf) {
+  SatParameters params;
+  params.set_output_lrat_proof(true);
+  params.set_check_lrat_proof(true);
+  params.set_debug_crash_if_lrat_check_fails(
+      false);  // Don't crash, return INVALID
+  params.set_shared_tree_num_workers(4);
+  Model model;
+  model.Add(NewSatParameters(params));
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  auto lrat1 = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder worker1(lrat1.get());
+  auto lrat2 = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder worker2(lrat2.get());
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+
+  shared_tree_manager->SyncTree(assignment1, worker1);
+  shared_tree_manager->TrySplitTree(ProtoLiteral(0, 1), assignment1, worker1);
+  const ClauseUniquePtr clause2 =
+      NewClausePtr({Literal(BooleanVariable(0), false)});
+  lrat1->AddProblemClause(clause2.get());
+  worker1.CloseNode(NodeId(2), {clause2.get()});
+  const ClauseUniquePtr clause3 =
+      NewClausePtr({Literal(BooleanVariable(0), true)});
+  lrat1->AddProblemClause(clause3.get());
+  worker1.CloseNode(NodeId(3), {clause3.get()});
+  shared_tree_manager->SyncTree(assignment1, worker1);
+
+  EXPECT_EQ(lrat1->Check(), SharedLratProofStatus::VALID);
+  EXPECT_FALSE(shared_tree_manager->SyncTree(assignment2, worker2));
+  EXPECT_EQ(lrat2->Check(), SharedLratProofStatus::VALID);
+}
+
+TEST(SharedTreeManagerTest, CloseLratProofAfterClosingRoot) {
+  SatParameters params;
+  params.set_output_lrat_proof(true);
+  params.set_check_lrat_proof(true);
+  params.set_debug_crash_if_lrat_check_fails(true);
+  params.set_shared_tree_num_workers(2);
+  Model model;
+  model.Add(NewSatParameters(params));
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  auto lrat = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder worker(lrat.get());
+  SharedTreeManager::SubtreeAssignment assignment;
+  shared_tree_manager->SyncTree(assignment, worker);
+  shared_tree_manager->TrySplitTree(ProtoLiteral(0, 1), assignment, worker);
+  const ClauseUniquePtr clause2 =
+      NewClausePtr({Literal(BooleanVariable(0), false)});
+  lrat->AddProblemClause(clause2.get());
+  worker.CloseNode(NodeId(2), {clause2.get()});
+  const ClauseUniquePtr clause3 =
+      NewClausePtr({Literal(BooleanVariable(0), true)});
+  lrat->AddProblemClause(clause3.get());
+  worker.CloseNode(NodeId(3), {clause3.get()});
+  shared_tree_manager->SyncTree(assignment, worker);
+
+  shared_tree_manager->CloseLratProof();
+
+  EXPECT_EQ(lrat->Check(), SharedLratProofStatus::VALID);
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 1);
 }
 
 }  // namespace

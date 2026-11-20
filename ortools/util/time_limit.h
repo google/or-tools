@@ -413,9 +413,14 @@ class SharedTimeLimit {
     }
   }
 
-  void UpdateLocalLimit(TimeLimit* local_limit) {
+  void UpdateLocalLimit(TimeLimit* local_limit) const {
     absl::MutexLock lock(mutex_);
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
+  }
+
+  void ResetHistory() {
+    absl::MutexLock lock(mutex_);
+    time_limit_->ResetHistory();
   }
 
   void AdvanceDeterministicTime(double deterministic_duration) {
@@ -426,6 +431,11 @@ class SharedTimeLimit {
   double GetTimeLeft() const {
     absl::ReaderMutexLock lock(mutex_);
     return time_limit_->GetTimeLeft();
+  }
+
+  double GetElapsedTime() const {
+    absl::ReaderMutexLock lock(mutex_);
+    return time_limit_->GetElapsedTime();
   }
 
   double GetElapsedDeterministicTime() const {

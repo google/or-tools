@@ -19,7 +19,7 @@ endif()
 if(RELEASE)
   set(JAVA_RELEASE "")
 else()
-  set(JAVA_RELEASE "-rc1")
+  set(JAVA_RELEASE "-rc${RC_VERSION}")
 endif()
 
 if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)

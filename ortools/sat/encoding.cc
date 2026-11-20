@@ -726,23 +726,65 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
 
     int num_in_decompo = 0;
     if (!in_exactly_one) {
+      std::vector<Literal> common_implied_literals;
+      std::vector<Literal> current_implied_literals;
       for (const auto amo : decomposition) {
         num_in_decompo += amo.size();
 
         // Extract Amo nodes and set them to nullptr in to_merge.
         std::vector<EncodingNode*> amo_nodes;
-        for (const Literal l : amo) {
-          const int index = node_indices.at(l.Index());
+        for (const Literal lit : amo) {
+          const int index = node_indices.at(lit.Index());
           amo_nodes.push_back(to_merge[index]);
           to_merge[index] = nullptr;
         }
 
         // Create the new node with proper constraints and weight.
         repository_.push_back(EncodingNode());
-        EncodingNode* n = &repository_.back();
-        n->InitializeAmoNode(amo_nodes, sat_solver_);
-        n->set_weight(min_weight);
-        to_merge.push_back(n);
+        EncodingNode* new_node = &repository_.back();
+        new_node->InitializeAmoNode(amo_nodes, sat_solver_);
+
+        // Preserve any binary implications shared by all literals in the AMO.
+        // new_node->literal(0) is true only when at least one literal in
+        // amo_nodes is true. Therefore, any literal implied by all literals in
+        // amo_nodes must also be implied by new_node->literal(0).
+        // common_implied_literals maintains the sorted intersection of direct
+        // implications shared by amo_nodes[0..i], and current_implied_literals
+        // is a sorted scratch buffer holding the direct implications of
+        // amo_nodes[i]->literal(0).
+        const auto first_implications =
+            implications_->Implications(amo_nodes[0]->literal(0));
+        common_implied_literals.assign(first_implications.begin(),
+                                       first_implications.end());
+        gtl::STLSortAndRemoveDuplicates(&common_implied_literals);
+        for (int i = 1;
+             i < amo_nodes.size() && !common_implied_literals.empty(); ++i) {
+          const auto implications =
+              implications_->Implications(amo_nodes[i]->literal(0));
+          current_implied_literals.assign(implications.begin(),
+                                          implications.end());
+          gtl::STLSortAndRemoveDuplicates(&current_implied_literals);
+          int new_size = 0;
+          int j = 0;
+          for (const Literal lit : common_implied_literals) {
+            while (j < current_implied_literals.size() &&
+                   current_implied_literals[j] < lit) {
+              ++j;
+            }
+            if (j < current_implied_literals.size() &&
+                current_implied_literals[j] == lit) {
+              common_implied_literals[new_size++] = lit;
+            }
+          }
+          common_implied_literals.resize(new_size);
+        }
+        for (const Literal implied : common_implied_literals) {
+          if (implied == new_node->literal(0)) continue;
+          sat_solver_->AddBinaryClause(new_node->literal(0).Negated(), implied);
+        }
+
+        new_node->set_weight(min_weight);
+        to_merge.push_back(new_node);
       }
       if (num_in_decompo > 0) {
         absl::StrAppend(info, " amo:", decomposition.size(),

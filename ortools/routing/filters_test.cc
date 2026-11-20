@@ -35,6 +35,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
@@ -1602,6 +1603,8 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
   };
 
   DimensionValues dimension_values(1, 4);
+  PathState path_state(4, {0}, {3});
+  const std::vector<int> path_class = {0};
 
   for (int s = 0; s < scenarios.size(); ++s) {
     dimension_values.Revert();
@@ -1609,11 +1612,13 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
     dimension_values.PushNode(1);
     dimension_values.PushNode(2);
     dimension_values.PushNode(3);
+    PathStateChangePaths(&path_state, {{0, 1, 2, 3}}, {});
     dimension_values.MakePathFromNewNodes(0);
     const Scenario& scenario = scenarios[s];
     const bool feasible = FillDimensionValuesFromDimension(
-        0, scenario.capacity, scenario.span_upper_bound, input_cumuls,
-        input_slacks, travel_evaluator, dimension_values);
+        0, &path_state, scenario.capacity, scenario.span_upper_bound,
+        path_class, input_cumuls, input_slacks, travel_evaluator,
+        dimension_values);
     EXPECT_EQ(feasible, scenario.expected_feasible);
     if (!feasible) continue;
     EXPECT_THAT(dimension_values.Travels(0),
@@ -1635,88 +1640,100 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
 }
 
 TEST(FillDimensionValuesFromDimensionTest, TravelCaching) {
-  DimensionValues dimension_values(1, 6);
-  using Interval = DimensionValues::Interval;
-  std::vector<Interval> cumuls(6, {.min = 0, .max = 100});
-  std::vector<Interval> slacks(6, {.min = 0, .max = kint64max});
-  int num_evaluator_calls = 0;
-  auto travel_evaluator = [&num_evaluator_calls](int64_t from,
-                                                 int64_t to) -> int64_t {
-    ++num_evaluator_calls;
-    return 10 * from + to;
-  };
-  // Make initial state.
-  const std::vector<int> initial_nodes = {1, 3, 0, 4, 2};
-  for (const int node : initial_nodes) {
-    dimension_values.PushNode(node);
-  }
-  dimension_values.MakePathFromNewNodes(0);
-  EXPECT_TRUE(FillDimensionValuesFromDimension(
-      0, 10000, 10000, cumuls, slacks, travel_evaluator, dimension_values));
-  EXPECT_THAT(dimension_values.Travels(0), ElementsAreArray({13, 30, 4, 42}));
-  dimension_values.Commit();
-  // Test changes to paths with various parts in common with initial path:
-  struct Scenario {
-    std::vector<int> nodes;
-    std::vector<int64_t> expected_travels;
-    int expected_num_evaluator_calls;
-  };
-  std::vector<Scenario> scenarios = {
-      // Same path.
-      {.nodes = {1, 3, 0, 4, 2},
-       .expected_travels = {13, 30, 4, 42},
-       .expected_num_evaluator_calls = 0},
-      // Removed one node.
-      {.nodes = {1, 0, 4, 2},
-       .expected_travels = {10, 4, 42},
-       .expected_num_evaluator_calls = 1},
-      {.nodes = {1, 3, 4, 2},
-       .expected_travels = {13, 34, 42},
-       .expected_num_evaluator_calls = 1},
-      {.nodes = {1, 3, 0, 2},
-       .expected_travels = {13, 30, 2},
-       .expected_num_evaluator_calls = 1},
-      // Added one node.
-      {.nodes = {1, 3, 0, 4, 2},
-       .expected_travels = {13, 30, 4, 42},
-       .expected_num_evaluator_calls = 0},
-      {.nodes = {1, 5, 3, 0, 4, 2},
-       .expected_travels = {15, 53, 30, 4, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 5, 0, 4, 2},
-       .expected_travels = {13, 35, 50, 4, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 0, 5, 4, 2},
-       .expected_travels = {13, 30, 5, 54, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 0, 4, 5, 2},
-       .expected_travels = {13, 30, 4, 45, 52},
-       .expected_num_evaluator_calls = 2},
-      // Emptied path.
-      {.nodes = {1, 2},
-       .expected_travels = {12},
-       .expected_num_evaluator_calls = 1},
-      // Exchanged nodes.
-      {.nodes = {1, 4, 0, 3, 2},
-       .expected_travels = {14, 40, 3, 32},
-       .expected_num_evaluator_calls = 4},
-      // Moved a chain.
-      {.nodes = {1, 0, 4, 3, 2},
-       .expected_travels = {10, 4, 43, 32},
-       .expected_num_evaluator_calls = 4},
-  };
-  for (const Scenario& scenario : scenarios) {
-    dimension_values.Revert();
-    num_evaluator_calls = 0;
-    for (const int node : scenario.nodes) {
+  for (const bool use_path_state : {false, true}) {
+    DimensionValues dimension_values(1, 6);
+    PathState path_state(6, {1}, {2});
+    PathState* const maybe_path_state = use_path_state ? &path_state : nullptr;
+    const std::vector<int> path_class = {0};
+    using Interval = DimensionValues::Interval;
+    std::vector<Interval> cumuls(6, {.min = 0, .max = 100});
+    std::vector<Interval> slacks(6, {.min = 0, .max = kint64max});
+    int num_evaluator_calls = 0;
+    auto travel_evaluator = [&num_evaluator_calls](int64_t from,
+                                                   int64_t to) -> int64_t {
+      ++num_evaluator_calls;
+      return 10 * from + to;
+    };
+    // Make initial state.
+    const std::vector<int> initial_nodes = {1, 3, 0, 4, 2};
+    PathStateChangePaths(&path_state, {initial_nodes}, {});
+    for (const int node : initial_nodes) {
       dimension_values.PushNode(node);
     }
     dimension_values.MakePathFromNewNodes(0);
     EXPECT_TRUE(FillDimensionValuesFromDimension(
-        0, 10000, 10000, cumuls, slacks, travel_evaluator, dimension_values));
-    EXPECT_THAT(dimension_values.Travels(0),
-                ElementsAreArray(scenario.expected_travels));
-    EXPECT_EQ(num_evaluator_calls, scenario.expected_num_evaluator_calls);
+        0, maybe_path_state, 10000, 10000, path_class, cumuls, slacks,
+        travel_evaluator, dimension_values));
+    EXPECT_THAT(dimension_values.Travels(0), ElementsAreArray({13, 30, 4, 42}));
+    dimension_values.Commit();
+    path_state.Commit();
+    // Test changes to paths with various parts in common with initial path:
+    struct Scenario {
+      std::vector<int> nodes;
+      std::vector<int64_t> expected_travels;
+      int expected_num_evaluator_calls;
+    };
+    std::vector<Scenario> scenarios = {
+        // Same path.
+        {.nodes = {1, 3, 0, 4, 2},
+         .expected_travels = {13, 30, 4, 42},
+         .expected_num_evaluator_calls = 0},
+        // Removed one node.
+        {.nodes = {1, 0, 4, 2},
+         .expected_travels = {10, 4, 42},
+         .expected_num_evaluator_calls = 1},
+        {.nodes = {1, 3, 4, 2},
+         .expected_travels = {13, 34, 42},
+         .expected_num_evaluator_calls = 1},
+        {.nodes = {1, 3, 0, 2},
+         .expected_travels = {13, 30, 2},
+         .expected_num_evaluator_calls = 1},
+        // Added one node.
+        {.nodes = {1, 3, 0, 4, 2},
+         .expected_travels = {13, 30, 4, 42},
+         .expected_num_evaluator_calls = 0},
+        {.nodes = {1, 5, 3, 0, 4, 2},
+         .expected_travels = {15, 53, 30, 4, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 5, 0, 4, 2},
+         .expected_travels = {13, 35, 50, 4, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 0, 5, 4, 2},
+         .expected_travels = {13, 30, 5, 54, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 0, 4, 5, 2},
+         .expected_travels = {13, 30, 4, 45, 52},
+         .expected_num_evaluator_calls = 2},
+        // Emptied path.
+        {.nodes = {1, 2},
+         .expected_travels = {12},
+         .expected_num_evaluator_calls = 1},
+        // Exchanged nodes.
+        {.nodes = {1, 4, 0, 3, 2},
+         .expected_travels = {14, 40, 3, 32},
+         .expected_num_evaluator_calls = 4},
+        // Moved a chain.
+        {.nodes = {1, 0, 4, 3, 2},
+         .expected_travels = {10, 4, 43, 32},
+         .expected_num_evaluator_calls = use_path_state ? 3 : 4},
+    };
+    for (const Scenario& scenario : scenarios) {
+      SCOPED_TRACE(DUMP_VARS(use_path_state, scenario.nodes));
+      dimension_values.Revert();
+      path_state.Revert();
+      PathStateChangePaths(&path_state, {scenario.nodes}, {});
+      num_evaluator_calls = 0;
+      for (const int node : scenario.nodes) {
+        dimension_values.PushNode(node);
+      }
+      dimension_values.MakePathFromNewNodes(0);
+      EXPECT_TRUE(FillDimensionValuesFromDimension(
+          0, maybe_path_state, 10000, 10000, path_class, cumuls, slacks,
+          travel_evaluator, dimension_values));
+      EXPECT_THAT(dimension_values.Travels(0),
+                  ElementsAreArray(scenario.expected_travels));
+      EXPECT_EQ(num_evaluator_calls, scenario.expected_num_evaluator_calls);
+    }
   }
 }
 
@@ -3196,6 +3213,145 @@ void MakeAssignment(const std::vector<int>& solution,
   MakeDelta(nullptr, solution.data(), nexts, assignment);
 }
 
+class FilterWithPathState : public LocalSearchFilter {
+ public:
+  FilterWithPathState(LocalSearchFilter* path_state_filter,
+                      LocalSearchFilter* filter)
+      : path_state_filter_(path_state_filter), filter_(filter) {}
+
+  void Relax(const Assignment* delta, const Assignment* deltadelta) override {
+    path_state_filter_->Relax(delta, deltadelta);
+    filter_->Relax(delta, deltadelta);
+  }
+
+  void Commit(const Assignment* assignment, const Assignment* delta) override {
+    filter_->Commit(assignment, delta);
+    path_state_filter_->Commit(assignment, delta);
+  }
+
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override {
+    path_state_filter_->Relax(delta, deltadelta);
+    return filter_->Accept(delta, deltadelta, objective_min, objective_max);
+  }
+
+  bool IsIncremental() const override { return filter_->IsIncremental(); }
+
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {
+    if (delta == nullptr || delta->Empty()) {
+      path_state_filter_->Reset();
+      path_state_filter_->Relax(assignment, nullptr);
+    } else {
+      path_state_filter_->Relax(delta, nullptr);
+    }
+    filter_->Synchronize(assignment, delta);
+    path_state_filter_->Commit(assignment, delta);
+  }
+
+  void Revert() override {
+    filter_->Revert();
+    path_state_filter_->Revert();
+  }
+
+  void Reset() override {
+    filter_->Reset();
+    path_state_filter_->Reset();
+  }
+
+  int64_t GetSynchronizedObjectiveValue() const override {
+    return filter_->GetSynchronizedObjectiveValue();
+  }
+
+  int64_t GetAcceptedObjectiveValue() const override {
+    return filter_->GetAcceptedObjectiveValue();
+  }
+
+  std::string DebugString() const override { return filter_->DebugString(); }
+
+ private:
+  LocalSearchFilter* const path_state_filter_;
+  LocalSearchFilter* const filter_;
+};
+
+std::pair<const PathState*, LocalSearchFilter*> MakeTestPathStateAndFilter(
+    const Model& model) {
+  const int num_vehicles = model.vehicles();
+  std::vector<int> start_nodes(num_vehicles);
+  std::vector<int> end_nodes(num_vehicles);
+  for (int v = 0; v < num_vehicles; ++v) {
+    start_nodes[v] = model.Start(v);
+    end_nodes[v] = model.End(v);
+  }
+  auto path_state =
+      std::make_unique<PathState>(model.Size() + num_vehicles,
+                                  std::move(start_nodes), std::move(end_nodes));
+  const PathState* const path_state_ptr = path_state.get();
+  LocalSearchFilter* const path_state_filter =
+      MakePathStateFilter(model.solver(), std::move(path_state), model.Nexts());
+  return {path_state_ptr, path_state_filter};
+}
+
+LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
+                                       bool propagate_own_objective_value,
+                                       bool filter_objective_cost,
+                                       bool may_use_optimizers) {
+  const Model& model = *dimension.model();
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakePathCumulFilter(
+          dimension, path_state, propagate_own_objective_value,
+          filter_objective_cost, may_use_optimizers);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeRouteConstraintFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeRouteConstraintFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeVehicleAmortizedCostFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeVehicleAmortizedCostFilter(
+          model, path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeSameVehicleCostFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeSameVehicleCostFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeTypeRegulationsFilter(const Model& model) {
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeTypeRegulationsFilter(model,
+                                                                path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
+LocalSearchFilter* MakeDimensionFilter(const Dimension& dimension) {
+  const Model& model = *dimension.model();
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakeDimensionFilter(dimension,
+                                                          path_state);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
 using RoutingFilterTestWithUnaryCallbackAndSolverType =
     ::testing::TestWithParam<
         std::tuple<bool, RoutingSearchParameters::SchedulingSolver>>;
@@ -3237,6 +3393,7 @@ TEST_P(RoutingFilterTestWithUnaryCallbackAndSolverType,
   parameters.set_continuous_scheduling_solver(solver_type);
   IndexManager manager(kNodes, kVehicles, NodeIndex(0));
   for (int lp = 0; lp < std::size(kUseGlobalLPFiltering); lp++) {
+    SCOPED_TRACE(DUMP_VARS(solver_type, kUseGlobalLPFiltering[lp]));
     Model model(manager);
     const int callback =
         use_unary_callback
@@ -4279,11 +4436,13 @@ TEST_P(
   // The non-null objective callback ensures that local LP is used in the
   // PathCumulFilter.
   for (int upper_bound : kCostUpperBounds) {
+    auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
     std::vector<LocalSearchFilterManager::FilterEvent> filters;
-    AppendDimensionCumulFilters({dimension}, parameters,
-                                /*filter_objective_cost=*/true,
-                                /*use_chain_cumul_filter=*/true, &filters);
+    AppendDimensionCumulFilters(path_state, {dimension}, parameters,
+                                /*filter_objective_cost=*/true, &filters);
     ASSERT_EQ(filters.size(), 2);
+    filters[0].filter = model.solver()->RevAlloc(
+        new FilterWithPathState(path_state_filter, filters[0].filter));
     Solver* const solver = model.solver();
     Assignment initial_solution(solver);
     MakeAssignment(kInitialSolution, model.Nexts(), &initial_solution);
@@ -4375,10 +4534,12 @@ class NodePrecedenceCumulFiltersTest
     }
 
     for (bool filter_objective : {false, true}) {
+      auto [path_state, path_state_filter] =
+          MakeTestPathStateAndFilter(*model_);
       std::vector<LocalSearchFilterManager::FilterEvent> filters;
-      AppendDimensionCumulFilters(
-          {time_dimension_}, DefaultRoutingSearchParameters(), filter_objective,
-          /*use_chain_cumul_filter*/ true, &filters);
+      AppendDimensionCumulFilters(path_state, {time_dimension_},
+                                  DefaultRoutingSearchParameters(),
+                                  filter_objective, &filters);
       EXPECT_EQ(filters.size(), 2);
       LocalSearchFilter* const filter = filters[1].filter;
       filter->Synchronize(&initial_solution, nullptr);
@@ -4741,13 +4902,18 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
 
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
   if (!resource_filter_setup.create_filters_independently) {
-    AppendDimensionCumulFilters({time_dimension},
+    auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+    if (!use_cp_sat) {
+      AppendLightWeightDimensionFilters(path_state, {time_dimension}, &filters);
+    }
+    AppendDimensionCumulFilters(path_state, {time_dimension},
                                 DefaultRoutingSearchParameters(),
-                                filter_objective_cost,
-                                /*use_chain_cumul_filter=*/true, &filters);
+                                filter_objective_cost, &filters);
     // There should be 3 filters:
-    // Chain/PathCumulFilter, ResourceAssignmentFilter, LPCumulFilter.
+    // Dimension/PathCumulFilter, ResourceAssignmentFilter, LPCumulFilter.
     ASSERT_EQ(filters.size(), 3);
+    filters[0].filter = model.solver()->RevAlloc(
+        new FilterWithPathState(path_state_filter, filters[0].filter));
   } else {
     const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
     if (use_cp_sat) {
@@ -4758,7 +4924,7 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
            kAccept, /*priority*/ 1});
     } else {
       filters.push_back(
-          {MakeChainCumulFilter(*time_dimension), kAccept, /*priority*/ 0});
+          {MakeDimensionFilter(*time_dimension), kAccept, /*priority*/ 0});
     }
     filters.push_back(
         {MakeResourceAssignmentFilter(
@@ -4794,8 +4960,8 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
       {2, 6, 1, 7, 3, 8}};
   const int kExpectedCost[] = {1, 1, 1, 1, 3, 2, 2};
   const bool kExpectedAccept[][std::size(kDeltaSolutions)] = {
-      /* Chain/PathCumulFilter */ {true, !use_cp_sat, !use_cp_sat, true, true,
-                                   true, true},
+      /* Dimension/PathCumulFilter */ {true, !use_cp_sat, !use_cp_sat, true,
+                                       true, true, true},
       /* ResourceAssignmentFilter */
       {true, true, true, true, false, true, true},
       /* LPCumulFilter */ {true, false, false, true, false, true, false}};
@@ -4811,6 +4977,8 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
     Assignment delta(model.solver());
 
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(f, d, use_cp_sat, resource_fixed_cost,
+                             filter_objective_cost));
       MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                 kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[f][d];
@@ -5050,10 +5218,13 @@ TEST_F(PickupToDeliveryLimitTest, FilterWithAndWithoutLPTest) {
 TEST_F(PickupToDeliveryLimitTest, AppendDimensionCumulFiltersTest) {
   Dimension* const dimension = CreateDimensionWithPickupDeliveryLimits();
 
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(*model_);
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
-  AppendDimensionCumulFilters({dimension}, DefaultRoutingSearchParameters(),
-                              /*filter_objective_cost=*/true,
-                              /*use_chain_cumul_filter=*/true, &filters);
+  AppendDimensionCumulFilters(path_state, {dimension},
+                              DefaultRoutingSearchParameters(),
+                              /*filter_objective_cost=*/true, &filters);
+  filters[0].filter = model_->solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filters[0].filter));
   // The PathCumulFilter doesn't propagate its own objective value when called
   // before the global LPCumulFilter.
   const bool propagates_objective_value[] = {false, true};
@@ -6155,7 +6326,7 @@ TEST(RoutingFilterTest, TypeIncompatibilityFilterTypePolicies) {
       }
       model.CloseModel();
 
-      IntVarLocalSearchFilter* filter = MakeTypeRegulationsFilter(model);
+      LocalSearchFilter* filter = MakeTypeRegulationsFilter(model);
 
       Assignment empty_solution(model.solver());
       MakeAssignment(kEmptySolution, model.Nexts(), &empty_solution);
@@ -6232,7 +6403,7 @@ class TypeRequirementFilterTest : public ::testing::Test {
                              const std::vector<bool>& expected_accept) {
     ASSERT_EQ(expected_accept.size(), std::size(kDeltaSolutions));
 
-    IntVarLocalSearchFilter* filter = MakeTypeRegulationsFilter(*model_);
+    LocalSearchFilter* filter = MakeTypeRegulationsFilter(*model_);
 
     Assignment empty_solution(model_->solver());
     MakeAssignment(kEmptySolution, model_->Nexts(), &empty_solution);
@@ -7861,6 +8032,7 @@ TEST(RoutingFilterTest,
   const int kNodes = 4;
   const int kVehicles = 3;
   for (bool split_groups : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(split_groups));
     // First solution: 0-1-6, 4-2-7, 5-3-8
     const int kInitialSolution[] = {1, 6, 7, 8, 2, 3};
     IndexManager manager(kNodes, kVehicles, NodeIndex(0));
@@ -7928,6 +8100,7 @@ TEST(
   const int kNodes = 7;
   const int kVehicles = 3;
   for (bool split_groups : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(split_groups));
     // First solution: 0-1-9, 7-3-10, 8-5-11
     const int kInitialSolution[] = {1, 9, 2, 10, 4, 11, 6, 3, 5};
     IndexManager manager(kNodes, kVehicles, NodeIndex(0));
@@ -9592,6 +9765,9 @@ TEST_P(RoutingFilterTestWithUnaryCallback, ResourceAssignmentFilteringTest) {
           Assignment delta(model.solver());
           int last_synchronized_delta_index = 0;
           for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+            SCOPED_TRACE(DUMP_VARS(resource_fixed_cost, use_global_lp_filter,
+                                   filter_objective_cost,
+                                   propagate_objective_value, d));
             MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                       kDeltaSolutions[d], model.Nexts(), &delta);
             const bool expected_accept = kExpectedAccept[d];
@@ -9720,6 +9896,7 @@ TEST_P(RoutingFilterTestWithUnaryCallback,
       Assignment delta(model.solver());
       int last_synchronized_delta_index = 0;
       for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+        SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
         MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                   kDeltaSolutions[d], model.Nexts(), &delta);
         const bool expected_accept = kExpectedAccept[d];
@@ -9830,6 +10007,7 @@ TEST_P(RoutingFilterTestWithFixedCost,
     Assignment delta(model.solver());
     int last_synchronized_delta_index = 0;
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
       MakeDelta(kDeltaSolutions[last_synchronized_delta_index],
                 kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[d];
@@ -9915,6 +10093,7 @@ TEST_P(RoutingFilterTestWithFixedCost,
     filter->Synchronize(&initial_solution, nullptr);
     Assignment delta(model.solver());
     for (int d = 0; d < std::size(kDeltaSolutions); d++) {
+      SCOPED_TRACE(DUMP_VARS(use_global_lp_filter, d));
       MakeDelta(kInitialSolution, kDeltaSolutions[d], model.Nexts(), &delta);
       const bool expected_accept = kExpectedAccept[d];
       ASSERT_EQ(filter->Accept(&delta, nullptr, kint64min, kint64max),

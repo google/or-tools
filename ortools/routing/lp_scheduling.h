@@ -787,16 +787,11 @@ class DimensionCumulOptimizerCore {
       const Resource* resource, LinearSolverWrapper* solver,
       std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values);
 
-  struct TransitTargetCost {
-    double threshold_ratio;
-    int64_t cost_coefficient_below_threshold;
-    int64_t cost_coefficient_above_threshold;
-  };
   DimensionSchedulingStatus OptimizeSingleRouteWithTransitTargets(
       int vehicle, double solve_duration_ratio,
       const std::function<int64_t(int64_t)>& next_accessor,
-      absl::Span<const int64_t> transit_targets,
-      TransitTargetCost transit_target_cost, LinearSolverWrapper* solver,
+      const Model::TransitTargetInfo& transit_target_info,
+      LinearSolverWrapper* solver,
       std::vector<int64_t>* optimal_variable_transits,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks);
@@ -1019,8 +1014,7 @@ class LocalDimensionCumulOptimizer {
   DimensionSchedulingStatus ComputeRouteCumulsWithTransitTargets(
       int vehicle, double solve_duration_ratio,
       const std::function<int64_t(int64_t)>& next_accessor,
-      absl::Span<const int64_t> transit_targets,
-      DimensionCumulOptimizerCore::TransitTargetCost transit_target_cost,
+      const Model::TransitTargetInfo& transit_target_info,
       std::vector<int64_t>* optimal_variable_transits,
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks);

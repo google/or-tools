@@ -57,7 +57,7 @@ bool Model::IsMatchingModel() const {
   // a cardinality > 1.
   absl::flat_hash_set<int> disjunction_nodes;
   for (DisjunctionIndex i(0); i < GetNumberOfDisjunctions(); ++i) {
-    const Disjunction disj = GetDisjunction(i);
+    const Disjunction& disj = GetDisjunction(i);
     if (disj.max_cardinality > 1) return false;
     if (disj.soft_max_penalty != 0) return false;
     if (disj.soft_min_cardinality > 1) return false;
@@ -218,7 +218,7 @@ bool Model::SolveMatchingModel(Assignment* assignment,
   absl::flat_hash_map<int, int64_t> flow_to_non_pd;
   for (int node = 0; node < Size(); ++node) {
     if (IsStart(node) || in_disjunction[node]) continue;
-    const std::vector<DisjunctionIndex>& disjunctions =
+    const absl::Span<const DisjunctionIndex> disjunctions =
         GetDisjunctionIndices(node);
     DCHECK_LE(disjunctions.size(), 1);
     disjunction_to_flow_nodes.push_back({});

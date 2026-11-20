@@ -13,253 +13,100 @@
 
 #include "ortools/util/bitset.h"
 
+#include <bit>
 #include <cstdint>
 
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
-
-ABSL_FLAG(int, bitset_small_bitset_count, 8,
-          "threshold to count bits with buckets");
 
 namespace operations_research {
 
-// ---------- Bit Operations ----------
+namespace {
+// Clears bits strictly below `start % 64` in `bucket` (keeps [start % 64, 63]).
+uint64_t ClearBitsBefore(uint64_t bucket, uint64_t start) {
+  const int shift = BitPos64(start);
+  return (bucket >> shift) << shift;
+}
 
-#define BIT_COUNT_RANGE(size, zero)                                           \
-  uint##size##_t BitCountRange##size(const uint##size##_t* const bits,        \
-                                     uint##size##_t start,                    \
-                                     uint##size##_t end) {                    \
-    if (static_cast<int##size##_t>(end - start) >                             \
-        absl::GetFlag(FLAGS_bitset_small_bitset_count)) {                     \
-      const int offset_start = BitOffset##size(start);                        \
-      const int pos_start = BitPos##size(start);                              \
-      const int offset_end = BitOffset##size(end);                            \
-      const int pos_end = BitPos##size(end);                                  \
-      if (offset_end == offset_start) {                                       \
-        return BitCount##size(bits[offset_start] &                            \
-                              OneRange##size(pos_start, pos_end));            \
-      } else {                                                                \
-        uint##size##_t bit_count = zero;                                      \
-        bit_count +=                                                          \
-            BitCount##size(bits[offset_start] & IntervalUp##size(pos_start)); \
-        for (int offset = offset_start + 1; offset < offset_end; ++offset) {  \
-          bit_count += BitCount##size(bits[offset]);                          \
-        }                                                                     \
-        bit_count +=                                                          \
-            BitCount##size(bits[offset_end] & IntervalDown##size(pos_end));   \
-        return bit_count;                                                     \
-      }                                                                       \
-    } else {                                                                  \
-      uint##size##_t bit_count = zero;                                        \
-      for (uint##size##_t i = start; i <= end; ++i) {                         \
-        bit_count += IsBitSet##size(bits, i);                                 \
-      }                                                                       \
-      return bit_count;                                                       \
-    }                                                                         \
+// Clears bits strictly above `end % 64` in `bucket` (keeps [0, end % 64]).
+uint64_t ClearBitsAfter(uint64_t bucket, uint64_t end) {
+  const int shift = 63 - BitPos64(end);
+  return (bucket << shift) >> shift;
+}
+}  // namespace
+
+uint64_t BitCountRange64(const uint64_t* const bits, uint64_t start,
+                         uint64_t end) {
+  DCHECK_LE(start, end);
+  uint64_t offset = BitOffset64(start);
+  const uint64_t offset_end = BitOffset64(end);
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
+  uint64_t bit_count = 0;
+  while (offset < offset_end) {
+    bit_count += std::popcount(bucket);
+    bucket = bits[++offset];
   }
+  bucket = ClearBitsAfter(bucket, end);
+  return bit_count + std::popcount(bucket);
+}
 
-BIT_COUNT_RANGE(64, uint64_t{0})
-BIT_COUNT_RANGE(32, 0U)
+bool IsEmptyRange64(const uint64_t* const bits, uint64_t start, uint64_t end) {
+  return LeastSignificantBitPosition64(bits, start, end) == -1;
+}
 
-#undef BIT_COUNT_RANGE
-
-#define IS_EMPTY_RANGE(size)                                               \
-  bool IsEmptyRange##size(const uint##size##_t* const bits,                \
-                          uint##size##_t start, uint##size##_t end) {      \
-    const int offset_start = BitOffset##size(start);                       \
-    const int pos_start = BitPos##size(start);                             \
-    const int offset_end = BitOffset##size(end);                           \
-    const int pos_end = BitPos##size(end);                                 \
-    if (offset_end == offset_start) {                                      \
-      if (bits[offset_start] & OneRange##size(pos_start, pos_end)) {       \
-        return false;                                                      \
-      }                                                                    \
-    } else {                                                               \
-      if (bits[offset_start] & IntervalUp##size(pos_start)) {              \
-        return false;                                                      \
-      }                                                                    \
-      for (int offset = offset_start + 1; offset < offset_end; ++offset) { \
-        if (bits[offset]) {                                                \
-          return false;                                                    \
-        }                                                                  \
-      }                                                                    \
-      if (bits[offset_end] & IntervalDown##size(pos_end)) {                \
-        return false;                                                      \
-      }                                                                    \
-    }                                                                      \
-    return true;                                                           \
+int64_t LeastSignificantBitPosition64(const uint64_t* const bits,
+                                      uint64_t start, uint64_t end) {
+  DCHECK_LE(start, end);
+  uint64_t offset = BitOffset64(start);
+  const uint64_t offset_end = BitOffset64(end);
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
+  while (bucket == 0 && offset < offset_end) {
+    bucket = bits[++offset];
   }
-
-IS_EMPTY_RANGE(64)
-IS_EMPTY_RANGE(32)
-
-#undef IS_EMPTY_RANGE
-
-#define LEAST_SIGNIFCANT_BIT_POSITION(size)                                  \
-  int##size##_t LeastSignificantBitPosition##size(                           \
-      const uint##size##_t* const bits, uint##size##_t start,                \
-      uint##size##_t end) {                                                  \
-    DCHECK_LE(start, end);                                                   \
-    if (IsBitSet##size(bits, start)) {                                       \
-      return start;                                                          \
-    }                                                                        \
-    const int offset_start = BitOffset##size(start);                         \
-    const int offset_end = BitOffset##size(end);                             \
-    const int pos_start = BitPos##size(start);                               \
-    if (offset_start == offset_end) {                                        \
-      const int pos_end = BitPos##size(end);                                 \
-      const uint##size##_t active_range =                                    \
-          bits[offset_start] & OneRange##size(pos_start, pos_end);           \
-      if (active_range) {                                                    \
-        return BitShift##size(offset_start) +                                \
-               LeastSignificantBitPosition##size(active_range);              \
-      }                                                                      \
-      return -1;                                                             \
-    } else {                                                                 \
-      const uint##size##_t start_mask =                                      \
-          bits[offset_start] & IntervalUp##size(pos_start);                  \
-      if (start_mask) {                                                      \
-        return BitShift##size(offset_start) +                                \
-               LeastSignificantBitPosition##size(start_mask);                \
-      } else {                                                               \
-        for (int offset = offset_start + 1; offset < offset_end; ++offset) { \
-          if (bits[offset]) {                                                \
-            return BitShift##size(offset) +                                  \
-                   LeastSignificantBitPosition##size(bits[offset]);          \
-          }                                                                  \
-        }                                                                    \
-        const int pos_end = BitPos##size(end);                               \
-        const uint##size##_t active_range =                                  \
-            bits[offset_end] & IntervalDown##size(pos_end);                  \
-        if (active_range) {                                                  \
-          return BitShift##size(offset_end) +                                \
-                 LeastSignificantBitPosition##size(active_range);            \
-        } else {                                                             \
-          return -1;                                                         \
-        }                                                                    \
-      }                                                                      \
-    }                                                                        \
+  if (offset == offset_end) {
+    bucket = ClearBitsAfter(bucket, end);
   }
+  if (bucket == 0) return -1;
+  return BitShift64(offset) + LeastSignificantBitPosition64(bucket);
+}
 
-LEAST_SIGNIFCANT_BIT_POSITION(64)
-LEAST_SIGNIFCANT_BIT_POSITION(32)
-
-#undef LEAST_SIGNIFCANT_BIT_POSITION
-
-#define MOST_SIGNIFICANT_BIT_POSITION(size)                                  \
-  int##size##_t MostSignificantBitPosition##size(                            \
-      const uint##size##_t* const bits, uint##size##_t start,                \
-      uint##size##_t end) {                                                  \
-    DCHECK_GE(end, start);                                                   \
-    if (IsBitSet##size(bits, end)) {                                         \
-      return end;                                                            \
-    }                                                                        \
-    const int offset_start = BitOffset##size(start);                         \
-    const int offset_end = BitOffset##size(end);                             \
-    const int pos_end = BitPos##size(end);                                   \
-    if (offset_start == offset_end) {                                        \
-      const int pos_start = BitPos##size(start);                             \
-      const uint##size##_t active_range =                                    \
-          bits[offset_start] & OneRange##size(pos_start, pos_end);           \
-      if (active_range) {                                                    \
-        return BitShift##size(offset_end) +                                  \
-               MostSignificantBitPosition##size(active_range);               \
-      } else {                                                               \
-        return -1;                                                           \
-      }                                                                      \
-    } else {                                                                 \
-      const uint##size##_t end_mask =                                        \
-          bits[offset_end] & IntervalDown##size(pos_end);                    \
-      if (end_mask) {                                                        \
-        return BitShift##size(offset_end) +                                  \
-               MostSignificantBitPosition##size(end_mask);                   \
-      } else {                                                               \
-        for (int offset = offset_end - 1; offset > offset_start; --offset) { \
-          if (bits[offset]) {                                                \
-            return BitShift##size(offset) +                                  \
-                   MostSignificantBitPosition##size(bits[offset]);           \
-          }                                                                  \
-        }                                                                    \
-        const int pos_start = BitPos##size(start);                           \
-        const uint##size##_t active_range =                                  \
-            bits[offset_start] & IntervalUp##size(pos_start);                \
-        if (active_range) {                                                  \
-          return BitShift##size(offset_start) +                              \
-                 MostSignificantBitPosition##size(active_range);             \
-        } else {                                                             \
-          return -1;                                                         \
-        }                                                                    \
-      }                                                                      \
-    }                                                                        \
+int64_t MostSignificantBitPosition64(const uint64_t* const bits, uint64_t start,
+                                     uint64_t end) {
+  DCHECK_LE(start, end);
+  const uint64_t offset_start = BitOffset64(start);
+  uint64_t offset = BitOffset64(end);
+  uint64_t bucket = ClearBitsAfter(bits[offset], end);
+  while (bucket == 0 && offset > offset_start) {
+    bucket = bits[--offset];
   }
-
-MOST_SIGNIFICANT_BIT_POSITION(64)
-MOST_SIGNIFICANT_BIT_POSITION(32)
-
-#undef MOST_SIGNIFICANT_BIT_POSITION
-
-#define UNSAFE_LEAST_SIGNIFICANT_BIT_POSITION(size)                       \
-  int##size##_t UnsafeLeastSignificantBitPosition##size(                  \
-      const uint##size##_t* const bits, uint##size##_t start,             \
-      uint##size##_t end) {                                               \
-    DCHECK_LE(start, end);                                                \
-    DCHECK(IsBitSet##size(bits, end));                                    \
-    if (IsBitSet##size(bits, start)) {                                    \
-      return start;                                                       \
-    }                                                                     \
-    const int offset_start = BitOffset##size(start);                      \
-    const int offset_end = BitOffset##size(end);                          \
-    const int pos_start = BitPos##size(start);                            \
-    const uint##size##_t start_mask =                                     \
-        bits[offset_start] & IntervalUp##size(pos_start);                 \
-    if (start_mask) {                                                     \
-      return BitShift##size(offset_start) +                               \
-             LeastSignificantBitPosition##size(start_mask);               \
-    }                                                                     \
-    for (int offset = offset_start + 1; offset <= offset_end; ++offset) { \
-      if (bits[offset]) {                                                 \
-        return BitShift##size(offset) +                                   \
-               LeastSignificantBitPosition##size(bits[offset]);           \
-      }                                                                   \
-    }                                                                     \
-    return -1;                                                            \
+  if (offset == offset_start) {
+    bucket = ClearBitsBefore(bucket, start);
   }
+  if (bucket == 0) return -1;
+  return BitShift64(offset) + MostSignificantBitPosition64(bucket);
+}
 
-UNSAFE_LEAST_SIGNIFICANT_BIT_POSITION(64)
-UNSAFE_LEAST_SIGNIFICANT_BIT_POSITION(32)
-
-#undef UNSAFE_LEAST_SIGNIFICANT_BIT_POSITION
-
-#define UNSAFE_MOST_SIGNIFICANT_BIT_POSITION(size)                        \
-  int##size##_t UnsafeMostSignificantBitPosition##size(                   \
-      const uint##size##_t* const bits, uint##size##_t start,             \
-      uint##size##_t end) {                                               \
-    DCHECK_GE(end, start);                                                \
-    DCHECK(IsBitSet##size(bits, start));                                  \
-    if (IsBitSet##size(bits, end)) {                                      \
-      return end;                                                         \
-    }                                                                     \
-    const int offset_start = BitOffset##size(start);                      \
-    const int offset_end = BitOffset##size(end);                          \
-    const int pos_end = BitPos##size(end);                                \
-    const uint##size##_t end_mask =                                       \
-        bits[offset_end] & IntervalDown##size(pos_end);                   \
-    if (end_mask) {                                                       \
-      return BitShift##size(offset_end) +                                 \
-             MostSignificantBitPosition##size(end_mask);                  \
-    }                                                                     \
-    for (int offset = offset_end - 1; offset >= offset_start; --offset) { \
-      if (bits[offset]) {                                                 \
-        return BitShift##size(offset) +                                   \
-               MostSignificantBitPosition##size(bits[offset]);            \
-      }                                                                   \
-    }                                                                     \
-    return -1;                                                            \
+int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* const bits,
+                                            uint64_t start, uint64_t end) {
+  DCHECK_LE(start, end);
+  DCHECK(IsBitSet64(bits, end));
+  uint64_t offset = BitOffset64(start);
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
+  while (bucket == 0) {
+    bucket = bits[++offset];
   }
+  return BitShift64(offset) + LeastSignificantBitPosition64(bucket);
+}
 
-UNSAFE_MOST_SIGNIFICANT_BIT_POSITION(64)
-UNSAFE_MOST_SIGNIFICANT_BIT_POSITION(32)
-
-#undef UNSAFE_MOST_SIGNIFICANT_BIT_POSITION
+int64_t UnsafeMostSignificantBitPosition64(const uint64_t* const bits,
+                                           uint64_t start, uint64_t end) {
+  DCHECK_LE(start, end);
+  DCHECK(IsBitSet64(bits, start));
+  uint64_t offset = BitOffset64(end);
+  uint64_t bucket = ClearBitsAfter(bits[offset], end);
+  while (bucket == 0) {
+    bucket = bits[--offset];
+  }
+  return BitShift64(offset) + MostSignificantBitPosition64(bucket);
+}
 
 }  // namespace operations_research

@@ -698,7 +698,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_test_utils",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_test_utils.cc"],
     hdrs = ["lp_test_utils.h"],
     copts = SAFE_FP_CODE,

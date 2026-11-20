@@ -42,9 +42,24 @@ DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
     Solver* absl_nonnull solver,
     LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
     LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
-    bool optimize_and_pack = false,
+    bool optimize_and_pack = false);
+
+/// Same as above, but with Model::RouteDimensionTravelInfo specified for each
+/// route.
+DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool optimize_and_pack,
     std::vector<Model::RouteDimensionTravelInfo>
-        dimension_travel_info_per_route = {});
+        dimension_travel_info_per_route);
+
+/// Same as above, but with Model::TransitTargetInfo specified for each route.
+DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    std::vector<Model::TransitTargetInfo> transit_target_info_per_route);
 
 /// Variant based on global optimizers, handling all routes together.
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(

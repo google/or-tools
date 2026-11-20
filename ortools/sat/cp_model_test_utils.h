@@ -14,10 +14,19 @@
 #ifndef ORTOOLS_SAT_CP_MODEL_TEST_UTILS_H_
 #define ORTOOLS_SAT_CP_MODEL_TEST_UTILS_H_
 
+#include <optional>
+
 #include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
 namespace sat {
+
+// Generates a pairwise bool_or pigeonhole problem placing `num_pigeons`
+// pigeons into `num_holes` holes (defaulting to `num_pigeons - 1`, which is
+// unsatisfiable). Variable `i * num_holes + j` indicates whether pigeon `i` is
+// placed in hole `j`.
+CpModelProto PigeonholeProblem(int num_pigeons,
+                               std::optional<int> num_holes = std::nullopt);
 
 // Generates a random 3-SAT problem with a number of constraints given by:
 // num_variables * proportion_of_constraints. With the default proportion

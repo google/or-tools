@@ -791,5 +791,137 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
   return *coeff1 != 0 && *coeff2 != 0;
 }
 
+bool ComputeCliqueShiftsAndSizes(int num_terms,
+                                 absl::Span<const int64_t> offset_matrix,
+                                 std::vector<int64_t>* shifts,
+                                 std::vector<int64_t>* sizes) {
+  const int n = num_terms;
+  CHECK_GE(n, 0);
+  CHECK_EQ(offset_matrix.size(), static_cast<size_t>(n) * n);
+  if (n <= 1) {
+    shifts->assign(n, 0);
+    sizes->assign(n, kint64max);
+    return true;
+  }
+
+  constexpr int64_t kMaxSafe = kint64max / 4;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      if (i == j) continue;
+      const int64_t o_ij = offset_matrix[i * n + j];
+      if (o_ij != kint64max && (o_ij < -kMaxSafe || o_ij > kMaxSafe)) {
+        return false;
+      }
+    }
+  }
+
+  // Find shifts `s` satisfying `o(i, j) - s[i] + s[j] >= 1` (i.e. `sizes[i] >=
+  // 1`) via Bellman-Ford shortest paths from `s = 0`.
+  std::vector<int64_t> s(n, 0);
+  const int max_bf_passes = std::min(n, 256);
+  for (int pass = 0; pass < max_bf_passes; ++pass) {
+    bool changed = false;
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+        if (i == j || offset_matrix[i * n + j] == kint64max) continue;
+        const int64_t bound = s[j] + offset_matrix[i * n + j] - 1;
+        if (s[i] > bound) {
+          if (bound < -kMaxSafe) return false;
+          s[i] = bound;
+          changed = true;
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  std::vector<int64_t> min2(n, kint64max);
+  std::vector<int> sole_argmin(n, -1);
+  const auto recompute_sizes = [&]() {
+    sizes->assign(n, kint64max);
+    min2.assign(n, kint64max);
+    sole_argmin.assign(n, -1);
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+        if (i == j || offset_matrix[i * n + j] == kint64max) continue;
+        const int64_t val = offset_matrix[i * n + j] - s[i] + s[j];
+        if (val < (*sizes)[i]) {
+          min2[i] = (*sizes)[i];
+          (*sizes)[i] = val;
+          sole_argmin[i] = j;
+        } else if (val < min2[i]) {
+          min2[i] = val;
+        }
+      }
+      if ((*sizes)[i] == min2[i]) sole_argmin[i] = -1;
+    }
+  };
+
+  recompute_sizes();
+  for (const int64_t sz : *sizes) {
+    if (sz < 1) return false;
+  }
+
+  // Greedily adjust single coordinates `s[k]` whenever doing so strictly
+  // increases `sum_i sizes[i]` while keeping all `sizes[i] >= 1`.
+  if (n <= 256) {
+    for (int pass = 0; pass < 8; ++pass) {
+      bool changed = false;
+      for (int k = 0; k < n; ++k) {
+        if ((*sizes)[k] < kint64max) {
+          int64_t slack = kint64max;
+          for (int j = 0; j < n; ++j) {
+            if (j == k || offset_matrix[j * n + k] == kint64max) continue;
+            const int64_t val = offset_matrix[j * n + k] - s[j] + s[k];
+            slack = std::min(slack, val - (*sizes)[j]);
+          }
+          if (slack < kint64max) {
+            slack = std::min(slack, s[k] + kMaxSafe);
+            if (slack > 0) {
+              s[k] -= slack;
+              recompute_sizes();
+              changed = true;
+              continue;
+            }
+          }
+        }
+
+        int num_sole = 0;
+        int64_t step = ((*sizes)[k] < kint64max)
+                           ? std::min((*sizes)[k] - 1, kMaxSafe - s[k])
+                           : (kMaxSafe - s[k]);
+        bool bounded = (*sizes)[k] < kint64max;
+        for (int j = 0; j < n; ++j) {
+          if (sole_argmin[j] == k) {
+            ++num_sole;
+            if (min2[j] < kint64max) {
+              step = std::min(step, min2[j] - (*sizes)[j]);
+              bounded = true;
+            }
+          }
+        }
+        if ((num_sole >= 2 || (num_sole >= 1 && (*sizes)[k] == kint64max)) &&
+            bounded && step > 0) {
+          s[k] += step;
+          recompute_sizes();
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+  }
+
+  const int64_t min_s = *std::min_element(s.begin(), s.end());
+  for (int64_t& v : s) {
+    v -= min_s;
+    if (v > kMaxSafe) return false;
+  }
+  for (const int64_t sz : *sizes) {
+    if (sz < 1 || (sz < kint64max && sz > kMaxSafe)) return false;
+  }
+  *shifts = std::move(s);
+  return true;
+}
+
 }  // namespace sat
 }  // namespace operations_research

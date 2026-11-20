@@ -20,15 +20,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/basictypes.h"
 #include "ortools/base/file.h"
-#include "ortools/base/gmock.h"
 
 namespace operations_research {
 namespace {
+
+using ::absl_testing::IsOk;
 
 TEST(GZipFileTest, ReadUncompressedData) {
   // 1. Create original content
@@ -52,7 +54,7 @@ TEST(GZipFileTest, ReadUncompressedData) {
   ASSERT_NE(out_file, nullptr);
   size_t bytes_written = out_file->Write(compressed.data(), compressed.size());
   ASSERT_EQ(bytes_written, compressed.size());
-  ASSERT_OK(out_file->Close(0));
+  ASSERT_THAT(out_file->Close(0), IsOk());
 
   // 4. Open the file with File::Open
   File* raw_file = File::Open(temp_filename, "r");
@@ -76,7 +78,7 @@ TEST(GZipFileTest, ReadUncompressedData) {
 
   // 8. Close reader (should close raw_file and delete reader because of
   // TAKE_OWNERSHIP)
-  EXPECT_OK(gzip_reader->Close(0));
+  EXPECT_THAT(gzip_reader->Close(0), IsOk());
 
   // 9. Clean up file
   std::remove(temp_filename.c_str());
@@ -119,7 +121,7 @@ TEST(GZipFileTest, ConcatenatedStreams) {
   size_t bytes_written =
       out_file->Write(concatenated.data(), concatenated.size());
   ASSERT_EQ(bytes_written, concatenated.size());
-  ASSERT_OK(out_file->Close(0));
+  ASSERT_THAT(out_file->Close(0), IsOk());
 
   // Open & wrap
   File* raw_file = File::Open(temp_filename, "r");
@@ -133,7 +135,7 @@ TEST(GZipFileTest, ConcatenatedStreams) {
   EXPECT_EQ(bytes_read, decompressed.size());
   EXPECT_EQ(decompressed, part1 + part2);
 
-  EXPECT_OK(gzip_reader->Close(0));
+  EXPECT_THAT(gzip_reader->Close(0), IsOk());
 
   // Clean up
   std::remove(temp_filename.c_str());

@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -67,7 +69,9 @@ class EnforcedLinearConstraint {
   double upper_bound() const { return constraint_->upper_bound(); }
 
   absl::string_view name() const { return constraint_->name(); }
-  const MPConstraintProto& proto() const { return *constraint_; }
+
+  // Human-readable representation of the constraint, for logging and errors.
+  std::string DebugString() const;
 
   // Mutable API is kept minimal and proto like.
   void set_vars(int i, int value) { constraint_->set_var_index(i, value); }
@@ -80,6 +84,14 @@ class EnforcedLinearConstraint {
     CHECK_LE(new_num_terms, num_terms());
     constraint_->mutable_var_index()->Truncate(new_num_terms);
     constraint_->mutable_coefficient()->Truncate(new_num_terms);
+  }
+  void Clear() {
+    constraint_->set_lower_bound(-std::numeric_limits<double>::infinity());
+    constraint_->set_upper_bound(std::numeric_limits<double>::infinity());
+    constraint_->clear_var_index();
+    constraint_->clear_coefficient();
+    enforcement_vars_.clear();
+    enforcement_values_.clear();
   }
 
   // And for the enforcement.
@@ -110,6 +122,35 @@ class EnforcedLinearConstraint {
 
   // The linear part is stored in the underlying MPModelProto constraint.
   MPConstraintProto* constraint_;
+};
+
+// A non-owning view of the linear part of a constraint:
+//   lower_bound <= sum_i coeffs[i] * x[vars[i]] <= upper_bound.
+// It is implicitly constructible from both an MPConstraintProto and an
+// EnforcedLinearConstraint (whose enforcement is ignored), so that helpers
+// working on the linear part only can take either. The viewed constraint must
+// outlive the view and not be modified while the view is in use.
+struct LinearConstraintView {
+  LinearConstraintView(const MPConstraintProto& ct)  // NOLINT
+      : vars(ct.var_index()),
+        coeffs(ct.coefficient()),
+        lower_bound(ct.lower_bound()),
+        upper_bound(ct.upper_bound()),
+        name(ct.name()) {}
+  LinearConstraintView(const EnforcedLinearConstraint& ct)  // NOLINT
+      : vars(ct.vars()),
+        coeffs(ct.coeffs()),
+        lower_bound(ct.lower_bound()),
+        upper_bound(ct.upper_bound()),
+        name(ct.name()) {}
+
+  int num_terms() const { return vars.size(); }
+
+  absl::Span<const int> vars;
+  absl::Span<const double> coeffs;
+  double lower_bound;
+  double upper_bound;
+  absl::string_view name;
 };
 
 // A simple wrapper that see a MPModelProto as an uniform list of
@@ -172,6 +213,7 @@ class MPModelProtoWrapper {
   // WARNING: This do not see "enforcement" and the model should be manipulated
   // with care. It is forbidden to change the number of variable or constraint.
   MPModelProto* mutable_underlying_model() { return &mp_model_; }
+  const MPModelProto& underlying_model() const { return mp_model_; }
 
  private:
   double objective_scaling_;

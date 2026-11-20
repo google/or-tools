@@ -473,6 +473,110 @@ TEST(GetCoefficientOfPositiveVar, BasicBehavior) {
             GetCoefficientOfPositiveVar(IntegerVariable(2), ct));
 }
 
+TEST(LinearConstraintBuilderOverflowTest, ValidConstraintAndExpressionSucceed) {
+  const IntegerVariable x(0);
+  const IntegerVariable y(2);
+  LinearConstraintBuilder builder(IntegerValue(-10), IntegerValue(20));
+  builder.AddTerm(AffineExpression(x, IntegerValue(2), IntegerValue(5)),
+                  IntegerValue(3));
+  builder.AddTerm(y, IntegerValue(-4));
+  builder.AddTerm(x, IntegerValue(1));
+  EXPECT_FALSE(builder.IsOverflowing());
+
+  LinearConstraint ct;
+  ASSERT_TRUE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+  // offset_ = 3 * 5 = 15, so [-10, 20] shifts to [-25, 5], coeff(x) = 6 + 1 = 7
+  EXPECT_EQ(ct.lb, IntegerValue(-25));
+  EXPECT_EQ(ct.ub, IntegerValue(5));
+  ASSERT_EQ(ct.num_terms, 2);
+  EXPECT_EQ(ct.vars[0], x);
+  EXPECT_EQ(ct.coeffs[0], IntegerValue(7));
+  EXPECT_EQ(ct.vars[1], y);
+  EXPECT_EQ(ct.coeffs[1], IntegerValue(-4));
+
+  LinearExpression expr;
+  ASSERT_TRUE(builder.BuildIntoExpressionAndCheckOverflow(&expr));
+  EXPECT_EQ(expr.offset, IntegerValue(15));
+  EXPECT_THAT(expr.vars, ElementsAre(x, y));
+  EXPECT_THAT(expr.coeffs, ElementsAre(IntegerValue(7), IntegerValue(-4)));
+}
+
+TEST(LinearConstraintBuilderOverflowTest,
+     AffineExpressionConstantProductOverflowsAndClearResets) {
+  const IntegerVariable x(0);
+  LinearConstraintBuilder builder(kMinIntegerValue, IntegerValue(100));
+  // coeff * expr.constant = (5LL << 30) * (5LL << 40) overflows int64_t.
+  builder.AddTerm(
+      AffineExpression(x, IntegerValue(1LL << 30), IntegerValue(5LL << 40)),
+      IntegerValue(5LL << 30));
+  EXPECT_TRUE(builder.IsOverflowing());
+
+  LinearConstraint ct;
+  EXPECT_FALSE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+  LinearExpression expr;
+  EXPECT_FALSE(builder.BuildIntoExpressionAndCheckOverflow(&expr));
+
+  builder.Clear();
+  EXPECT_FALSE(builder.IsOverflowing());
+  builder.ResetBounds(IntegerValue(0), IntegerValue(10));
+  builder.AddTerm(x, IntegerValue(2));
+  ASSERT_TRUE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+  EXPECT_EQ(ct.lb, IntegerValue(0));
+  EXPECT_EQ(ct.ub, IntegerValue(10));
+}
+
+TEST(LinearConstraintBuilderOverflowTest,
+     NonStickyConstantAdditionStaysOverflowing) {
+  const IntegerVariable x(0);
+  LinearConstraintBuilder builder(kMinIntegerValue, IntegerValue(0));
+  builder.AddTerm(x, IntegerValue(1));
+  builder.AddConstant(IntegerValue(1LL << 62));
+  builder.AddConstant(IntegerValue(1LL << 62));
+  // Subtracting a finite constant after saturating offset_ must not clear
+  // the sticky overflow state.
+  builder.AddConstant(IntegerValue(-100));
+  EXPECT_TRUE(builder.IsOverflowing());
+
+  LinearConstraint ct;
+  EXPECT_FALSE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+}
+
+TEST(LinearConstraintBuilderOverflowTest, ShiftedFiniteBoundsOverflow) {
+  const IntegerVariable x(0);
+  {
+    LinearConstraintBuilder builder(IntegerValue(-(1LL << 62)),
+                                    kMaxIntegerValue);
+    builder.AddTerm(x, IntegerValue(1));
+    builder.AddConstant(IntegerValue((1LL << 62) + 1));
+    LinearConstraint ct;
+    EXPECT_FALSE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+  }
+  {
+    // Unbounded lb (kMinIntegerValue) must stay unbounded when offset_ != 0.
+    LinearConstraintBuilder builder(kMinIntegerValue, IntegerValue(50));
+    builder.AddTerm(x, IntegerValue(1));
+    builder.AddConstant(IntegerValue(10));
+    LinearConstraint ct;
+    ASSERT_TRUE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+    EXPECT_EQ(ct.lb, kMinIntegerValue);
+    EXPECT_EQ(ct.ub, IntegerValue(40));
+  }
+}
+
+TEST(LinearConstraintBuilderOverflowTest, DuplicateVariableMergeOverflows) {
+  const IntegerVariable x(0);
+  LinearConstraintBuilder builder(IntegerValue(0), kMaxIntegerValue);
+  builder.AddTerm(x, IntegerValue(-(3LL << 61)));
+  builder.AddTerm(x, IntegerValue(-(3LL << 61)));
+  builder.AddTerm(x, IntegerValue(100));
+  EXPECT_FALSE(builder.IsOverflowing());
+
+  LinearConstraint ct;
+  EXPECT_FALSE(builder.BuildIntoConstraintAndCheckOverflow(&ct));
+  LinearExpression expr;
+  EXPECT_FALSE(builder.BuildIntoExpressionAndCheckOverflow(&expr));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

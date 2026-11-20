@@ -26,6 +26,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
@@ -1006,13 +1007,14 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Handling node alternatives.
   /// Adds a set of node alternatives to the neighborhood. No node can be in
   /// two alternatives.
-  int AddAlternativeSet(const std::vector<int64_t>& alternative_set) {
+  int AddAlternativeSet(absl::Span<const int64_t> alternative_set) {
     const int alternative = alternative_sets_.size();
     for (int64_t node : alternative_set) {
       DCHECK_EQ(-1, alternative_index_[node]);
       alternative_index_[node] = alternative;
     }
-    alternative_sets_.push_back(alternative_set);
+    alternative_sets_.emplace_back(alternative_set.begin(),
+                                   alternative_set.end());
     sibling_alternative_.push_back(-1);
     return alternative;
   }
@@ -1517,7 +1519,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   ActivePaths active_paths_;
   /// Node alternative data.
 #ifndef SWIG
-  std::vector<std::vector<int64_t>> alternative_sets_;
+  std::vector<absl::InlinedVector<int64_t, 2>> alternative_sets_;
 #endif  // SWIG
   std::vector<int> alternative_index_;
   std::vector<int64_t> active_in_alternative_set_;

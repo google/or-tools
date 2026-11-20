@@ -368,6 +368,18 @@ inline bool LinearsDifferAtOneTerm(const LinearConstraintProto& lin1,
                                     time_limit);
 }
 
+// Given an n x n row-major `offset_matrix` where `offset_matrix[i * n + j] <
+// kint64max` means `v_j - v_i >= o(i, j)` whenever `i` precedes `j`, computes
+// non-negative `shifts[i] >= 0` (`min_i shifts[i] == 0`) and positive
+// `sizes[i] >= 1` (`kint64max` if row `i` has no finite entry) such that
+// `(v_i + shifts[i]) + sizes[i] <= v_j + shifts[j]` holds for all finite
+// entries. Returns false if no valid shifts exist (e.g. a negative cycle in
+// `o(i, j) - 1`) or if values exceed safe int64_t bounds.
+bool ComputeCliqueShiftsAndSizes(int num_terms,
+                                 absl::Span<const int64_t> offset_matrix,
+                                 std::vector<int64_t>* shifts,
+                                 std::vector<int64_t>* sizes);
+
 }  // namespace sat
 }  // namespace operations_research
 

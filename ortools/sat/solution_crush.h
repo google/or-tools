@@ -380,7 +380,7 @@ class SolutionCrush {
     SetVarValue(PositiveRef(lit), RefIsPositive(lit) == value ? 1 : 0);
   }
 
-  void SetRefValue(int ref, int value) {
+  void SetRefValue(int ref, int64_t value) {
     SetVarValue(PositiveRef(ref), RefIsPositive(ref) ? value : -value);
   }
 

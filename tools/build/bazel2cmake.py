@@ -441,7 +441,7 @@ def map_bintest(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
         CMakeArg("SCRIPT", ctx.cmake_files(srcs)),
         CMakeArg("ENVIRONMENT", ctx.cmake_env(named_data)),
     ]
-    if "noci" in kwargs.get("tags", []):
+    if "oss:no_ci" in kwargs.get("tags", []):
         args.append(CMakeArg(name="DISABLED", values=[], remove_if_empty=False))
     return CMakeCall("ortools_cxx_bintest", *args)
 

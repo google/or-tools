@@ -16,9 +16,11 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -33,6 +35,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -113,11 +116,25 @@ class IntegerConflictResolution {
   absl::Span<const IntegerLiteral> IndexToIntegerLiterals(
       GlobalTrailIndex index);
 
-  // Adds to our processing queue the reason for source_index.
-  // This is also called for the initial conflict, with a dummy source_index.
-  void ExpandAndAddReasonToQueue(GlobalTrailIndex source_index,
-                                 const IntegerReason& reason,
-                                 std::optional<IntegerValue> bound);
+  // An entry of the queue to expand, and for integer entries the bound that we
+  // need to explain.
+  struct EntryToExpand {
+    GlobalTrailIndex index;
+    std::optional<IntegerValue> bound;
+  };
+
+  // Adds to our processing queue the reason for the given entries.
+  //
+  // With more than one entry, they must all be integer entries pushed by the
+  // same propagation of a linear constraint, by decreasing index. See
+  // IntegerTrail::SameLazyLinearReason(). The reason of all the entries is then
+  // expanded at once, which only scans the linear constraint once.
+  //
+  // This is also called for the initial conflict, with a dummy index and the
+  // reason of the conflict.
+  void ExpandAndAddReasonToQueue(
+      absl::Span<const EntryToExpand> entries,
+      const IntegerReason* initial_conflict = nullptr);
 
   // Updates int_data_[i_lit.var] and adds an entry to the queue if needed.
   void ProcessIntegerLiteral(GlobalTrailIndex source_index,
@@ -146,6 +163,15 @@ class IntegerConflictResolution {
   // Add the integer variable entry to the queue.
   void AddToQueueIfNotThere(IntegerVariableData& data);
 
+  // Fills `conflict` with the negation of all the decisions up to (and
+  // including) `conflict_level`, highest level first. This is always a valid
+  // learned conflict, albeit a weak one, and is used when we abort the conflict
+  // resolution because the time limit was reached. This must only be called if
+  // there are no assumptions at level one (see ComputeFirstUIPConflict()).
+  void FillConflictWithDecisions(
+      int conflict_level, std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
+
   Trail* trail_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
@@ -153,6 +179,7 @@ class IntegerConflictResolution {
   SharedStatistics* shared_stats_;
   ClauseManager* clauses_propagator_;
   BinaryImplicationGraph* implications_;
+  TimeLimit* time_limit_;
   const SatParameters& params_;
 
   // A heap. We manage it manually.
@@ -172,9 +199,33 @@ class IntegerConflictResolution {
   util_intops::StrongVector<SlackIndex, IntegerValue> linear_slacks_;
   util_intops::StrongVector<SlackListIndex, SlackData> linked_list_buffer_;
 
+  // The entries that we will expand next, see ComputeFirstUIPConflict().
+  std::vector<EntryToExpand> entries_to_expand_;
+
+  // In ExpandAndAddReasonToQueue(), for each expanded entry with a linear
+  // reason, the term of its propagated variable (see IntegerReason::vars).
+  struct PropagatedTerm {
+    IntegerVariable var = kNoIntegerVariable;
+    IntegerValue coeff = 0;
+
+    // The slack of the reason, by how much the propagated bound is higher than
+    // the one that we need to explain, and the slack increase from this term if
+    // its variable is already settled above its required bound.
+    IntegerValue slack = 0;
+    IntegerValue bound_diff = 0;
+    absl::int128 settled_increase = 0;
+  };
+  std::vector<PropagatedTerm> tmp_propagated_terms_;
+
+  // Maps PropagatedTerm::var to its index in tmp_propagated_terms_, or -1.
+  // This is only filled when we expand more than one entry.
+  util_intops::StrongVector<IntegerVariable, int> var_to_propagated_term_;
+
   // Stats.
   int64_t num_conflicts_at_wrong_level_ = 0;
   int64_t num_expansions_ = 0;
+  int64_t num_combined_expansions_ = 0;
+  int64_t num_combined_entries_ = 0;
   int64_t num_conflict_literals_ = 0;
   int64_t num_associated_integer_for_literals_in_conflict_ = 0;
   int64_t num_associated_literal_use_ = 0;

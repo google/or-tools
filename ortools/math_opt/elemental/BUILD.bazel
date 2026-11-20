@@ -438,7 +438,7 @@ or_cc_library(
 
 or_cc_library(
     name = "testing",
-    testonly = 1,
+    testonly = True,
     hdrs = ["testing.h"],
     deps = [":attr_key"],
 )
@@ -478,7 +478,7 @@ or_cc_library(
 
 or_cc_library(
     name = "elemental_matcher",
-    testonly = 1,
+    testonly = True,
     srcs = ["elemental_matcher.cc"],
     hdrs = ["elemental_matcher.h"],
     deps = [

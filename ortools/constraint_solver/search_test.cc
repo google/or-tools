@@ -939,7 +939,6 @@ TEST_F(AssignVariablesValuesDecisionTest, FailRefutation) {
   solver_->NewSearch(solver_->Compose(assign, first_min));
 
   // First solution exists and is values defined above: 1, 3, 2.
-  std::multiset<std::vector<int64_t>> solutions{first_solution};
   ASSERT_TRUE(solver_->NextSolution());
   EXPECT_EQ(1, vars[0]->Value());
   EXPECT_EQ(3, vars[1]->Value());

@@ -117,7 +117,9 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
         return false;
       }
     }
-    linearized_energy = tmp_energy.BuildExpression();
+    if (!tmp_energy.BuildIntoExpressionAndCheckOverflow(&linearized_energy)) {
+      return false;
+    }
     linearized_energy_lp_value = linearized_energy.LpValue(lp_values);
     return true;
   }
@@ -258,10 +260,14 @@ void GenerateNoOverlap2dEnergyCut(
       IntegerValue precise_area(0);
       double area_lp = 0.0;
       const IntegerValue bbox_area =
-          (window_max - window_min) * (y_max - y_min);
+          CapProdI(window_max - window_min, y_max - y_min);
       precise_area = capacity_profile.GetBoundingArea();
+      const IntegerValue min_area = std::min(precise_area, bbox_area);
+      if (min_area >= kMaxIntegerValue) {
+        break;
+      }
       use_precise_area = precise_area < bbox_area;
-      area_lp = ToDouble(std::min(precise_area, bbox_area));
+      area_lp = ToDouble(min_area);
 
       if (area_lp >= sum_of_all_energies) {
         break;
@@ -276,7 +282,7 @@ void GenerateNoOverlap2dEnergyCut(
         max_violation_window_end = window_max;
         max_violation_y_min = y_min;
         max_violation_y_max = y_max;
-        max_violation_area = std::min(precise_area, bbox_area);
+        max_violation_area = min_area;
         max_violation_use_precise_area = use_precise_area;
       }
     }
@@ -303,7 +309,10 @@ void GenerateNoOverlap2dEnergyCut(
     if (add_quadratic_to_name) full_name.append("_quadratic");
     if (add_energy_to_name) full_name.append("_energy");
     if (max_violation_use_precise_area) full_name.append("_precise");
-    top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+    LinearConstraint ct;
+    if (cut.BuildIntoConstraintAndCheckOverflow(&ct)) {
+      top_n_cuts.AddCut(std::move(ct), full_name, lp_values);
+    }
   }
   top_n_cuts.TransferToManager(manager);
 }
@@ -588,7 +597,10 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
       if (best_use_subset_sum) full_name.append("_subsetsum");
-      top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
+      LinearConstraint ct;
+      if (cut.BuildIntoConstraintAndCheckOverflow(&ct)) {
+        top_n_cuts.AddCut(std::move(ct), full_name, manager->LpValues());
+      }
     }
   }
   top_n_cuts.TransferToManager(manager);

@@ -330,6 +330,10 @@ bool LinearPropagator::Propagate() {
     // that when the constraint propagates, and the context might have changed
     // since we computed it above.
     if (!PropagateOneConstraint(next_id)) return false;
+    if (num_terms_for_dtime_update_ > 100000) {
+      timer.Advance(num_terms_for_dtime_update_);
+      num_terms_for_dtime_update_ = 0;
+    }
 
     // TODO(user): This does not seem always good, especially since we pushed
     // Boolean with a really small explanation, maybe we want to push more of
@@ -735,7 +739,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // The lower bound of all the variables except one can be used to update the
-  // upper bound of the last one.
+  // upper bound of the last one. All these pushes share the same linear reason.
+  const int trail_index_at_start = integer_trail_->Index();
   int num_pushed = 0;
   for (int i = 0; i < num_to_push; ++i) {
     if (!order_.VarShouldBePushedById(NegationOf(vars[i]), id)) {
@@ -753,7 +758,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
     if (!integer_trail_->EnqueueWithLazyReason(
             IntegerLiteral::LowerOrEqual(var, new_ub), id, propagation_slack,
-            this)) {
+            this, trail_index_at_start)) {
       return false;
     }
 

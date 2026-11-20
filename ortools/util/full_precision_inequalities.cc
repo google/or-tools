@@ -614,6 +614,77 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
   return TermFloorCeil(ProdAsTerm(a, b, p));
 }
 
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    const int64_t a, const int64_t b) {
+  if (a > 0 && b > kint64max - a) return {kint64max, std::nullopt};
+  if (a < 0 && b < kint64min - a) return {std::nullopt, kint64min};
+  return {a + b, a + b};
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    const int64_t a, const double b) {
+  DCHECK(std::isfinite(b));
+  if (b == 0.0) return {a, a};
+
+  const Term b_term = ToTerm(b);
+  if (b_term.exponent >= 12) {
+    // b is not subnormal so its mantissa is in [2^52, 2^53).
+    if (b < 0.0) return {std::nullopt, kint64min};
+    return {kint64max, std::nullopt};
+  }
+  if (b_term.exponent >= 0) {
+    return TermFloorCeil(
+        {.mantissa = absl::int128{a} + (b_term.mantissa << b_term.exponent),
+         .exponent = 0});
+  }
+  if (b_term.exponent >= -52) {
+    return TermFloorCeil(
+        {.mantissa = (absl::int128{a} << -b_term.exponent) + b_term.mantissa,
+         .exponent = b_term.exponent});
+  }
+  // Here 0 < |b| < 1, so a + b lies in the same open unit interval as a +- 0.5.
+  return TermFloorCeil({.mantissa = (absl::int128{a} << 1) + (b > 0.0 ? 1 : -1),
+                        .exponent = -1});
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    const double a, const int64_t b) {
+  return SumFloorCeil(b, a);
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    double a, double b) {
+  DCHECK(std::isfinite(a));
+  DCHECK(std::isfinite(b));
+  if (a == 0.0) return SumFloorCeil(int64_t{0}, b);
+  if (b == 0.0) return SumFloorCeil(int64_t{0}, a);
+
+  if (std::abs(a) < std::abs(b)) std::swap(a, b);
+  const Term a_term = ToTerm(a);
+  const Term b_term = ToTerm(b);
+  const int exp_diff = a_term.exponent - b_term.exponent;
+  DCHECK_GE(exp_diff, 0);
+  if (exp_diff <= 70) {
+    // a_term.mantissa << exp_diff is representable as int128.
+    return TermFloorCeil(
+        {.mantissa = (a_term.mantissa << exp_diff) + b_term.mantissa,
+         .exponent = b_term.exponent});
+  }
+  if (a_term.exponent >= 12) {
+    // Uses the fact that b is much smaller than a because of the previous test.
+    if (a < 0.0) return {std::nullopt, kint64min};
+    return {kint64max, std::nullopt};
+  }
+  // Since exp_diff > 70, a is normal and 0 < |b| < 2^(a_term.exponent - 18).
+  // Shifting to target_exp = min(a_term.exponent, 0) - 1 <= -1 and nudging by
+  // +-1 places the value in the exact same open unit interval as a + b.
+  const int target_exp = std::min(a_term.exponent, 0) - 1;
+  const int shift = a_term.exponent - target_exp;  // <= 11.
+  return TermFloorCeil(
+      {.mantissa = (a_term.mantissa << shift) + (b > 0.0 ? 1 : -1),
+       .exponent = target_exp});
+}
+
 std::pair<double, double> Int64DoubleBounds(const int64_t n) {
   // Avoid the overflow of std::abs when n ==
   // std::numeric_limits<int64_t>::min().
@@ -633,6 +704,37 @@ std::pair<double, double> Int64DoubleBounds(const int64_t n) {
   } else {
     return {lb, ub};
   }
+}
+
+std::pair<double, double> QuotientBounds(double a, double b) {
+  DCHECK(std::isfinite(a));
+  DCHECK(std::isfinite(b));
+  DCHECK_NE(b, 0.0);
+  if (b < 0.0) {
+    a = -a;
+    b = -b;
+  }
+
+  // Whatever the rounding mode, q is `a / b` if it is representable, and one of
+  // the two doubles surrounding `a / b` otherwise.
+  const double q = a / b;
+  if (!std::isfinite(q)) {
+    // Overflow: |a / b| > kDoubleMax.
+    return q > 0.0 ? std::make_pair(kDoubleMax, kInf)
+                   : std::make_pair(-kInf, -kDoubleMax);
+  }
+
+  // As b > 0, `a / b` compares to q as a compares to `q * b`, and the tight
+  // bounds of `q * b` give the latter comparison exactly: they are equal iff
+  // `q * b` is a double, and otherwise they are two consecutive doubles so the
+  // double a is not strictly between them. This also holds when `q * b`
+  // overflows: the infinite bound is then on the side opposite to a. Note that
+  // this covers q == 0, which happens when a == 0 or when `a / b` underflows.
+  const auto [prod_lb, prod_ub] = ProdBounds(q, b);
+  if (prod_lb == a && prod_ub == a) return {q, q};
+  if (prod_ub <= a) return {q, FastStepUp(q)};
+  DCHECK_GE(prod_lb, a);
+  return {FastStepDown(q), q};
 }
 
 }  // namespace operations_research

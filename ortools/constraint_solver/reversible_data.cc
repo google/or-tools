@@ -13,8 +13,8 @@
 
 #include "ortools/constraint_solver/reversible_data.h"
 
+#include <bit>
 #include <cstdint>
-#include <cstring>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -41,7 +41,7 @@ void SmallRevBitSet::SetToZero(ReversibleEngine* engine, int64_t pos) {
 }
 
 int64_t SmallRevBitSet::Cardinality() const {
-  return BitCount64(bits_.Value());
+  return std::popcount(bits_.Value());
 }
 
 int64_t SmallRevBitSet::GetFirstOne() const {
@@ -56,11 +56,9 @@ int64_t SmallRevBitSet::GetFirstOne() const {
 RevBitSet::RevBitSet(int64_t size)
     : size_(size),
       length_(BitLength64(size)),
-      bits_(new uint64_t[length_]),
-      stamps_(new uint64_t[length_]) {
+      bits_(new uint64_t[length_]()),
+      stamps_(new uint64_t[length_]()) {
   DCHECK_GE(size, 1);
-  memset(bits_.get(), 0, sizeof(bits_[0]) * length_);
-  memset(stamps_.get(), 0, sizeof(stamps_[0]) * length_);
 }
 
 void RevBitSet::Save(ReversibleEngine* engine, int offset) {
@@ -102,7 +100,7 @@ bool RevBitSet::IsSet(int64_t index) const {
 int64_t RevBitSet::Cardinality() const {
   int64_t card = 0;
   for (int i = 0; i < length_; ++i) {
-    card += BitCount64(bits_[i]);
+    card += std::popcount(bits_[i]);
   }
   return card;
 }

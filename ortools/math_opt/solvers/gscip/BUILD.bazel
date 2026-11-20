@@ -113,7 +113,7 @@ or_cc_library(
 
 or_cc_library(
     name = "gscip_testing",
-    testonly = 1,
+    testonly = True,
     srcs = ["gscip_testing.cc"],
     hdrs = ["gscip_testing.h"],
     deps = [

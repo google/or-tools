@@ -11,18 +11,18 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 CMD [ "/usr/bin/bash" ]
 
-# Install SWIG 4.3.0
+# Install SWIG 4.5.1
 FROM base AS swig
 RUN dnf -y update \
 && dnf -y install pcre2-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf \
-&& wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.3.0/swig-4.3.0.tar.gz" \
-&& tar xvf swig-4.3.0.tar.gz \
-&& rm swig-4.3.0.tar.gz \
-&& cd swig-4.3.0 \
+&& wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.5.1/swig-4.5.1.tar.gz" \
+&& tar xvf swig-4.5.1.tar.gz \
+&& rm swig-4.5.1.tar.gz \
+&& cd swig-4.5.1 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-4.3.0
+&& rm -rf swig-4.5.1

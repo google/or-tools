@@ -80,7 +80,7 @@ void RunLinearProgrammingExample(const std::string& solver_id) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
   }
 
-  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver->DurationSinceConstruction();
 
   // The objective value of the solution.
   LOG(INFO) << "Optimal objective value = " << objective->Value();

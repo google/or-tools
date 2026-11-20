@@ -39,6 +39,7 @@
 #include "ortools/base/types.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/debug_solution.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -55,6 +56,132 @@
 
 namespace operations_research {
 namespace sat {
+
+BooleanViewEquivalences::BooleanViewEquivalences(Model* model)
+    : params_(*model->GetOrCreate<SatParameters>()),
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
+      implication_graph_(*model->GetOrCreate<BinaryImplicationGraph>()),
+      symmetrizer_(*model->GetOrCreate<LinearConstraintSymmetrizer>()) {}
+
+void BooleanViewEquivalences::RegisterVariable(int component,
+                                               IntegerVariable positive_var) {
+  DCHECK(VariableIsPositive(positive_var));
+  if (positive_var >= var_is_registered_.size()) {
+    var_is_registered_.resize(positive_var.value() + 1, false);
+  }
+  if (var_is_registered_[positive_var]) return;
+  var_is_registered_[positive_var] = true;
+  registered_vars_.push_back({component, positive_var});
+}
+
+bool BooleanViewEquivalences::Update() {
+  if (!params_.use_boolean_equivalences_in_lp()) return false;
+
+  // TODO(user): Deal with the symmetry folding case. The equivalence might not
+  // be compatible with the orbits.
+  if (symmetrizer_.HasSymmetry()) return false;
+
+  // The set of redundant literals can only grow, so this is a cheap way to
+  // detect that nothing changed since the last call. We also need to
+  // recompute the map if we have new variables.
+  const int64_t num_redundant = implication_graph_.num_redundant_literals();
+  if (num_redundant == last_num_redundant_literals_ &&
+      registered_vars_.size() == last_num_registered_vars_) {
+    return false;
+  }
+  last_num_redundant_literals_ = num_redundant;
+  last_num_registered_vars_ = registered_vars_.size();
+  if (num_redundant == 0) return false;
+
+  const IntegerVariable num_vars = integer_trail_.NumIntegerVariables();
+  if (num_vars > substitution_rep_.size()) {
+    literal_of_var_.resize(num_vars.value(), kNoLiteralIndex);
+    substitution_rep_.resize(num_vars.value(), kNoIntegerVariable);
+    substitution_offset_.resize(num_vars.value(), IntegerValue(0));
+  }
+
+  // We recompute the whole map from scratch. Because the representative of a
+  // class in the implication graph never changes (it is the smallest
+  // BooleanVariable), and because we always scan registered_vars_ in the same
+  // order, the representative chosen here for a (class, component) is stable
+  // unless it becomes fixed or two classes are merged.
+  //
+  // For each equivalence class (identified by the Boolean variable of the
+  // representative literal) and each component, we store the first unfixed
+  // variable encountered in that class, with a sign: true if (var == 1) <=>
+  // representative is true. Note that the representative literal itself might
+  // have no view at all.
+  bool changed = false;
+  tmp_class_to_var_.clear();
+  const int64_t old_num_substituted = num_substituted_;
+  num_substituted_ = 0;
+  for (auto& list : substituted_vars_by_component_) list.clear();
+  for (const auto [component, var] : registered_vars_) {
+    const IntegerVariable old_rep = substitution_rep_[var];
+    const IntegerValue old_offset = substitution_offset_[var];
+    substitution_rep_[var] = kNoIntegerVariable;
+    substitution_offset_[var] = 0;
+
+    // Fixed variables are dealt with by the normal simplification.
+    if (integer_trail_.LevelZeroLowerBound(var) != 0 ||
+        integer_trail_.LevelZeroUpperBound(var) != 1) {
+      if (old_rep != kNoIntegerVariable) changed = true;
+      continue;
+    }
+
+    // Lazily fetch the literal associated to this variable. Note that this
+    // can change if the variable was not initially associated to a literal,
+    // which is why we recompute it when we have no literal.
+    LiteralIndex lit_index = literal_of_var_[var];
+    if (lit_index == kNoLiteralIndex) {
+      lit_index = integer_encoder_.GetAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(var, IntegerValue(1)));
+      literal_of_var_[var] = lit_index;
+      if (lit_index == kNoLiteralIndex) {
+        if (old_rep != kNoIntegerVariable) changed = true;
+        continue;
+      }
+    }
+
+    // This is lit itself if it is alone in its class or the representative.
+    const Literal rep = implication_graph_.RepresentativeOf(Literal(lit_index));
+    const auto [it, inserted] = tmp_class_to_var_.insert(
+        {{rep.Variable(), component}, {var, rep.IsPositive()}});
+    if (inserted) {
+      // This variable is the representative of its class in this component.
+      if (old_rep != kNoIntegerVariable) changed = true;
+      continue;
+    }
+
+    // We have (var == 1) <=> (rep_var == rep.IsPositive()) and
+    // (class_var == 1) <=> (rep_var == class_sign).
+    const auto [class_var, class_sign] = it->second;
+    DCHECK_NE(class_var, var);
+    if (class_sign == rep.IsPositive()) {
+      // var == class_var.
+      substitution_rep_[var] = class_var;
+      substitution_offset_[var] = 0;
+    } else {
+      // var == 1 - class_var.
+      substitution_rep_[var] = NegationOf(class_var);
+      substitution_offset_[var] = 1;
+    }
+    substituted_vars_by_component_[component].push_back(var);
+    ++num_substituted_;
+    if (substitution_rep_[var] != old_rep ||
+        substitution_offset_[var] != old_offset) {
+      changed = true;
+    }
+  }
+  if (num_substituted_ != old_num_substituted) changed = true;
+  if (!changed) return false;
+
+  ++version_;
+  VLOG(2) << "Boolean equivalences in LP: " << num_substituted_
+          << " substituted variables.";
+  return true;
+}
 
 LinearConstraintSymmetrizer::~LinearConstraintSymmetrizer() {
   if (!VLOG_IS_ON(1)) return;
@@ -245,6 +372,13 @@ LinearConstraintManager::~LinearConstraintManager() {
   for (const auto& entry : type_to_num_cuts_) {
     cut_stats.push_back({absl::StrCat("cut/", entry.first), entry.second});
   }
+  cut_stats.push_back(
+      {"lp_manager/num_substituted_vars",
+       static_cast<int64_t>(
+           equivalences_->SubstitutedVariables(component_).size())});
+  cut_stats.push_back({"lp_manager/num_substitutions", num_substitutions_});
+  cut_stats.push_back(
+      {"lp_manager/num_merged_constraints", num_merged_constraints_});
   model_->Mutable<SharedStatistics>()->AddStats(cut_stats);
 }
 
@@ -319,7 +453,18 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   DCHECK_GT(ct.num_terms, 0);
   DCHECK(NoDuplicateVariable(ct));
   if (PossibleOverflow(integer_trail_, ct)) return kInvalidConstraintIndex;
-  SimplifyConstraint(&ct);
+
+  // Note that a ranged constraint can be split in two by the simplification.
+  // In this case we add the other part separately, and we only return the
+  // index of the first part.
+  LinearConstraint split;
+  SimplifyConstraint(&ct, &split);
+  last_split_index_ = kInvalidConstraintIndex;
+  if (split.num_terms > 0) {
+    bool split_added = false;
+    const ConstraintIndex split_index = Add(std::move(split), &split_added);
+    last_split_index_ = split_added ? split_index : kInvalidConstraintIndex;
+  }
   if (ct.num_terms == 0) return kInvalidConstraintIndex;
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
@@ -363,6 +508,9 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   const ConstraintIndex ct_index(constraint_infos_.size());
   ConstraintInfo ct_info;
   ct_info.constraint = std::move(ct);
+  for (const IntegerVariable var : ct_info.constraint.VarsAsSpan()) {
+    RegisterVariable(var);
+  }
   ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
   FillDerivedFields(&ct_info);
   ct_info.hash = key;
@@ -404,10 +552,9 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
     objective_l2_norm_ = std::sqrt(sum_of_squared_objective_coeffs_);
     objective_norm_computed_ = true;
   }
-  CHECK_GT(objective_l2_norm_, 0.0);
 
   constraint_infos_[ct_index].objective_parallelism_computed = true;
-  if (constraint_infos_[ct_index].l2_norm == 0.0) {
+  if (constraint_infos_[ct_index].l2_norm == 0.0 || objective_l2_norm_ == 0.0) {
     constraint_infos_[ct_index].objective_parallelism = 0.0;
     return;
   }
@@ -465,6 +612,10 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
   // TODO(user): Use a better heuristic here for detecting good cuts and mark
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
+  if (last_split_index_ != kInvalidConstraintIndex) {
+    constraint_infos_[last_split_index_].is_deletable = true;
+    num_deletable_constraints_++;
+  }
 
   VLOG(2) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.num_terms
@@ -543,6 +694,7 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
     var = NegationOf(var);
     coeff = -coeff;
   }
+  RegisterVariable(var);
   const double coeff_as_double = ToDouble(coeff);
   const auto insert = objective_map_.insert({var, coeff_as_double});
   CHECK(insert.second)
@@ -550,10 +702,120 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
   sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
+bool LinearConstraintManager::UpdateBooleanEquivalences() {
+  equivalences_->Update();
+  if (equivalences_->version() == last_equivalences_version_) return false;
+  last_equivalences_version_ = equivalences_->version();
+
+  // Update the objective map used to score cuts. Note that the actual LP
+  // objective is maintained by the LinearProgrammingConstraint.
+  if (objective_is_defined_) {
+    std::vector<std::pair<IntegerVariable, double>> old_objective(
+        objective_map_.begin(), objective_map_.end());
+    objective_map_.clear();
+    sum_of_squared_objective_coeffs_ = 0.0;
+    for (const auto [var, coeff] : old_objective) {
+      AffineExpression expr;
+      if (GetSubstitution(var, &expr)) {
+        // The constant part doesn't matter for the parallelism.
+        if (VariableIsPositive(expr.var)) {
+          objective_map_[expr.var] += coeff;
+        } else {
+          objective_map_[NegationOf(expr.var)] -= coeff;
+        }
+      } else {
+        objective_map_[var] += coeff;
+      }
+    }
+    // Note that terms can cancel out (i.e. x - y with y == x), in which case
+    // the objective can even become empty. This is fine as the parallelism
+    // computation deals with a zero norm.
+    absl::erase_if(objective_map_,
+                   [](const auto& entry) { return entry.second == 0.0; });
+    sum_of_squared_objective_coeffs_ = 0.0;
+    for (const auto [var, coeff] : objective_map_) {
+      sum_of_squared_objective_coeffs_ += coeff * coeff;
+    }
+    objective_norm_computed_ = false;
+    for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+      constraint_infos_[i].objective_parallelism_computed = false;
+    }
+  }
+
+  // Make sure the LP is recreated, in particular the LP objective and the
+  // substituted columns need to be updated.
+  current_lp_is_changed_ = true;
+  return true;
+}
+
+bool LinearConstraintManager::SubstituteEquivalentVariables(
+    LinearConstraint* ct) {
+  if (equivalences_->num_substituted_variables() == 0) return false;
+
+  // Quick check to see if anything needs to be done.
+  bool need_substitution = false;
+  const int num_terms = ct->num_terms;
+  for (int i = 0; i < num_terms; ++i) {
+    if (equivalences_->GetSubstitution(PositiveVariable(ct->vars[i]),
+                                       nullptr)) {
+      need_substitution = true;
+      break;
+    }
+  }
+  if (!need_substitution) return false;
+
+  tmp_builder_.Clear();
+  for (int i = 0; i < num_terms; ++i) {
+    const IntegerVariable var = ct->vars[i];
+    const IntegerValue coeff = ct->coeffs[i];
+    AffineExpression expr;
+    if (!equivalences_->GetSubstitution(PositiveVariable(var), &expr)) {
+      tmp_builder_.AddTerm(var, coeff);
+      continue;
+    }
+
+    // We have PositiveVariable(var) == expr.var + expr.constant.
+    DCHECK_EQ(expr.coeff, 1);
+    if (VariableIsPositive(var)) {
+      tmp_builder_.AddTerm(expr.var, coeff);
+      tmp_builder_.AddConstant(coeff * expr.constant);
+    } else {
+      tmp_builder_.AddTerm(NegationOf(expr.var), coeff);
+      tmp_builder_.AddConstant(-coeff * expr.constant);
+    }
+  }
+
+  // Note that we keep the constraint unchanged in case of overflow.
+  LinearConstraint new_ct;
+  if (!tmp_builder_.BuildIntoConstraintAndCheckOverflow(ct->lb, ct->ub,
+                                                        &new_ct)) {
+    return false;
+  }
+  *ct = std::move(new_ct);
+  ++num_substitutions_;
+  return true;
+}
+
 // TODO(user): Also consider partial gcd simplification? see presolve.
-bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
+bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct,
+                                                 LinearConstraint* split) {
   if (ct->num_terms == 0) return false;
   bool term_changed = false;
+  if (split != nullptr) split->resize(0);
+
+  // Substitute equivalent Boolean variables. Note that because terms can
+  // cancel out, this can result in an empty constraint.
+  if (SubstituteEquivalentVariables(ct)) {
+    term_changed = true;
+    if (ct->num_terms == 0) {
+      // This should always be true as the constraint was valid.
+      DCHECK_LE(ct->lb, 0);
+      DCHECK_GE(ct->ub, 0);
+      ct->lb = 0;
+      ct->ub = 0;
+      return true;
+    }
+  }
 
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
@@ -639,12 +901,27 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   const IntegerValue threshold = std::max(threshold_lb, threshold_ub);
   CHECK_GT(threshold, 0);  // Since we aborted for trivial constraint.
 
-  // TODO(user): In some cases, we could split the constraint to reduce one of
-  // them further. But not sure that is a good thing.
-  if (threshold_ub > 0 && threshold_lb > 0 && threshold_lb != threshold_ub) {
-    if (max_magnitude > std::min(threshold_lb, threshold_ub)) {
-      ++num_split_constraints_;
-    }
+  // For a ranged constraint, the coefficient strengthening below is limited by
+  // the smallest of the two thresholds. If one of the side would benefit from
+  // a significantly stronger strengthening (we use a factor 2 heuristic here
+  // so that we do not pay an extra row for a marginal gain), we split the
+  // constraint in two one-sided constraints and strengthen each of them
+  // independently.
+  if (split != nullptr && threshold_ub > 0 && threshold_lb > 0 &&
+      threshold_lb != threshold_ub &&
+      max_magnitude >= 2 * std::min(threshold_lb, threshold_ub)) {
+    ++num_split_constraints_;
+    split->resize(ct->num_terms);
+    std::copy(ct->vars.get(), ct->vars.get() + ct->num_terms,
+              split->vars.get());
+    std::copy(ct->coeffs.get(), ct->coeffs.get() + ct->num_terms,
+              split->coeffs.get());
+    split->lb = ct->lb;
+    split->ub = kMaxIntegerValue;
+    ct->lb = kMinIntegerValue;
+    SimplifyConstraint(ct);
+    SimplifyConstraint(split);
+    return true;
   }
 
   // TODO(user): For constraints with both bounds, we could reduce further for
@@ -719,6 +996,141 @@ void LinearConstraintManager::FillDerivedFields(ConstraintInfo* info) {
   info->ub_is_trivial = max_sum <= info->constraint.ub;
 }
 
+void LinearConstraintManager::OnConstraintSimplified(ConstraintIndex i) {
+  ++num_simplifications_;
+
+  // Note that the canonicalization shouldn't be needed since the order
+  // of the variable is not changed by the simplification, and we only
+  // reduce the coefficients at both end of the spectrum. The exception is
+  // the substitution of equivalent variables, but this already returns a
+  // canonical constraint.
+  DivideByGCD(&constraint_infos_[i].constraint);
+  MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
+  DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
+                              /*only_check_ub=*/false));
+
+  constraint_infos_[i].objective_parallelism_computed = false;
+  constraint_infos_[i].l2_norm = ComputeL2Norm(constraint_infos_[i].constraint);
+  FillDerivedFields(&constraint_infos_[i]);
+
+  if (constraint_infos_[i].is_in_lp) {
+    current_lp_is_changed_ = true;
+    simplified_in_lp_constraints_.push_back(i);
+  }
+  equiv_constraints_.erase(constraint_infos_[i].hash);
+  constraint_infos_[i].hash =
+      ComputeHashOfTerms(constraint_infos_[i].constraint);
+
+  // Because we simplified this constraint, it is possible that it is now a
+  // duplicate of another one. This is in particular common after the
+  // substitution of equivalent variables. In this case we merge the bounds
+  // into the other constraint and clear this one.
+  //
+  // Note that merging a <= and a >= constraint into a ranged one limits the
+  // coefficient strengthening we can do, but SimplifyConstraint() will split
+  // such constraint again if this is worth it.
+  const auto [it, inserted] =
+      equiv_constraints_.insert({constraint_infos_[i].hash, i});
+  if (inserted) return;
+  const ConstraintIndex other = it->second;
+  if (other == i || constraint_infos_[i].constraint.num_terms == 0 ||
+      !constraint_infos_[other].constraint.IsEqualIgnoringBounds(
+          constraint_infos_[i].constraint)) {
+    // Hash collision, or same constraint, just overwrite like before.
+    it->second = i;
+    return;
+  }
+
+  // We merge the two constraints. We prefer to keep the one that is in the LP
+  // (if any) so that the LP does not lose a potentially tight row.
+  ConstraintIndex keep = other;
+  ConstraintIndex drop = i;
+  if (constraint_infos_[i].is_in_lp && !constraint_infos_[other].is_in_lp) {
+    keep = i;
+    drop = other;
+    it->second = i;
+  }
+  ConstraintInfo& keep_info = constraint_infos_[keep];
+  ConstraintInfo& drop_info = constraint_infos_[drop];
+  bool tightened = false;
+  if (drop_info.constraint.lb > keep_info.constraint.lb) {
+    tightened = true;
+    keep_info.constraint.lb = drop_info.constraint.lb;
+  }
+  if (drop_info.constraint.ub < keep_info.constraint.ub) {
+    tightened = true;
+    keep_info.constraint.ub = drop_info.constraint.ub;
+  }
+  if (tightened) {
+    if (keep_info.is_in_lp) {
+      current_lp_is_changed_ = true;
+      simplified_in_lp_constraints_.push_back(keep);
+    }
+    FillDerivedFields(&keep_info);
+  }
+  if (keep_info.is_deletable && !drop_info.is_deletable) {
+    // A problem constraint must not become a deletable cut.
+    keep_info.is_deletable = false;
+    --num_deletable_constraints_;
+  }
+  keep_info.active_count =
+      std::max(keep_info.active_count, drop_info.active_count);
+  ++num_merged_constraints_;
+
+  // Clear the dropped constraint. It will be removed from the LP by
+  // MaybeRemoveSomeInactiveConstraints() if it was there.
+  if (drop_info.is_in_lp) current_lp_is_changed_ = true;
+  drop_info.constraint.resize(0);
+  drop_info.constraint.lb = 0;
+  drop_info.constraint.ub = 0;
+  drop_info.l2_norm = 0.0;
+  drop_info.hash = ComputeHashOfTerms(drop_info.constraint);
+  FillDerivedFields(&drop_info);
+}
+
+void LinearConstraintManager::SimplifyConstraintAtIndex(
+    ConstraintIndex i, glop::BasisState* solution_state) {
+  LinearConstraint split;
+  if (!SimplifyConstraint(&constraint_infos_[i].constraint, &split)) return;
+  OnConstraintSimplified(i);
+  if (split.num_terms == 0) return;
+
+  // The constraint was split in two. We add the other part to the pool, and
+  // if the original constraint was in the LP, we add the new part as well so
+  // that the LP relaxation does not get weaker.
+  //
+  // Note that Add() might invalidate references to constraint_infos_.
+  const bool was_in_lp = constraint_infos_[i].is_in_lp;
+  const bool was_deletable = constraint_infos_[i].is_deletable;
+  const double active_count = constraint_infos_[i].active_count;
+  bool added = false;
+  const ConstraintIndex j = Add(std::move(split), &added);
+  if (j == kInvalidConstraintIndex) return;
+  if (added) {
+    if (was_deletable) {
+      constraint_infos_[j].is_deletable = true;
+      ++num_deletable_constraints_;
+    }
+    constraint_infos_[j].active_count = active_count;
+  }
+  if (was_in_lp && !constraint_infos_[j].is_in_lp) {
+    constraint_infos_[j].is_in_lp = true;
+    lp_constraints_.push_back(j);
+    old_lp_row_of_lp_row_.push_back(glop::kInvalidRow);
+    current_lp_is_changed_ = true;
+    if (solution_state != nullptr) {
+      solution_state->statuses.resize(solution_state->statuses.size() + 1,
+                                      glop::VariableStatus::BASIC);
+    }
+  }
+}
+
+void LinearConstraintManager::SimplifyAllConstraints() {
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    SimplifyConstraintAtIndex(i, /*solution_state=*/nullptr);
+  }
+}
+
 bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
                                        int* num_new_constraints) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
@@ -734,7 +1146,9 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     old_lp_row_of_lp_row_[i] = glop::RowIndex(i);
   }
 
+  const bool equivalences_changed = UpdateBooleanEquivalences();
   const bool simplify_constraints =
+      equivalences_changed ||
       integer_trail_.num_level_zero_enqueues() > last_simplification_timestamp_;
   last_simplification_timestamp_ = integer_trail_.num_level_zero_enqueues();
 
@@ -743,44 +1157,15 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   // of potential new constraints.
   bool rescale_active_count = false;
   const double tolerance = 1e-6;
-  std::vector<bool> in_lp_constraint_simplified;
+  simplified_in_lp_constraints_.clear();
   {
     DeterministicTimer<{.scale = 1.7e-9}> timer(time_limit_);
     uint64_t work_done = 0;
     for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-      // Inprocessing of the constraint.
-      if (simplify_constraints &&
-          SimplifyConstraint(&constraint_infos_[i].constraint)) {
-        ++num_simplifications_;
-
-        // Note that the canonicalization shouldn't be needed since the order
-        // of the variable is not changed by the simplification, and we only
-        // reduce the coefficients at both end of the spectrum.
-        DivideByGCD(&constraint_infos_[i].constraint);
-        MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
-        DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
-                                    /*only_check_ub=*/false));
-
-        constraint_infos_[i].objective_parallelism_computed = false;
-        constraint_infos_[i].l2_norm =
-            ComputeL2Norm(constraint_infos_[i].constraint);
-        FillDerivedFields(&constraint_infos_[i]);
-
-        if (constraint_infos_[i].is_in_lp) {
-          current_lp_is_changed_ = true;
-          if (in_lp_constraint_simplified.empty()) {
-            in_lp_constraint_simplified.assign(constraint_infos_.size(), false);
-          }
-          in_lp_constraint_simplified[i.value()] = true;
-        }
-        equiv_constraints_.erase(constraint_infos_[i].hash);
-        constraint_infos_[i].hash =
-            ComputeHashOfTerms(constraint_infos_[i].constraint);
-
-        // TODO(user): Because we simplified this constraint, it is possible
-        // that it is now a duplicate of another one. Merge them.
-        equiv_constraints_[constraint_infos_[i].hash] = i;
-      }
+      // Inprocessing of the constraint. Note that this might add new
+      // constraints at the end of constraint_infos_, which will be processed
+      // by this loop too.
+      if (simplify_constraints) SimplifyConstraintAtIndex(i, solution_state);
 
       if (constraint_infos_[i].is_in_lp) continue;
 
@@ -819,12 +1204,18 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     }
     timer.Advance(work_done);
   }
-  if (!in_lp_constraint_simplified.empty()) {
+  if (!simplified_in_lp_constraints_.empty()) {
+    // The rows that changed cannot reuse the information from the old LP.
+    std::vector<bool> is_simplified(constraint_infos_.size(), false);
+    for (const ConstraintIndex index : simplified_in_lp_constraints_) {
+      is_simplified[index.value()] = true;
+    }
     for (int i = 0; i < lp_constraints_.size(); ++i) {
-      if (in_lp_constraint_simplified[lp_constraints_[i].value()]) {
+      if (is_simplified[lp_constraints_[i].value()]) {
         old_lp_row_of_lp_row_[i] = glop::kInvalidRow;
       }
     }
+    simplified_in_lp_constraints_.clear();
   }
 
   // Bump activities of active constraints in LP.

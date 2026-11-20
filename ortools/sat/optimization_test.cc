@@ -20,6 +20,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -28,6 +29,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -157,6 +159,29 @@ TEST(PresolveBooleanLinearExpressionTest, NegatedLiterals) {
   EXPECT_THAT(literals, ElementsAre(Literal(+1), Literal(-4)));
   EXPECT_THAT(coefficients, ElementsAre(Coefficient(2), Coefficient(7)));
   EXPECT_EQ(offset, -5);
+}
+
+TEST(MinimizeCoreWithSearchTest, RemovesIrrelevantAmoGroupAndPartialAmoMember) {
+  Model model;
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* implications = model.GetOrCreate<BinaryImplicationGraph>();
+  auto* time_limit = model.GetOrCreate<TimeLimit>();
+  sat_solver->SetNumVariables(8);
+
+  // AMO group 1 on {-1, -2, -3} (i.e. at most one of ~x1, ~x2, ~x3 is true):
+  // completely irrelevant to the UNSAT core.
+  ASSERT_TRUE(implications->AddAtMostOne(Literals({-1, -2, -3})));
+  // AMO group 2 on {-4, -5, -6}: only literal +4 is required for the core
+  // {+4, +7}, while +5 and +6 are redundant.
+  ASSERT_TRUE(implications->AddAtMostOne(Literals({-4, -5, -6})));
+  // Make {+4, +7} incompatible via intermediate variable x8:
+  // (+4 => +8) and (+7 => -8).
+  sat_solver->AddProblemClause(Literals({-4, +8}));
+  sat_solver->AddProblemClause(Literals({-7, -8}));
+
+  std::vector<Literal> core = Literals({+1, +2, +3, +4, +5, +6, +7});
+  MinimizeCoreWithSearch(time_limit, sat_solver, &core, implications);
+  EXPECT_THAT(core, ElementsAre(Literal(+4), Literal(+7)));
 }
 
 }  // namespace

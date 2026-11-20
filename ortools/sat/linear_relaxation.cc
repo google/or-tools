@@ -15,8 +15,10 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <numeric>
 #include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -57,6 +59,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_cuts.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
@@ -567,10 +570,6 @@ void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
                              ActivityBoundHelper* activity_helper) {
   if (!HasEnforcementLiteral(ct)) return;
 
-  // TODO(user): These constraints can be many, and if they are not regrouped
-  // in big at most ones, then they should probably only be added lazily as
-  // cuts. Regroup this with future clique-cut separation logic.
-  //
   // Note that for the case with only one enforcement, what we do below is
   // already done by the clique merging code.
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -583,52 +582,51 @@ void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
     return;
   }
 
-  // If we have many_literals => many_fixed literal, it is important to
-  // try to use a tight big-M if we can. This is important on neos-957323.pb.gz
-  // for instance.
-  //
-  // We split the literals into disjoint AMOs and we encode each with
-  //     sum Not(literals) <= sum Not(enforcement)
-  //
-  // Note that what we actually do is use the decomposition into at most one
-  // and add a constraint for each part rather than just adding the sum of them.
-  //
-  // TODO(user): More generally, do not miss the same structure if the bool_and
-  // was expanded into many clauses!
-  //
-  // TODO(user): It is not 100% clear that just not adding one constraint is
-  // worse. Relaxation is worse, but then we have fewer constraints.
-  LinearConstraintBuilder builder(model);
-  if (activity_helper != nullptr) {
-    std::vector<int> negated_lits;
-    for (const int ref : ct.bool_and().literals()) {
-      negated_lits.push_back(NegatedRef(ref));
+  // Linearize multi-enforced bool_and into a single linear constraint:
+  //   sum_{l in literals} Not(l) <= max_activity * sum_{e in enforcements}
+  //   Not(e)
+  // where max_activity is an upper bound on sum_{l in literals} Not(l),
+  // tightened by partitioning Not(literals) into disjoint AMOs when available
+  // (for instance on neos-957323.pb.gz and neos-941313.pb.gz where
+  // max_activity == 1).
+  std::vector<int> negated_lits;
+  negated_lits.reserve(ct.bool_and().literals().size());
+  for (const int ref : ct.bool_and().literals()) {
+    negated_lits.push_back(NegatedRef(ref));
+  }
+  gtl::STLSortAndRemoveDuplicates(&negated_lits);
+  if (negated_lits.empty()) return;
+
+  std::vector<int> enforcements(ct.enforcement_literal().begin(),
+                                ct.enforcement_literal().end());
+  gtl::STLSortAndRemoveDuplicates(&enforcements);
+  if (enforcements.size() == 1) {
+    const Literal enforcement = mapping->Literal(enforcements[0]);
+    for (const int negated_ref : negated_lits) {
+      relaxation->at_most_ones.push_back(
+          {enforcement, mapping->Literal(negated_ref)});
     }
-    for (absl::Span<const int> part :
-         activity_helper->PartitionLiteralsIntoAmo(negated_lits)) {
-      builder.Clear();
-      for (const int negated_ref : part) {
-        CHECK(builder.AddLiteralTerm(mapping->Literal(negated_ref)));
-      }
-      for (const int enforcement_ref : ct.enforcement_literal()) {
-        CHECK(builder.AddLiteralTerm(
-            mapping->Literal(NegatedRef(enforcement_ref)), IntegerValue(-1)));
-      }
-      relaxation->linear_constraints.push_back(
-          builder.BuildConstraint(kMinIntegerValue, IntegerValue(0)));
-    }
-  } else {
-    for (const int ref : ct.bool_and().literals()) {
-      builder.Clear();
-      CHECK(builder.AddLiteralTerm(mapping->Literal(NegatedRef(ref))));
-      for (const int enforcement_ref : ct.enforcement_literal()) {
-        CHECK(builder.AddLiteralTerm(
-            mapping->Literal(NegatedRef(enforcement_ref)), IntegerValue(-1)));
-      }
-      relaxation->linear_constraints.push_back(
-          builder.BuildConstraint(kMinIntegerValue, IntegerValue(0)));
+    return;
+  }
+
+  const IntegerValue max_activity(
+      activity_helper != nullptr
+          ? activity_helper->PartitionLiteralsIntoAmo(negated_lits).size()
+          : negated_lits.size());
+  LinearConstraintBuilder builder(model, kMinIntegerValue, IntegerValue(0));
+  for (const int negated_ref : negated_lits) {
+    if (!builder.AddLiteralTerm(mapping->Literal(negated_ref))) return;
+  }
+  for (const int enforcement_ref : enforcements) {
+    if (!builder.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
+                                -max_activity)) {
+      return;
     }
   }
+  LinearConstraint built_ct;
+  if (!builder.BuildIntoConstraintAndCheckOverflow(&built_ct)) return;
+  if (PossibleOverflow(*model->GetOrCreate<IntegerTrail>(), built_ct)) return;
+  relaxation->linear_constraints.push_back(std::move(built_ct));
 }
 
 void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
@@ -684,6 +682,11 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
     // but that is a lot of work.
     const IntegerVariable var2 = model->Add(NewIntegerVariable(0, 1));
     encoder->AssociateToIntegerEqualValue(lit.Negated(), var2, IntegerValue(1));
+
+    LinearConstraintBuilder lc_builder(model, IntegerValue(1), IntegerValue(1));
+    lc_builder.AddTerm(var, IntegerValue(1));
+    lc_builder.AddTerm(var2, IntegerValue(1));
+    relaxation->linear_constraints.push_back(lc_builder.Build());
 
     return {lit, lit.Negated()};
   }
@@ -941,15 +944,9 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
 
 }  // namespace
 
-void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
-                                              Model* model,
-                                              LinearRelaxation* relaxation) {
-  // TODO(user): add support for enforcement literals?
-  if (HasEnforcementLiteral(ct)) return;
-
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  std::vector<IntervalVariable> intervals =
-      mapping->Intervals(ct.no_overlap().intervals());
+void AppendNoOverlapRelaxationAndCutGenerator(
+    std::vector<IntervalVariable> intervals, Model* model,
+    LinearRelaxation* relaxation) {
   const IntegerValue one(1);
   std::vector<AffineExpression> demands(intervals.size(), one);
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
@@ -977,6 +974,356 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
                           model, relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {
     AddNoOverlapCutGenerator(helper, makespan, model, relaxation);
+  }
+}
+
+void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                              Model* model,
+                                              LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
+  if (HasEnforcementLiteral(ct)) return;
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  AppendNoOverlapRelaxationAndCutGenerator(
+      mapping->Intervals(ct.no_overlap().intervals()), model, relaxation);
+}
+
+void AddAllDiffRelaxationAndCutGenerator(
+    absl::Span<const AffineExpression> exprs, int linearization_level, Model* m,
+    LinearRelaxation* relaxation) {
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const int num_exprs = exprs.size();
+
+  // Build union of affine expressions domains to check if this is a
+  // permutation.
+  Domain union_of_domains;
+  for (const AffineExpression& expr : exprs) {
+    if (integer_trail->IsFixed(expr)) {
+      union_of_domains = union_of_domains.UnionWith(
+          Domain(integer_trail->FixedValue(expr).value()));
+    } else {
+      union_of_domains = union_of_domains.UnionWith(
+          integer_trail->LevelZeroDomain(expr.var)
+              .MultiplicationBy(expr.coeff.value())
+              .AdditionWith(Domain(expr.constant.value())));
+    }
+  }
+
+  if (union_of_domains.Size() == num_exprs) {
+    // In case of a permutation, the linear constraint is tight.
+    int64_t sum_of_values = 0;
+    for (const int64_t v : union_of_domains.Values()) {
+      sum_of_values += v;
+    }
+    LinearConstraintBuilder relax(m, sum_of_values, sum_of_values);
+    for (const AffineExpression& expr : exprs) {
+      relax.AddTerm(expr, 1);
+    }
+    relaxation->linear_constraints.push_back(relax.Build());
+  } else if (num_exprs <=
+                 m->GetOrCreate<SatParameters>()->max_all_diff_cut_size() &&
+             linearization_level > 1) {
+    relaxation->cut_generators.push_back(
+        CreateAllDifferentCutGenerator(exprs, m));
+  }
+}
+
+void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                         int linearization_level, Model* m,
+                                         LinearRelaxation* relaxation) {
+  if (HasEnforcementLiteral(ct)) return;
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  AddAllDiffRelaxationAndCutGenerator(mapping->Affines(ct.all_diff().exprs()),
+                                      linearization_level, m, relaxation);
+}
+
+void AppendInferredAllDiffAndNoOverlapRelaxationAndCutGenerators(
+    const CpModelProto& model_proto, Model* m, LinearRelaxation* relaxation) {
+  std::vector<std::pair<int, int>> candidate_pairs;
+  absl::flat_hash_map<std::pair<int, int>, Domain> diff_domains;
+
+  const auto process_difference = [&candidate_pairs, &diff_domains](
+                                      int v1, int v2, Domain d) {
+    if (v1 == v2 || !RefIsPositive(v1) || !RefIsPositive(v2)) return;
+    if (d.NumIntervals() <= 1 && d.Contains(0)) return;
+    std::pair<int, int> key = {v1, v2};
+    if (v1 > v2) {
+      std::swap(key.first, key.second);
+      d = d.Negation();
+    }
+    auto [it, inserted] = diff_domains.try_emplace(key, std::move(d));
+    if (inserted) {
+      candidate_pairs.push_back(key);
+    } else {
+      it->second = it->second.IntersectionWith(d);
+    }
+  };
+
+  struct EnforcedDiffConstraint {
+    int v1;
+    int v2;
+    int c;
+    bool operator<(const EnforcedDiffConstraint& other) const {
+      return std::tie(v1, v2, c) < std::tie(other.v1, other.v2, other.c);
+    }
+  };
+  std::vector<EnforcedDiffConstraint> enforced_diffs;
+  const int num_constraints = model_proto.constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = model_proto.constraints(c);
+    if (ct.constraint_case() == ConstraintProto::kAllDiff ||
+        ct.constraint_case() == ConstraintProto::kNoOverlap) {
+      return;
+    }
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().vars_size() != 2) continue;
+    if (ct.linear().coeffs(0) != -ct.linear().coeffs(1)) continue;
+    if (ct.linear().coeffs(0) != 1 && ct.linear().coeffs(0) != -1) continue;
+
+    const int v1 = ct.linear().vars(0);
+    const int v2 = ct.linear().vars(1);
+    if (!RefIsPositive(v1) || !RefIsPositive(v2) || v1 == v2) continue;
+
+    if (ct.enforcement_literal().empty()) {
+      process_difference(v1, v2,
+                         ct.linear().coeffs(0) == 1
+                             ? ReadDomainFromProto(ct.linear())
+                             : ReadDomainFromProto(ct.linear()).Negation());
+    } else if (ct.enforcement_literal_size() == 1) {
+      enforced_diffs.push_back({std::min(v1, v2), std::max(v1, v2), c});
+    }
+  }
+
+  std::sort(enforced_diffs.begin(), enforced_diffs.end());
+  const auto normalized_diff_domain = [](const ConstraintProto& ct) {
+    Domain d = ct.linear().coeffs(0) == 1
+                   ? ReadDomainFromProto(ct.linear())
+                   : ReadDomainFromProto(ct.linear()).Negation();
+    if (ct.linear().vars(0) > ct.linear().vars(1)) {
+      d = d.Negation();
+    }
+    return d;
+  };
+  for (int next, start = 0; start < enforced_diffs.size(); start = next) {
+    next = start + 1;
+    while (next < enforced_diffs.size() &&
+           enforced_diffs[next].v1 == enforced_diffs[start].v1 &&
+           enforced_diffs[next].v2 == enforced_diffs[start].v2) {
+      ++next;
+    }
+    const int count = next - start;
+    if (count <= 1 || count > 10) continue;
+    const int v1 = enforced_diffs[start].v1;
+    const int v2 = enforced_diffs[start].v2;
+    for (int i = start; i < next; ++i) {
+      const ConstraintProto& ct1 = model_proto.constraints(enforced_diffs[i].c);
+      const Domain d1 = normalized_diff_domain(ct1);
+      const int lit1 = ct1.enforcement_literal(0);
+      for (int j = i + 1; j < next; ++j) {
+        const ConstraintProto& ct2 =
+            model_proto.constraints(enforced_diffs[j].c);
+        if (lit1 != NegatedRef(ct2.enforcement_literal(0))) continue;
+        const Domain d2 = normalized_diff_domain(ct2);
+        if (!d1.IntersectionWith(d2).IsEmpty()) continue;
+        process_difference(v1, v2, d1.UnionWith(d2));
+      }
+    }
+  }
+
+  if (candidate_pairs.size() <= 2) return;
+
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const auto cap_add = [](int64_t a, int64_t b) {
+    return CapAddI(IntegerValue(a), IntegerValue(b)).value();
+  };
+  const auto cap_sub = [](int64_t a, int64_t b) {
+    return CapSubI(IntegerValue(a), IntegerValue(b)).value();
+  };
+
+  std::vector<std::pair<int, int>> different_vars;
+  absl::flat_hash_map<std::pair<int, int>, std::pair<int64_t, int64_t>> offsets;
+  different_vars.reserve(candidate_pairs.size());
+  offsets.reserve(candidate_pairs.size());
+  for (const std::pair<int, int> key : candidate_pairs) {
+    const auto [v1, v2] = key;
+    if (!mapping->IsInteger(v1) || !mapping->IsInteger(v2)) continue;
+    const IntegerVariable iv1 = mapping->Integer(v1);
+    const IntegerVariable iv2 = mapping->Integer(v2);
+    const int64_t lb1 = integer_trail->LevelZeroLowerBound(iv1).value();
+    const int64_t ub1 = integer_trail->LevelZeroUpperBound(iv1).value();
+    const int64_t lb2 = integer_trail->LevelZeroLowerBound(iv2).value();
+    const int64_t ub2 = integer_trail->LevelZeroUpperBound(iv2).value();
+    if (lb1 > ub1 || lb2 > ub2) return;
+
+    const Domain& d = diff_domains.at(key);
+    const int64_t min_diff = cap_sub(lb1, ub2);
+    const int64_t max_diff = cap_sub(ub1, lb2);
+    if (min_diff > max_diff) continue;
+    const Domain valid_d = d.IntersectionWith(Domain(min_diff, max_diff));
+    if (valid_d.IsEmpty()) return;
+
+    Domain exclusion;
+    if (!d.Contains(0)) {
+      exclusion = d.Complement().PartAroundZero();
+    } else if (valid_d.NumIntervals() >= 2) {
+      int64_t best_width = -1;
+      for (int i = 0; i + 1 < valid_d.NumIntervals(); ++i) {
+        const int64_t hole_start = valid_d[i].end + 1;
+        const int64_t hole_end = valid_d[i + 1].start - 1;
+        const int64_t width = cap_sub(hole_end, hole_start);
+        if (hole_start <= hole_end && width > best_width) {
+          best_width = width;
+          exclusion = Domain(hole_start, hole_end);
+        }
+      }
+    }
+    if (exclusion.IsEmpty()) continue;
+
+    const int64_t o1 =
+        exclusion.Min() == kint64min ? kint64max : cap_add(-exclusion.Min(), 1);
+    const int64_t o2 =
+        exclusion.Max() == kint64max ? kint64max : cap_add(exclusion.Max(), 1);
+    if (o1 == kint64max && o2 == kint64max) continue;
+
+    different_vars.push_back(key);
+    offsets[key] = {o1, o2};
+  }
+  if (different_vars.size() <= 2) return;
+
+  std::vector<std::vector<Literal>> cliques;
+  absl::flat_hash_set<int> used_var;
+
+  Model local_model;
+  const int num_variables = model_proto.variables_size();
+  local_model.GetOrCreate<Trail>()->Resize(num_variables);
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
+  graph->Resize(num_variables);
+  for (const auto [var1, var2] : different_vars) {
+    CHECK(graph->AddAtMostOne({Literal(BooleanVariable(var1), true),
+                               Literal(BooleanVariable(var2), true)}));
+    if (used_var.insert(var1).second) {
+      cliques.push_back({Literal(BooleanVariable(var1), true),
+                         Literal(BooleanVariable(var2), true)});
+    }
+    if (used_var.insert(var2).second) {
+      cliques.push_back({Literal(BooleanVariable(var1), true),
+                         Literal(BooleanVariable(var2), true)});
+    }
+  }
+  CHECK(graph->DetectEquivalences());
+  CHECK(graph->TransformIntoMaxCliques(&cliques, 1e8));
+
+  IntervalsRepository* repository = m->GetOrCreate<IntervalsRepository>();
+  const int linearization_level =
+      m->GetOrCreate<SatParameters>()->linearization_level();
+  int num_inferred_all_diff = 0;
+  int num_inferred_no_overlap = 0;
+  std::vector<int64_t> offset_matrix;
+  std::vector<int64_t> shifts;
+  std::vector<int64_t> sizes;
+  for (std::vector<Literal>& clique : cliques) {
+    if (clique.size() <= 2) continue;
+    std::sort(clique.begin(), clique.end());
+
+    const int num_terms = clique.size();
+    offset_matrix.assign(num_terms * num_terms, kint64max);
+    for (int i = 0; i < num_terms; ++i) {
+      const int v1 = clique[i].Variable().value();
+      for (int j = i + 1; j < num_terms; ++j) {
+        const int v2 = clique[j].Variable().value();
+        const auto [o1, o2] = offsets.at({v1, v2});
+        offset_matrix[i * num_terms + j] = o1;
+        offset_matrix[j * num_terms + i] = o2;
+      }
+    }
+    if (!ComputeCliqueShiftsAndSizes(num_terms, offset_matrix, &shifts,
+                                     &sizes)) {
+      continue;
+    }
+
+    int num_greater_than_one = 0;
+    int64_t issue = 0;
+    for (int i = 0; i < num_terms; ++i) {
+      CHECK_GE(sizes[i], 1);
+      if (sizes[i] > 1) ++num_greater_than_one;
+      issue = cap_add(issue, sizes[i]);
+      if (issue == kint64max) {
+        num_greater_than_one = 0;
+        break;
+      }
+    }
+
+    if (num_greater_than_one > 0) {
+      if (linearization_level <= 1) continue;
+      bool overflow = false;
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerVariable iv =
+            mapping->Integer(clique[i].Variable().value());
+        const int64_t lb = integer_trail->LevelZeroLowerBound(iv).value();
+        const int64_t ub = integer_trail->LevelZeroUpperBound(iv).value();
+        const int64_t max_abs = (lb == kint64min || ub == kint64max)
+                                    ? kint64max
+                                    : std::max(std::abs(lb), std::abs(ub));
+        const int64_t span = cap_sub(ub, lb);
+        if (cap_add(max_abs, cap_add(shifts[i], sizes[i])) > kint64max / 2 ||
+            span > kint64max / 2) {
+          overflow = true;
+          break;
+        }
+      }
+      if (overflow) continue;
+
+      std::vector<IntervalVariable> intervals;
+      intervals.reserve(num_terms);
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerVariable var =
+            mapping->Integer(clique[i].Variable().value());
+        const AffineExpression start(var, IntegerValue(1),
+                                     IntegerValue(shifts[i]));
+        const AffineExpression size = IntegerValue(sizes[i]);
+        const AffineExpression end(var, IntegerValue(1),
+                                   IntegerValue(shifts[i] + sizes[i]));
+        intervals.push_back(repository->CreateInterval(
+            start, end, size, kNoLiteralIndex, /*add_linear_relation=*/false));
+      }
+      AppendNoOverlapRelaxationAndCutGenerator(std::move(intervals), m,
+                                               relaxation);
+      ++num_inferred_no_overlap;
+    } else {
+      bool overflow = false;
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerVariable iv =
+            mapping->Integer(clique[i].Variable().value());
+        const int64_t lb = integer_trail->LevelZeroLowerBound(iv).value();
+        const int64_t ub = integer_trail->LevelZeroUpperBound(iv).value();
+        const int64_t max_abs = (lb == kint64min || ub == kint64max)
+                                    ? kint64max
+                                    : std::max(std::abs(lb), std::abs(ub));
+        if (cap_add(max_abs, shifts[i]) > kint64max / 2) {
+          overflow = true;
+          break;
+        }
+      }
+      if (overflow) continue;
+
+      std::vector<AffineExpression> exprs;
+      exprs.reserve(num_terms);
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerVariable var =
+            mapping->Integer(clique[i].Variable().value());
+        exprs.emplace_back(var, IntegerValue(1), IntegerValue(shifts[i]));
+      }
+      AddAllDiffRelaxationAndCutGenerator(exprs, linearization_level, m,
+                                          relaxation);
+      ++num_inferred_all_diff;
+    }
+  }
+
+  if (num_inferred_all_diff > 0 || num_inferred_no_overlap > 0) {
+    SOLVER_LOG(m->GetOrCreate<SolverLogger>(),
+               "[LinearRelaxation] #inferred_all_diff:", num_inferred_all_diff,
+               " #inferred_no_overlap:", num_inferred_no_overlap);
   }
 }
 
@@ -1155,14 +1502,21 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     if (integer_trail->IsFixed(capacity)) {
       const IntegerValue span = max_of_ends - min_of_starts;
       const IntegerValue fixed_capacity = integer_trail->FixedValue(capacity);
-      lc.AddConstant(
-          -MathUtil::FloorOfRatio(fixed_capacity.value(), demands_gcd) *
+      const IntegerValue cap_div(
+          -MathUtil::FloorOfRatio(fixed_capacity.value(), demands_gcd));
+      const IntegerValue span_div(
           MathUtil::FloorOfRatio(span.value(), sizes_gcd));
+      IntegerValue prod;
+      if (MulIntoOverflow(cap_div, span_div, &prod)) return;
+      lc.AddConstant(prod);
     } else {
       DCHECK_EQ(demands_gcd, 1);
       lc.AddTerm(capacity, -(max_of_ends - min_of_starts) / sizes_gcd);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_lc;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_lc)) {
+      relaxation->linear_constraints.push_back(std::move(built_lc));
+    }
     return;
   }
 
@@ -1218,7 +1572,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
       makespan.has_value() ? makespan.value() : max_of_ends;
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
-  relaxation->linear_constraints.push_back(lc.Build());
+  LinearConstraint built_lc;
+  if (lc.BuildIntoConstraintAndCheckOverflow(&built_lc)) {
+    relaxation->linear_constraints.push_back(std::move(built_lc));
+  }
 }
 
 namespace {
@@ -1250,7 +1607,7 @@ void AppendNoOverlap2dRelaxationForComponent(
   }
 
   const IntegerValue max_area = bounding_box->CapArea();
-  if (max_area == kMaxIntegerValue) return;
+  if (max_area >= kMaxIntegerValue) return;
 
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (const int b : component) {
@@ -1284,7 +1641,8 @@ void AppendNoOverlap2dRelaxationForComponent(
       }
     }
   }
-  LinearConstraint ct = lc.Build();
+  LinearConstraint ct;
+  if (!lc.BuildIntoConstraintAndCheckOverflow(&ct)) return;
   if (ct.num_terms == 0) return;
   manager->Add(std::move(ct));
 }
@@ -1350,8 +1708,11 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
     LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
     lc.AddLinearExpression(negated_target);
     lc.AddLinearExpression(expr);
-    AppendLinearConstraintRelaxation(ct.enforcement_literal(), lc.Build(),
-                                     model, relaxation, activity_helper);
+    LinearConstraint built_ct;
+    if (!lc.BuildIntoConstraintAndCheckOverflow(&built_ct)) continue;
+    AppendLinearConstraintRelaxation(ct.enforcement_literal(),
+                                     std::move(built_ct), model, relaxation,
+                                     activity_helper);
   }
 }
 
@@ -1412,7 +1773,6 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
                                  absl::Span<const LinearExpression> exprs,
                                  Model* model, LinearRelaxation* relaxation) {
   const int num_exprs = exprs.size();
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
   // First add the CP constraints.
   for (int i = 0; i < num_exprs; ++i) {
@@ -1421,11 +1781,9 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
     local_expr.vars.push_back(target);
     local_expr.coeffs = exprs[i].coeffs;
     local_expr.coeffs.push_back(IntegerValue(1));
-    IntegerSumLE* upper_bound =
-        new IntegerSumLE({alternative_literals[i]}, local_expr.vars,
-                         local_expr.coeffs, exprs[i].offset, model);
-    upper_bound->RegisterWith(watcher);
-    model->TakeOwnership(upper_bound);
+    AddWeightedSumLowerOrEqual({alternative_literals[i]}, local_expr.vars,
+                               local_expr.coeffs, exprs[i].offset.value(),
+                               model);
   }
 
   // For the relaxation, we use different constraints with a stronger linear
@@ -1538,8 +1896,14 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
                                       Model* model,
                                       LinearRelaxation* relaxation,
                                       ActivityBoundHelper* activity_helper) {
+  for (int i = 0; i < linear_constraint.num_terms; ++i) {
+    if (AtMinOrMaxInt64I(linear_constraint.coeffs[i])) return;
+  }
   if (enforcement.empty()) {
-    relaxation->linear_constraints.push_back(std::move(linear_constraint));
+    if (!PossibleOverflow(*model->GetOrCreate<IntegerTrail>(),
+                          linear_constraint)) {
+      relaxation->linear_constraints.push_back(std::move(linear_constraint));
+    }
     return;
   }
 
@@ -1624,8 +1988,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         }
 
         // Add the tighter constraint.
-        LinearConstraint built_ct = lc.Build();
-        if (!PossibleOverflow(*integer_trail, built_ct)) {
+        LinearConstraint built_ct;
+        if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+            !PossibleOverflow(*integer_trail, built_ct)) {
           ub_done = true;
           ++relaxation->counters.num_tighter_multi_enforced_linear1;
           relaxation->linear_constraints.push_back(std::move(built_ct));
@@ -1654,8 +2019,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         }
 
         // Add the tighter constraint.
-        LinearConstraint built_ct = lc.Build();
-        if (!PossibleOverflow(*integer_trail, built_ct)) {
+        LinearConstraint built_ct;
+        if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+            !PossibleOverflow(*integer_trail, built_ct)) {
           lb_done = true;
           ++relaxation->counters.num_tighter_multi_enforced_linear1;
           relaxation->linear_constraints.push_back(std::move(built_ct));
@@ -1708,8 +2074,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     for (int i = 0; i < linear_constraint.num_terms; i++) {
       lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
-    LinearConstraint built_ct = lc.Build();
-    if (!PossibleOverflow(*integer_trail, built_ct)) {
+    LinearConstraint built_ct;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+        !PossibleOverflow(*integer_trail, built_ct)) {
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
@@ -1726,8 +2093,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     for (int i = 0; i < linear_constraint.num_terms; i++) {
       lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
-    LinearConstraint built_ct = lc.Build();
-    if (!PossibleOverflow(*integer_trail, built_ct)) {
+    LinearConstraint built_ct;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+        !PossibleOverflow(*integer_trail, built_ct)) {
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
@@ -1935,6 +2303,11 @@ void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
   // Check for potential overflows.
   if (x_ub > (int64_t{1} << 31)) return;
   if (x_lb < -(int64_t{1} << 31)) return;
+  if (IntTypeAbs(x.coeff) > (int64_t{1} << 29) ||
+      IntTypeAbs(x.constant) > (int64_t{1} << 29) ||
+      IntTypeAbs(square.constant) > (int64_t{1} << 60)) {
+    return;
+  }
 
   relaxation->linear_constraints.push_back(
       ComputeHyperplanAboveSquare(x, square, x_lb, x_ub));
@@ -1966,51 +2339,6 @@ void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
 
   relaxation->cut_generators.push_back(
       CreateSquareCutGenerator(square, x, linearization_level, m));
-}
-
-void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
-                                         int linearization_level, Model* m,
-                                         LinearRelaxation* relaxation) {
-  if (HasEnforcementLiteral(ct)) return;
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  const int num_exprs = ct.all_diff().exprs_size();
-
-  const std::vector<AffineExpression> exprs =
-      mapping->Affines(ct.all_diff().exprs());
-
-  // Build union of affine expressions domains to check if this is a
-  // permutation.
-  Domain union_of_domains;
-  for (const AffineExpression& expr : exprs) {
-    if (integer_trail->IsFixed(expr)) {
-      union_of_domains = union_of_domains.UnionWith(
-          Domain(integer_trail->FixedValue(expr).value()));
-    } else {
-      union_of_domains = union_of_domains.UnionWith(
-          integer_trail->LevelZeroDomain(expr.var)
-              .MultiplicationBy(expr.coeff.value())
-              .AdditionWith(Domain(expr.constant.value())));
-    }
-  }
-
-  if (union_of_domains.Size() == num_exprs) {
-    // In case of a permutation, the linear constraint is tight.
-    int64_t sum_of_values = 0;
-    for (const int64_t v : union_of_domains.Values()) {
-      sum_of_values += v;
-    }
-    LinearConstraintBuilder relax(m, sum_of_values, sum_of_values);
-    for (const AffineExpression& expr : exprs) {
-      relax.AddTerm(expr, 1);
-    }
-    relaxation->linear_constraints.push_back(relax.Build());
-  } else if (num_exprs <=
-                 m->GetOrCreate<SatParameters>()->max_all_diff_cut_size() &&
-             linearization_level > 1) {
-    relaxation->cut_generators.push_back(
-        CreateAllDifferentCutGenerator(exprs, m));
-  }
 }
 
 void AddCumulativeCutGenerator(const AffineExpression& capacity,
@@ -2130,8 +2458,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   // TODO(user): Support linearization of general target expression.
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.lin_max().target().vars_size() != 1) return;
-  if (ct.lin_max().target().coeffs(0) != 1) return;
-  if (ct.lin_max().target().offset() != 0) return;
+  if (std::abs(ct.lin_max().target().coeffs(0)) != 1) return;
 
   // Skip if the target variable appears in one of the expressions, which
   // should only happen with presolve disabled.
@@ -2147,7 +2474,10 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   }
 
   const IntegerVariable target =
-      mapping->Integer(ct.lin_max().target().vars(0));
+      ct.lin_max().target().coeffs(0) == 1
+          ? mapping->Integer(ct.lin_max().target().vars(0))
+          : NegationOf(mapping->Integer(ct.lin_max().target().vars(0)));
+  const IntegerValue target_offset(ct.lin_max().target().offset());
   std::vector<LinearExpression> exprs;
   exprs.reserve(ct.lin_max().exprs_size());
   for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
@@ -2155,6 +2485,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
     // vars.
     exprs.push_back(
         PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
+    exprs.back().offset -= target_offset;
   }
 
   const std::vector<Literal> alternative_literals =
@@ -2325,6 +2656,11 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     const ConstraintProto& ct = model_proto.constraints(c);
     TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
                              &relaxation, &activity_bound_helper);
+  }
+
+  if (params.infer_all_diffs() && !time_limit->LimitReached()) {
+    AppendInferredAllDiffAndNoOverlapRelaxationAndCutGenerators(model_proto, m,
+                                                                &relaxation);
   }
 
   // TODO(user): I am not sure this is still needed. Investigate and explain why

@@ -25,7 +25,7 @@ message GurobiInitializerProto {
     string name = 1;
     string application_name = 2;
     int32 expiration = 3;
-    string key = 4;
+    string key = 4 [debug_redact = true];
   }
 
   // An optional ISV key to use.

@@ -18,7 +18,7 @@ package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 py_library(
     name = "compare_proto",
-    testonly = 1,
+    testonly = True,
     srcs = ["compare_proto.py"],
     deps = [
         "//ortools/math_opt/python:normalize",
@@ -40,7 +40,7 @@ py_test(
 
 py_library(
     name = "proto_matcher",
-    testonly = 1,
+    testonly = True,
     srcs = ["proto_matcher.py"],
     deps = [
         "//ortools/math_opt/python:normalize",

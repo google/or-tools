@@ -450,6 +450,7 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
 
   num_profile_tasks_ = 0;
   profile_tasks_.resize(num_tasks_);
+  in_profile_.assign(num_tasks_, false);
 
   initial_max_demand_ = IntegerValue(0);
   const bool capa_is_fixed = integer_trail_->IsFixed(capacity_);
@@ -515,11 +516,14 @@ bool TimeTablingPerTask::BuildProfile() {
     }
   }
 
-  // Cache the demand min. If not in profile, it will be zero.
+  // Cache the demand min and profile membership. If not in profile, it will be
+  // zero / false.
+  in_profile_.assign(num_tasks_, false);
   cached_demands_min_.assign(num_tasks_, 0);
   absl::Span<IntegerValue> demands_min = absl::MakeSpan(cached_demands_min_);
   for (int i = 0; i < num_profile_tasks_; ++i) {
     const int t = profile_tasks_[i];
+    in_profile_[t] = true;
     demands_min[t] = demands_->DemandMin(t);
   }
 
@@ -628,11 +632,21 @@ bool TimeTablingPerTask::SweepAllTasks() {
     // A profile rectangle is in conflict with the task if its height exceeds
     // conflict_height.
     const IntegerValue conflict_height = capa_max - demands_->DemandMin(t);
+    IntegerValue min_relevant_height = conflict_height;
+    // If the task is in the profile, its compulsory part already contributes
+    // DemandMin(t) to the profile height. SweepTask() can still lower
+    // DemandMax(t) when height - DemandMin(t) + DemandMax(t) > capa_max, i.e.,
+    // when height > capa_max - (DemandMax(t) - DemandMin(t)).
+    if (IsInProfile(t)) {
+      const IntegerValue delta =
+          demands_->DemandMax(t) - demands_->DemandMin(t);
+      min_relevant_height = std::min(min_relevant_height, capa_max - delta);
+    }
 
     // TODO(user): This is never true when we have a makespan interval with
     // demand equal to the capacity. Find a simple way to detect when there is
     // no need to scan a task.
-    if (conflict_height >= profile_max_height_) continue;
+    if (min_relevant_height >= profile_max_height_) continue;
 
     if (!SweepTask(t, time, conflict_height, &profile_index)) return false;
   }
@@ -793,6 +807,7 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
 
   for (int i = 0; i < num_profile_tasks_; ++i) {
     const int t = profile_tasks_[i];
+    if (t != task_id && cached_demands_min_[t] == 0) continue;
 
     // Do not consider the task if it does not overlap for sure (left, right).
     const IntegerValue start_max = helper_->StartMax(t);

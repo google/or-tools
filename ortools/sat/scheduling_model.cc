@@ -90,6 +90,79 @@ struct IntervalAffine {
   }
 };
 
+bool IsBarrierIntervalCandidate(int interval_idx,
+                                absl::Span<const int> resource_interval_indices,
+                                const CpModelProto& model_proto) {
+  if (interval_idx < 0 || interval_idx >= model_proto.constraints_size()) {
+    return false;
+  }
+  const auto& ct = model_proto.constraints(interval_idx);
+  if (ct.constraint_case() != ConstraintProto::kInterval) return false;
+  const auto& interval = ct.interval();
+
+  // Must be unconditional.
+  if (!ct.enforcement_literal().empty()) return false;
+
+  const AffineExpr size = GetAffineExpr(interval.size());
+  if (GetAffineExprMin(size, model_proto) <= 0) return false;
+
+  const AffineExpr start = GetAffineExpr(interval.start());
+  const AffineExpr end = GetAffineExpr(interval.end());
+
+  const int64_t start_min = GetAffineExprMin(start, model_proto);
+  const int64_t end_min = GetAffineExprMin(end, model_proto);
+  const int64_t end_max = GetAffineExprMax(end, model_proto);
+  const int64_t size_min = GetAffineExprMin(size, model_proto);
+  const int64_t size_max = GetAffineExprMax(size, model_proto);
+
+  // Check condition (b): start is >= all other intervals' end_max.
+  bool condition_b = true;
+  for (int other_idx : resource_interval_indices) {
+    if (other_idx == interval_idx) continue;
+    if (other_idx < 0 || other_idx >= model_proto.constraints_size()) {
+      condition_b = false;
+      break;
+    }
+    const auto& other_ct = model_proto.constraints(other_idx);
+    if (other_ct.constraint_case() != ConstraintProto::kInterval) {
+      condition_b = false;
+      break;
+    }
+    const AffineExpr other_end = GetAffineExpr(other_ct.interval().end());
+    if (start_min < GetAffineExprMax(other_end, model_proto)) {
+      condition_b = false;
+      break;
+    }
+  }
+  if (condition_b) return true;
+
+  // Check condition (a): fixed end at horizon, variable size, and end_min >=
+  // all other end_max.
+  if (end_min == end_max && size_min < size_max) {
+    bool condition_a = true;
+    for (int other_idx : resource_interval_indices) {
+      if (other_idx == interval_idx) continue;
+      if (other_idx < 0 || other_idx >= model_proto.constraints_size()) {
+        condition_a = false;
+        break;
+      }
+      const auto& other_ct = model_proto.constraints(other_idx);
+      if (other_ct.constraint_case() != ConstraintProto::kInterval) {
+        condition_a = false;
+        break;
+      }
+      const AffineExpr other_end = GetAffineExpr(other_ct.interval().end());
+      if (end_min < GetAffineExprMax(other_end, model_proto)) {
+        condition_a = false;
+        break;
+      }
+    }
+    if (condition_a) return true;
+  }
+
+  return false;
+}
+
 // Detects when the makespan is modeled as a physical "barrier" interval at the
 // end of a NoOverlap constraint. Returns the interval indices (to skip during
 // task building) alongside the affine expression of the makespan.
@@ -477,6 +550,69 @@ void ExtractDirectTaskPrecedences(
 }
 
 }  // namespace
+
+std::vector<SchedulingResource> ScanSchedulingResources(
+    const CpModelProto& model_proto, absl::Span<const int> constraint_indices) {
+  std::vector<SchedulingResource> resources;
+  const int num_constraints = model_proto.constraints_size();
+
+  auto process_constraint = [&](int c) {
+    if (c < 0 || c >= num_constraints) return;
+    const auto& ct = model_proto.constraints(c);
+
+    if (ct.constraint_case() == ConstraintProto::kNoOverlap) {
+      std::optional<int> barrier_interval;
+      const auto& no_overlap = ct.no_overlap();
+      if (no_overlap.intervals_size() >= 2) {
+        std::vector<int> intervals(no_overlap.intervals().begin(),
+                                   no_overlap.intervals().end());
+        for (int interval_idx : intervals) {
+          if (IsBarrierIntervalCandidate(interval_idx, intervals,
+                                         model_proto)) {
+            barrier_interval = interval_idx;
+            break;
+          }
+        }
+      }
+      resources.push_back(SchedulingResource::NoOverlap(c, barrier_interval));
+    } else if (ct.constraint_case() == ConstraintProto::kCumulative) {
+      const auto& cumul = ct.cumulative();
+      const AffineExpr capacity = GetAffineExpr(cumul.capacity());
+      std::optional<int> barrier_interval;
+      if (cumul.intervals_size() >= 2) {
+        std::vector<int> intervals(cumul.intervals().begin(),
+                                   cumul.intervals().end());
+        const int64_t cap_max = GetAffineExprMax(capacity, model_proto);
+        for (int k = 0; k < cumul.intervals_size(); ++k) {
+          const int interval_idx = cumul.intervals(k);
+          const AffineExpr demand = GetAffineExpr(cumul.demands(k));
+          const bool demand_matches =
+              (demand == capacity ||
+               GetAffineExprMin(demand, model_proto) >= cap_max);
+          if (demand_matches && IsBarrierIntervalCandidate(
+                                    interval_idx, intervals, model_proto)) {
+            barrier_interval = interval_idx;
+            break;
+          }
+        }
+      }
+      resources.push_back(
+          SchedulingResource::Cumulative(c, capacity, barrier_interval));
+    }
+  };
+
+  if (!constraint_indices.empty()) {
+    for (int c : constraint_indices) {
+      process_constraint(c);
+    }
+  } else {
+    for (int c = 0; c < num_constraints; ++c) {
+      process_constraint(c);
+    }
+  }
+
+  return resources;
+}
 
 namespace {
 SchedulingProblem BuildSchedulingProblem(

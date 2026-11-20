@@ -20,17 +20,21 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <ostream>
 #include <random>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/constraint_solver/assignment.h"
@@ -407,19 +411,48 @@ std::vector<PerturbationStrategy::Value> GetPerturbationStrategies() {
   return {PerturbationStrategy::RUIN_AND_RECREATE};
 }
 
+// Associates a setter function with a logical name.
+//
+// Implements:
+// * operator() to be applied to a AcceptanceStrategy*,
+// * operator<< to be printed properly by DUMP_VARS().
+struct AcceptanceStrategyProtoSetter {
+  // Name to display with DUMP_VARS().
+  absl::string_view name ABSL_REQUIRE_EXPLICIT_INIT;
+
+  // Function setting values on AcceptanceStrategy.
+  std::function<void(AcceptanceStrategy* absl_nonnull)> impl
+      ABSL_REQUIRE_EXPLICIT_INIT;
+
+  void operator()(
+      AcceptanceStrategy* absl_nonnull const acceptance_strategy) const {
+    impl(acceptance_strategy);
+  }
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const AcceptanceStrategyProtoSetter& setter) {
+    out << setter.name;
+    return out;
+  }
+};
+
 // Returns proto message setters for the given acceptance strategy.
-std::vector<std::function<void(AcceptanceStrategy*)>>
+std::vector<AcceptanceStrategyProtoSetter>
 GetCostBasedAcceptanceStrategySetters() {
-  std::vector<std::function<void(AcceptanceStrategy*)>> setters;
-  setters.push_back([](AcceptanceStrategy* acceptance_strategy) {
-    acceptance_strategy->mutable_greedy_descent();
-  });
-  setters.push_back([](AcceptanceStrategy* acceptance_strategy) {
-    SimulatedAnnealingAcceptanceStrategy* sa =
-        acceptance_strategy->mutable_simulated_annealing();
-    sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::LINEAR);
-    sa->set_automatic_temperatures(true);
-  });
+  std::vector<AcceptanceStrategyProtoSetter> setters;
+  setters.push_back(
+      {.name = "greedy_descent",
+       .impl = [](AcceptanceStrategy* absl_nonnull acceptance_strategy) {
+         acceptance_strategy->mutable_greedy_descent();
+       }});
+  setters.push_back(
+      {.name = "simulated_annealing",
+       .impl = [](AcceptanceStrategy* absl_nonnull acceptance_strategy) {
+         SimulatedAnnealingAcceptanceStrategy* sa =
+             acceptance_strategy->mutable_simulated_annealing();
+         sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::LINEAR);
+         sa->set_automatic_temperatures(true);
+       }});
   return setters;
 }
 
@@ -1175,6 +1208,9 @@ TEST_P(IteratedLocalSearchTest, DefaultParameters) {
            GetCostBasedAcceptanceStrategySetters()) {
         for (const auto& set_best_solution_acceptance_strategy :
              GetCostBasedAcceptanceStrategySetters()) {
+          SCOPED_TRACE(DUMP_VARS(first_solution_strategy, perturbation_strategy,
+                                 set_reference_solution_acceptance_strategy,
+                                 set_best_solution_acceptance_strategy));
           IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
           Model model(manager);
           model.SetFixedCostOfVehicle(1000, 1);
@@ -1382,6 +1418,7 @@ TEST_P(RuinRecreatePerturbation_RemoveNodes, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(DUMP_VARS(recreate_strategy, num_removed_nodes));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.SetFixedCostOfVehicle(1000, 1);
@@ -1473,6 +1510,8 @@ TEST_P(RuinRecreatePerturbation_SISR, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(DUMP_VARS(recreate_strategy, max_removed_sequence_size,
+                             avg_num_removed_visits, bypass_factor));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.CloseModel();
@@ -1549,6 +1588,8 @@ TEST_P(RuinRecreatePerturbation_AdaptiveRandomWalk, Solve) {
        GetRecreateStrategies()) {
     for (const auto& recreate_params_setup :
          GetRecreateParametersSetupFunctions(recreate_strategy)) {
+      SCOPED_TRACE(
+          DUMP_VARS(recreate_strategy, strengthening_factor, weakening_factor));
       IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
       Model model(manager);
       model.SetFixedCostOfVehicle(1000, 1);
@@ -1637,6 +1678,8 @@ TEST_P(RuinRecreatePerturbation_CompositeRuin, Solve) {
              std::vector<std::vector<RuinStrategy>>{
                  {ruin_strategy1, ruin_strategy2},
                  {ruin_strategy2, ruin_strategy1}}) {
+          SCOPED_TRACE(DUMP_VARS(recreate_strategy, composition_strategy,
+                                 num_removed_entities));
           IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
           Model model(manager);
           model.SetFixedCostOfVehicle(1000, 1);
@@ -1866,6 +1909,8 @@ TEST(NeighborAcceptanceCriteria, GreedyDescentWithLateAcceptance) {
   ASSERT_EQ(solutionWithCost19->ObjectiveValue(), 19);
 
   for (int late_acceptance_window : {0, 1, 2, 3, 10, 100}) {
+    SCOPED_TRACE(DUMP_VARS(late_acceptance_window));
+
     AcceptancePolicy acceptance_policy;
     acceptance_policy.add_strategies()
         ->mutable_greedy_descent()
@@ -1936,6 +1981,8 @@ TEST(NeighborAcceptanceCriteria, SimulatedAnnealing) {
 
   for (CoolingScheduleStrategy::Value cooling_schedule :
        GetCoolingScheduleStrategies()) {
+    SCOPED_TRACE(DUMP_VARS(cooling_schedule));
+
     IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
     Model model(manager);
     model.SetArcCostEvaluatorOfAllVehicles(

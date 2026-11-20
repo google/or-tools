@@ -19,7 +19,7 @@ endif()
 if(RELEASE)
   set(PYTHON_RELEASE "")
 else()
-  set(PYTHON_RELEASE "rc1")
+  set(PYTHON_RELEASE "rc${RC_VERSION}")
 endif()
 
 # Use latest Python3 module (3.18)

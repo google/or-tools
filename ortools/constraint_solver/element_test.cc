@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -22,7 +21,6 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
 #include "ortools/base/types.h"

@@ -433,6 +433,17 @@ class NeighborhoodGenerator {
         helper_(*helper),
         deterministic_limit_(
             helper->Parameters().lns_initial_deterministic_limit()),
+        max_presolve_deterministic_limit_(
+            helper->Parameters().has_lns_max_presolve_deterministic_limit()
+                ? helper->Parameters().lns_max_presolve_deterministic_limit()
+                : std::max(helper->Parameters()
+                               .lns_max_presolve_deterministic_limit(),
+                           helper->Parameters()
+                               .lns_initial_presolve_deterministic_limit())),
+        initial_presolve_deterministic_limit_(std::min(
+            helper->Parameters().lns_initial_presolve_deterministic_limit(),
+            max_presolve_deterministic_limit_)),
+        presolve_deterministic_limit_(initial_presolve_deterministic_limit_),
         difficulty_(helper->Parameters().lns_initial_difficulty()) {}
   virtual ~NeighborhoodGenerator() = default;
 
@@ -451,6 +462,11 @@ class NeighborhoodGenerator {
 
     // The time it took to solve this neighborhood.
     double deterministic_time = 0.0;
+
+    // Deterministic time limit and time for the presolve of this neighborhood.
+    double presolve_deterministic_limit = 0.0;
+    double presolve_deterministic_time = 0.0;
+    bool presolve_limit_reached = false;
 
     // Objective information. These only refer to the "internal" objective
     // without scaling or offset so we are exact and it is always in the
@@ -553,11 +569,21 @@ class NeighborhoodGenerator {
     return deterministic_limit_;
   }
 
+  // The current presolve time limit that the sub-solve should use on this
+  // generator.
+  double presolve_deterministic_limit() const {
+    absl::MutexLock mutex_lock(generator_mutex_);
+    return presolve_deterministic_limit_;
+  }
+
  protected:
   const std::string name_;
   const NeighborhoodGeneratorHelper& helper_;
   mutable absl::Mutex generator_mutex_;
   double deterministic_limit_ = 0.1;
+  const double max_presolve_deterministic_limit_;
+  const double initial_presolve_deterministic_limit_;
+  double presolve_deterministic_limit_ = 0.5;
 
  private:
   std::vector<SolveData> solve_data_;

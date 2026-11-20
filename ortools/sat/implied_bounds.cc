@@ -244,11 +244,16 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
   int new_size = 0;
   std::vector<ImpliedBoundEntry>& ref = var_to_bounds_[var];
   const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
-  for (const ImpliedBoundEntry& entry : ref) {
-    if (entry.lower_bound <= root_lb) continue;
-    ref[new_size++] = entry;
+  for (int i = 0; i < ref.size(); ++i) {
+    if (ref[i].lower_bound <= root_lb) continue;
+    if (new_size != i) {
+      ref[new_size] = ref[i];
+    }
+    ++new_size;
   }
-  ref.resize(new_size);
+  if (new_size < ref.size()) {
+    ref.resize(new_size);
+  }
 
   return ref;
 }

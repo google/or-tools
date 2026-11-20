@@ -741,7 +741,9 @@ bool IntegerTrail::Propagate(Trail* trail) {
   // sat decision levels. At level zero, integer_search_levels_ should
   // be empty.
   if (level > integer_search_levels_.size()) {
+    ResetLevelZeroPropagationLoopCounter();
     integer_search_levels_.push_back(integer_trail_.size());
+    CHECK_LT(lazy_reasons_.size(), kint32max);
     lazy_reason_decision_levels_.push_back(lazy_reasons_.size());
     reason_decision_levels_.push_back(
         ReasonIndex(literals_reason_starts_.size()));
@@ -806,6 +808,9 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
 
   if (level < first_level_without_full_propagation_) {
     first_level_without_full_propagation_ = -1;
+  }
+  if (level == 0) {
+    ResetLevelZeroPropagationLoopCounter();
   }
 
   // Note that if a conflict was detected before Propagate() of this class was
@@ -1600,16 +1605,20 @@ bool IntegerTrail::EnqueueLiteralInternal(
 }
 
 // We count the number of propagation at the current level, and return true
-// if it seems really large. Note that we disable this if we are in fixed
-// search.
+// if it seems really large. Note that at positive decision levels we disable
+// this if we are in fixed search.
 bool IntegerTrail::InPropagationLoop() const {
   if (parameters_.propagation_loop_detection_factor() == 0.0) return false;
-  return (
-      !integer_search_levels_.empty() &&
-      integer_trail_.size() - integer_search_levels_.back() >
-          std::max(10000.0, parameters_.propagation_loop_detection_factor() *
-                                static_cast<double>(var_lbs_.size())) &&
-      parameters_.search_branching() != SatParameters::FIXED_SEARCH);
+  const double limit =
+      std::max(10000.0, parameters_.propagation_loop_detection_factor() *
+                            static_cast<double>(var_lbs_.size()));
+  if (integer_search_levels_.empty()) {
+    return static_cast<double>(num_level_zero_enqueues_ -
+                               num_level_zero_enqueues_at_last_sync_) > limit;
+  }
+  return static_cast<double>(integer_trail_.size() -
+                             integer_search_levels_.back()) > limit &&
+         parameters_.search_branching() != SatParameters::FIXED_SEARCH;
 }
 
 void IntegerTrail::NotifyThatPropagationWasAborted() {
@@ -1622,6 +1631,7 @@ void IntegerTrail::NotifyThatPropagationWasAborted() {
 // already.
 IntegerVariable IntegerTrail::NextVariableToBranchOnInPropagationLoop() const {
   CHECK(InPropagationLoop());
+  if (integer_search_levels_.empty()) return kNoIntegerVariable;
   ++num_decisions_to_break_loop_;
   std::vector<IntegerVariable> vars;
   for (int i = integer_search_levels_.back(); i < integer_trail_.size(); ++i) {
@@ -1679,6 +1689,7 @@ ReasonIndex IntegerTrail::AppendReasonToInternalBuffers(
   DCHECK_EQ(reason_index, cached_sizes_.size());
 
   literals_reason_starts_.push_back(literals_reason_buffer_.size());
+  CHECK_LT(literals_reason_starts_.size(), kint32max);
   if (!literal_reason.empty()) {
     literals_reason_buffer_.insert(literals_reason_buffer_.end(),
                                    literal_reason.begin(),
@@ -1767,7 +1778,10 @@ bool IntegerTrail::EnqueueInternal(
   // TODO(user): Some propagation code has CHECKs in place and does not like
   // when something they just pushed is not reflected right away. They must be
   // aware of that, which is a bit tricky.
-  if (InPropagationLoop() && IntTypeAbs(i_lit.bound) > 1) {
+  const bool has_non_empty_reason =
+      use_lazy_reason || !literal_reason.empty() || !integer_reason.empty();
+  if (has_non_empty_reason && InPropagationLoop() &&
+      IntTypeAbs(i_lit.bound) > 1) {
     // Note that we still propagate "big" pushes as it seems better to do that
     // now rather than to delay to the next decision.
     const IntegerValue lb = LowerBound(var);
@@ -2682,6 +2696,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 
   // We wait until we reach the fixed point before calling the callback.
   if (trail->CurrentDecisionLevel() == 0) {
+    integer_trail_->ResetLevelZeroPropagationLoopCounter();
     const std::vector<IntegerVariable>& modified_vars =
         modified_vars_for_callback_.PositionsSetAtLeastOnce();
     for (const auto& callback : level_zero_modified_variable_callback_) {

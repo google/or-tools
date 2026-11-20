@@ -491,6 +491,11 @@ class SharedResponseManager {
   int AddBestBoundCallback(std::function<void(double)> callback);
   void UnregisterBestBoundCallback(int callback_id);
 
+  // Registers a postprocessor that converts an outer integer objective lower
+  // bound (from PostsolveInnerObjectiveValue()) into the objective bound passed
+  // to callbacks and the final response.
+  void SetBestBoundPostprocessor(std::function<double(int64_t)> postprocessor);
+
   // The "inner" objective is the CpModelProto objective without scaling/offset.
   // Note that these bounds correspond to valid bounds for the problem of
   // finding a strictly better objective than the current one. Thus the lower
@@ -676,6 +681,8 @@ class SharedResponseManager {
 
   int next_best_bound_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(double)>>> best_bound_callbacks_
+      ABSL_GUARDED_BY(mutex_);
+  std::function<double(int64_t)> best_bound_postprocessor_
       ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::function<void(std::vector<int64_t>*)>>
@@ -931,6 +938,9 @@ class SharedClausesManager {
   // increased each time a new Boolean equivalence relation is found.
   std::vector<int> GetRepresentatives(int64_t* timestamp = nullptr);
 
+  // Returns the number of Boolean equivalences found so far.
+  int64_t NumEquivalences() const;
+
   // Returns new glue clauses.
   // The spans are guaranteed to remain valid until the next call to
   // SyncClauses().
@@ -1028,7 +1038,7 @@ class SharedClausesManager {
 // is called.
 class SharedLinear2Bounds {
  public:
-  int RegisterNewId(std::string worker_name);
+  int RegisterNewId(std::string_view worker_name);
   void LogStatistics(SolverLogger* logger);
 
   // This should only contain canonicalized expressions.
@@ -1067,7 +1077,7 @@ class SharedLinear2Bounds {
   // export, so we use a separate id space. Because we rely on hash map to
   // check if a bound is new, it is not such a big deal that a worker re-reads
   // once the bounds it exported.
-  int RegisterNewImportId(std::string name);
+  int RegisterNewImportId(std::string_view name);
 
   // Returns the linear2 and their bounds.
   // We only return changes since the last call with the same id.
