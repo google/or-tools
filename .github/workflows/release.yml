@@ -6,7 +6,18 @@ on:
     branches:
       - rc
       - mizux/rc
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      publish_nuget:
+        description: 'Stage and publish NuGet packages via OSS Exit Gate'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref_name}}
@@ -42,7 +53,7 @@ jobs:
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -62,7 +73,7 @@ jobs:
     - name: Check export dir
       run: ls -R export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: |
@@ -97,7 +108,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: native_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -105,7 +116,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Tarball Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: .
@@ -132,7 +143,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: native_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -144,7 +155,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Native Artifacts
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-*-${{matrix.target.name}}"
         merge-multiple: true
@@ -156,7 +167,7 @@ jobs:
     - name: Check export_meta
       run: ls -R export_meta
     - name: Upload Meta Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ortools-meta-${{matrix.target.name}}
         path: |
@@ -190,7 +201,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: meta_delivery
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -198,13 +209,13 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Native Artifacts
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-*-${{matrix.target.name}}"
         merge-multiple: true
         path: .
     - name: Download Meta Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: ortools-meta-${{matrix.target.name}}
         path: .
@@ -219,6 +230,130 @@ jobs:
     - name: Test Windows ${{matrix.target.name}} Meta Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}}
+
+###############################################################################
+# Publish NuGet Delivery via OSS Exit Gate
+  publish_nuget:
+    name: Publish(NuGet•OSS Exit Gate)
+    runs-on: ubuntu-22.04
+    needs: [test_native_delivery, test_meta]
+    if: >-
+      github.repository_owner == 'google' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.publish_nuget) ||
+       startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Download Native Dotnet Artifacts
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        pattern: "ortools-*-*-dotnet"
+        merge-multiple: true
+        path: .
+    - name: Download Meta Dotnet Artifact
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        name: ortools-meta-dotnet
+        path: .
+    - name: Authenticate to Google Cloud (OSS Exit Gate)
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      with:
+        workload_identity_provider: 'projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github'
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+    - name: Clean up failed staging attempt for current version (if any)
+      shell: bash
+      run: |
+        shopt -s nullglob
+        for nupkg in nupkg/*.nupkg artifacts/*.nupkg **/*.nupkg; do
+          [[ -f "$nupkg" ]] || continue
+          [[ "$nupkg" == *.symbols.nupkg ]] && continue
+          base="$(basename "$nupkg" .nupkg)"
+          ver="$(echo "$base" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$' || true)"
+          [[ -n "$ver" ]] || continue
+          pkg_id="${base%.$ver}"
+          pkg_lower="$(echo "$pkg_id" | tr '[:upper:]' '[:lower:]')"
+          if gcloud artifacts versions describe "${ver}" \
+            --package="${pkg_lower}" \
+            --project="oss-exit-gate-prod" \
+            --location="us" \
+            --repository="or-tools--nuget" >/dev/null 2>&1; then
+            gcloud artifacts versions delete "${ver}" \
+              --package="${pkg_lower}" \
+              --project="oss-exit-gate-prod" \
+              --location="us" \
+              --repository="or-tools--nuget" \
+              --quiet
+          fi
+        done
+        fi
+    - name: Stage NuGet packages and upload OSS Exit Gate manifest
+      shell: bash
+      env:
+        RUN_ID: ${{ github.run_id }}
+        RUN_ATTEMPT: ${{ github.run_attempt }}
+      run: |
+        set -euo pipefail
+        python3 - <<'PY'
+        import glob
+        import json
+        import subprocess
+        import xml.etree.ElementTree as ET
+        import zipfile
+
+        nupkgs = sorted(set(glob.glob("export/*.nupkg") + glob.glob("export_meta/*.nupkg")))
+        nupkgs = [p for p in nupkgs if not p.endswith(".symbols.nupkg")]
+        if not nupkgs:
+            raise SystemExit("No .nupkg artifacts found in export/ or export_meta/.")
+
+        for nupkg in nupkgs:
+            with zipfile.ZipFile(nupkg, "r") as zf:
+                nuspecs = [n for n in zf.namelist() if n.endswith(".nuspec") and "/" not in n]
+                if not nuspecs:
+                    raise SystemExit(f"No root .nuspec found inside {nupkg}")
+                root = ET.fromstring(zf.read(nuspecs[0]))
+            pkg_id = None
+            version = None
+            for section in root:
+                if section.tag.split("}")[-1] == "metadata":
+                    for child in section:
+                        tag = child.tag.split("}")[-1]
+                        if tag == "id" and child.text:
+                            pkg_id = child.text.strip().lower()
+                        elif tag == "version" and child.text:
+                            version = child.text.strip()
+            if not pkg_id or not version:
+                raise SystemExit(f"Failed to parse package id/version from {nupkg}")
+
+            print(f"Uploading {nupkg} -> package={pkg_id} version={version}")
+            subprocess.run(
+                [
+                    "gcloud",
+                    "artifacts",
+                    "generic",
+                    "upload",
+                    "--project=oss-exit-gate-prod",
+                    "--location=us",
+                    "--repository=or-tools--nuget",
+                    f"--package={pkg_id}",
+                    f"--version={version}",
+                    f"--source={nupkg}",
+                ],
+                check=True,
+            )
+
+        with open("manifest.json", "w", encoding="utf-8") as fh:
+            json.dump({"publish_all": True}, fh)
+            fh.write("\n")
+        PY
+
+        gcloud storage cp manifest.json \
+          "gs://oss-exit-gate-prod-projects-bucket/or-tools/nuget/manifests/manifest-${RUN_ID}-${RUN_ATTEMPT}.json"
 
 ###############################################################################
 # DOCKER ARCHIVES
@@ -250,7 +385,7 @@ jobs:
     name: Distro(${{matrix.arch}}•${{matrix.os}}•${{matrix.lang}})
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: retrieve or-tools.snk
       run: >
         openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN"
@@ -265,7 +400,7 @@ jobs:
     - name: Check Export dir
       run: ls -R tools/docker/export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           tools/docker/export/archives/*.tar.gz
@@ -293,7 +428,7 @@ jobs:
     name: Python(${{matrix.arch}}•${{matrix.distro}}•cp${{matrix.python}})
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Build Whl
       run: >
         make --directory=tools/docker
@@ -305,7 +440,7 @@ jobs:
     - name: Check Export dir
       run: ls -R tools/docker/export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           tools/docker/export/python/ortools-*${{matrix.distro}}*.whl
@@ -338,7 +473,7 @@ jobs:
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -358,7 +493,7 @@ jobs:
     - name: Check export dir
       run: ls -R export
     - name: Upload Tarball Artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         path: |
           export/*.whl
@@ -392,7 +527,7 @@ jobs:
     runs-on: ${{matrix.platform.runner}}
     needs: python_mac_win
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: ./.github/actions/setup
       with:
         arch: ${{matrix.platform.arch}}
@@ -400,7 +535,7 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
     - name: Download Tarball Artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: "ortools-*-cp3${{matrix.target.version}}-${{matrix.platform.py_os}}_*${{matrix.platform.py_arch}}.whl"
         path: export/
