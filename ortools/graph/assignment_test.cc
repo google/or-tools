@@ -89,6 +89,20 @@ TEST(SimpleLinearSumAssignmentTest, OptimumMatchingWithNegativeCost) {
   EXPECT_EQ(-20, assignment.AssignmentCost(1));
 }
 
+TEST(SimpleLinearSumAssignmentTest, OptimumMatchingWithCostsOfBothSigns) {
+  // The only perfect matching is 0 -> 1, 1 -> 0. This used to be reported as
+  // infeasible because the price of node 0 has to drop by more than the
+  // largest cost magnitude.
+  SimpleLinearSumAssignment assignment;
+  assignment.AddArcWithCost(0, 0, -38);
+  assignment.AddArcWithCost(0, 1, 75);
+  assignment.AddArcWithCost(1, 0, 21);
+  ASSERT_EQ(SimpleLinearSumAssignment::OPTIMAL, assignment.Solve());
+  EXPECT_EQ(96, assignment.OptimalCost());
+  EXPECT_EQ(1, assignment.RightMate(0));
+  EXPECT_EQ(0, assignment.RightMate(1));
+}
+
 TEST(SimpleLinearSumAssignmentTest, InfeasibleProblem) {
   SimpleLinearSumAssignment assignment;
   assignment.AddArcWithCost(0, 1, 2);
