@@ -86,8 +86,6 @@ problems. Here is a quick overview of the ones one might want to modify:
   - Local search neighborhoods:
     - routing_no_lns (default: false): forbids the use of Large Neighborhood
       Search (LNS); LNS can find good solutions but is usually very slow.
-      Refer to the description of PATHLNS in the LocalSearchOperators enum
-      in constraint_solver.h for more information.
     - routing_no_tsp (default: true): forbids the use of exact methods to
       solve "sub"-traveling salesman problems (TSPs) of the current model
       (such as sub-parts of a route, or one route in a multiple route
@@ -168,6 +166,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
@@ -942,7 +941,7 @@ class OR_ROUTING_DLL Model {
 
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
-  const std::vector<int>& GetDimensionResourceGroupIndices(
+  absl::Span<const int> GetDimensionResourceGroupIndices(
       const Dimension* dimension) const;
 
   /// Returns the index of the resource group attached to the dimension.
@@ -956,6 +955,7 @@ class OR_ROUTING_DLL Model {
   /// when using @ref AddDisjunction.
   enum PenaltyCostBehavior { PENALIZE_ONCE, PENALIZE_PER_INACTIVE };
 
+#if !defined(SWIG)
   /// @brief Adds a disjunction constraint on the indices.
   /// @details Exactly 'max_cardinality' of the indices are active.
   ///
@@ -978,13 +978,14 @@ class OR_ROUTING_DLL Model {
   /// with a penalty cost if it is not visited.
   /// @warning Start and end indices of any vehicle cannot be part of a
   /// disjunction.
-  DisjunctionIndex AddDisjunction(const std::vector<int64_t>& indices,
+  DisjunctionIndex AddDisjunction(absl::Span<const int64_t> indices,
                                   int64_t penalty = kNoPenalty,
                                   int64_t max_cardinality = 1,
                                   PenaltyCostBehavior penalty_cost_behavior =
                                       PenaltyCostBehavior::PENALIZE_ONCE);
   /// Creates a disjunction without setting its maximum or minimum cardinality.
-  DisjunctionIndex MakeDisjunction(const std::vector<int64_t>& indices);
+  DisjunctionIndex MakeDisjunction(absl::Span<const int64_t> indices);
+#endif  // !defined(SWIG)
   /// Sets the maximum number of active indices in the disjunction. It must be
   /// in [0, num_indices].
   void SetDisjunctionHardMaximum(DisjunctionIndex disj_index,
@@ -1015,16 +1016,18 @@ class OR_ROUTING_DLL Model {
   void SetDisjunctionSoftMinimum(DisjunctionIndex disj_index,
                                  int64_t soft_min_cardinality, int64_t penalty,
                                  PenaltyCostBehavior penalty_cost_behavior);
+#if !defined(SWIG)
   /// Returns the indices of the disjunctions to which an index belongs.
-  const std::vector<DisjunctionIndex>& GetDisjunctionIndices(
+  absl::Span<const DisjunctionIndex> GetDisjunctionIndices(
       int64_t index) const {
     return index_to_disjunctions_[index];
   }
+#endif  // !defined(SWIG)
   /// Structure storing a value for a set of variable indices. Is used to store
   /// data for index disjunctions (variable indices, max_cardinality and penalty
   /// when unperformed).
   struct Disjunction {
-    std::vector<int64_t> indices;
+    absl::InlinedVector<int64_t, 2> indices;
     int64_t min_cardinality = 0;
     int64_t soft_min_cardinality = 0;
     int64_t soft_min_penalty = 0;
@@ -1038,7 +1041,7 @@ class OR_ROUTING_DLL Model {
   };
   /// Returns the variable indices of the nodes in the disjunction of index
   /// 'index'.
-  const std::vector<int64_t>& GetDisjunctionNodeIndices(
+  absl::Span<const int64_t> GetDisjunctionNodeIndices(
       DisjunctionIndex index) const {
     return disjunctions_[index].indices;
   }
@@ -2076,11 +2079,13 @@ class OR_ROUTING_DLL Model {
   }
   /// Returns the number of different vehicle classes in the model.
   int GetVehicleClassesCount() const { return num_vehicle_classes_; }
+#if !defined(SWIG)
   /// Returns variable indices of nodes constrained to be on the same route.
-  const std::vector<int>& GetSameVehicleIndicesOfIndex(int node) const {
+  absl::Span<const int> GetSameVehicleIndicesOfIndex(int node) const {
     DCHECK(closed_);
     return same_vehicle_groups_[same_vehicle_group_[node]];
   }
+#endif  // !defined(SWIG)
   void AddSameActivityGroup(absl::Span<const int> nodes) {
     DCHECK(!closed_);
     if (nodes.size() <= 1) return;
@@ -2090,7 +2095,7 @@ class OR_ROUTING_DLL Model {
     }
   }
   /// Returns variable indices of nodes constrained to have the same activity.
-  const std::vector<int>& GetSameActivityIndicesOfIndex(int node) const {
+  absl::Span<const int> GetSameActivityIndicesOfIndex(int node) const {
     DCHECK(closed_);
     return same_active_var_groups_[same_active_var_group_[node]];
   }
@@ -2110,21 +2115,23 @@ class OR_ROUTING_DLL Model {
     return same_active_var_groups_.size();
   }
   /// Returns variable indices of nodes in the same activity group.
-  const std::vector<int>& GetSameActivityIndicesOfGroup(int group) const {
+  absl::Span<const int> GetSameActivityIndicesOfGroup(int group) const {
     DCHECK(closed_);
     return same_active_var_groups_[group];
   }
 #if !defined(SWIG)
   /// Adds an ordered activity group. This enforces that if disjunctions[i] is
   /// active, then disjunctions[i-1] must be active.
-  void AddOrderedActivityGroup(std::vector<DisjunctionIndex> disjunctions) {
+  void AddOrderedActivityGroup(
+      absl::Span<const DisjunctionIndex> disjunctions) {
     DCHECK(!closed_);
     if (disjunctions.size() <= 1) return;
-    ordered_activity_groups_.push_back(std::move(disjunctions));
+    ordered_activity_groups_.emplace_back(disjunctions.begin(),
+                                          disjunctions.end());
   }
   /// Returns all ordered activity groups.
-  const std::vector<std::vector<DisjunctionIndex>>& GetOrderedActivityGroups()
-      const {
+  const std::vector<absl::InlinedVector<DisjunctionIndex, 4>>&
+  GetOrderedActivityGroups() const {
     return ordered_activity_groups_;
   }
 #endif  // !defined(SWIG)
@@ -2358,10 +2365,7 @@ class OR_ROUTING_DLL Model {
     SHORTEST_PATH_SWAP_ACTIVE,
     SHORTEST_PATH_TWO_OPT,
     NODE_PAIR_SWAP,
-    PATH_LNS,
-    FULL_PATH_LNS,
     TSP_LNS,
-    INACTIVE_LNS,
     EXCHANGE_RELOCATE_PAIR,
     RELOCATE_SUBTRIP,
     EXCHANGE_SUBTRIP,
@@ -2528,8 +2532,8 @@ class OR_ROUTING_DLL Model {
   /// Returns nullptr if no penalty cost, otherwise returns penalty variable.
   operations_research::IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   /// Sets up pickup and delivery sets.
-  void AddPickupAndDeliverySetsInternal(const std::vector<int64_t>& pickups,
-                                        const std::vector<int64_t>& deliveries);
+  void AddPickupAndDeliverySetsInternal(absl::Span<const int64_t> pickups,
+                                        absl::Span<const int64_t> deliveries);
   /// Returns the cost variable related to the soft same vehicle constraint of
   /// index 'vehicle_index'.
   operations_research::IntVar* CreateSameVehicleCost(int vehicle_index);
@@ -2753,7 +2757,7 @@ class OR_ROUTING_DLL Model {
   /// can in turn be assigned to at most 1 vehicle.
   std::vector<std::unique_ptr<ResourceGroup>> resource_groups_;
   /// Stores the set of resource groups related to each dimension.
-  util_intops::StrongVector<DimensionIndex, std::vector<int>>
+  util_intops::StrongVector<DimensionIndex, absl::InlinedVector<int, 4>>
       dimension_resource_group_indices_;
 
   /// Stores the global and local dimension cumul optimizers for dimensions
@@ -2815,7 +2819,7 @@ class OR_ROUTING_DLL Model {
   std::function<int(int64_t)> vehicle_start_class_callback_;
   /// Disjunctions
   util_intops::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
-  std::vector<std::vector<DisjunctionIndex>> index_to_disjunctions_;
+  std::vector<absl::InlinedVector<DisjunctionIndex, 4>> index_to_disjunctions_;
   /// Same vehicle costs
   template <typename T>
   struct ValuedNodes {
@@ -2842,13 +2846,14 @@ class OR_ROUTING_DLL Model {
   // Same vehicle group to which a node belongs.
   std::vector<int> same_vehicle_group_;
   // Same vehicle node groups.
-  std::vector<std::vector<int>> same_vehicle_groups_;
+  std::vector<absl::InlinedVector<int, 4>> same_vehicle_groups_;
   // Same active var group to which a node belongs.
   std::vector<int> same_active_var_group_;
   // Same active var groups.
-  std::vector<std::vector<int>> same_active_var_groups_;
+  std::vector<absl::InlinedVector<int, 4>> same_active_var_groups_;
   // Ordered activity groups.
-  std::vector<std::vector<DisjunctionIndex>> ordered_activity_groups_;
+  std::vector<absl::InlinedVector<DisjunctionIndex, 4>>
+      ordered_activity_groups_;
   // Node visit types
   // Variable index to visit type index.
   std::vector<int> index_to_visit_type_;

@@ -707,7 +707,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
     const int cp_node = node + 1;
     // Forced active and nodes that are not involved in any disjunctions are
     // always performed.
-    const std::vector<DisjunctionIndex>& disjunction_indices =
+    const absl::Span<const DisjunctionIndex> disjunction_indices =
         model.GetDisjunctionIndices(node);
     if (disjunction_indices.empty() || model.ActiveVar(node)->Min() == 1) {
       is_unperformed[cp_node] = AddVariable(cp_model, 0, 0);

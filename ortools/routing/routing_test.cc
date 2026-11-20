@@ -582,9 +582,6 @@ class BaseRoutingTest : public testing::Test {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE);
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_log_search(true);
     return parameters;
   }
@@ -1085,7 +1082,7 @@ TEST(DisjunctionsTest, SingleNodeInMultipleDisjunctions) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(2, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1131,7 +1128,7 @@ TEST(DisjunctionsTest, SingleNodeInSingleDisjunction) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(1, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1158,7 +1155,7 @@ TEST(DisjunctionsTest, MultipleNodesInSingleDisjunctionWithMaxCardinality) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(1, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1261,7 +1258,7 @@ TEST(DisjunctionsTest, DisjunctionSettersGetters) {
   // Reset for the struct check below.
   model.SetDisjunctionHardMinimum(disj_index, 1);
 
-  const std::vector<int64_t>& node_indices =
+  const absl::Span<const int64_t> node_indices =
       model.GetDisjunctionNodeIndices(disj_index);
   EXPECT_EQ(3, node_indices.size());
   EXPECT_EQ(1, node_indices[0]);
@@ -6490,10 +6487,6 @@ TEST(CachedCallbackTest, CachedCallbackReuse) {
   RoutingSearchParameters search_parameters = DefaultRoutingSearchParameters();
   search_parameters.set_first_solution_strategy(
       FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE);
-  search_parameters.mutable_local_search_operators()->set_use_path_lns(
-      BOOL_TRUE);
-  search_parameters.mutable_local_search_operators()->set_use_inactive_lns(
-      BOOL_TRUE);
   model.CloseModelWithParameters(search_parameters);
   model.SolveWithParameters(search_parameters);
   // Verify that the callback was called once for each index pair. In this test,
@@ -6911,9 +6904,6 @@ class CompactAssignmentTest : public BaseRoutingTest,
   int VehicleCostCount() const override { return 1; }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
     return parameters;
   }
@@ -7165,9 +7155,6 @@ class CompactAssignmentWithMultipleDepotsTest
   int VehicleCostCount() const override { return 1; }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::PATH_CHEAPEST_ARC);
     return parameters;
@@ -7710,14 +7697,6 @@ TEST_P(RoutingLocalSearchOperatorsTest, SWAPACTIVECHAIN) {
 
 TEST_P(RoutingLocalSearchOperatorsTest, EXTENDEDSWAPACTIVE) {
   TestLocalSearchOperator(Solver::EXTENDEDSWAPACTIVE);
-}
-
-TEST_P(RoutingLocalSearchOperatorsTest, PATHLNS) {
-  TestLocalSearchOperator(Solver::PATHLNS);
-}
-
-TEST_P(RoutingLocalSearchOperatorsTest, UNACTIVELNS) {
-  TestLocalSearchOperator(Solver::UNACTIVELNS);
 }
 
 TEST_P(RoutingLocalSearchOperatorsTest, LK) {
@@ -8366,9 +8345,6 @@ class VariableCapacityTest : public BaseRoutingTest,
   }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::PATH_CHEAPEST_ARC);
     return parameters;
