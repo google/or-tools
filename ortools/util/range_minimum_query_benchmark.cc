@@ -14,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/fixed_array.h"
 #include "benchmark/benchmark.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/range_minimum_query.h"
