@@ -2400,8 +2400,8 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
-  const bool want_fj = params.use_feasibility_jump();
-  const bool want_vls =
+  const bool ls_find_first_solution = params.use_feasibility_jump();
+  const bool ls_improve_solutions =
       has_objective && !params.use_lns_only() &&
       (!params.has_num_violation_ls() || params.num_violation_ls() > 0);
 
@@ -2417,13 +2417,13 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
       name_filter.Filter(GetFirstSolutionBaseParams(params));
 
   int num_ls = 0;
-  if (want_fj || want_vls) {
-    if (want_vls && params.has_num_violation_ls()) {
+  if (ls_find_first_solution || ls_improve_solutions) {
+    if (ls_improve_solutions && params.has_num_violation_ls()) {
       num_ls = params.num_violation_ls();
     } else {
       num_ls = (num_first_solution_threads_available + 2) / 3;
       if (reentrant_interleaved_subsolvers.empty() &&
-          (want_vls || first_solution_base_params.empty())) {
+          (ls_improve_solutions || first_solution_base_params.empty())) {
         num_ls = std::max(num_ls,
                           num_first_solution_threads_available -
                               static_cast<int>(interleaved_subsolvers.size()));
@@ -2448,10 +2448,10 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
       local_params.set_feasibility_jump_linearization_level(
           linearization_level);
       interleaved_subsolvers.push_back(std::make_unique<ViolationLsSolver>(
-          ls_name, want_fj, want_vls, shared->model_proto, local_params, states,
-          shared->time_limit, shared->response, shared->bounds.get(),
-          shared->clauses.get(), shared->ls_hints, shared->stat_tables,
-          active_constraints));
+          ls_name, ls_find_first_solution, ls_improve_solutions,
+          shared->model_proto, local_params, states, shared->time_limit,
+          shared->response, shared->bounds.get(), shared->clauses.get(),
+          shared->ls_hints, shared->stat_tables, active_constraints));
     }
   };
   add_ls_subsolvers(num_ls_default, "ls", /*linearization_level=*/0);
@@ -2459,9 +2459,11 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
 
   // Add first solution subsolvers (stopped and deleted once a solution is
   // found).
-  const int num_fj_active = want_fj ? (num_ls_default + num_ls_lin) : 0;
-  int num_fs_threads = num_first_solution_threads_available - num_fj_active;
-  if (num_fj_active == 0 &&
+  const int num_ls_first_solution =
+      ls_find_first_solution ? (num_ls_default + num_ls_lin) : 0;
+  int num_fs_threads =
+      num_first_solution_threads_available - num_ls_first_solution;
+  if (num_ls_first_solution == 0 &&
       num_interleaved_subsolver_that_do_not_need_solution > 0 &&
       !(params.interleave_search() && params.num_workers() == 1)) {
     --num_fs_threads;
@@ -3226,6 +3228,10 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
           // Compute the true objective of the returned solution.
           response->set_objective_value(
               ComputeFloatObjectiveValue(float_obj, response->solution()));
+          if (mapping_proto_->has_objective()) {
+            response->set_inner_objective_value(ComputeInnerObjective(
+                mapping_proto_->objective(), response->solution()));
+          }
         }
       });
   shared_response_manager_->AddFinalResponsePostprocessor(
@@ -3404,9 +3410,11 @@ void CpModelSolver::AddSolutionPostsolveCallback() {
         // free variable to one of its implied bound with best objective.
         // So we need to recompute it.
         const CpObjectiveProto& objective = model_proto_.objective();
-        const double objective_value = ScaleObjectiveValue(
-            objective, ComputeInnerObjective(objective, response->solution()));
-        response->set_objective_value(objective_value);
+        const int64_t inner_objective_value =
+            ComputeInnerObjective(objective, response->solution());
+        response->set_inner_objective_value(inner_objective_value);
+        response->set_objective_value(
+            ScaleObjectiveValue(objective, inner_objective_value));
       }
     });
   } else {

@@ -880,6 +880,44 @@ TEST(ValidateCpModelTest, InvalidNodeExpressionInRoutesConstraint) {
               HasSubstr("Out of bound integer variable 3 in route constraint"));
 }
 
+TEST(ValidateCpModelTest, ReservoirLevelChangesOverflow) {
+  CHECK_EQ(kint64max / 2, int64_t{4611686018427387903});
+  const CpModelProto model_ok = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        min_level: -1
+        max_level: 5
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        active_literals: [ 0, -2 ]
+        level_changes { offset: 1 }
+        level_changes { offset: -4611686018427387902 }
+      }
+    }
+  )pb");
+  EXPECT_EQ(ValidateCpModel(model_ok), "");
+
+  const CpModelProto model_overflow = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        min_level: -1
+        max_level: 5
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        active_literals: [ 0, -2 ]
+        level_changes { offset: 1 }
+        level_changes { offset: -4611686018427387903 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_overflow),
+              HasSubstr("Possible integer overflow in constraint"));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

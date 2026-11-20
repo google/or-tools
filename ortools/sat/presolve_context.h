@@ -63,6 +63,20 @@ constexpr int kObjectiveConstraint = -1;
 constexpr int kAffineRelationConstraint = -2;
 constexpr int kAssumptionsConstraint = -3;
 
+// Returned by presolve helpers that maintain canonicality/graph invariants
+// internally and report whether their target was modified.
+class ModificationStatus {
+ public:
+  explicit constexpr ModificationStatus(bool modified) : modified_(modified) {}
+  constexpr bool modified() const { return modified_; }
+  constexpr bool operator==(const ModificationStatus&) const = default;
+
+ private:
+  bool modified_;
+};
+inline constexpr ModificationStatus kUnchanged{false};
+inline constexpr ModificationStatus kModified{true};
+
 class PresolveContext;
 
 // When storing a reference to a literal, it is important not to forget when
@@ -282,8 +296,24 @@ struct ConstraintCanonicalizationState {
 
   void Reset() {
     constraints_to_canonicalize.ClearAndResize(0);
+    num_dirty_constraints = 0;
     routes_with_dimensions.clear();
     DCHECK_EQ(detached_constraint_index, -1);
+  }
+
+  void MarkDirty(int c) {
+    if (!constraints_to_canonicalize[c]) {
+      constraints_to_canonicalize.Set(c);
+      ++num_dirty_constraints;
+    }
+  }
+
+  void ClearDirty(int c) {
+    if (c < constraints_to_canonicalize.size() &&
+        constraints_to_canonicalize[c]) {
+      constraints_to_canonicalize.Clear(c);
+      --num_dirty_constraints;
+    }
   }
 
   // Constraints in [0, size()) marked dirty explicitly (via
@@ -291,6 +321,7 @@ struct ConstraintCanonicalizationState {
   // Non-empty constraints in [size(), NumConstraints()) are newly appended and
   // implicitly need initial canonicalization.
   SparseBitset<int> constraints_to_canonicalize;
+  int num_dirty_constraints = 0;
 
   // Indices of kRoutes constraints with non-empty dimensions, tracked
   // separately because UsedVariables() does not index variables appearing only
@@ -522,12 +553,6 @@ class PresolveContext {
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
 
-  // Graph-free structural canonicalization of a single constraint using
-  // current domains and affine relations. Returns true if `*ct` was mutated in
-  // a way that may change its variable usage or structure.
-  // TODO(user): Make this private once callers use the index overload.
-  bool CanonicalizeConstraint(ConstraintProto* ct);
-
   // Canonicalizes constraint `c` in `working_model_` and, if mutated (or if
   // `force_variable_usage_update` is true because `c` was already mutated in
   // place beforehand), marks it for lazy variable-graph update.
@@ -546,7 +571,9 @@ class PresolveContext {
     graph_.MarkForLazyUpdate(c);
     if (c < canonicalization_.constraints_to_canonicalize.size() &&
         !ConstraintIsEmpty(c)) {
-      canonicalization_.constraints_to_canonicalize.Set(c);
+      canonicalization_.MarkDirty(c);
+    } else {
+      canonicalization_.ClearDirty(c);
     }
   }
 
@@ -634,28 +661,29 @@ class PresolveContext {
   [[nodiscard]] bool IntersectionOfAffineExprsIsNotEmpty(
       const LinearExpressionProto& a, const LinearExpressionProto& b);
 
-  // This function always returns false. It is just a way to make a little bit
-  // more sure that we abort right away when infeasibility is detected.
-  [[nodiscard]] bool NotifyThatModelIsUnsat(absl::string_view message = "") {
+  UnsatStatus NotifyUnsat(absl::string_view message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
     is_unsat_ = true;
-    return false;
+    return kUnsat;
+  }
+
+  // This function always returns false. It is just a way to make a little bit
+  // more sure that we abort right away when infeasibility is detected.
+  // TODO(user): Remove NotifyThatModelIsUnsat() and use NotifyUnsat()
+  // instead (without `(void)` casts). Eventually, remove ModelIsUnsat(),
+  // ModelStatus(), and is_unsat_ as well.
+  [[nodiscard]] bool NotifyThatModelIsUnsat(absl::string_view message = "") {
+    return FeasibilityStatus(NotifyUnsat(message)).unknown();
   }
   bool ModelIsUnsat() const { return is_unsat_; }
+  FeasibilityStatus ModelStatus() const {
+    return FeasibilityStatus(!is_unsat_);
+  }
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
   void UpdateRuleStats(std::string_view name, int num_times = 1);
-
-  // Updates the constraints <-> variables graph and marks `c` for lazy
-  // canonicalization (if non-empty).
-  // TODO(user): Remove once callers are migrated to
-  // MarkConstraintForCanonicalization, CanonicalizeConstraint, or
-  // ClearConstraint.
-  void UpdateConstraintVariableUsage(int c) {
-    MarkConstraintForCanonicalization(c);
-  }
 
   SparseBitset<int>* MutableVarWithReducedSmallDegree() {
     return graph_.MutableVarWithReducedSmallDegree();
@@ -928,15 +956,9 @@ class PresolveContext {
   }
   int IntervalUsage(int c) const { return graph_.IntervalUsage(c); }
 
-  // Note this function does not update the constraint graph. It assumes this is
-  // done elsewhere.
-  bool MarkConstraintAsFalse(ConstraintProto* ct, std::string_view reason);
-
-  // Replace the constraint (keeping the same enforcement literals) by
-  // expr \in domain.
-  bool MarkConstraintAsEquivalentToLinear(ConstraintProto* ct,
-                                          const LinearExpressionProto& expr,
-                                          const Domain& domain,
+  // Note that this function does not update the constraint graph; it assumes
+  // this is done elsewhere.
+  FeasibilityStatus MarkConstraintAsFalse(ConstraintProto* ct,
                                           std::string_view reason);
 
   // Checks if a constraint contains an enforcement literal set to false,
@@ -1024,9 +1046,23 @@ class PresolveContext {
     DCHECK_NE(c, canonicalization_.detached_constraint_index);
     return working_model_->mutable_constraints(c);
   }
-  void ClearConstraint(int c) {
+
+  // Clears constraint `c`, marks it for lazy variable-graph update, and clears
+  // its lazy-canonicalization dirty bit. The return type allows callers
+  // returning a `CanonicalizationStatus` or a `FeasibilityStatus` to just
+  // use `return context_->ClearConstraint(c);`.
+  class ClearedConstraintStatus {
+   public:
+    constexpr operator CanonicalizationStatus() const { return kCanonical; }
+    constexpr operator FeasibilityStatus() const { return kUnknown; }
+    friend constexpr bool operator==(ClearedConstraintStatus,
+                                     ClearedConstraintStatus) = default;
+  };
+  ClearedConstraintStatus ClearConstraint(int c) {
     MutableConstraint(c)->Clear();
     graph_.MarkForLazyUpdate(c);
+    canonicalization_.ClearDirty(c);
+    return ClearedConstraintStatus{};
   }
 
   // Sometimes we start creating a constraint but bail out, this is a "safe"
@@ -1036,6 +1072,7 @@ class PresolveContext {
     const int num_constraints = NumConstraints();
     if (num_constraints <
         canonicalization_.constraints_to_canonicalize.size()) {
+      canonicalization_.ClearDirty(num_constraints);
       canonicalization_.constraints_to_canonicalize.Resize(num_constraints);
     }
   }
@@ -1132,6 +1169,11 @@ class PresolveContext {
 
   // Helper to add an affine relation x = c.y + o to the given repository.
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
+
+  // Graph-free structural canonicalization of a single constraint using
+  // current domains and affine relations. Returns true if `*ct` was mutated in
+  // a way that may change its variable usage or structure.
+  bool CanonicalizeConstraint(ConstraintProto* ct);
 
   // Makes sure we only insert encoding about the current representative.
   //

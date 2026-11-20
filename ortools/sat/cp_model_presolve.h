@@ -29,6 +29,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraint_presolve.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
@@ -116,7 +117,7 @@ class CpModelPresolver {
   void Probe();
 
   // Runs the expansion and fix constraints that became non-canonical.
-  void ExpandCpModelAndCanonicalizeConstraints();
+  [[nodiscard]] bool ExpandCpModelAndCanonicalizeConstraints();
 
   ABSL_MUST_USE_RESULT bool CanonicalizeConstraintsLazily();
 
@@ -149,7 +150,8 @@ class CpModelPresolver {
   //
   // then we can remove var, and transform the constraint to
   // literal => linear_terms \in tighter_domain.
-  void MaybeRemoveLinkingVariable(int var, int c_linear1, int c_linear);
+  FeasibilityStatus MaybeRemoveLinkingVariable(int var, int c_linear1,
+                                               int c_linear);
 
   // Detects if a linear constraint is "included" in another one, and does
   // related presolve.
@@ -202,8 +204,8 @@ class CpModelPresolver {
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.
   void ProcessAtMostOneAndLinear();
-  void ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
-                               ActivityBoundHelper* helper);
+  FeasibilityStatus ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
+                                            ActivityBoundHelper* helper);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -281,7 +283,7 @@ class CpModelPresolver {
   void PresolveVarOnlyInLinMaxAndLinear(int var, int lin_max_ct_index,
                                         int linear_ct_index);
 
-  void ProcessVariableInTwoAtMostOrExactlyOne(int var);
+  FeasibilityStatus ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
   bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
                                     std::string_view entry_name,

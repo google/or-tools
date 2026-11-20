@@ -17,7 +17,6 @@
 #include <optional>
 #include <string>
 
-#include "absl/types/optional.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
@@ -42,17 +41,8 @@ std::string FindErrorInMPModelProto(
     bool accept_trivially_infeasible_bounds = false);
 
 /**
- * Like FindErrorInMPModelProto, but for a MPModelDeltaProto applied to a given
- * baseline model (assumed valid, eg. FindErrorInMPModelProto(model)="").
- * Works in O(|model_delta|) + O(num_vars in model), but the latter term has a
- * very small constant factor.
- */
-std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
-                                         const MPModelProto& model);
-
-/**
- * If the model is valid and non-empty, returns it (possibly after extracting
- * the model_delta). If invalid or empty, updates `response` and returns null.
+ * If the model is valid and non-empty, returns it. If invalid or empty,
+ * updates `response` and returns null.
  */
 std::optional<LazyMutableCopy<MPModelProto>>
 ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
@@ -78,20 +68,6 @@ std::optional<LazyMutableCopy<MPModelProto>> GetMPModelOrPopulateResponse(
  */
 std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
                                                double tolerance);
-
-// Partially merges a MPConstraintProto onto another, skipping only the
-// repeated fields "var_index" and "coefficients". This is used within
-// FindErrorInMPModelDeltaProto.
-// See the unit test MergeMPConstraintProtoExceptTermsTest that explains why we
-// need this.
-void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
-                                       MPConstraintProto* to);
-
-// Applies the given model_delta to "model". Assumes that
-// FindErrorInMPModelDeltaProto() found no error. For full error checking,
-// please use ExtractValidMPModelOrPopulateResponseStatus() instead.
-void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
-                               MPModelProto* model);
 
 }  // namespace operations_research
 

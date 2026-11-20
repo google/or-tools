@@ -127,11 +127,20 @@ SharedLsStates::~SharedLsStates() {
   }
 }
 
-ViolationLsSolver::~ViolationLsSolver() { stat_tables_->AddTimingStat(*this); }
+ViolationLsSolver::~ViolationLsSolver() {
+  FinishTask();
+  stat_tables_->AddTimingStat(*this);
+}
+
+void ViolationLsSolver::Synchronize() {
+  if (!params_.interleave_search()) return;
+  // The batch barrier has completed. States must not become available to
+  // other tasks in the same batch as a function of their completion order.
+  FinishTask();
+}
 
 void ViolationLsSolver::ImportState() {
-  state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
-                                 dense_model_.equivalences_timestamp());
+  CHECK(state_ != nullptr);
   const int num_variables = dense_model_.var_domains().size();
   if (state_->move == nullptr ||
       state_->move->NumVariables() != num_variables) {
@@ -139,12 +148,27 @@ void ViolationLsSolver::ImportState() {
   }
 }
 
-void ViolationLsSolver::ReleaseState() {
-  if (!state_->solution.empty()) {
-    state_->input_solution = dense_model_.ReverseMapSolution(state_->solution);
+void ViolationLsSolver::FinishTask() {
+  if (state_ != nullptr) {
+    states_->Release(state_);
+    state_ = nullptr;
   }
-  states_->Release(state_);
-  state_ = nullptr;
+  task_generated_ = false;  // Atomic.
+}
+
+bool ViolationLsSolver::ShouldImportNewSolution() {
+  if (!improve_solutions_ || !shared_response_->HasFeasibleSolution()) {
+    return false;
+  }
+  CHECK(state_ != nullptr);
+  const int64_t best = shared_response_->GetBestSolutionObjective().value();
+  if (state_->num_solutions_imported > 0 &&
+      best >= state_->last_solution_rank) {
+    return false;
+  }
+  states_->ResetLubyCounter();
+  state_->last_solution_rank = best;
+  return true;
 }
 
 bool ViolationLsSolver::ShouldStop() {
@@ -402,10 +426,28 @@ std::string ViolationLsSolver::OneLineStats() const {
 
 std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
   task_generated_ = true;  // Atomic.
+  CHECK_EQ(state_, nullptr);
 
-  return [this] {
-    state_ = nullptr;
-    const auto cleanup = absl::MakeCleanup([this] {
+  const bool has_incumbent = shared_response_->HasFeasibleSolution();
+  bool new_best_solution_was_found = false;
+  bool change_options = false;
+  if (has_incumbent ? improve_solutions_ : find_first_solution_) {
+    // Reserve both the search state and its restart budget before dispatching
+    // the task so interleaved batches assign states deterministically. A task
+    // that rebuilds its dense model will remap and resize this state.
+    state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
+                                   dense_model_.equivalences_timestamp());
+    new_best_solution_was_found = ShouldImportNewSolution();
+    change_options =
+        new_best_solution_was_found || state_->num_batches_before_change <= 0;
+    if (change_options && state_->options.use_restart) {
+      states_->ConfigureNextLubyRestart(state_);
+    }
+  }
+
+  return [this, has_incumbent, new_best_solution_was_found, change_options]() {
+    bool state_imported = false;
+    const auto cleanup = absl::MakeCleanup([this, &state_imported] {
       // TODO(user): Find better names. DeterministicTime() is maintained by
       // this class while deterministic_time() is the one saved in the
       // SubSolver base class.
@@ -420,14 +462,22 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
         shared_time_limit_->AdvanceDeterministicTime(delta);
       }
 
-      if (state_ != nullptr) {
-        ReleaseState();
+      // Keep conversion parallel and only use the mapping after ImportState().
+      // An early exit before import must leave the reserved state untouched.
+      if (state_imported && !state_->solution.empty()) {
+        state_->input_solution =
+            dense_model_.ReverseMapSolution(state_->solution);
       }
-      task_generated_ = false;  // Atomic.
+      // In interleaved search, keep the state reserved until Synchronize() runs
+      // after the batch barrier; releasing it as tasks finish would let
+      // completion order determine which state later tasks pick up, breaking
+      // determinism.
+      if (!params_.interleave_search()) {
+        FinishTask();
+      }
     });
 
-    if (shared_response_->HasFeasibleSolution() ? !vls_enabled_
-                                                : !fj_enabled_) {
+    if (state_ == nullptr) {
       return;
     }
 
@@ -458,8 +508,9 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
       if (!Initialize()) return;
     }
 
-    // Load the next state to work on.
+    // Ensure the reserved state matches the current dense model.
     ImportState();
+    state_imported = true;
 
     bool reset_weights = false;
     if (state_->bounds_timestamp != dense_model_.bounds_timestamp() ||
@@ -480,21 +531,7 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
       CHECK_EQ(state_->solution.size(), dense_model_.var_domains().size());
     }
 
-    // If we found a new best solution, we will restart all violation ls (we
-    // still finish each batch though). We will also reset the luby sequence.
-    const bool has_incumbent = shared_response_->HasFeasibleSolution();
-    bool new_best_solution_was_found = false;
-    if (has_incumbent) {
-      const int64_t best = shared_response_->GetBestSolutionObjective().value();
-      if (state_->num_solutions_imported == 0 ||
-          best < state_->last_solution_rank) {
-        states_->ResetLubyCounter();
-        new_best_solution_was_found = true;
-        state_->last_solution_rank = best;
-      }
-    }
-
-    if (new_best_solution_was_found || state_->num_batches_before_change <= 0) {
+    if (change_options) {
       reset_weights = true;
       if (state_->options.use_restart ||
           (has_incumbent && state_->num_solutions_imported == 0)) {
@@ -539,7 +576,6 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
 
       if (state_->options.use_restart) {
         ++state_->num_restarts;
-        states_->ConfigureNextLubyRestart(state_);
       } else {
         // TODO(user): Tune the improvement constant, maybe use luby.
         ++state_->counters.num_perturbations;

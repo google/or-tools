@@ -13,13 +13,10 @@
 
 #include "ortools/sat/tum.h"
 
-#include <stdint.h>
-
 #include <algorithm>
 #include <cmath>
-#include <functional>
+#include <cstdint>
 #include <limits>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,7 +26,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
-#include "ortools/base/parse_text_proto.h"
 #include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -47,18 +43,18 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
-using ::google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
 using ::testing::ElementsAre;
 
-// Runs the per-component functions on all the residual continuous components
-// of a model, emulating whole-model scaling functions for the tests below. Each
-// step returns the scaling it applied to each variable.
+// Runs DetectAndConvertTotallyUnimodularComponent() on all residual continuous
+// components of a model and converts the remaining variables and constraints to
+// a CpModelProto.
 class ComponentPipeline {
  public:
   using Component = ResidualContinuousComponent;
 
   ComponentPipeline(const SatParameters& params, MPModelProto mp_model)
       : params_(params),
+        original_model_(mp_model),
         wrapper_(std::move(mp_model)),
         states_(InitialVariableStates(wrapper_)),
         components_(SplitIntoResidualContinuousComponents(wrapper_)),
@@ -68,144 +64,110 @@ class ComponentPipeline {
               [](const Component& a, const Component& b) {
                 return a.continuous_vars.front() < b.continuous_vars.front();
               });
+    for (int v = 0; v < wrapper_.num_variables(); ++v) {
+      cp_model_.add_variables();
+    }
+    scaler_.wanted_precision = params_.mip_wanted_precision();
+    scaler_.use_proper_relaxation = params_.mip_proper_relaxation();
+    scaler_.tight_precision = params_.mip_tight_precision();
+    scaler_.scaling_target = int64_t{1} << params_.mip_max_activity_exponent();
   }
 
   std::vector<double> RunTum() {
-    modular_scalings_.assign(components_.components.size(), {});
-    int idx = 0;
-    return Run([&](const Component& c) {
-      modular_scalings_[idx++] = MarkComponentTotallyUnimodularAsInteger(
-          params_, c, wrapper_, absl::MakeSpan(states_), &tum_stats_);
-    });
-  }
-
-  std::vector<double> ScaleForGivenPrecision() {
-    return Run([&](const Component& c) {
-      ScaleComponentContinuousVariablesForGivenPrecision(
-          params_, c, wrapper_, absl::MakeSpan(states_),
-          &precision_scaling_stats_);
-    });
-  }
-
-  bool MakeBoundsOfIntegerVariablesInteger() {
-    int64_t num_changes = 0;
-    for (const Component& c : components_.components) {
-      if (!sat::MakeBoundsOfIntegerVariablesInteger(
-              params_, c.continuous_vars, absl::MakeSpan(states_), &num_changes,
-              /*logger=*/nullptr)) {
-        return false;
-      }
+    const int num_vars = wrapper_.num_variables();
+    std::vector<double> scaling(num_vars);
+    for (int v = 0; v < num_vars; ++v) scaling[v] = states_[v].scaling;
+    is_converted_.assign(components_.components.size(), false);
+    for (int idx = 0; idx < components_.components.size(); ++idx) {
+      Component& c = components_.components[idx];
+      const ScopedVarToLocalCol scoped(&c, &var_to_local_col_);
+      is_converted_[idx] = DetectAndConvertTotallyUnimodularComponent(
+          params_, c, wrapper_, absl::MakeSpan(states_), &scaler_, &cp_model_,
+          &tum_stats_);
     }
-    return true;
+    for (int v = 0; v < num_vars; ++v) {
+      scaling[v] = states_[v].scaling / scaling[v];
+    }
+    return scaling;
   }
 
   const std::vector<MipVariableState>& states() const { return states_; }
-  std::vector<MipVariableState>* mutable_states() { return &states_; }
-  const ResidualContinuousComponents& components() const { return components_; }
   const TumStats& tum_stats() const { return tum_stats_; }
 
-  // Returns the model with all the transformations applied.
+  // Returns the input model with the variable states applied.
   MPModelProto Model() const {
-    MPModelProto result = wrapper_.underlying_model();
+    MPModelProto result = original_model_;
     ApplyVariableStatesToModel(states_, &result);
     return result;
   }
 
-  // Converts the model into `cp_model`, scaling the constraints of the
-  // components made integral by RunTum() with their modular scaling.
+  // Returns the value of each CP-SAT variable given its value before the shift
+  // (see MipVariableState).
+  std::vector<int64_t> Shifted(std::vector<int64_t> values) const {
+    for (int v = 0; v < values.size(); ++v) {
+      values[v] -= static_cast<int64_t>(states_[v].shift);
+    }
+    return values;
+  }
+
+  // Converts the variables and the constraints that were not already added by
+  // RunTum(), and copies the resulting model into `cp_model`. This can only be
+  // called once.
   bool ConvertToCpModel(CpModelProto* cp_model,
                         ConstraintScaler* out_scaler = nullptr) {
-    cp_model->Clear();
     const int num_vars = wrapper_.num_variables();
     int num_small_domains = 0;
     for (int v = 0; v < num_vars; ++v) {
       if (!ConvertVariableToCpVariable(
               params_, v, wrapper_.variables(v).objective_coefficient(),
-              &states_[v], cp_model->add_variables(), &num_small_domains)) {
+              &states_[v], cp_model_.mutable_variables(v),
+              &num_small_domains)) {
         return false;
       }
     }
-    ConstraintScaler local_scaler;
-    ConstraintScaler& scaler =
-        out_scaler != nullptr ? *out_scaler : local_scaler;
-    scaler.wanted_precision = params_.mip_wanted_precision();
-    scaler.use_tight_bounds = params_.mip_use_tight_bounds();
-    scaler.use_proper_relaxation = params_.mip_proper_relaxation();
-    scaler.tight_precision = params_.mip_tight_precision();
-    scaler.scaling_target = int64_t{1} << params_.mip_max_activity_exponent();
-    const auto add = [&](int c,
-                         std::optional<ModularConstraintScaling> modular) {
-      return scaler
-          .ScaleAndAddConstraint(wrapper_.constraints(c), states_, cp_model,
-                                 modular)
+    const auto add = [&](int c) {
+      return scaler_
+          .ScaleAndAddConstraint(wrapper_.constraints(c), states_, &cp_model_)
           .ok();
     };
-
     for (const int c : components_.pure_integer_constraints) {
-      if (!add(c, std::nullopt)) return false;
+      if (!add(c)) return false;
     }
     for (int idx = 0; idx < components_.components.size(); ++idx) {
-      const std::vector<int>& rows = components_.components[idx].constraints;
-      const bool is_modular =
-          idx < modular_scalings_.size() && !modular_scalings_[idx].empty();
-      for (int r = 0; r < rows.size(); ++r) {
-        if (!add(rows[r], is_modular
-                              ? std::make_optional(modular_scalings_[idx][r])
-                              : std::nullopt)) {
-          return false;
-        }
+      if (idx < is_converted_.size() && is_converted_[idx]) continue;
+      for (const int c : components_.components[idx].constraints) {
+        if (!add(c)) return false;
       }
     }
-    return PopulateCpModelFloatingPointObjective(wrapper_, states_, cp_model);
+    if (!PopulateCpModelFloatingPointObjective(wrapper_, states_, &cp_model_)) {
+      return false;
+    }
+    *cp_model = cp_model_;
+    if (out_scaler != nullptr) *out_scaler = scaler_;
+    return true;
   }
 
  private:
-  std::vector<double> Run(const std::function<void(const Component&)>& f) {
-    const int num_vars = wrapper_.num_variables();
-    std::vector<double> result(num_vars);
-    for (int v = 0; v < num_vars; ++v) result[v] = states_[v].scaling;
-    for (Component& c : components_.components) {
-      const ScopedVarToLocalCol scoped(&c, &var_to_local_col_);
-      f(c);
-    }
-    for (int v = 0; v < num_vars; ++v)
-      result[v] = states_[v].scaling / result[v];
-    return result;
-  }
-
   const SatParameters params_;
+  const MPModelProto original_model_;
   const MPModelProtoWrapper wrapper_;
   std::vector<MipVariableState> states_;
   ResidualContinuousComponents components_;
-  std::vector<std::vector<ModularConstraintScaling>> modular_scalings_;
+  std::vector<bool> is_converted_;
   std::vector<int> var_to_local_col_;
+  CpModelProto cp_model_;
+  ConstraintScaler scaler_;
   TumStats tum_stats_;
-  PrecisionScalingStats precision_scaling_stats_;
 };
 
-// Runs MarkComponentTotallyUnimodularAsInteger() on all the residual
-// components of `mp_model`, updates it in place together with the given
-// integerization errors, and returns the scaling of each variable (empty if no
-// component was TUM or 2-modular).
-std::vector<double> MarkAllResidualTotallyUnimodularVariablesAsInteger(
-    const SatParameters& params, MPModelProto* mp_model,
-    absl::Span<double> err_lb, absl::Span<double> err_ub, SolverLogger*) {
+// Runs DetectAndConvertTotallyUnimodularComponent() on all the residual
+// components of `mp_model`, updates it in place, and returns the scaling of
+// each variable.
+std::vector<double> DetectAndConvertAllTotallyUnimodularComponents(
+    const SatParameters& params, MPModelProto* mp_model) {
   ComponentPipeline pipeline(params, *mp_model);
-  const int num_vars = mp_model->variable_size();
-  for (int v = 0; v < num_vars; ++v) {
-    (*pipeline.mutable_states())[v].error_lb = err_lb[v];
-    (*pipeline.mutable_states())[v].error_ub = err_ub[v];
-  }
   std::vector<double> scaling = pipeline.RunTum();
-  for (int v = 0; v < num_vars; ++v) {
-    err_lb[v] = pipeline.states()[v].error_lb;
-    err_ub[v] = pipeline.states()[v].error_ub;
-  }
   *mp_model = pipeline.Model();
-  const TumStats& stats = pipeline.tum_stats();
-  if (stats.num_tum_components + stats.num_2_modular_components == 0) {
-    return {};
-  }
   return scaling;
 }
 
@@ -225,7 +187,7 @@ TEST(PartitionGraphTest, ValidAndInvalidComponents) {
               ElementsAre(0, 0, 1, -1, -1, -1, -1, 0));
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
      NetworkMatrixIsTotallyUnimodular) {
   const std::string text_lp =
       "x1 - x2 <= 1;"
@@ -237,12 +199,7 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  MarkAllResidualTotallyUnimodularVariablesAsInteger(
-      SatParameters(), &mp_model, absl::MakeSpan(err_lb),
-      absl::MakeSpan(err_ub), &logger);
+  DetectAndConvertAllTotallyUnimodularComponents(SatParameters(), &mp_model);
 
   EXPECT_TRUE(mp_model.variable(0).is_integer());
   EXPECT_TRUE(mp_model.variable(1).is_integer());
@@ -250,7 +207,7 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   EXPECT_TRUE(mp_model.variable(3).is_integer());
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
      BipartiteEvenCycleAndSingletonRow) {
   // Even cycle of +1 coefficients (bipartite row partition {0, 2} vs {1, 3}),
   // plus a 5th row where x1 is the only continuous variable (singleton row).
@@ -266,48 +223,14 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  MarkAllResidualTotallyUnimodularVariablesAsInteger(
-      SatParameters(), &mp_model, absl::MakeSpan(err_lb),
-      absl::MakeSpan(err_ub), &logger);
+  DetectAndConvertAllTotallyUnimodularComponents(SatParameters(), &mp_model);
 
   for (const MPVariableProto& var : mp_model.variable()) {
     EXPECT_TRUE(var.is_integer()) << var.name();
   }
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     OddCycleIsNotTotallyUnimodular) {
-  // Triangle of +1 coefficients (det = 2) and 2-cycle with mixed signs
-  // (x4 + x5 <= 1, x4 - x5 <= 0, det = -2).
-  const std::string text_lp =
-      "x1 + x2 <= 1;"
-      "x2 + x3 <= 1;"
-      "x3 + x1 <= 1;"
-      "x4 + x5 <= 1;"
-      "x4 - x5 <= 0;";
-  glop::LinearProgram lp;
-  CHECK(ParseLp(text_lp, &lp));
-  MPModelProto mp_model;
-  LinearProgramToMPModelProto(lp, &mp_model);
-
-  SolverLogger logger;
-  SatParameters params;
-  params.set_mip_automatically_scale_variables(false);
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  MarkAllResidualTotallyUnimodularVariablesAsInteger(
-      params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-      &logger);
-
-  for (const MPVariableProto& var : mp_model.variable()) {
-    EXPECT_FALSE(var.is_integer()) << var.name();
-  }
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
      MultipleComponentsIsolateBadSubmatrix) {
   // Component 1 (x1, x2, x3): valid TU component (with almost-integer bound on
   // x1 and integer variable y).
@@ -318,7 +241,7 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   // Component 5 (z1): unconstrained continuous variable with fractional bound.
   const std::string text_lp =
       "min: z1 - w1;"
-      "0 <= x1 <= 1.0000001;"
+      "0 <= x1 <= 1.0000000001;"
       "x1 + x2 + 2 y <= 3;"
       "x2 + x3 <= 2;"
       "2 u1 + u2 <= 3;"
@@ -335,47 +258,39 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
   SatParameters params;
   params.set_mip_automatically_scale_variables(false);
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  MarkAllResidualTotallyUnimodularVariablesAsInteger(
-      params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-      &logger);
-
+  DetectAndConvertAllTotallyUnimodularComponents(params, &mp_model);
   for (const MPVariableProto& var : mp_model.variable()) {
+    EXPECT_EQ(var.is_integer(), var.name() == "y") << var.name();
+  }
+
+  // With automatic scaling enabled (default), components 1 (x1, x2, x3),
+  // 4 (w1, w2), and 5 (z1) are made integer (scaled by 1, 2, and 5).
+  params.set_mip_automatically_scale_variables(true);
+  const std::vector<double> scaling =
+      DetectAndConvertAllTotallyUnimodularComponents(params, &mp_model);
+  for (int i = 0; i < mp_model.variable_size(); ++i) {
+    const MPVariableProto& var = mp_model.variable(i);
     if (var.name() == "x1" || var.name() == "x2" || var.name() == "x3" ||
         var.name() == "y") {
       EXPECT_TRUE(var.is_integer()) << var.name();
-    } else {
-      EXPECT_FALSE(var.is_integer()) << var.name();
-    }
-  }
-
-  // With automatic scaling enabled (default), components 4 (w1, w2) and 5 (z1)
-  // can also be scaled to integers (by 2 and 5 respectively).
-  params.set_mip_automatically_scale_variables(true);
-  const std::vector<double> scaling =
-      MarkAllResidualTotallyUnimodularVariablesAsInteger(
-          params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-          &logger);
-  for (int i = 0; i < mp_model.variable_size(); ++i) {
-    const MPVariableProto& var = mp_model.variable(i);
-    if (var.name() == "w1" || var.name() == "w2") {
+      EXPECT_DOUBLE_EQ(scaling[i], 1.0) << var.name();
+    } else if (var.name() == "w1" || var.name() == "w2") {
       EXPECT_TRUE(var.is_integer()) << var.name();
       EXPECT_DOUBLE_EQ(scaling[i], 2.0) << var.name();
     } else if (var.name() == "z1") {
       EXPECT_TRUE(var.is_integer()) << var.name();
       EXPECT_DOUBLE_EQ(scaling[i], 5.0) << var.name();
-    } else if (var.name() == "u1" || var.name() == "u2" || var.name() == "v1" ||
-               var.name() == "v2" || var.name() == "v3" || var.name() == "v4") {
+    } else {
       EXPECT_FALSE(var.is_integer()) << var.name();
+      EXPECT_DOUBLE_EQ(scaling[i], 1.0) << var.name();
     }
   }
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowWiseAndSingletonPeeling) {
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     RowWiseAndSingletonPeeling) {
   // Component 1 (v1..v5): K_{2,3} where v1, v5 have column degree 3, v2..v4
   // have column degree 2, and every row has 2 entries (bipartite -> row-wise
   // TUM, plus singleton slack s1 on the first row).
@@ -409,27 +324,9 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowWiseAndSingletonPeeling) {
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
-  SatParameters params;
-  params.set_mip_automatically_scale_variables(false);
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  MarkAllResidualTotallyUnimodularVariablesAsInteger(
-      params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-      &logger);
-  for (const MPVariableProto& var : mp_model.variable()) {
-    if (var.name()[0] == 'v' || var.name()[0] == 's') {
-      EXPECT_TRUE(var.is_integer()) << var.name();
-    } else {
-      EXPECT_FALSE(var.is_integer()) << var.name();
-    }
-  }
-
-  params.set_mip_automatically_scale_variables(true);
   const std::vector<double> scaling =
-      MarkAllResidualTotallyUnimodularVariablesAsInteger(
-          params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-          &logger);
+      DetectAndConvertAllTotallyUnimodularComponents(SatParameters(),
+                                                     &mp_model);
   EXPECT_THAT(scaling,
               ElementsAre(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0));
   for (const MPVariableProto& var : mp_model.variable()) {
@@ -437,7 +334,7 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowWiseAndSingletonPeeling) {
   }
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
      ScalesComponentWithRationalFactor) {
   const std::string text_lp =
       "max: x1 + x2;"
@@ -450,21 +347,20 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest,
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
   const std::vector<double> scaling =
-      MarkAllResidualTotallyUnimodularVariablesAsInteger(
-          SatParameters(), &mp_model, absl::MakeSpan(err_lb),
-          absl::MakeSpan(err_ub), &logger);
+      DetectAndConvertAllTotallyUnimodularComponents(SatParameters(),
+                                                     &mp_model);
   EXPECT_THAT(scaling, ElementsAre(4.0, 4.0));
   EXPECT_TRUE(mp_model.variable(0).is_integer());
   EXPECT_TRUE(mp_model.variable(1).is_integer());
-  EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 42.0);
+  // The domain [1, 42] of x1 is shifted to start at zero.
+  EXPECT_DOUBLE_EQ(mp_model.variable(0).lower_bound(), 0.0);
+  EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 41.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(1).upper_bound(), 9.0);
 }
 
-TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowAndColumnScaledComponent) {
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     RowAndColumnScaledComponent) {
   // Component with col_scale = [1, 2, 5] and row_scale = [3, 2]:
   //   Row 0:  3 x1 - 6 x2        <= 9   (divided by 3: x1 - 2 x2 <= 3)
   //   Row 1: -2 x1 + 4 x2 - 10 x3 <= 3  (divided by 2: -x1 + 2 x2 - 5 x3
@@ -483,13 +379,9 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowAndColumnScaledComponent) {
   MPModelProto mp_model;
   LinearProgramToMPModelProto(lp, &mp_model);
 
-  SolverLogger logger;
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
   const std::vector<double> scaling =
-      MarkAllResidualTotallyUnimodularVariablesAsInteger(
-          SatParameters(), &mp_model, absl::MakeSpan(err_lb),
-          absl::MakeSpan(err_ub), &logger);
+      DetectAndConvertAllTotallyUnimodularComponents(SatParameters(),
+                                                     &mp_model);
   EXPECT_THAT(scaling, ElementsAre(2.0, 4.0, 10.0));
   EXPECT_TRUE(mp_model.variable(0).is_integer());
   EXPECT_TRUE(mp_model.variable(1).is_integer());
@@ -497,6 +389,561 @@ TEST(MarkComponentTotallyUnimodularAsIntegerTest, RowAndColumnScaledComponent) {
   EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 20.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(1).upper_bound(), 20.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(2).upper_bound(), 20.0);
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     BestEffortPowerOfTwoModularScalingWhenDomainCapped) {
+  // Irrational bounds `sqrt(3) - 1`, `sqrt(2) - 1`, and fractional RHS `.3`
+  // with `ub = 3e5` have no common rational factor within `1e11 / 3e5`, and
+  // `2^20` (needed for 1e-6 outward bound precision) exceeds the 1e11 TUM
+  // domain cap (`3e5 * 2^19 > 1e11`). With `mip_proper_relaxation`, the best
+  // effort fallback integerizes the TUM component with the largest power of two
+  // within the cap (`2^18 = 262144`), preserving unit coefficients `[1, 1]` and
+  // zero discretization error.
+  const std::string text_lp =
+      "max: x1 + x2;"
+      "0.7320508075688772 <= x1 <= 100000;"
+      "0.4142135623730951 <= x2 <= 300000;"
+      "x1 + x2 <= 350000.3;";
+  glop::LinearProgram lp;
+  CHECK(ParseLp(text_lp, &lp));
+  MPModelProto mp_model;
+  LinearProgramToMPModelProto(lp, &mp_model);
+
+  SatParameters params;
+  params.set_mip_proper_relaxation(true);
+  params.set_mip_wanted_precision(1e-6);
+
+  ComponentPipeline pipeline(params, mp_model);
+  const double expected = std::ldexp(1.0, 18);
+  EXPECT_THAT(pipeline.RunTum(), ElementsAre(expected, expected));
+  EXPECT_EQ(pipeline.tum_stats().num_relaxed_modular_components, 1);
+
+  CpModelProto cp_model;
+  ConstraintScaler scaler;
+  ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+  EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, 1));
+  EXPECT_EQ(scaler.max_discretization_error, 0.0);
+  EXPECT_EQ(ValidateCpModel(cp_model), "");
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     ExactRationalScalingGoesBeyondMipMaxBoundUpToTumDomainCap) {
+  // Exact decimal RHS `29000.00002` with domain `[0, 1.45e6]`: the largest
+  // power of two within the domain cap (`2^16 = 65536`) cannot meet
+  // `mip_wanted_precision = 1e-6`, whereas the exact rational multiplier
+  // `50000` (`50000 * 1.45e6 = 7.25e10 > mip_max_bound = 1e7`) integerizes the
+  // component exactly within the 1e11 TUM domain cap.
+  const std::string text_lp =
+      "max: x1 + x2;"
+      "0 <= x1 <= 1450000;"
+      "0 <= x2 <= 1450000;"
+      "x1 + x2 <= 29000.00002;";
+  glop::LinearProgram lp;
+  CHECK(ParseLp(text_lp, &lp));
+  MPModelProto mp_model;
+  LinearProgramToMPModelProto(lp, &mp_model);
+
+  SatParameters params;
+  params.set_mip_wanted_precision(1e-6);
+
+  ComponentPipeline pipeline(params, mp_model);
+  EXPECT_THAT(pipeline.RunTum(), ElementsAre(50000.0, 50000.0));
+  EXPECT_EQ(pipeline.tum_stats().num_new_tum_integers, 2);
+  EXPECT_EQ(pipeline.tum_stats().num_relaxed_modular_components, 0);
+  EXPECT_DOUBLE_EQ(pipeline.states()[0].ub, 7.25e10);
+  EXPECT_DOUBLE_EQ(pipeline.states()[1].ub, 7.25e10);
+
+  CpModelProto cp_model;
+  ConstraintScaler scaler;
+  ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+  EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, 1));
+  EXPECT_EQ(cp_model.constraints(0).linear().domain(1), 1450000001);
+  EXPECT_EQ(scaler.max_discretization_error, 0.0);
+  EXPECT_EQ(ValidateCpModel(cp_model), "");
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     OutwardPowerOfTwoScalingAndExternalVariables) {
+  // Non-integral TUM component (no common rational factor within `1e11 / 3e4`
+  // for `sqrt(3) - 1`, `sqrt(2) - 1`, and `.3`): TUM makes the component
+  // integer with the smallest power-of-two scaling (`2^20 = 1048576`) whose
+  // outward variable and row bound errors stay within `mip_wanted_precision`.
+  const std::string text_lp =
+      "max: x1 + x2 + x3;"
+      "0.7320508075688772 <= x1 <= 10000;"
+      "0.4142135623730951 <= x2 <= 30000;"
+      "0 <= x3 <= 10000;"
+      "x1 + x2 <= 35000;"
+      "x2 + x3 <= 20000.3;";
+  glop::LinearProgram lp;
+  CHECK(ParseLp(text_lp, &lp));
+  MPModelProto mp_model;
+  LinearProgramToMPModelProto(lp, &mp_model);
+
+  SatParameters params;
+  params.set_mip_wanted_precision(1e-6);
+
+  ComponentPipeline pipeline(params, mp_model);
+  const double s = std::ldexp(1.0, 20);
+  EXPECT_THAT(pipeline.RunTum(), ElementsAre(s, s, s));
+  EXPECT_EQ(pipeline.tum_stats().num_relaxed_modular_components, 1);
+  EXPECT_EQ(pipeline.tum_stats().num_relaxed_modular_integers, 3);
+  const double shift0 = std::floor(0.7320508075688772 * s);
+  const double shift1 = std::floor(0.4142135623730951 * s);
+  EXPECT_DOUBLE_EQ(pipeline.states()[0].shift, shift0);
+  EXPECT_DOUBLE_EQ(pipeline.states()[1].shift, shift1);
+  EXPECT_DOUBLE_EQ(pipeline.states()[0].lb, 0.0);
+  EXPECT_DOUBLE_EQ(pipeline.states()[1].lb, 0.0);
+  EXPECT_DOUBLE_EQ(pipeline.states()[1].ub, 30000.0 * s - shift1);
+
+  CpModelProto cp_model;
+  ConstraintScaler scaler;
+  ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+  EXPECT_EQ(ValidateCpModel(cp_model), "");
+  EXPECT_EQ(scaler.max_discretization_error, 0.0);
+  EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, 1));
+  EXPECT_EQ(cp_model.constraints(0).linear().domain(1),
+            static_cast<int64_t>(35000.0 * s - shift0 - shift1));
+  EXPECT_THAT(cp_model.constraints(1).linear().coeffs(), ElementsAre(1, 1));
+  EXPECT_EQ(cp_model.constraints(1).linear().domain(1),
+            static_cast<int64_t>(std::ceil(20000.3 * s) - shift1));
+
+  // Singleton row with a non-power-of-two rational `row_scale` (`300 x1 - y >=
+  // 0`, odd factor `75`): `s = 75 * 2^14 = 1228800` integerizes the component
+  // with exact external coefficient `-4096`. When the external coefficient is
+  // irrational (`0.4142135623730951` with `y <= 1e5`), TUM rejects modular
+  // scaling rather than degrading the external coefficient.
+  {
+    glop::LinearProgram row_scale_lp;
+    CHECK(
+        ParseLp("max: x1 + x2;"
+                "0 <= x1 <= 10000;"
+                "0.4142135623730951 <= x2 <= 30000;"
+                "0 <= y <= 1000;"
+                "x1 + x2 <= 35000;"
+                "300 x1 - y >= 0;"
+                "int y;",
+                &row_scale_lp));
+    MPModelProto row_scale_model;
+    LinearProgramToMPModelProto(row_scale_lp, &row_scale_model);
+    ComponentPipeline row_scale_pipeline(params, row_scale_model);
+    const double expected_s = 75.0 * std::ldexp(1.0, 14);
+    EXPECT_THAT(row_scale_pipeline.RunTum(),
+                ElementsAre(expected_s, expected_s, 1.0));
+    CpModelProto row_scale_cp;
+    ASSERT_TRUE(row_scale_pipeline.ConvertToCpModel(&row_scale_cp));
+    EXPECT_EQ(ValidateCpModel(row_scale_cp), "");
+    EXPECT_THAT(row_scale_cp.constraints(1).linear().coeffs(),
+                ElementsAre(1, -4096));
+  }
+  {
+    glop::LinearProgram irr_ext_lp;
+    CHECK(
+        ParseLp("max: x1 + x2;"
+                "0 <= x1 <= 10000;"
+                "0.4142135623730951 <= x2 <= 30000;"
+                "0 <= y <= 100000;"
+                "x1 + x2 <= 35000;"
+                "300 x1 - 0.4142135623730951 y >= 0;"
+                "int y;",
+                &irr_ext_lp));
+    MPModelProto irr_ext_model;
+    LinearProgramToMPModelProto(irr_ext_lp, &irr_ext_model);
+    ComponentPipeline irr_ext_pipeline(params, irr_ext_model);
+    EXPECT_THAT(irr_ext_pipeline.RunTum(), ElementsAre(1.0, 1.0, 1.0));
+    EXPECT_FALSE(irr_ext_pipeline.states()[0].is_integer);
+  }
+
+  // Slightly rounded external coefficient (`0.3333333 * y`): the row bound is
+  // relaxed by the coefficient rounding error before outward rounding (`s` ->
+  // `s - 1 = 1048575`, before the shift of `x1` and `x2`).
+  {
+    glop::LinearProgram ext_lp;
+    CHECK(
+        ParseLp("max: x1 + x2;"
+                "0.141592653589793 <= x1 <= 1;"
+                "0.4142135623730951 <= x2 <= 0.7320508075688772;"
+                "0 <= y <= 1;"
+                "x1 + x2 + 0.3333333 y = 1;"
+                "int y;",
+                &ext_lp));
+    MPModelProto ext_model;
+    LinearProgramToMPModelProto(ext_lp, &ext_model);
+    ComponentPipeline ext_pipeline(params, ext_model);
+    EXPECT_THAT(ext_pipeline.RunTum(), ElementsAre(s, s, 1.0));
+    CpModelProto ext_cp;
+    ASSERT_TRUE(ext_pipeline.ConvertToCpModel(&ext_cp));
+    const int64_t offset = static_cast<int64_t>(ext_pipeline.states()[0].shift +
+                                                ext_pipeline.states()[1].shift);
+    EXPECT_EQ(offset, 148470 + 434334);
+    EXPECT_THAT(ext_cp.constraints(0).linear().domain(),
+                ElementsAre(1048575 - offset, 1048576 - offset));
+  }
+
+  // Even when `s * mip_tight_precision > 0.5`, outward mode (`snap_within_tol
+  // = false`) rounds variable bounds strictly outward rather than snapping
+  // inward, keeping `x = (0.6666666, 0.6666666, 0.6666666, 0.5)` feasible.
+  {
+    glop::LinearProgram outward_lp;
+    CHECK(
+        ParseLp("max: x1 + x2 + x3 + x4;"
+                "0.6666666 <= x1 <= 1;"
+                "0.6666666 <= x2 <= 1;"
+                "0.6666666 <= x3 <= 1;"
+                "0.4142135623730951 <= x4 <= 0.8;"
+                "0 <= y <= 100000;"
+                "x1 + x2 + x3 <= 2;"
+                "x4 - x1 + 0.00048828125 y <= 0;"
+                "int y;",
+                &outward_lp));
+    MPModelProto outward_model;
+    LinearProgramToMPModelProto(outward_lp, &outward_model);
+    SatParameters outward_params = params;
+    outward_params.set_mip_tight_precision(5e-7);
+    ComponentPipeline outward_pipeline(outward_params, outward_model);
+    EXPECT_THAT(outward_pipeline.RunTum(), ElementsAre(s, s, s, s, 1.0));
+    CpModelProto outward_cp;
+    ASSERT_TRUE(outward_pipeline.ConvertToCpModel(&outward_cp));
+    EXPECT_TRUE(SolutionIsFeasible(
+        outward_cp,
+        outward_pipeline.Shifted({699050, 699050, 699050, 434335, 0})));
+  }
+
+  // Greedy `< 1` tightening budget on a chain of 4 equality rows at `s = 2^20`:
+  // the first 3 rows stay exact (`[0, 0]`, total tightening `3 * 0.3146 < 1`)
+  // and only the 4th row is relaxed by 1 scaled unit (`[-1, 1]`, shifted by
+  // `x4`'s lower bound).
+  {
+    MPModelProto chain_model;
+    for (int v = 0; v < 6; ++v) {
+      MPVariableProto* var = chain_model.add_variable();
+      var->set_lower_bound(v == 4 ? 0.25 + 1.1e-6 : 0.0);
+      var->set_upper_bound(v == 0 ? 0.25 : 1.0);
+      var->set_objective_coefficient(v == 0 ? 1.0 : 0.0);
+    }
+    for (int r = 0; r < 4; ++r) {
+      MPConstraintProto* ct = chain_model.add_constraint();
+      ct->set_lower_bound(0.0);
+      ct->set_upper_bound(0.0);
+      ct->add_var_index(r);
+      ct->add_coefficient(1.0);
+      ct->add_var_index(r + 1);
+      ct->add_coefficient(-1.0);
+    }
+    MPConstraintProto* irr_ct = chain_model.add_constraint();
+    irr_ct->set_lower_bound(0.4142135623730951);
+    irr_ct->set_upper_bound(std::numeric_limits<double>::infinity());
+    irr_ct->add_var_index(5);
+    irr_ct->add_coefficient(1.0);
+    irr_ct->add_var_index(0);
+    irr_ct->add_coefficient(-1.0);
+
+    SatParameters chain_params = params;
+    chain_params.set_mip_tight_precision(3e-7);
+    ComponentPipeline chain_pipeline(chain_params, std::move(chain_model));
+    EXPECT_THAT(chain_pipeline.RunTum(), ElementsAre(s, s, s, s, s, s));
+    CpModelProto chain_cp;
+    ASSERT_TRUE(chain_pipeline.ConvertToCpModel(&chain_cp));
+    for (int r = 0; r < 3; ++r) {
+      EXPECT_THAT(chain_cp.constraints(r).linear().domain(), ElementsAre(0, 0));
+    }
+    const int64_t shift4 =
+        static_cast<int64_t>(chain_pipeline.states()[4].shift);
+    EXPECT_EQ(shift4, 262145);
+    EXPECT_THAT(chain_cp.constraints(3).linear().domain(),
+                ElementsAre(shift4 - 1, shift4 + 1));
+    EXPECT_TRUE(SolutionIsFeasible(
+        chain_cp, chain_pipeline.Shifted(
+                      {262144, 262144, 262144, 262144, 262145, 1048576})));
+    EXPECT_GE(chain_pipeline.tum_stats().objective_error_bound, 9e-7);
+    EXPECT_LT(chain_pipeline.tum_stats().objective_error_bound, 1e-6);
+  }
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     RationalAndTwoModularConstraintScaling) {
+  SatParameters params;
+  params.set_mip_proper_relaxation(true);
+
+  // Approximate RHS TUM component (modeled on MIPLIB `ci-s4` c25881/c25961):
+  //   x0 - x1 == -15497 / 35901, x0 - x1 <= 1.6099, x0, x1 in [0, 9].
+  // After `TightenComponentBounds` tightens `x0, x1` to `[0, 1]`, Row 1 is
+  // redundant and skipped, so `FindRationalFactor` picks `35901`, snapping
+  // Row 0 to `[-15497, -15497]`. When an active fractional bound (`ub(x0) =
+  // 1.6099`) pushes the common rational denominator (`1400000`) past `2^20 =
+  // 1048576`, TUM prefers the smaller power of two `2^20` and relaxes Row 0
+  // outward to `[-452628, -452627]`.
+  {
+    const MPModelProto cis4_model = ParseTestProto(R"pb(
+      variable { lower_bound: 0.0 upper_bound: 9.0 is_integer: false }
+      variable { lower_bound: 0.0 upper_bound: 9.0 is_integer: false }
+      constraint {
+        lower_bound: -0.4316592852566781
+        upper_bound: -0.4316592852566781
+        var_index: [ 0, 1 ]
+        coefficient: [ 1.0, -1.0 ]
+      }
+      constraint {
+        lower_bound: -inf
+        upper_bound: 1.6099
+        var_index: [ 0, 1 ]
+        coefficient: [ 1.0, -1.0 ]
+      }
+    )pb");
+    ComponentPipeline pipeline(params, cis4_model);
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(35901.0, 35901.0));
+    CpModelProto cp_model;
+    ConstraintScaler scaler;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+    EXPECT_EQ(ValidateCpModel(cp_model), "");
+    EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, -1));
+    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
+                ElementsAre(-15497, -15497));
+    EXPECT_LE(scaler.max_unrounding_error, 1e-9);
+  }
+  {
+    const MPModelProto active_cis4_model = ParseTestProto(R"pb(
+      maximize: true
+      variable {
+        lower_bound: 0.0
+        upper_bound: 1.6099
+        objective_coefficient: 1.0
+        is_integer: false
+      }
+      variable {
+        lower_bound: 0.0
+        upper_bound: 2.0
+        objective_coefficient: 1.0
+        is_integer: false
+      }
+      constraint {
+        lower_bound: -0.43165928571429
+        upper_bound: -0.43165928571429
+        var_index: [ 0, 1 ]
+        coefficient: [ 1.0, -1.0 ]
+      }
+    )pb");
+    ComponentPipeline pipeline(params, active_cis4_model);
+    const double s20 = std::ldexp(1.0, 20);
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(s20, s20));
+    CpModelProto cp_model;
+    ConstraintScaler scaler;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+    EXPECT_EQ(ValidateCpModel(cp_model), "");
+    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
+                ElementsAre(-452628, -452627));
+    EXPECT_LE(scaler.max_unrounding_error, 1e-6);
+  }
+
+  // An exact half-integer scaled equality `524288 * (x0 - x1) == 0.5` is scaled
+  // by `2 * 524288 = 1048576` to preserve `mip_tight_precision`-feasibility,
+  // producing the exact domain `[1, 1]`.
+  {
+    MPModelProto half_int_model;
+    half_int_model.set_maximize(true);
+    constexpr double kScale = 524288.0;
+    for (int i = 0; i < 2; ++i) {
+      MPVariableProto* v = half_int_model.add_variable();
+      v->set_lower_bound(-2.0);
+      v->set_upper_bound(1.0 / kScale);
+      v->set_objective_coefficient(1.0);
+    }
+    MPConstraintProto* ct = half_int_model.add_constraint();
+    ct->set_lower_bound(0.5 / kScale);
+    ct->set_upper_bound(0.5 / kScale);
+    ct->add_var_index(0);
+    ct->add_coefficient(1.0);
+    ct->add_var_index(1);
+    ct->add_coefficient(-1.0);
+
+    ComponentPipeline pipeline(params, std::move(half_int_model));
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(2.0 * kScale, 2.0 * kScale));
+    CpModelProto cp_model;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
+    EXPECT_EQ(ValidateCpModel(cp_model), "");
+    EXPECT_THAT(cp_model.constraints(0).linear().domain(), ElementsAre(1, 1));
+  }
+
+  // 2-modular odd cycle with rational RHS 0.5 and external binary variable b:
+  // the multiplier `s = 2` makes the data integer, and `modular_factor = 2`
+  // scales variables by 4, keeping +/-1 coefficients on {x0, x1, x2}, even
+  // coefficient -2 on b, and even RHS 2 so LP extreme points remain integral.
+  {
+    const MPModelProto two_mod = ParseTestProto(R"pb(
+      maximize: true
+      variable {
+        lower_bound: 0.0
+        upper_bound: 2.0
+        objective_coefficient: 1.0
+        is_integer: false
+      }
+      variable {
+        lower_bound: 0.0
+        upper_bound: 2.0
+        objective_coefficient: 1.0
+        is_integer: false
+      }
+      variable {
+        lower_bound: 0.0
+        upper_bound: 2.0
+        objective_coefficient: 1.0
+        is_integer: false
+      }
+      variable {
+        lower_bound: 0.0
+        upper_bound: 1.0
+        objective_coefficient: 1.0
+        is_integer: true
+      }
+      constraint {
+        lower_bound: -inf
+        upper_bound: 0.5
+        var_index: [ 0, 1, 3 ]
+        coefficient: [ 1.0, 1.0, -0.5 ]
+      }
+      constraint {
+        lower_bound: -inf
+        upper_bound: 1.0
+        var_index: [ 1, 2 ]
+        coefficient: [ 1.0, 1.0 ]
+      }
+      constraint {
+        lower_bound: -inf
+        upper_bound: 1.0
+        var_index: [ 0, 2 ]
+        coefficient: [ 1.0, 1.0 ]
+      }
+    )pb");
+    ComponentPipeline pipeline(params, two_mod);
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(4.0, 4.0, 4.0, 1.0));
+    CpModelProto cp_model;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
+    EXPECT_EQ(ValidateCpModel(cp_model), "");
+    EXPECT_THAT(cp_model.constraints(0).linear().coeffs(),
+                ElementsAre(1, 1, -2));
+    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
+                ElementsAre(kint64min, 2));
+  }
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     PreservesEpsilonFeasibilityUnderProperRelaxation) {
+  SatParameters params;
+  params.set_mip_tight_precision(1e-8);
+  params.set_mip_wanted_precision(1e-6);
+  params.set_mip_proper_relaxation(true);
+
+  // 1. Almost-TUM external coefficient rounding error crossing an integer:
+  // Row 0 (`10 * (x0 - x1) == 2.5`) requires `s = 4`, and Row 1 is
+  // `x0 + 1.0000004 * y >= 1000000.25` with integer `y in [0, 1000000]`.
+  // At `(x0, x1, y) = (0.0, -0.25, 1000000)`, both rows are satisfied, while
+  // at `factor = 4` the external coefficient `4.0000016` rounds to `4`.
+  // Relaxing `4 * 1000000.25 = 4000001` by `lb_err = -1.6` before modular
+  // rounding keeps `(x0', x1', y) = (0, -1, 1000000)` feasible.
+  {
+    MPModelProto almost_tum = ParseTestProto(R"pb(
+      variable { lower_bound: -2.0 upper_bound: 2.0 is_integer: false }
+      variable { lower_bound: -2.0 upper_bound: 2.0 is_integer: false }
+      variable { lower_bound: 0.0 upper_bound: 1000000.0 is_integer: true }
+      constraint {
+        lower_bound: 2.5
+        upper_bound: 2.5
+        var_index: [ 0, 1 ]
+        coefficient: [ 10.0, -10.0 ]
+      }
+      constraint {
+        lower_bound: 1000000.25
+        upper_bound: inf
+        var_index: [ 0, 2 ]
+        coefficient: [ 1.0, 1.0000004 ]
+      }
+    )pb");
+    SatParameters almost_tum_params = params;
+    almost_tum_params.set_mip_wanted_precision(0.45);
+    almost_tum_params.set_mip_tight_precision(1e-9);
+    ComponentPipeline pipeline(almost_tum_params, std::move(almost_tum));
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(4.0, 4.0, 1.0));
+    CpModelProto cp_model;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
+    EXPECT_EQ(ValidateCpModel(cp_model), "");
+    EXPECT_TRUE(SolutionIsFeasible(cp_model, {0, -1, 1000000}));
+  }
+
+  // 2. Tiny `row_scale` network: `2^-27 * (x0 - x1) >= 2 * 2^-27` and
+  // `2^-27 * (x0 - x1) <= 0` with `x0, x1 in [0, 1]`. At `tight_precision =
+  // 1.2e-8`, `(x0, x1) = (0.5, 0.0)` is `1.2e-8`-feasible. Since snapping the
+  // row bounds at `s = 1` would exceed a tightening of 1 (and make the rows
+  // conflicting), they are relaxed by `mip_tight_precision` and rounded outward
+  // instead.
+  {
+    const double tiny = std::ldexp(1.0, -27);
+    MPModelProto tiny_net;
+    for (int v = 0; v < 2; ++v) {
+      MPVariableProto* var = tiny_net.add_variable();
+      var->set_lower_bound(0.0);
+      var->set_upper_bound(1.0);
+    }
+    MPConstraintProto* ct_ge = tiny_net.add_constraint();
+    ct_ge->set_lower_bound(2.0 * tiny);
+    ct_ge->set_upper_bound(std::numeric_limits<double>::infinity());
+    ct_ge->add_var_index(0);
+    ct_ge->add_coefficient(tiny);
+    ct_ge->add_var_index(1);
+    ct_ge->add_coefficient(-tiny);
+
+    MPConstraintProto* ct_le = tiny_net.add_constraint();
+    ct_le->set_lower_bound(-std::numeric_limits<double>::infinity());
+    ct_le->set_upper_bound(0.0);
+    ct_le->add_var_index(0);
+    ct_le->add_coefficient(tiny);
+    ct_le->add_var_index(1);
+    ct_le->add_coefficient(-tiny);
+
+    SatParameters tiny_params = params;
+    tiny_params.set_mip_tight_precision(1.2e-8);
+    ComponentPipeline pipeline(tiny_params, std::move(tiny_net));
+    EXPECT_THAT(pipeline.RunTum(), ElementsAre(1.0, 1.0));
+    EXPECT_EQ(pipeline.tum_stats().num_relaxed_modular_components, 1);
+    CpModelProto tiny_cp;
+    ASSERT_TRUE(pipeline.ConvertToCpModel(&tiny_cp));
+    EXPECT_EQ(ValidateCpModel(tiny_cp), "");
+    EXPECT_TRUE(SolutionIsFeasible(tiny_cp, {1, 0}));
+  }
+
+  // 3. TightenComponentBounds() with tiny `row_scale`: `2^-27 * (x0 + x1) == 0`
+  // and `2^-27 * x1 == 0` with `x0 in [-1000, 1000]`, `x1 in [0, 0]`, and
+  // objective `min -x0`. The point `(x0, x1) = (1.0, 0.0)` is `1e-8`-feasible
+  // (`2^-27 * 1.0 < 1e-8`), so `states[0].ub` must not be tightened to `0.0`.
+  {
+    const double tiny = std::ldexp(1.0, -27);
+    MPModelProto tighten_model;
+    MPVariableProto* v0 = tighten_model.add_variable();
+    v0->set_lower_bound(-1000.0);
+    v0->set_upper_bound(1000.0);
+    v0->set_objective_coefficient(-1.0);
+    MPVariableProto* v1 = tighten_model.add_variable();
+    v1->set_lower_bound(0.0);
+    v1->set_upper_bound(0.0);
+
+    MPConstraintProto* ct0 = tighten_model.add_constraint();
+    ct0->set_lower_bound(0.0);
+    ct0->set_upper_bound(0.0);
+    ct0->add_var_index(0);
+    ct0->add_coefficient(tiny);
+    ct0->add_var_index(1);
+    ct0->add_coefficient(tiny);
+
+    MPConstraintProto* ct1 = tighten_model.add_constraint();
+    ct1->set_lower_bound(0.0);
+    ct1->set_upper_bound(0.0);
+    ct1->add_var_index(1);
+    ct1->add_coefficient(tiny);
+
+    ComponentPipeline pipeline(params, std::move(tighten_model));
+    pipeline.RunTum();
+    EXPECT_GE(pipeline.states()[0].ub, 1.0);
+  }
 }
 
 // Runs TightenResidualTotallyUnimodularVariableBounds() on a MPModelProto and
@@ -546,8 +993,8 @@ TEST(TightenResidualTotallyUnimodularVariableBoundsTest,
      TightenBoundsTreatsSmallBoundedContinuousVariablesAsExternal) {
   // Unbounded continuous variables x1, x2 form a TUM chain connected to a
   // non-TUM continuous subproblem (y1, y2 with bounds [0, 10]) via a bridge
-  // constraint (2 y1 + 3 y2 - x1 <= 4). When `only_tighten_bounds` is true, y1
-  // and y2 are treated as external variables, allowing x1 and x2 to be isolated
+  // constraint (2 y1 + 3 y2 - x1 <= 4). Because y1 and y2 have small bounds,
+  // they are treated as external variables, allowing x1 and x2 to be isolated
   // as a TUM component and tightened from +inf to 46 + 5 = 51.
   const std::string text_lp =
       "min: x1 + x2;"
@@ -709,429 +1156,6 @@ TEST(TightenResidualTotallyUnimodularVariableBoundsTest,
   EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 100003.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(1).upper_bound(), 100003.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(2).upper_bound(), 100003.0);
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     FallbackCommonPowerOfTwoScalingWhenScaleForPrecision) {
-  // Bounds 0.4142135623730951 (sqrt(2) - 1) and 3e5 have no rational factor
-  // within mip_max_bound / 3e5. Even with mip_max_bound = 1000,
-  // mip_scale_for_precision scales the whole TUM component together up to the
-  // 1e11 precision domain cap:
-  //   compo_max_scaling = 2^FloorLog2(1e11 / 3e5) = 2^18 = 262144
-  // (below needed_scaling = 2^22 for 2 * 1.0 / 5e-7 = 4e6), preserving unit
-  // coefficients in x1 + x2 <= 350000.
-  const std::string text_lp =
-      "max: x1 + x2;"
-      "0 <= x1 <= 100000;"
-      "0.4142135623730951 <= x2 <= 300000;"
-      "x1 + x2 <= 350000;";
-  glop::LinearProgram lp;
-  CHECK(ParseLp(text_lp, &lp));
-  MPModelProto mp_model;
-  LinearProgramToMPModelProto(lp, &mp_model);
-
-  SolverLogger logger;
-  SatParameters params;
-  params.set_mip_max_bound(1000.0);
-  params.set_mip_scale_for_precision(true);
-  params.set_mip_wanted_precision(1e-6);
-
-  ComponentPipeline pipeline(params, mp_model);
-  const double expected = std::ldexp(1.0, 18);
-  EXPECT_THAT(pipeline.RunTum(), ElementsAre(expected, expected));
-  EXPECT_FALSE(pipeline.states()[0].is_integer);
-  EXPECT_FALSE(pipeline.states()[1].is_integer);
-  EXPECT_THAT(pipeline.ScaleForGivenPrecision(), ElementsAre(1.0, 1.0));
-
-  MPModelProtoWrapper wrapper(pipeline.Model(), &logger);
-  const std::vector<double> zero_errors(wrapper.num_variables(), 0.0);
-  CpModelProto cp_model;
-  ASSERT_TRUE(ConvertMPModelProtoToCpModelProto(
-      params, wrapper, /*num_clamped=*/0, zero_errors, zero_errors, &cp_model,
-      &logger));
-  EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, 1));
-  EXPECT_EQ(ValidateCpModel(cp_model), "");
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     CommonPrecisionScalingRespectsHeadroomAndSharesWithOtherVariables) {
-  // With mip_max_bound = 100 and mip_max_activity_exponent = 15
-  // (scaling_target = 32768):
-  // - TUM component {x0, x1}: 0 <= x0 <= 1, 0.4142135623730951 <= x1 <= 1
-  //   (not integerizable within max_s = 100), x0 + x1 >= 1.5 (constraint
-  //   headroom = 16384).
-  // - Non-TUM component {y0, y1} in [0, 1]^2: 2 y0 + 3 y1 <= 4 and
-  //   5 y0 - 7 y1 <= 1 (constraint headroom = 4096).
-  //
-  // Both x0 and x1 in the TUM component are scaled by the minimum headroom
-  // across the component (16384), and ScaleContinuousVariablesForGivenPrecision
-  // scales y0 and y1 by 4096.
-  MPModelProto mp_model = ParseTestProto(R"pb(
-    variable {
-      lower_bound: 0.0
-      upper_bound: 1.0
-      is_integer: false
-      objective_coefficient: 1.25
-    }
-    variable {
-      lower_bound: 0.4142135623730951
-      upper_bound: 1.0
-      is_integer: false
-    }
-    variable {
-      lower_bound: 0.0
-      upper_bound: 1.0
-      is_integer: false
-      objective_coefficient: 1.0
-    }
-    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
-    constraint {
-      lower_bound: 1.5
-      upper_bound: inf
-      var_index: [ 0, 1 ]
-      coefficient: [ 1.0, 1.0 ]
-    }
-    constraint {
-      lower_bound: -inf
-      upper_bound: 4.0
-      var_index: [ 2, 3 ]
-      coefficient: [ 2.0, 3.0 ]
-    }
-    constraint {
-      lower_bound: -inf
-      upper_bound: 1.0
-      var_index: [ 2, 3 ]
-      coefficient: [ 5.0, -7.0 ]
-    }
-  )pb");
-
-  SolverLogger logger;
-  SatParameters params;
-  params.set_mip_max_bound(100.0);
-  params.set_mip_max_activity_exponent(15);
-  params.set_mip_scale_for_precision(true);
-  params.set_mip_wanted_precision(1e-6);
-
-  ComponentPipeline pipeline(params, mp_model);
-  EXPECT_THAT(pipeline.RunTum(), ElementsAre(16384.0, 16384.0, 1.0, 1.0));
-  EXPECT_THAT(pipeline.ScaleForGivenPrecision(),
-              ElementsAre(1.0, 1.0, 4096.0, 4096.0));
-
-  // Snap bounds close to zero before CP-SAT conversion, then verify that the
-  // TUM constraint keeps unit coefficients and the objective scales cleanly.
-  mp_model = pipeline.Model();
-  mp_model.mutable_variable(1)->set_lower_bound(
-      std::floor(mp_model.variable(1).lower_bound()));
-  MPModelProtoWrapper wrapper(std::move(mp_model), &logger);
-  const std::vector<double> zero_errors(wrapper.num_variables(), 0.0);
-  CpModelProto cp_model;
-  ASSERT_TRUE(ConvertMPModelProtoToCpModelProto(
-      params, wrapper, /*num_clamped=*/0, zero_errors, zero_errors, &cp_model,
-      &logger));
-  EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, 1));
-  EXPECT_EQ(ValidateCpModel(cp_model), "");
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     MixedIntegralAndCommonPrecisionScaledComponents) {
-  // With mip_max_bound = 100:
-  // - Component 0 ({x0, x1}): TUM with rational RHS 1.5 -> scaled by 2 and
-  //   marked integer.
-  // - Component 1 ({z0, z1}): TUM with z1 lower bound 0.4142135623730951
-  //   (not integerizable within max_s = 100). With mip_max_activity_exponent =
-  //   10 (scaling_target = 1024), z0 + z1 >= 1.5 has constraint headroom 512.
-  MPModelProto mp_model = ParseTestProto(R"pb(
-    variable {
-      lower_bound: 0.0
-      upper_bound: 1.0
-      is_integer: false
-      objective_coefficient: 2.5
-    }
-    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
-    variable {
-      lower_bound: 0.0
-      upper_bound: 1.0
-      is_integer: false
-      objective_coefficient: 1.0
-    }
-    variable {
-      lower_bound: 0.4142135623730951
-      upper_bound: 1.0
-      is_integer: false
-    }
-    constraint {
-      lower_bound: 1.5
-      upper_bound: inf
-      var_index: [ 0, 1 ]
-      coefficient: [ 1.0, 1.0 ]
-    }
-    constraint {
-      lower_bound: 1.5
-      upper_bound: inf
-      var_index: [ 2, 3 ]
-      coefficient: [ 1.0, 1.0 ]
-    }
-  )pb");
-
-  SolverLogger logger;
-  SatParameters params;
-  params.set_mip_max_bound(100.0);
-  params.set_mip_max_activity_exponent(10);
-  params.set_mip_scale_for_precision(true);
-  params.set_mip_wanted_precision(1e-6);
-
-  std::vector<double> err_lb(mp_model.variable_size(), 0.0);
-  std::vector<double> err_ub(mp_model.variable_size(), 0.0);
-  const std::vector<double> tum_scaling =
-      MarkAllResidualTotallyUnimodularVariablesAsInteger(
-          params, &mp_model, absl::MakeSpan(err_lb), absl::MakeSpan(err_ub),
-          &logger);
-  EXPECT_THAT(tum_scaling, ElementsAre(2.0, 2.0, 512.0, 512.0));
-  EXPECT_TRUE(mp_model.variable(0).is_integer());
-  EXPECT_TRUE(mp_model.variable(1).is_integer());
-  EXPECT_FALSE(mp_model.variable(2).is_integer());
-  EXPECT_FALSE(mp_model.variable(3).is_integer());
-  EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 2.0);
-  EXPECT_DOUBLE_EQ(mp_model.variable(1).upper_bound(), 2.0);
-  EXPECT_DOUBLE_EQ(mp_model.variable(2).upper_bound(), 512.0);
-  EXPECT_DOUBLE_EQ(mp_model.variable(3).upper_bound(), 512.0);
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     ScalesModularComponentsViaConstraintScalerDirectly) {
-  SatParameters params;
-  params.set_mip_scale_for_precision(true);
-  params.set_mip_use_tight_bounds(true);
-  params.set_mip_proper_relaxation(true);
-
-  // Approximate RHS TUM component (modeled on MIPLIB `ci-s4` c25881/c25961):
-  //   x0 - x1 == -0.43165928571429, x0 - x1 <= 1.6099, x0, x1 in [0, 9].
-  // TUM scales {x0, x1} by 1434 * 57 = 81738, where
-  // 81738 * -0.43165928571429 = -35282.966696. Scaling the constraint directly
-  // via `ScaleAndAddModularConstraint` keeps exact +/-1 coefficients and
-  // relaxes the row domain outward to [-35283, -35282] under
-  // `mip_proper_relaxation` (or snaps to [-35283, -35283] without
-  // `mip_proper_relaxation`), recording its unrounding error on the scaler
-  // without inflating variable discretization error.
-  const MPModelProto cis4_model = ParseTextProtoOrDie(R"pb(
-    variable { lower_bound: 0.0 upper_bound: 9.0 is_integer: false }
-    variable { lower_bound: 0.0 upper_bound: 9.0 is_integer: false }
-    constraint {
-      lower_bound: -0.43165928571429
-      upper_bound: -0.43165928571429
-      var_index: [ 0, 1 ]
-      coefficient: [ 1.0, -1.0 ]
-    }
-    constraint {
-      lower_bound: -inf
-      upper_bound: 1.6099
-      var_index: [ 0, 1 ]
-      coefficient: [ 1.0, -1.0 ]
-    }
-  )pb");
-
-  {
-    ComponentPipeline pipeline(params, cis4_model);
-    EXPECT_THAT(pipeline.RunTum(), ElementsAre(81738.0, 81738.0));
-    EXPECT_DOUBLE_EQ(pipeline.states()[0].error_lb, 0.0);
-    EXPECT_DOUBLE_EQ(pipeline.states()[0].error_ub, 0.0);
-    ASSERT_TRUE(pipeline.MakeBoundsOfIntegerVariablesInteger());
-    CpModelProto cp_model;
-    ConstraintScaler scaler;
-    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
-    EXPECT_EQ(ValidateCpModel(cp_model), "");
-    EXPECT_THAT(cp_model.constraints(0).linear().coeffs(), ElementsAre(1, -1));
-    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
-                ElementsAre(-35283, -35282));
-    EXPECT_DOUBLE_EQ(scaler.max_discretization_error, 0.0);
-    EXPECT_NEAR(scaler.max_unrounding_error,
-                (35282.966696 - 35282.0) / 81738.0 - 1e-8, 1e-8);
-  }
-
-  {
-    SatParameters non_relax_params = params;
-    non_relax_params.set_mip_proper_relaxation(false);
-    ComponentPipeline pipeline(non_relax_params, cis4_model);
-    EXPECT_THAT(pipeline.RunTum(), ElementsAre(81738.0, 81738.0));
-    ASSERT_TRUE(pipeline.MakeBoundsOfIntegerVariablesInteger());
-    CpModelProto cp_model;
-    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
-    EXPECT_EQ(ValidateCpModel(cp_model), "");
-    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
-                ElementsAre(-35283, -35283));
-  }
-
-  // When `chosen_s * mip_wanted_precision() >= 0.5` (here `chosen_s = 524288`,
-  // `524288 * 1e-6 = 0.524288`), an exact half-integer scaled equality
-  // `524288 * (x0 - x1) == 0.5` is within `mip_wanted_precision` of 1 in
-  // original space and snaps cleanly to `[1, 1]` without crossing.
-  {
-    SatParameters non_relax_params = params;
-    non_relax_params.set_mip_proper_relaxation(false);
-    MPModelProto half_int_model;
-    half_int_model.set_maximize(true);
-    constexpr double kScale = 524288.0;
-    for (int i = 0; i < 2; ++i) {
-      MPVariableProto* v = half_int_model.add_variable();
-      v->set_lower_bound(-2.0);
-      v->set_upper_bound(1.0 / kScale);
-      v->set_objective_coefficient(1.0);
-    }
-    MPConstraintProto* ct = half_int_model.add_constraint();
-    ct->set_lower_bound(0.5 / kScale);
-    ct->set_upper_bound(0.5 / kScale);
-    ct->add_var_index(0);
-    ct->add_coefficient(1.0);
-    ct->add_var_index(1);
-    ct->add_coefficient(-1.0);
-
-    ComponentPipeline pipeline(non_relax_params, std::move(half_int_model));
-    EXPECT_THAT(pipeline.RunTum(), ElementsAre(kScale, kScale));
-    ASSERT_TRUE(pipeline.MakeBoundsOfIntegerVariablesInteger());
-    CpModelProto cp_model;
-    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
-    EXPECT_EQ(ValidateCpModel(cp_model), "");
-    EXPECT_THAT(cp_model.constraints(0).linear().domain(), ElementsAre(1, 1));
-  }
-
-  // 2-modular odd cycle with rational RHS 0.5, external binary variable b, and
-  // an initial free constraint skipped by
-  // SplitIntoResidualContinuousComponents: `chosen_s = 2` makes `w`-space
-  // integer, and `modular_factor = 2` scales variables by 4, keeping exact +/-1
-  // coefficients on {x0, x1, x2}, even coefficient -2 on b, and even RHS 2 so
-  // LP extreme points remain integral.
-  {
-    const MPModelProto two_mod = ParseTextProtoOrDie(R"pb(
-      maximize: true
-      variable {
-        lower_bound: 0.0
-        upper_bound: 2.0
-        objective_coefficient: 1.0
-        is_integer: false
-      }
-      variable {
-        lower_bound: 0.0
-        upper_bound: 2.0
-        objective_coefficient: 1.0
-        is_integer: false
-      }
-      variable {
-        lower_bound: 0.0
-        upper_bound: 2.0
-        objective_coefficient: 1.0
-        is_integer: false
-      }
-      variable {
-        lower_bound: 0.0
-        upper_bound: 1.0
-        objective_coefficient: 1.0
-        is_integer: true
-      }
-      constraint {
-        lower_bound: -inf
-        upper_bound: inf
-        var_index: [ 0, 1 ]
-        coefficient: [ 3.0, -5.0 ]
-      }
-      constraint {
-        lower_bound: -inf
-        upper_bound: 0.5
-        var_index: [ 0, 1, 3 ]
-        coefficient: [ 1.0, 1.0, -0.5 ]
-      }
-      constraint {
-        lower_bound: -inf
-        upper_bound: 1.0
-        var_index: [ 1, 2 ]
-        coefficient: [ 1.0, 1.0 ]
-      }
-      constraint {
-        lower_bound: -inf
-        upper_bound: 1.0
-        var_index: [ 0, 2 ]
-        coefficient: [ 1.0, 1.0 ]
-      }
-    )pb");
-    ComponentPipeline pipeline(params, two_mod);
-    EXPECT_THAT(pipeline.RunTum(), ElementsAre(4.0, 4.0, 4.0, 1.0));
-    ASSERT_TRUE(pipeline.MakeBoundsOfIntegerVariablesInteger());
-    CpModelProto cp_model;
-    ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model));
-    EXPECT_EQ(ValidateCpModel(cp_model), "");
-    ASSERT_EQ(cp_model.constraints_size(), 3);
-    EXPECT_THAT(cp_model.constraints(0).linear().coeffs(),
-                ElementsAre(1, 1, -2));
-    EXPECT_THAT(cp_model.constraints(0).linear().domain(),
-                ElementsAre(kint64min, 2));
-  }
-}
-
-TEST(MarkComponentTotallyUnimodularAsIntegerTest,
-     LargeApproximateTumComponentEnlargesBoundsWithoutCrossColumnAccumulation) {
-  // Modeled on MIPLIB `osorio-cta`: 6000 continuous flow variables in 5 balance
-  // equalities (`sum = 0`), with upper bounds `0.0222609232214646` where
-  // `FindRationalFactor` picks `chosen_s = 584` (`584 * ub = 13.000379...`).
-  // Enlarging bounds directly to `[0, 14]` and scaling the balance rows via
-  // `ScaleAndAddModularConstraint` keeps lower bounds at 0 (0 snapped bounds!)
-  // and exact bounds `[0, 1168]`.
-  constexpr int kNumPairs = 3000;
-  MPModelProto base_model;
-  for (int i = 0; i < kNumPairs; ++i) {
-    MPVariableProto* v_small = base_model.add_variable();
-    v_small->set_lower_bound(0.0);
-    v_small->set_upper_bound(0.0222609232214646);
-    v_small->set_objective_coefficient(-1.0);
-
-    MPVariableProto* v_large = base_model.add_variable();
-    v_large->set_lower_bound(0.0);
-    v_large->set_upper_bound(2.0);
-    v_large->set_objective_coefficient(0.1);
-  }
-  constexpr int kNumRows = 5;
-  for (int r = 0; r < kNumRows; ++r) {
-    MPConstraintProto* ct = base_model.add_constraint();
-    ct->set_lower_bound(0.0);
-    ct->set_upper_bound(0.0);
-    for (int i = r * (kNumPairs / kNumRows);
-         i < (r + 1) * (kNumPairs / kNumRows); ++i) {
-      ct->add_var_index(2 * i);
-      ct->add_coefficient(1.0);
-      ct->add_var_index(2 * i + 1);
-      ct->add_coefficient(-1.0);
-    }
-    if (r + 1 < kNumRows) {
-      ct->add_var_index(2 * ((r + 1) * (kNumPairs / kNumRows)));
-      ct->add_coefficient(-1.0);
-    }
-  }
-
-  SatParameters params;
-  params.set_mip_scale_for_precision(true);
-  params.set_mip_use_tight_bounds(true);
-  params.set_mip_proper_relaxation(true);
-
-  ComponentPipeline pipeline(params, std::move(base_model));
-  const std::vector<double> scaling = pipeline.RunTum();
-  ASSERT_EQ(scaling.size(), 2 * kNumPairs);
-  EXPECT_DOUBLE_EQ(scaling[0], 584.0);
-
-  int64_t num_snapped = 0;
-  ASSERT_TRUE(MakeBoundsOfIntegerVariablesInteger(
-      params, pipeline.components().components[0].continuous_vars,
-      absl::MakeSpan(*pipeline.mutable_states()), &num_snapped,
-      /*logger=*/nullptr));
-  EXPECT_EQ(num_snapped, 0);
-
-  CpModelProto cp_model;
-  ConstraintScaler scaler;
-  ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
-  EXPECT_EQ(ValidateCpModel(cp_model), "");
-  EXPECT_DOUBLE_EQ(scaler.max_discretization_error, 0.0);
-  EXPECT_THAT(cp_model.variables(0).domain(), ElementsAre(0, 14));
-  EXPECT_THAT(cp_model.variables(1).domain(), ElementsAre(0, 1168));
-  for (int r = 0; r < kNumRows; ++r) {
-    EXPECT_THAT(cp_model.constraints(r).linear().domain(), ElementsAre(0, 0));
-  }
 }
 
 }  // namespace

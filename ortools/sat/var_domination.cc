@@ -936,14 +936,12 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           }
           CannotMove({ref, var});
           context->ClearConstraint(ct_index);
-          context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
         if (rhs == var_domain) {
           context->UpdateRuleStats("linear1: always true");
           CannotMove({ref, var});
           context->ClearConstraint(ct_index);
-          context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
 
@@ -992,7 +990,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               }
             }
             context->ClearConstraint(ct_index);
-            context->UpdateConstraintVariableUsage(ct_index);
             CannotMove({ref, var});
             // `encoding_lit` was maybe a new variable added during this loop,
             // so make sure we cannot go out-of-bound.
@@ -1098,7 +1095,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // now.
               ++num_deleted_constraints_;
               context->ClearConstraint(ct_index);
-              context->UpdateConstraintVariableUsage(ct_index);
               continue;
             }
           }

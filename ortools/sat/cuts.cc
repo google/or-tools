@@ -112,6 +112,119 @@ IntegerValue ClampRoundedDoubleToBound(double rounded,
   return std::min(bound_diff, IntegerValue(static_cast<int64_t>(rounded)));
 }
 
+constexpr IntegerValue kSafeActivityCap = kMaxIntegerValue / 4;
+
+// Returns true iff a * b >= rhs in exact integer arithmetic, for a, b >= 0.
+bool NonNegativeProdGe(IntegerValue a, IntegerValue b, IntegerValue rhs) {
+  DCHECK_GE(a, 0);
+  DCHECK_GE(b, 0);
+  IntegerValue prod;
+  return MulIntoOverflow(a, b, &prod) || prod >= rhs;
+}
+
+// Computes the divisor-independent contribution of a single `term` (with
+// `mag = |term.coeff| > 0`) to ComputeMaxSafeUnscaledScaling(). Returns false
+// if the term's activity span alone exceeds `kSafeActivityCap`.
+bool ComputeTermUnscaledSafety(const CutData& cut, const CutTerm& term,
+                               IntegerValue mag, IntegerValue* term_max_mag,
+                               IntegerValue* term_span) {
+  DCHECK_GT(mag, 0);
+  if (term.expr_offset.value() == kint64min) return false;
+  const IntegerValue max_expr = cut.SubstitutedInfinityNorm(term);
+  const int64_t bound_diff = std::max<int64_t>(0, term.bound_diff.value());
+  int64_t half_span = bound_diff;
+  if (AddIntoOverflow(max_expr.value(), &half_span)) return false;
+  int64_t var_span = half_span;
+  if (AddIntoOverflow(half_span, &var_span) ||
+      AddIntoOverflow(std::abs(term.expr_offset.value()), &var_span)) {
+    return false;
+  }
+  int64_t span;
+  if (MulIntoOverflow(mag.value(), var_span, &span) ||
+      span > kSafeActivityCap.value()) {
+    return false;
+  }
+  *term_span = IntegerValue(span);
+
+  // Since mag >= 1 and var_span >= 2 * (bound_diff + max_expr), having
+  // mag * var_span <= kSafeActivityCap guarantees that both mag * max_expr and
+  // mag * bound_diff fit in int64_t without overflow.
+  int64_t max_m = std::max(mag.value(), mag.value() * max_expr.value());
+  if (term.IsSimple() && bound_diff > 1 &&
+      (term.cached_implied_lb >= 0 || term.cached_implied_ub >= 0)) {
+    max_m = std::max(max_m, mag.value() * bound_diff);
+  }
+  *term_max_mag = IntegerValue(max_m);
+  return true;
+}
+
+// Precomputes the divisor-independent `terms_max_mag` and `terms_span` of
+// `cut.terms` for ComputeMaxSafeUnscaledScaling(). Sets `*terms_span` to
+// `kMaxIntegerValue` (`> kSafeActivityCap`) when the span overflows the cap.
+void ComputeUnscaledSafetyTerms(const CutData& cut, IntegerValue* terms_max_mag,
+                                IntegerValue* terms_span) {
+  *terms_max_mag = IntegerValue(0);
+  int64_t total_terms_span = 0;
+  for (const CutTerm& term : cut.terms) {
+    if (term.coeff.value() == kint64min) {
+      *terms_span = kMaxIntegerValue;
+      return;
+    }
+    const IntegerValue mag = IntTypeAbs(term.coeff);
+    if (mag == 0) continue;
+    IntegerValue term_max_mag;
+    IntegerValue term_span;
+    if (!ComputeTermUnscaledSafety(cut, term, mag, &term_max_mag, &term_span) ||
+        AddIntoOverflow(term_span.value(), &total_terms_span) ||
+        total_terms_span > kSafeActivityCap.value()) {
+      *terms_span = kMaxIntegerValue;
+      return;
+    }
+    *terms_max_mag = std::max(*terms_max_mag, term_max_mag);
+  }
+  *terms_span = IntegerValue(total_terms_span);
+}
+
+// Updates a cached `terms_span` in O(1) when a single `old_term` of `cut` is
+// complemented into `new_term` (`terms_max_mag` is invariant under
+// CutTerm::Complement()).
+void UpdateUnscaledSafetyTermsForComplement(const CutData& cut,
+                                            const CutTerm& old_term,
+                                            const CutTerm& new_term,
+                                            IntegerValue* terms_span) {
+  if (*terms_span < 0) return;
+  if (*terms_span > kSafeActivityCap) {
+    // Complementing a term can shrink |expr_offset|; recompute lazily if
+    // needed.
+    *terms_span = IntegerValue(-1);
+    return;
+  }
+  const IntegerValue mag = IntTypeAbs(old_term.coeff);
+  if (mag == 0) return;
+  IntegerValue old_max_mag;
+  IntegerValue old_term_span;
+  const bool old_ok = ComputeTermUnscaledSafety(cut, old_term, mag,
+                                                &old_max_mag, &old_term_span);
+  DCHECK(old_ok);
+  DCHECK_LE(old_term_span, *terms_span);
+
+  IntegerValue new_max_mag;
+  IntegerValue new_term_span;
+  if (!ComputeTermUnscaledSafety(cut, new_term, mag, &new_max_mag,
+                                 &new_term_span)) {
+    *terms_span = kMaxIntegerValue;
+    return;
+  }
+  DCHECK_EQ(old_max_mag, new_max_mag);
+  int64_t updated_span = (*terms_span - old_term_span).value();
+  if (AddIntoOverflow(new_term_span.value(), &updated_span) ||
+      updated_span > kSafeActivityCap.value()) {
+    *terms_span = kMaxIntegerValue;
+  } else {
+    *terms_span = IntegerValue(updated_span);
+  }
+}
+
 // Computes the largest safe `max_scaling` (for t = 1 MIR / strengthening
 // functions, which satisfy |f(v)| <= |v| for all v in Z when unscaled) so that
 // negative implied-bound slacks -c_i * S_i are not diluted when `divisor` is
@@ -119,43 +232,47 @@ IntegerValue ClampRoundedDoubleToBound(double rounded,
 // all post-f coefficients in exact 53-bit IEEE-754 integer range once LP slacks
 // are substituted back by their rows (see CutData::SubstitutedInfinityNorm())
 // and keeping the final cut's activity span well within int64_t bounds.
-IntegerValue ComputeMaxSafeUnscaledScaling(const CutData& cut,
+IntegerValue ComputeMaxSafeUnscaledScaling(absl::int128 rhs,
+                                           IntegerValue terms_max_mag,
+                                           IntegerValue terms_span,
                                            IntegerValue divisor) {
   DCHECK_GT(divisor, 0);
+  DCHECK_GE(terms_span, 0);
   constexpr int64_t kMaxExactDoubleScaling = int64_t{1} << 51;
   constexpr int64_t kMaxPostFCoeff = int64_t{1} << 52;
-  const IntegerValue safe_activity_cap = kMaxIntegerValue / 4;
-  if (cut.rhs > absl::int128(safe_activity_cap.value()) ||
-      cut.rhs < -absl::int128(safe_activity_cap.value())) {
+  if (terms_span > kSafeActivityCap ||
+      rhs > absl::int128(kSafeActivityCap.value()) ||
+      rhs < -absl::int128(kSafeActivityCap.value())) {
+    return IntegerValue(1);
+  }
+  int64_t total_span = std::abs(static_cast<int64_t>(rhs));
+  if (AddIntoOverflow(terms_span.value(), &total_span) ||
+      total_span > kSafeActivityCap.value()) {
     return IntegerValue(1);
   }
 
-  IntegerValue max_mag = divisor;
-  IntegerValue total_span =
-      IntTypeAbs(IntegerValue(static_cast<int64_t>(cut.rhs)));
-  for (const CutTerm& term : cut.terms) {
-    const IntegerValue mag = IntTypeAbs(term.coeff);
-    if (mag == 0) continue;
-    const IntegerValue max_expr = cut.SubstitutedInfinityNorm(term);
-    max_mag = std::max({max_mag, mag, CapProdI(mag, max_expr)});
-    if (term.IsSimple() && term.bound_diff > 1 &&
-        (term.cached_implied_lb >= 0 || term.cached_implied_ub >= 0)) {
-      max_mag = std::max(max_mag, CapProdI(mag, term.bound_diff));
-    }
-    const IntegerValue span_terms =
-        CapAddI(CapProdI(IntegerValue(2), term.bound_diff),
-                CapProdI(IntegerValue(2), max_expr));
-    const IntegerValue var_span =
-        CapAddI(IntTypeAbs(term.expr_offset), span_terms);
-    total_span = CapAddI(total_span, CapProdI(mag, var_span));
-    if (total_span > safe_activity_cap) return IntegerValue(1);
+  const IntegerValue max_mag = std::max(divisor, terms_max_mag);
+  int64_t max_multiple = CeilRatio(max_mag, divisor).value();
+  if (AddIntoOverflow(int64_t{2}, &max_multiple)) {
+    return IntegerValue(1);
   }
-
-  const IntegerValue max_multiple =
-      CapAddI(CeilRatio(max_mag, divisor), IntegerValue(2));
   const int64_t safe_scaling =
-      std::min(kMaxExactDoubleScaling, kMaxPostFCoeff / max_multiple.value());
+      std::min(kMaxExactDoubleScaling, kMaxPostFCoeff / max_multiple);
   return IntegerValue(std::max<int64_t>(1, safe_scaling));
+}
+
+IntegerValue ComputeMaxSafeUnscaledScaling(const CutData& cut,
+                                           IntegerValue divisor) {
+  DCHECK_GT(divisor, 0);
+  if (cut.rhs > absl::int128(kSafeActivityCap.value()) ||
+      cut.rhs < -absl::int128(kSafeActivityCap.value())) {
+    return IntegerValue(1);
+  }
+  IntegerValue terms_max_mag;
+  IntegerValue terms_span;
+  ComputeUnscaledSafetyTerms(cut, &terms_max_mag, &terms_span);
+  return ComputeMaxSafeUnscaledScaling(cut.rhs, terms_max_mag, terms_span,
+                                       divisor);
 }
 
 // Returns true if rounding `cut` by `divisor` (with `rhs_remainder` in
@@ -192,12 +309,12 @@ bool NeedsUnscaledRounding(
     const IntegerValue rem = PositiveRemainder(coeff, divisor);
     if (rem == 0 || rem <= rhs_remainder) continue;
     const IntegerValue neg_rem = divisor - rem;
-    if (CapProdI(neg_rem, term.bound_diff) < size) continue;
+    if (!NonNegativeProdGe(neg_rem, term.bound_diff, size)) continue;
     if (term.bound_diff <= max_scaling &&
-        CapProdI(neg_rem, max_scaling) >= size) {
+        NonNegativeProdGe(neg_rem, max_scaling, size)) {
       continue;
     }
-    if (size > max_scaling || (t > 1 && CapProdI(t, neg_rem) < size)) {
+    if (size > max_scaling || (t > 1 && !NonNegativeProdGe(t, neg_rem, size))) {
       return true;
     }
   }
@@ -221,9 +338,9 @@ bool NeedsUnscaledStrengthening(const CutData& cut,
     if (term.coeff >= 0 || term.bound_diff <= 1) continue;
     const IntegerValue mag = -term.coeff;
     if (mag >= positive_rhs) continue;
-    if (CapProdI(mag, term.bound_diff) < positive_rhs) continue;
+    if (!NonNegativeProdGe(mag, term.bound_diff, positive_rhs)) continue;
     if (term.bound_diff <= scaled_cap &&
-        CapProdI(mag, scaled_cap) >= positive_rhs) {
+        NonNegativeProdGe(mag, scaled_cap, positive_rhs)) {
       continue;
     }
     return true;
@@ -236,6 +353,18 @@ bool NeedsUnscaledStrengthening(const CutData& cut,
 // instead: the exact unscaled `size` when it is safe, or otherwise the largest
 // safe scaling from ComputeMaxSafeUnscaledScaling() if it still improves on
 // `max_scaling`. Returns 0 when the caller should keep its default scaling.
+IntegerValue GetUnscaledOrSafeScaling(absl::int128 rhs,
+                                      IntegerValue terms_max_mag,
+                                      IntegerValue terms_span,
+                                      IntegerValue divisor, IntegerValue size,
+                                      IntegerValue max_scaling) {
+  const IntegerValue safe_scaling =
+      ComputeMaxSafeUnscaledScaling(rhs, terms_max_mag, terms_span, divisor);
+  if (size <= safe_scaling) return std::max(IntegerValue(1), size);
+  if (safe_scaling <= max_scaling) return IntegerValue(0);
+  return safe_scaling;
+}
+
 IntegerValue GetUnscaledOrSafeScaling(const CutData& cut, IntegerValue divisor,
                                       IntegerValue size,
                                       IntegerValue max_scaling) {
@@ -408,7 +537,11 @@ IntegerValue CutData::SubstitutedInfinityNorm(const CutTerm& term) const {
   if (term.expr_vars[0] >= first_slack) {
     const int index = (term.expr_vars[0] - first_slack).value() / 2;
     DCHECK_LT(index, slack_infinity_norms.size());
-    return std::max(result, CapProdI(coeff0, slack_infinity_norms[index]));
+    IntegerValue prod;
+    if (MulIntoOverflow(coeff0, slack_infinity_norms[index], &prod)) {
+      return IntegerValue(kint64max);
+    }
+    return std::max(result, prod);
   }
   return std::max(result, coeff0);
 }
@@ -1360,8 +1493,9 @@ double IntegerRoundingCutHelper::GetScaledViolation(
 
       // Adjust coeff of the form k * divisor - epsilon.
       const IntegerValue adjust = divisor - remainder;
-      const IntegerValue prod = CapProdI(adjust, entry.bound_diff);
-      if (prod <= adjust_threshold) {
+      IntegerValue prod;
+      if (!MulIntoOverflow(adjust, entry.bound_diff, &prod) &&
+          prod <= adjust_threshold) {
         // TODO(user): This overflow seems pretty rare and might be avoidable
         // more efficiently.
         IntegerValue new_coeff = entry.coeff;
@@ -1396,8 +1530,17 @@ double IntegerRoundingCutHelper::GetScaledViolation(
   if (NeedsUnscaledRounding(cut, large_domain_indices_, divisor, rhs_remainder,
                             max_scaling, unscaled_neg_slack,
                             adjusted_coeffs_)) {
-    effective_max_scaling =
-        GetUnscaledOrSafeScaling(cut, divisor, size, max_scaling);
+    DCHECK_EQ(&cut, &cut_);
+    if (unscaled_terms_span_ < 0) {
+      ComputeUnscaledSafetyTerms(cut, &unscaled_terms_max_mag_,
+                                 &unscaled_terms_span_);
+    }
+    DCHECK_EQ(ComputeMaxSafeUnscaledScaling(cut.rhs, unscaled_terms_max_mag_,
+                                            unscaled_terms_span_, divisor),
+              ComputeMaxSafeUnscaledScaling(cut, divisor));
+    effective_max_scaling = GetUnscaledOrSafeScaling(
+        cut.rhs, unscaled_terms_max_mag_, unscaled_terms_span_, divisor, size,
+        max_scaling);
   }
   if (effective_max_scaling <= 0) {
     effective_max_scaling = max_scaling;
@@ -1600,6 +1743,8 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // relevant positions not the full cut size, but this is still too much on
   // some problems.
   FillLargeDomainIndices(cut_, &large_domain_indices_);
+  unscaled_terms_max_mag_ = IntegerValue(0);
+  unscaled_terms_span_ = IntegerValue(-1);
   const auto has_unscaled_neg_slack = [&]() {
     return options.use_tight_upper_ib &&
            WillHaveNegativeIbSlack(cut_, large_domain_indices_, ib_processor);
@@ -1648,7 +1793,10 @@ bool IntegerRoundingCutHelper::ComputeCut(
     // since CutTerm::Complement() is not involutive in floating point.
     const CutTerm saved_entry = entry;
     const absl::int128 saved_rhs = cut_.rhs;
+    const IntegerValue saved_terms_span = unscaled_terms_span_;
     entry.Complement(&cut_.rhs);
+    UpdateUnscaledSafetyTermsForComplement(cut_, saved_entry, entry,
+                                           &unscaled_terms_span_);
 
     const double violation =
         GetScaledViolation(best_divisor, options.max_scaling,
@@ -1662,10 +1810,14 @@ bool IntegerRoundingCutHelper::ComputeCut(
       // Restore.
       entry = saved_entry;
       cut_.rhs = saved_rhs;
+      unscaled_terms_span_ = saved_terms_span;
     }
   }
 
   // Adjust coefficients as computed by the best GetScaledViolation().
+  if (!best_adjusted_coeffs_.empty()) {
+    unscaled_terms_span_ = IntegerValue(-1);
+  }
   for (const auto [index, new_coeff] : best_adjusted_coeffs_) {
     ++total_num_coeff_adjust_;
     CutTerm& entry = cut_.terms[index];
@@ -1686,8 +1838,16 @@ bool IntegerRoundingCutHelper::ComputeCut(
   if (NeedsUnscaledRounding(cut_, large_domain_indices_, best_divisor,
                             rhs_remainder, options.max_scaling,
                             has_unscaled_neg_slack())) {
-    best_scaling =
-        GetUnscaledOrSafeScaling(cut_, best_divisor, size, options.max_scaling);
+    if (unscaled_terms_span_ < 0) {
+      ComputeUnscaledSafetyTerms(cut_, &unscaled_terms_max_mag_,
+                                 &unscaled_terms_span_);
+    }
+    DCHECK_EQ(ComputeMaxSafeUnscaledScaling(cut_.rhs, unscaled_terms_max_mag_,
+                                            unscaled_terms_span_, best_divisor),
+              ComputeMaxSafeUnscaledScaling(cut_, best_divisor));
+    best_scaling = GetUnscaledOrSafeScaling(cut_.rhs, unscaled_terms_max_mag_,
+                                            unscaled_terms_span_, best_divisor,
+                                            size, options.max_scaling);
   }
   const bool use_unscaled = best_scaling > 0;
   if (!use_unscaled) {

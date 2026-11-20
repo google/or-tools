@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Totally unimodular (TUM) and 2-modular residual matrix detection, variable
+// bound tightening, and modular scaling for MIP-to-CP-SAT conversion.
+
 #ifndef ORTOOLS_SAT_TUM_H_
 #define ORTOOLS_SAT_TUM_H_
 
@@ -18,6 +21,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -42,8 +46,8 @@ struct EdgeConstraintForPartition {
 std::vector<int> PartitionGraph(
     int n, absl::Span<const EdgeConstraintForPartition> edges);
 
-// Statistics accumulated by the TUM functions below, and the corresponding
-// logging function.
+// Statistics accumulated by the per-component TUM functions below, and the
+// corresponding logging function.
 struct TumStats {
   int num_components = 0;
   int num_tum_components = 0;
@@ -52,9 +56,19 @@ struct TumStats {
   int num_new_2_modular_integers = 0;
   int num_modular_constraints = 0;
   double max_var_bound_error = 0.0;
-  int num_common_scaled = 0;
-  double min_common_scaling = std::numeric_limits<double>::infinity();
-  double max_common_scaling = 0.0;
+  double objective_error_bound = 0.0;
+
+  // The variables made integral are shifted like any other integer variable,
+  // see ShiftVariables().
+  ShiftStats shift_stats;
+
+  // Components made integral via outward variable or row bound rounding when
+  // exact unrelaxed modular scaling was not applicable, see
+  // DetectAndConvertTotallyUnimodularComponent().
+  int num_relaxed_modular_components = 0;
+  int num_relaxed_modular_integers = 0;
+  double min_relaxed_modular_scaling = std::numeric_limits<double>::infinity();
+  double max_relaxed_modular_scaling = 0.0;
 
   int num_bound_tightened_components = 0;
   int num_tightened_bounds = 0;
@@ -66,9 +80,11 @@ struct TumStats {
 void LogTumStats(const TumStats& stats, SolverLogger* logger);
 
 // Once all integer variables have a value, we can split the model into separate
-// components. If a given component is totally unimodular, then there exists a
-// solution of that component with variables taking only integer values; we mark
-// them as such.
+// components. If params.mip_automatically_scale_variables() is true and a given
+// component is totally unimodular (or 2-modular), we try to scale it so that
+// its variables can be marked as integer (preserving
+// `mip_tight_precision`-feasibility), and we then convert its constraints
+// directly.
 //
 // Note that we don't detect all totally unimodular residual matrices (TUM), we
 // use Heller & Tompkins's criterion (on A or A^T, after iteratively peeling
@@ -81,21 +97,28 @@ void LogTumStats(const TumStats& stats, SolverLogger* logger);
 //     - if they are of the same sign, one row is in R and the other in R'
 //     - if they are of opposite sign, both rows are in the same set (R or R').
 //
-// Note that in addition to the matrix, we also need the constraint/variable
-// bounds of a totally unimodular LP to be integer to guarantee existence of a
-// fully integer solution.
-//
 // Note that if there are duplicate variables in a constraint (not presolved),
 // this might fail to detect TUM submatrices. It will however not wrongly detect
 // any.
 //
-// If params.mip_automatically_scale_variables() is true, we also detect
-// components that can be made integral via variable scaling (for example,
-// 2-modular components where any LP optimal basic solution is half-integral, or
-// components with rational bounds/RHS or column scaling). When a component with
-// unit column scaling cannot be made integral and mip_scale_for_precision is
-// enabled, we still scale all variables in the component by a common
-// power-of-two factor to preserve its +/-1 coefficients.
+// A TUM (`modular_factor = 1`) or 2-modular (`modular_factor = 2`) component is
+// made integral by scaling it with a multiplier `s = q_odd * 2^k`, as long as
+// the scaled variable domains stay below 1e11 and the constraint activities
+// below `2^mip_max_activity_exponent`. We try, by increasing value of `s`:
+// - An odd `q_odd` (found via continued fractions) making all the column
+//   scales, external integer coefficients, variable bounds and active
+//   constraint bounds integer within `mip_tight_precision`: the bounds are then
+//   snapped to these integers.
+// - An odd `q_odd` making only the column scales and external coefficients
+//   integer, or `q_odd = 1` when all the column scales are one: the bounds are
+//   then rounded outward, with `2^k` large enough for the rounding errors to be
+//   within `mip_wanted_precision`. With `mip_proper_relaxation`, if this
+//   precision cannot be reached with `q_odd = 1`, we fall back to the largest
+//   `2^k >= 2` that does not overflow.
+// In all cases, the constraint bounds are only rounded inward (within
+// `mip_tight_precision`) while the total of these tightenings over the
+// component stays below one, which keeps an integer solution for any
+// `mip_tight_precision`-feasible one.
 //
 // Note that if some constraints in `mp_model` are enforced by external integer
 // variables (e.g., via MPModelProtoWrapper), it is valid to pass the underlying
@@ -105,18 +128,22 @@ void LogTumStats(const TumStats& stats, SolverLogger* logger);
 // component LP, which preserves total unimodularity (or 2-modularity), vertex
 // integrality, and the worst-case vertex bounds computed when tightening.
 //
-// The variables marked as integer have their bounds enlarged (when
-// `mip_proper_relaxation` is true) or snapped to multiples of the
-// `modular_factor`, and this returns the scaling to use for each of
-// `compo.constraints` in ConstraintScaler::ScaleAndAddConstraint(), or an empty
-// vector if the component was not made integral.
+// Returns true if the component was made integral. Its variables are then
+// marked as integer, scaled, with bounds rounded outward (or snapped within
+// `mip_tight_precision`) to multiples of `modular_factor` and shifted like any
+// other integer variable, and each of `compo.constraints` was scaled
+// accordingly and added to `cp_model` via `scaler`. The caller only has to
+// convert the variables. Otherwise, nothing is modified besides the bounds in
+// `states`, which may have been tightened.
 //
 // This processes a single residual continuous component (whose
-// `var_to_local_col` must be set) and only updates `states`.
-std::vector<ModularConstraintScaling> MarkComponentTotallyUnimodularAsInteger(
+// `var_to_local_col` must be set). The external variables of its constraints
+// must be in their final state, and the ones used as enforcement must already
+// have their domain in `cp_model`.
+bool DetectAndConvertTotallyUnimodularComponent(
     const SatParameters& params, const ResidualContinuousComponent& compo,
     const MPModelProtoWrapper& mp_model, absl::Span<MipVariableState> states,
-    TumStats* stats);
+    ConstraintScaler* scaler, CpModelProto* cp_model, TumStats* stats);
 
 // Uses the same TUM detection on the whole model, before it is split into
 // components, to only tighten the bounds of the variables with a large domain

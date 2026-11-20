@@ -258,7 +258,7 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
     if (!propagation_is_possible) continue;
 
     // Propagate bounds exactly using LeftRightActivityBounds.
-    bounds.FillFromConstraint(var_lbs, var_ubs, ct.proto());
+    bounds.FillFromConstraint(var_lbs, var_ubs, ct);
     for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
       const int var = ct.vars(term_idx);
       const double coeff = ct.coeffs(term_idx);

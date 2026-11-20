@@ -19,10 +19,10 @@
 #include <string_view>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
@@ -68,98 +68,101 @@ class CpConstraintPresolver {
     return known_model_linear2_;
   }
 
-  bool PresolveOneConstraint(int c);
+  FeasibilityStatus PresolveOneConstraint(int c);
 
   // Regroups terms and substitutes affine relations.
-  // Returns true if the set of variables in the expression changed.
-  bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* exp);
+  ModificationStatus CanonicalizeLinearExpression(const ConstraintProto& ct,
+                                                  LinearExpressionProto* exp);
 
-  bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
-  bool PresolveSmallLinear(ConstraintProto* ct);
+  // Propagates variable bounds from a temporary unenforced or singly-enforced
+  // linear constraint (clearing `*temp_ct` if trivially satisfied).
+  FeasibilityStatus PropagateDomainsInLinear(ConstraintProto* temp_ct);
+  FeasibilityStatus PresolveSmallLinear(int c);
 
-  bool PresolveCumulative(ConstraintProto* ct);
-  bool PresolveNoOverlap(ConstraintProto* ct);
-  bool PresolveNoOverlap2D(int c, ConstraintProto* ct);
+  CanonicalizationStatus PresolveCumulative(int c);
+  CanonicalizationStatus PresolveNoOverlap(int c);
+  CanonicalizationStatus PresolveNoOverlap2D(int c);
 
   // Detects if a 2-term linear constraint (or constraint with 2 distinct
   // coefficient magnitudes) can be tilted to strictly smaller integer
   // coefficients using continued fraction convergents and Euclidean Algorithm.
-  // Returns true if the detection triggered and the constraint was rewritten.
   // See go/cp-two-term-tilting for more details.
-  bool DetectTwoTermTilting(
-      ConstraintProto* ct,
-      const PresolveContext::MergedLinearConstraintView& view);
+  CanonicalizationStatus DetectTwoTermTilting(
+      int c, const PresolveContext::MergedLinearConstraintView& view);
 
-  void TryToSimplifyDomain(int var);
+  FeasibilityStatus TryToSimplifyDomain(int var);
 
-  // Returns false on UNSAT.
-  bool PresolveAffineRelationIfAny(int var);
+  FeasibilityStatus PresolveAffineRelationIfAny(int var);
 
-  ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
   // TODO(user): move this to cp_model_presolve.h?
   void RemoveEmptyConstraints();
 
-  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                                  std::string_view reason);
+  // Marks constraint `c` as false (proving UNSAT if unenforced, or turning its
+  // enforcement literals into a negated clause and marking `c` for
+  // canonicalization).
+  CanonicalizationStatus MarkConstraintAsFalse(int c, std::string_view reason);
 
  private:
   // Presolve functions.
   //
-  // They should return false only if the constraint <-> variable graph didn't
-  // change. This is just an optimization, returning true is always correct.
-  //
   // Invariant about UNSAT: All these functions should abort right away if
-  // context_.IsUnsat() is true. And the only way to change the status to unsat
-  // is through an ABSL_MUST_USE_RESULT function that should also abort the
-  // current code right away. This way we shouldn't keep doing computation on an
+  // `context_->ModelIsUnsat()` is true. And the only way to change the status
+  // to unsat is through a `[[nodiscard]]` function that should also abort the
+  // current code right away. This way we don't keep doing computation on an
   // inconsistent state.
-  // TODO(user): Make these public and unit test.
-  bool PresolveAllDiff(ConstraintProto* ct);
-  bool PresolveAutomaton(ConstraintProto* ct);
-  bool PresolveElement(int c, ConstraintProto* ct);
-  bool PresolveIntDiv(int c, ConstraintProto* ct);
-  bool PresolveIntMod(int c, ConstraintProto* ct);
-  bool PresolveIntProd(ConstraintProto* ct);
-  bool PresolveInterval(int c, ConstraintProto* ct);
-  bool PresolveLegacyInverse(ConstraintProto* ct);
-  bool PresolveInverse(ConstraintProto* ct);
-  bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
-  bool PresolveLinMax(int c, ConstraintProto* ct);
-  bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
-  bool PropagateAndReduceAffineMax(ConstraintProto* ct);
-  bool PropagateAndReduceIntAbs(ConstraintProto* ct);
-  bool PropagateAndReduceLinMax(ConstraintProto* ct);
-  bool PresolveTable(ConstraintProto* ct);
+  // TODO(user): make all presolve functions use the same return type?
+  CanonicalizationStatus PresolveOneConstraintInternal(int c);
+  CanonicalizationStatus PresolveAllDiff(int c);
+  FeasibilityStatus PresolveAutomaton(int c);
+  CanonicalizationStatus PresolveElement(int c);
+  CanonicalizationStatus PresolveIntDiv(int c);
+  FeasibilityStatus PresolveIntMod(int c);
+  CanonicalizationStatus PresolveIntProd(int c);
+  FeasibilityStatus PresolveInterval(int c);
+  FeasibilityStatus PresolveInverse(int c);
+  FeasibilityStatus DivideLinMaxByGcd(int c);
+  FeasibilityStatus PresolveLinMax(int c);
+  FeasibilityStatus PresolveLinMaxWhenAllBoolean(int c);
+  CanonicalizationStatus PropagateAndReduceAffineMax(int c);
+  FeasibilityStatus PropagateAndReduceIntAbs(int c);
+  CanonicalizationStatus PropagateAndReduceLinMax(int c);
+  CanonicalizationStatus PresolveTable(int c);
   void DetectDuplicateIntervals(
       int c, google::protobuf::RepeatedField<int32_t>* intervals);
-  bool PresolveReservoir(ConstraintProto* ct);
+  CanonicalizationStatus PresolveReservoir(int c);
 
-  bool PresolveCircuit(ConstraintProto* ct);
-  bool PresolveRoutes(ConstraintProto* ct);
+  CanonicalizationStatus PresolveCircuit(int c);
+  FeasibilityStatus PresolveRoutes(int c);
 
-  bool PresolveEnforcementLiteral(ConstraintProto* ct);
-  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct);
-  bool PresolveAtMostOne(ConstraintProto* ct);
-  bool PresolveExactlyOne(ConstraintProto* ct);
-  bool PresolveBoolAnd(ConstraintProto* ct);
-  bool PresolveBoolOr(ConstraintProto* ct);
-  bool PresolveBoolXor(ConstraintProto* ct);
+  FeasibilityStatus PresolveEnforcementLiteral(int c);
+  FeasibilityStatus PresolveAtMostOrExactlyOne(int c);
+  FeasibilityStatus PresolveAtMostOne(int c);
+  FeasibilityStatus PresolveExactlyOne(int c);
+  CanonicalizationStatus PresolveBoolAnd(int c);
+  CanonicalizationStatus PresolveBoolOr(int c);
+  FeasibilityStatus PresolveBoolXor(int c);
+
+  // Replaces constraint `c` (keeping the same enforcement literals) with
+  // `expr \in domain`.
+  CanonicalizationStatus MarkConstraintAsEquivalentToLinear(
+      int c, const LinearExpressionProto& expr, const Domain& domain,
+      std::string_view reason);
 
   // For the linear constraints, we have more than one function.
-  bool RemoveSingletonInLinear(ConstraintProto* ct);
-  bool PresolveLinearOfSizeOne(ConstraintProto* ct);
-  bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
-  bool PresolveLinearOnBooleans(ConstraintProto* ct);
-  bool PresolveSmallLinearOnBooleans(ConstraintProto* ct);
-  bool PresolveDiophantine(ConstraintProto* ct);
-  bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
-                                                    ConstraintProto* ct);
-  bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
-  bool PresolveLinear2NeCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveUnenforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveEnforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveLinear2WithBooleans(ConstraintProto* ct);
+  FeasibilityStatus PropagateDomainsInLinear(int ct_index);
+  FeasibilityStatus RemoveSingletonInLinear(int c, bool* modified);
+  FeasibilityStatus PresolveLinearOfSizeOne(int c);
+  CanonicalizationStatus PresolveLinearOfSizeTwo(int c);
+  CanonicalizationStatus PresolveLinearOnBooleans(int c);
+  FeasibilityStatus PresolveSmallLinearOnBooleans(int c);
+  FeasibilityStatus PresolveDiophantine(int c);
+  FeasibilityStatus AddVarAffineRepresentativeFromLinearEquality(
+      int c, int target_index);
+  FeasibilityStatus PresolveLinearEqualityWithModulo(int c);
+  void PresolveLinear2NeCst(int c, int64_t rhs);
+  FeasibilityStatus PresolveUnenforcedLinear2EqCst(int c, int64_t rhs);
+  CanonicalizationStatus PresolveEnforcedLinear2EqCst(int c, int64_t rhs);
+  CanonicalizationStatus PresolveLinear2WithBooleans(int c);
 
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
@@ -171,18 +174,16 @@ class CpConstraintPresolver {
   // For instance "10'001 X + 9'999 Y <= 105'000, with X, Y in [0, 100]" can
   // be rewritten as X + Y <= 10 ! And "x + y + 100 b1 - 100 b2 == 1" on
   // Booleans decouples into "b1 - b2 == 0" and "x + y == 1".
-  void TryToReduceCoefficientsOfLinearConstraint(
-      int c, ConstraintProto* ct,
-      const PresolveContext::MergedLinearConstraintView& view);
+  FeasibilityStatus TryToReduceCoefficientsOfLinearConstraint(
+      int c, const PresolveContext::MergedLinearConstraintView& view);
 
-  // Splits linear constraint `ct` (at index `c`, preserving enforcement
-  // literals) when all terms with `|coeff| >= magnitude` (whose coefficients
-  // have GCD `big_gcd`) are forced by `view` bounds to take the single
-  // shifted value `forced_big`, leaving `max_error` as the total variation of
-  // the remaining smaller-magnitude terms.
-  void DecoupleForcedBigMSuffix(
-      int c, ConstraintProto* ct,
-      const PresolveContext::MergedLinearConstraintView& view,
+  // Splits linear constraint `c` (preserving enforcement literals) when all
+  // terms with `|coeff| >= magnitude` (whose coefficients have GCD `big_gcd`)
+  // are forced by `view` bounds to take the single shifted value `forced_big`,
+  // leaving `max_error` as the total variation of the remaining
+  // smaller-magnitude terms.
+  FeasibilityStatus DecoupleForcedBigMSuffix(
+      int c, const PresolveContext::MergedLinearConstraintView& view,
       int64_t magnitude, int64_t big_gcd, int64_t forced_big,
       int64_t max_error);
 
@@ -190,21 +191,19 @@ class CpConstraintPresolver {
   // domain. This is a bit costly: O(n log n); but it does trigger often enough
   // that it seems worth it.
   //
-  // Returns true if the detection triggered and the constraint was rewritten.
-  //
   // TODO(user): We could probably handle other simple coefficient reduction
   // case. In particular, look at the case of only two different coefficient
   // magnitude.
-  bool DetectSimpleSum(ConstraintProto* ct,
-                       const PresolveContext::MergedLinearConstraintView& view);
+  CanonicalizationStatus DetectSimpleSum(
+      int c, const PresolveContext::MergedLinearConstraintView& view);
 
   // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
   // framed by exactly four fixed rectangles and at most one single box can fit
   // inside the frame. This is a rather specific situation, but it is fast to
   // check and happens often in LNS problems.
-  bool PresolveNoOverlap2DFramed(
-      absl::Span<const Rectangle> fixed_boxes,
-      absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
+  FeasibilityStatus PresolveNoOverlap2DFramed(
+      int c, absl::Span<const Rectangle> fixed_boxes,
+      absl::Span<const RectangleInRange> non_fixed_boxes);
 
   // Detects when the space where items of a no_overlap_2d constraint can be
   // placed is disjoint (ie., fixed boxes split the domain). When it is the
@@ -215,39 +214,37 @@ class CpConstraintPresolver {
   // intervals. This is equivalent to expanding the original no_overlap_2d
   // constraint into a bin packing problem with each connected component being a
   // bin.
-  bool ExpandEncoded2DBinPacking(
-      absl::Span<const Rectangle> fixed_boxes,
-      absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
+  FeasibilityStatus ExpandEncoded2DBinPacking(
+      int c, absl::Span<const Rectangle> fixed_boxes,
+      absl::Span<const RectangleInRange> non_fixed_boxes);
 
   // Extracts enforcement literals from one-sided linear constraints, or
-  // strengthens oversized coefficients when extraction does not apply. Returns
-  // true if any enforcement literal was extracted or coefficient was
-  // strengthened and the constraint remains an active linear constraint.
-  bool ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
-                                                     ConstraintProto* ct);
+  // strengthens oversized coefficients when extraction does not apply.
+  CanonicalizationStatus ExtractEnforcementLiteralFromLinearConstraint(
+      int ct_index);
 
   // Fixes variables whose coefficient magnitude exceeds the active upper- or
   // lower-bound slack on an unenforced linear constraint. If any domain is
-  // modified, re-canonicalizes `ct` to remove the fixed variables and updates
-  // `*view` in place (if `ct` remains an active linear constraint).
-  // Returns true when a domain on at least one variable is modified (without
-  // proving UNSAT).
-  bool FixVariablesExceedingRhs(
-      ConstraintProto* ct, PresolveContext::MergedLinearConstraintView* view);
+  // modified, re-canonicalizes `c` to remove the fixed variables and updates
+  // `*view` in place (if constraint `c` remains an active linear constraint).
+  FeasibilityStatus FixVariablesExceedingRhs(
+      int c, PresolveContext::MergedLinearConstraintView* view);
 
   // Strengthens or reduces coefficients of a one-sided linear constraint (with
   // at least 3 distinct coefficient magnitudes) when large terms force all
   // other terms to their bounds (a "partial at-most-one" structure). Updates
-  // `*view` in place and returns true if `ct` is modified.
-  bool LowerThanCoeffStrengthening(
-      ConstraintProto* ct, PresolveContext::MergedLinearConstraintView* view);
+  // `*view` in place.
+  CanonicalizationStatus LowerThanCoeffStrengthening(
+      int c, PresolveContext::MergedLinearConstraintView* view);
 
-  void RunPropagatorsForConstraint(const ConstraintProto& ct);
+  FeasibilityStatus RunPropagatorsForConstraint(const ConstraintProto& ct);
 
-  ABSL_MUST_USE_RESULT bool MarkOptionalIntervalAsFalse(ConstraintProto* ct);
+  // Fixes the enforcement literal of optional interval constraint `c` to false
+  // and canonicalizes `c`.
+  FeasibilityStatus MarkOptionalIntervalAsFalse(int c);
 
-  void AddLinear2ToModel(const LinearExpression2& linear2, int64_t lb,
-                         int64_t ub);
+  FeasibilityStatus AddLinear2ToModel(const LinearExpression2& linear2,
+                                      int64_t lb, int64_t ub);
 
   PresolveContext* context_;
   SolutionCrush& solution_crush_;

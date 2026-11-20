@@ -33,6 +33,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
@@ -275,8 +276,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         if (!context->SetLiteralToFalse(ref)) {
           return false;
         }
-        ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(ct);
+        context->ClearConstraint(ct);
         continue;
       }
       auto [it, inserted] = ref_to_linear1.insert({ref, ct});
@@ -286,8 +286,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         const Domain old_ct_domain =
             ReadDomainFromProto(old_ct_proto->linear());
         const Domain new_domain = domain.IntersectionWith(old_ct_domain);
-        ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(ct);
+        context->ClearConstraint(ct);
         if (new_domain.IsEmpty()) {
           context->UpdateRuleStats(
               "variables: linear1 with same variable and enforcement and "
@@ -295,8 +294,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
           if (!context->SetLiteralToFalse(ref)) {
             return false;
           }
-          old_ct_proto->Clear();
-          context->UpdateConstraintVariableUsage(it->second);
+          context->ClearConstraint(it->second);
           ref_to_linear1.erase(ref);
         } else {
           FillDomainInProto(new_domain, old_ct_proto->mutable_linear());
@@ -825,7 +823,7 @@ bool DetectEncodedComplexDomain(
     }
     literals.Truncate(new_size);
     literals.Add(new_var);
-    context->UpdateConstraintVariableUsage(ct_index);
+    context->MarkConstraintForCanonicalization(ct_index);
   }
 
   // Add the removed encodings to the mapping model. Note that we cannot just
@@ -867,8 +865,7 @@ bool DetectEncodedComplexDomain(
     ConstraintProto* ct_proto = context->MutableConstraint(ct);
     if (bools_to_remove_set.contains(
             PositiveRef(ct_proto->enforcement_literal(0)))) {
-      ct_proto->Clear();
-      context->UpdateConstraintVariableUsage(ct);
+      context->ClearConstraint(ct);
       continue;
     }
     local_model.linear1_constraints[new_linear1_size++] = ct;
@@ -983,7 +980,8 @@ bool MaybeTransferLinear1ToAnotherVariable(
     const Domain current = context->DomainOf(new_var);
     new_domain = new_domain.IntersectionWith(current);
     if (new_domain.IsEmpty()) {
-      if (!context->MarkConstraintAsFalse(ct, "linear1: unsat transfer")) {
+      if (context->MarkConstraintAsFalse(ct, "linear1: unsat transfer")
+              .unsat()) {
         return false;
       }
     } else if (new_domain == current) {
@@ -995,13 +993,12 @@ bool MaybeTransferLinear1ToAnotherVariable(
       ct->mutable_linear()->set_vars(0, new_var);
       FillDomainInProto(new_domain, ct->mutable_linear());
     }
-    context->UpdateConstraintVariableUsage(c);
+    context->MarkConstraintForCanonicalization(c);
   }
 
   // Copy other_ct to the mapping model and delete var!
   context->NewMappingConstraint(other_ct, __FILE__, __LINE__);
   context->ClearConstraint(other_c);
-  context->UpdateConstraintVariableUsage(other_c);
   context->MarkVariableAsRemoved(var);
   local_model.var = -1;
   return true;

@@ -27,6 +27,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -349,13 +350,17 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
       // We can increase the slack since we already have a high bound in the
       // reason. In all cases, no need to add to the queue.
       //
-      // Note that this is not valid for the term of a propagated variable,
-      // since this term is not part of the explanation of its own entry.
-      if (data.settled_bound > required_bound && term_index == -1) {
+      // Note that the settled bound of a propagated variable increases the
+      // slack of all the other entries, but not of its own entry.
+      if (data.settled_bound > required_bound) {
         ++num_slack_increase_;
-        slack_increase +=
+        const absl::int128 increase =
             absl::int128(reason.coeffs[i].value()) *
             absl::int128((data.settled_bound - required_bound).value());
+        slack_increase += increase;
+        if (term_index != -1) {
+          tmp_propagated_terms_[term_index].settled_increase = increase;
+        }
       }
       continue;
     }
@@ -384,11 +389,19 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   }
 
   // Each entry can be explained with its own slack, so to explain all of them
-  // we take the minimum.
+  // we take the minimum. Moreover, the term of the entry with minimum slack is
+  // not needed to explain its own entry, so it can use `second_slack` (the
+  // minimum slack of the other entries), and with two entries the two
+  // propagated terms only constrain each other's entry.
   absl::int128 slack = std::numeric_limits<absl::int128>::max();
+  absl::int128 second_slack = std::numeric_limits<absl::int128>::max();
+  IntegerVariable min_slack_var = kNoIntegerVariable;
+  IntegerVariable second_slack_var = kNoIntegerVariable;
   for (const PropagatedTerm& term : tmp_propagated_terms_) {
     if (many_entries) var_to_propagated_term_[term.var] = -1;
-    absl::int128 entry_slack = term.slack.value();
+    DCHECK_GE(slack_increase, term.settled_increase);
+    absl::int128 entry_slack =
+        slack_increase - term.settled_increase + term.slack.value();
     if (term.bound_diff > 0) {
       CHECK_GT(term.coeff, 0);  // Should always be positive.
 
@@ -397,9 +410,22 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
       entry_slack += absl::int128(term.coeff.value()) *
                      absl::int128(term.bound_diff.value());
     }
-    slack = std::min(slack, entry_slack);
+    if (entry_slack < slack) {
+      second_slack = slack;
+      second_slack_var = min_slack_var;
+      slack = entry_slack;
+      min_slack_var = term.var;
+    } else if (entry_slack < second_slack) {
+      second_slack = entry_slack;
+      second_slack_var = term.var;
+    }
   }
-  slack += slack_increase;
+  if (!many_entries) {
+    min_slack_var = kNoIntegerVariable;
+    second_slack = slack;
+  } else if (tmp_propagated_terms_.size() > 2) {
+    second_slack_var = kNoIntegerVariable;
+  }
 
   // If all the slack can be consumed up to data.bound, or if there is only a
   // single relaxable entry, we can relax the bound right away without filling
@@ -408,6 +434,58 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     if (!relaxable.empty()) ++num_slack_usage_;
     return;
   }
+
+  bool use_second_slack = false;
+  if (many_entries &&
+      (second_slack > slack || second_slack_var != kNoIntegerVariable)) {
+    int min_pos = -1;
+    int second_pos = -1;
+    absl::int128 min_needed = 0;
+    absl::int128 second_needed = 0;
+    for (int i = 0; i < relaxable.size(); ++i) {
+      const auto [var, coeff, required_bound] = relaxable[i];
+      if (var == min_slack_var) {
+        min_pos = i;
+        min_needed =
+            absl::int128(coeff.value()) *
+            absl::int128((required_bound - MutableIntData(var).bound).value());
+      } else if (var == second_slack_var) {
+        second_pos = i;
+        second_needed =
+            absl::int128(coeff.value()) *
+            absl::int128((required_bound - MutableIntData(var).bound).value());
+      }
+    }
+    if (min_pos != -1 || second_pos != -1) {
+      const absl::int128 rest_needed =
+          max_slack_needed - min_needed - second_needed;
+      if (slack >= rest_needed + second_needed &&
+          second_slack >= rest_needed + min_needed) {
+        ++num_slack_usage_;
+        return;
+      }
+      if (min_pos != -1 &&
+          min_needed <= second_slack - std::min(slack, rest_needed)) {
+        ++num_slack_usage_;
+        max_slack_needed -= min_needed;
+        relaxable.erase(relaxable.begin() + min_pos);
+      } else if (slack >= rest_needed + second_needed) {
+        if (second_pos != -1) {
+          ++num_slack_usage_;
+          max_slack_needed -= second_needed;
+          relaxable.erase(relaxable.begin() + second_pos);
+        }
+        slack = second_slack;
+      } else if (min_pos != -1 &&
+                 relaxable[min_pos].coeff.value() <= second_slack &&
+                 (second_slack > slack ||
+                  (second_pos != -1 &&
+                   relaxable[second_pos].coeff.value() <= slack))) {
+        use_second_slack = true;
+      }
+    }
+  }
+
   if (relaxable.size() == 1) {
     const auto [var, coeff, required_bound] = relaxable[0];
     IntegerVariableData& data = MutableIntData(var);
@@ -419,11 +497,29 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     return;
   }
 
-  // Delay the slack consumption. If slack still overflows IntegerValue, do not
-  // propagate slack.
-  const IntegerValue int_slack(
-      slack >= kMaxIntegerValue.value() ? 0 : static_cast<int64_t>(slack));
+  // Delay the slack consumption.
+  const auto capped_slack = [](absl::int128 s) {
+    return IntegerValue(
+        static_cast<int64_t>(std::min<absl::int128>(s, kint64max)));
+  };
+  const IntegerValue int_slack = capped_slack(slack);
+  const IntegerValue int_second_slack = capped_slack(second_slack);
+  if (int_second_slack == int_slack && second_slack_var == kNoIntegerVariable) {
+    use_second_slack = false;
+  }
   SlackIndex index(-1);
+  SlackIndex second_index(-1);
+  const auto add_slack = [&](IntegerVariableData& data, IntegerValue coeff,
+                             IntegerValue slack_value,
+                             SlackIndex& slack_index) {
+    if (slack_index == -1) {  // Lazy initialization.
+      slack_index = SlackIndex(linear_slacks_.size());
+      linear_slacks_.push_back(slack_value);
+    }
+    const SlackListIndex next(linked_list_buffer_.size());
+    linked_list_buffer_.push_back({coeff, slack_index, data.slack_ptr});
+    data.slack_ptr = next;
+  };
   for (const auto& [var, coeff, required_bound] : relaxable) {
     IntegerVariableData& data = MutableIntData(var);
     AddToQueueIfNotThere(data);
@@ -433,14 +529,20 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     DCHECK_GE(data.bound, data.settled_bound);
     DCHECK_GT(coeff, 0);
 
-    if (coeff <= int_slack) {
-      if (index == -1) {  // Lazy initialization
-        index = SlackIndex(linear_slacks_.size());
-        linear_slacks_.push_back(int_slack);
+    if (use_second_slack && var == min_slack_var) {
+      DCHECK_LE(coeff, int_second_slack);
+      add_slack(data, coeff, int_second_slack, second_index);
+    } else if (use_second_slack && var == second_slack_var) {
+      if (coeff <= int_slack) {
+        add_slack(data, coeff, int_slack, index);
+      } else {
+        data.bound = required_bound;
       }
-      const SlackListIndex next(linked_list_buffer_.size());
-      linked_list_buffer_.push_back({coeff, index, data.slack_ptr});
-      data.slack_ptr = next;
+    } else if (coeff <= int_slack) {
+      add_slack(data, coeff, int_slack, index);
+      if (use_second_slack) {
+        add_slack(data, coeff, int_second_slack, second_index);
+      }
     } else {
       data.bound = required_bound;
     }
@@ -550,7 +652,7 @@ void IntegerConflictResolution::ConsumeSlack(IntegerVariable var,
 
   data.bound = std::max(data.bound, data.settled_bound);
 
-  IntegerValue best = needed - std::max(data.bound, threshold);
+  IntegerValue best = CapSubI(needed, std::max(data.bound, threshold));
   SlackListIndex next = data.slack_ptr;
   while (next != kNoListIndex) {
     const auto [coeff, index, n] = linked_list_buffer_[next];

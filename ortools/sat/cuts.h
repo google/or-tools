@@ -637,6 +637,13 @@ class IntegerRoundingCutHelper {
   // complementation and coefficient adjustments do not reorder cut_.terms.
   std::vector<int> large_domain_indices_;
 
+  // Divisor-independent bounds on cut_.terms for
+  // ComputeMaxSafeUnscaledScaling(), computed lazily in GetScaledViolation()
+  // while unscaled_terms_span_ < 0 (and set to kMaxIntegerValue on span
+  // overflow).
+  IntegerValue unscaled_terms_max_mag_ = IntegerValue(0);
+  IntegerValue unscaled_terms_span_ = IntegerValue(-1);
+
   int64_t num_ib_used_ = 0;
   CutData cut_;
 
