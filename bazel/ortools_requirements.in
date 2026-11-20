@@ -10,7 +10,7 @@ typing-extensions==4.15.0
 # OR-Tools build dependencies
 mypy==1.6.1
 mypy-protobuf==3.5.0
-virtualenv==20.36.1
+virtualenv==21.14.13
 
 # Example dependencies
 pandas==2.3.3
