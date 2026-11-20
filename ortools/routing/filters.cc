@@ -35,6 +35,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
@@ -216,7 +217,7 @@ class SameActivityGroupManager {
     return absl::MakeConstSpan(routing_model_.GetSameActivityGroups())
         .subspan(node, 1);
   }
-  const std::vector<int>& GetGroupNodes(int group) const {
+  absl::Span<const int> GetGroupNodes(int group) const {
     return routing_model_.GetSameActivityIndicesOfGroup(group);
   }
   void Revert() {}
@@ -274,7 +275,7 @@ class OrderedActivityGroupManager {
   absl::Span<const int> GetGroupsFromNode(int node) const {
     return node_groups_[node];
   }
-  const std::vector<int>& GetGroupNodes(int group) const {
+  absl::Span<const int> GetGroupNodes(int group) const {
     return group_nodes_[group];
   }
   void Revert() {
@@ -318,7 +319,7 @@ class OrderedActivityGroupManager {
                  CommittableArray<bool>& node_is_unknown) {
     for (const auto& [group_index, ranks] :
          disjunction_groups_[disjunction_index]) {
-      const std::vector<DisjunctionIndex>& group = groups_[group_index];
+      const absl::Span<const DisjunctionIndex> group = groups_[group_index];
       auto& [min_rank, max_rank] = group_bounds_.GetMutable(group_index);
       if (max_rank < min_rank) continue;
       if (IsActive(disjunction_index, node_is_active, node_is_unknown)) {
@@ -399,7 +400,10 @@ class OrderedActivityGroupManager {
   }
 
   const Model& routing_model_;
-  const std::vector<std::vector<DisjunctionIndex>>& groups_;
+  // TODO(user): Consider absl::InlinedVector<> for the 2 other
+  // vector<vector<>>, if they're in a hot loop for some models.
+  // The 'groups' represent nodes in the same performance rule.
+  const std::vector<absl::InlinedVector<DisjunctionIndex, 4>>& groups_;
   std::vector<std::vector<int>> group_nodes_;
   std::vector<std::vector<int>> node_groups_;
   struct DisjunctionGroupInfo {
@@ -574,7 +578,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
     }
     // Check if any disjunction is infeasible.
     for (const int dindex : count_per_disjunction_.ChangedIndices()) {
-      const Disjunction disj = model_.GetDisjunction(DisjunctionIndex(dindex));
+      const Disjunction& disj = model_.GetDisjunction(DisjunctionIndex(dindex));
       if (count_per_disjunction_.Get(dindex).active > disj.max_cardinality) {
         return false;
       }
@@ -593,7 +597,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
       const ActivityCount& new_counts = count_per_disjunction_.Get(index);
       const ActivityCount& old_counts =
           count_per_disjunction_.GetCommitted(index);
-      const Disjunction disj = model_.GetDisjunction(DisjunctionIndex(index));
+      const Disjunction& disj = model_.GetDisjunction(DisjunctionIndex(index));
 
       // Compute the new cost of soft min activity bound violations.
       if (disj.soft_min_penalty != 0 &&

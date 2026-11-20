@@ -1882,7 +1882,9 @@ TEST_F(OperatorTest, PathLns) {
   assignment.SetValue(vars[0], 1);
   assignment.SetValue(vars[1], 2);
   assignment.SetValue(vars[2], 3);
-  LocalSearchOperator* const op = solver.MakeOperator(vars, Solver::PATHLNS);
+  LocalSearchOperator* const op =
+      MakePathLns(&solver, vars, /*secondary_vars=*/{}, /*number_of_chunks=*/2,
+                  /*chunk_size=*/3, /*unactive_fragments=*/false);
   op->Start(&assignment);
   Assignment delta(&solver);
   Assignment deltadelta(&solver);
@@ -1978,7 +1980,8 @@ TEST_F(OperatorTest, FullPathLns) {
 
   // Explore the neighborhood and verify that it's as expected.
   LocalSearchOperator* const op =
-      solver.MakeOperator(vars, Solver::FULLPATHLNS);
+      MakePathLns(&solver, vars, /*secondary_vars=*/{}, /*number_of_chunks=*/1,
+                  /*chunk_size=*/0, /*unactive_fragments=*/true);
   op->Start(&assignment);
   Assignment delta(&solver);
   Assignment deltadelta(&solver);
@@ -2012,7 +2015,8 @@ TEST_F(OperatorTest, UnactiveLns) {
   assignment.SetValue(vars[1], 3);
   assignment.SetValue(vars[2], 2);
   LocalSearchOperator* const op =
-      solver.MakeOperator(vars, Solver::UNACTIVELNS);
+      MakePathLns(&solver, vars, /*secondary_vars=*/{}, /*number_of_chunks=*/1,
+                  /*chunk_size=*/6, /*unactive_fragments=*/true);
   op->Start(&assignment);
   Assignment delta(&solver);
   Assignment deltadelta(&solver);

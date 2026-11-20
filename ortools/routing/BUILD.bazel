@@ -165,6 +165,7 @@ or_cc_library(
     deps = [
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/container:inlined_vector",
     ],
 )
 
@@ -275,6 +276,7 @@ or_cc_library(
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",

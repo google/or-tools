@@ -39,6 +39,7 @@
 #include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
@@ -1491,7 +1492,7 @@ void ResourceGroup::ComputeResourceClasses() {
   }
 }
 
-const std::vector<int>& Model::GetDimensionResourceGroupIndices(
+absl::Span<const int> Model::GetDimensionResourceGroupIndices(
     const Dimension* dimension) const {
   DCHECK(closed_);
   return dimension_resource_group_indices_[dimension->index()];
@@ -1852,7 +1853,7 @@ struct VehicleClass {
   uint64_t visitable_nodes_hash;
   /// Hash of allowed resources for each resource group, or -1 if a given
   /// resource group isn't required by the vehicle.
-  std::vector<int64_t> group_allowed_resources_hash;
+  absl::InlinedVector<int64_t, 2> group_allowed_resources_hash;
 
   friend bool operator==(const VehicleClass& c1, const VehicleClass& c2) {
     return c1.cost_class_index == c2.cost_class_index &&
@@ -1927,7 +1928,7 @@ void Model::ComputeVehicleClasses() {
     }
     vehicle_class.visitable_nodes_hash = bool_vec_hash(node_is_visitable);
 
-    std::vector<int64_t>& allowed_resources_hash =
+    absl::InlinedVector<int64_t, 2>& allowed_resources_hash =
         vehicle_class.group_allowed_resources_hash;
     allowed_resources_hash.reserve(resource_groups_.size());
     for (int rg_index = 0; rg_index < resource_groups_.size(); rg_index++) {
@@ -2253,7 +2254,7 @@ void Model::SetupCosts(const RoutingSearchParameters& parameters) {
         dimension->vehicle_slack_cost_coefficients();
     const std::vector<int64_t>& span_ubs =
         dimension->vehicle_span_upper_bounds();
-    const std::vector<int>& rg_indices =
+    const absl::Span<const int> rg_indices =
         dimension_resource_group_indices_[dimension->index()];
     const bool has_span_constraint =
         std::any_of(span_costs.begin(), span_costs.end(),
@@ -2494,8 +2495,8 @@ void Model::SetupCosts(const RoutingSearchParameters& parameters) {
 }
 
 DisjunctionIndex Model::AddDisjunction(
-    const std::vector<int64_t>& indices, int64_t penalty,
-    int64_t max_cardinality, PenaltyCostBehavior penalty_cost_behavior) {
+    absl::Span<const int64_t> indices, int64_t penalty, int64_t max_cardinality,
+    PenaltyCostBehavior penalty_cost_behavior) {
   CHECK_GE(max_cardinality, 1);
   for (int i = 0; i < indices.size(); ++i) {
     CHECK_NE(kUnassigned, indices[i]);
@@ -2513,10 +2514,10 @@ DisjunctionIndex Model::AddDisjunction(
   return disj_index;
 }
 
-DisjunctionIndex Model::MakeDisjunction(const std::vector<int64_t>& indices) {
+DisjunctionIndex Model::MakeDisjunction(absl::Span<const int64_t> indices) {
   const DisjunctionIndex disj_index(disjunctions_.size());
   disjunctions_.push_back({});
-  disjunctions_.back().indices = indices;
+  disjunctions_.back().indices.assign(indices.begin(), indices.end());
   disjunctions_.back().max_cardinality = indices.size();
   for (const int64_t index : indices) {
     index_to_disjunctions_[index].push_back(disj_index);
@@ -2735,8 +2736,7 @@ void Model::AddPickupAndDeliverySets(DisjunctionIndex pickup_disjunction,
 // TODO(user): Return an error (boolean?) when any node in the pickup or
 // deliveries is already registered as pickup or delivery instead of DCHECK-ing.
 void Model::AddPickupAndDeliverySetsInternal(
-    const std::vector<int64_t>& pickups,
-    const std::vector<int64_t>& deliveries) {
+    absl::Span<const int64_t> pickups, absl::Span<const int64_t> deliveries) {
   if (pickups.empty() || deliveries.empty()) {
     return;
   }
@@ -2757,7 +2757,8 @@ void Model::AddPickupAndDeliverySetsInternal(
     DCHECK(!IsDelivery(delivery));
     index_to_delivery_position_[delivery] = {pair_index, delivery_index};
   }
-  pickup_delivery_pairs_.push_back({pickups, deliveries});
+  pickup_delivery_pairs_.push_back({{pickups.begin(), pickups.end()},
+                                    {deliveries.begin(), deliveries.end()}});
 }
 
 std::optional<Model::PickupDeliveryPosition> Model::GetPickupPosition(
@@ -3315,7 +3316,7 @@ void Model::CloseModelWithParameters(
   // Nodes which are not in a disjunction are mandatory, and those with a
   // trivially infeasible type are necessarily unperformed
   for (int i = 0; i < size; ++i) {
-    const std::vector<DisjunctionIndex>& disjunctions =
+    const absl::Span<const DisjunctionIndex> disjunctions =
         GetDisjunctionIndices(i);
     bool is_mandatory = disjunctions.empty();
     for (const DisjunctionIndex& index : disjunctions) {
@@ -3414,7 +3415,7 @@ void Model::CloseModelWithParameters(
     if (disjunctions.size() <= 1) continue;
     IntVar* prev_active_var = nullptr;
     for (const DisjunctionIndex disjunction_index : disjunctions) {
-      const std::vector<int64_t>& node_indices =
+      const absl::Span<const int64_t> node_indices =
           GetDisjunctionNodeIndices(disjunction_index);
       std::vector<IntVar*> active_vars;
       active_vars.reserve(node_indices.size());
@@ -5186,7 +5187,7 @@ int64_t Model::UnperformedPenalty(int64_t var_index) const {
 int64_t Model::UnperformedPenaltyOrValue(int64_t default_value,
                                          int64_t var_index) const {
   if (active_[var_index]->Min() == 1) return kint64max;  // Forced active.
-  const std::vector<DisjunctionIndex>& disjunction_indices =
+  const absl::Span<const DisjunctionIndex> disjunction_indices =
       GetDisjunctionIndices(var_index);
   if (disjunction_indices.size() != 1) return default_value;
   const Disjunction& disj = disjunctions_[disjunction_indices[0]];
@@ -5416,10 +5417,7 @@ void Model::CreateNeighborhoodOperators(
     // Operators defined by Solver::LocalSearchOperators.
     const std::vector<
         std::pair<RoutingLocalSearchOperator, Solver::LocalSearchOperators>>
-        operator_by_type = {{OR_OPT, Solver::OROPT},
-                            {PATH_LNS, Solver::PATHLNS},
-                            {FULL_PATH_LNS, Solver::FULLPATHLNS},
-                            {INACTIVE_LNS, Solver::UNACTIVELNS}};
+        operator_by_type = {{OR_OPT, Solver::OROPT}};
     for (const auto [type, op] : operator_by_type) {
       local_search_operators_[type] =
           CostsAreHomogeneousAcrossVehicles()
@@ -5487,7 +5485,8 @@ void Model::CreateNeighborhoodOperators(
     // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
     // support DAGs, and don't care about chain-DAGS.
     if (disjunction.max_cardinality == 1 && disjunction.indices.size() > 1) {
-      alternative_sets.push_back(disjunction.indices);
+      alternative_sets.emplace_back(disjunction.indices.begin(),
+                                    disjunction.indices.end());
     }
   }
   local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
@@ -5805,11 +5804,6 @@ LocalSearchOperator* Model::GetNeighborhoodOperators(
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
     CP_ROUTING_PUSH_OPERATOR(TSP_LNS, tsp_lns);
-  }
-  CP_ROUTING_PUSH_OPERATOR(FULL_PATH_LNS, full_path_lns);
-  CP_ROUTING_PUSH_OPERATOR(PATH_LNS, path_lns);
-  if (!disjunctions_.empty()) {
-    CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns);
   }
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 

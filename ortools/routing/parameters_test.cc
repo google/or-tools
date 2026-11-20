@@ -119,10 +119,7 @@ TEST(RoutingModelTest, DefaultRoutingSearchParameters) {
           use_shortest_path_two_opt: BOOL_TRUE
           use_node_pair_swap_active: BOOL_FALSE
           use_relocate_and_make_active: BOOL_FALSE
-          use_path_lns: BOOL_FALSE
-          use_full_path_lns: BOOL_FALSE
           use_tsp_lns: BOOL_FALSE
-          use_inactive_lns: BOOL_FALSE
           use_relocate_subtrip: BOOL_TRUE
           use_exchange_subtrip: BOOL_TRUE
           use_global_cheapest_insertion_path_lns: BOOL_TRUE
@@ -227,10 +224,7 @@ TEST(RoutingModelTest, DefaultSecondaryRoutingSearchParameters) {
           use_shortest_path_two_opt: BOOL_FALSE
           use_node_pair_swap_active: BOOL_FALSE
           use_relocate_and_make_active: BOOL_FALSE
-          use_path_lns: BOOL_FALSE
-          use_full_path_lns: BOOL_FALSE
           use_tsp_lns: BOOL_FALSE
-          use_inactive_lns: BOOL_FALSE
           use_relocate_subtrip: BOOL_TRUE
           use_exchange_subtrip: BOOL_TRUE
           use_global_cheapest_insertion_path_lns: BOOL_FALSE

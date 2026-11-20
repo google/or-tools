@@ -138,10 +138,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_shortest_path_swap_active(BOOL_TRUE);
   o->set_use_shortest_path_two_opt(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
-  o->set_use_path_lns(BOOL_FALSE);
-  o->set_use_full_path_lns(BOOL_FALSE);
   o->set_use_tsp_lns(BOOL_FALSE);
-  o->set_use_inactive_lns(BOOL_FALSE);
   o->set_use_global_cheapest_insertion_path_lns(BOOL_TRUE);
   o->set_use_local_cheapest_insertion_path_lns(BOOL_TRUE);
   o->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
@@ -232,10 +229,7 @@ RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   o->set_use_shortest_path_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_two_opt(BOOL_FALSE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
-  o->set_use_path_lns(BOOL_FALSE);
-  o->set_use_full_path_lns(BOOL_FALSE);
   o->set_use_tsp_lns(BOOL_FALSE);
-  o->set_use_inactive_lns(BOOL_FALSE);
   o->set_use_global_cheapest_insertion_path_lns(BOOL_FALSE);
   o->set_use_local_cheapest_insertion_path_lns(BOOL_FALSE);
   o->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(

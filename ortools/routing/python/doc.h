@@ -2065,8 +2065,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_EXTENDED_SWAP_ACTIVE = R"doc()doc";
 
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_FULL_PATH_LNS = R"doc()doc";
-
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS = R"doc()doc";
@@ -2074,8 +2072,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_INACTIVE_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_LIGHT_RELOCATE_PAIR = R"doc()doc";
 
@@ -2102,8 +2098,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_NODE_PAIR_SWAP = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_OR_OPT = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_RELOCATE = R"doc()doc";
 

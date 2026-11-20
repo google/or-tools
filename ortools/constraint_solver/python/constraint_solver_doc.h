@@ -5654,10 +5654,6 @@ of the path) are:```
   1 ->  2  -> [5] -> 4 with 3 inactive
 ```)doc";
 
-static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_FULLPATHLNS =
-R"doc(Operator which relaxes one entire path and all inactive nodes, thus
-defining num_paths neighbors.)doc";
-
 static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_INCREMENT =
 R"doc(Operator which defines one neighbor per variable. Each neighbor tries
 to increment by one the value of the corresponding variable. When a
@@ -5711,14 +5707,6 @@ Using Relocate with chain lengths of 1, 2 and 3 together is equivalent
 to the OrOpt operator on a path. The OrOpt operator is a limited
  version of 3Opt (breaks 3 arcs on a path).)doc";
 
-static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_PATHLNS =
-R"doc(Operator which relaxes two sub-chains of three consecutive arcs each.
-Each sub-chain is defined by a start node and the next three arcs.
-Those six arcs are relaxed to build a new neighbor. PATHLNS explores
-all possible pairs of starting nodes and so defines n^2 neighbors, n
-being the number of nodes. Note that the two sub-chains can be part of
-the same path; they even may overlap.)doc";
-
 static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_RELOCATE = R"doc(Relocate neighborhood with length of 1 (see OROPT comment).)doc";
 
 static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_SIMPLELNS =
@@ -5757,11 +5745,6 @@ not be moved):```
   1 -> [4 -> 3  -> 2] -> 5
   1 ->  2 -> [4 -> 3] -> 5
 ```)doc";
-
-static const char *mkd_doc_operations_research_Solver_LocalSearchOperators_UNACTIVELNS =
-R"doc(Operator which relaxes all inactive nodes and one sub-chain of six
-consecutive arcs. That way the path can be improved by inserting
-inactive nodes or swapping arcs.)doc";
 
 static const char *mkd_doc_operations_research_Solver_LocalSearchProfile = R"doc(Returns local search profiling information in a human readable format.)doc";
 
@@ -7569,11 +7552,11 @@ static const char *mkd_doc_operations_research_Solver_true_constraint = R"doc(Ca
 
 static const char *mkd_doc_operations_research_Solver_unchecked_solutions = R"doc(The number of unchecked solutions found by local search.)doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3172_3 = R"doc(interval of constants cached, inclusive:)doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3 = R"doc(interval of constants cached, inclusive:)doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3172_3_MAX_CACHED_INT_CONST = R"doc()doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3_MAX_CACHED_INT_CONST = R"doc()doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3172_3_MIN_CACHED_INT_CONST = R"doc()doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3_MIN_CACHED_INT_CONST = R"doc()doc";
 
 static const char *mkd_doc_operations_research_Solver_use_fast_local_search = R"doc(Local search mode)doc";
 

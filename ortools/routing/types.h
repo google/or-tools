@@ -16,8 +16,8 @@
 
 #include <cstdint>
 #include <functional>
-#include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/strong_integers.h"
 
@@ -43,8 +43,9 @@ DEFINE_STRONG_INDEX_TYPE(DimensionOptimizerIndex);
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.
 struct PickupDeliveryPair {
-  std::vector<int64_t> pickup_alternatives;
-  std::vector<int64_t> delivery_alternatives;
+  // TODO(user): Make these int instead of int64_t?
+  absl::InlinedVector<int64_t, 2> pickup_alternatives;
+  absl::InlinedVector<int64_t, 2> delivery_alternatives;
 };
 
 typedef std::function<int64_t(int64_t)> TransitCallback1;
