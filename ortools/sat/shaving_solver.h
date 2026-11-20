@@ -32,6 +32,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -110,21 +111,84 @@ class VariablesShavingSolver : public SubSolver {
   void Synchronize() override;
 
  private:
+  friend class VariablesShavingSolverTestPeer;
+
+  class ShavingGraph {
+   public:
+    struct NoOverlap2DPair {
+      int constraint;
+      int x_interval;
+      int y_interval;
+    };
+
+    struct Neighborhood {
+      uint32_t epoch = 0;
+      int num_active_variables = 0;
+      int num_active_constraints = 0;
+    };
+
+    explicit ShavingGraph(const CpModelProto& model_proto);
+
+    // The returned neighborhood is valid until the next call to Extract().
+    Neighborhood Extract(int root_var, const std::vector<Domain>& domains,
+                         int max_variables, int max_constraints);
+
+    bool IsConstraintActive(int c, const Neighborhood& neighborhood) const;
+    bool IsNoOverlap2DConstraintActive(int c,
+                                       const Neighborhood& neighborhood) const;
+    bool IsNoOverlap2DPairActive(int pair_id,
+                                 const Neighborhood& neighborhood) const;
+
+    const std::vector<int>& active_no_overlap_2d_constraints() const {
+      return active_no_overlap_2d_constraints_;
+    }
+
+    const std::vector<NoOverlap2DPair>& no_overlap_2d_pairs() const {
+      return no_overlap_2d_pairs_;
+    }
+
+    const CompactVectorVector<int, int>& constraint_to_no_overlap_2d_pairs()
+        const {
+      return constraint_to_no_overlap_2d_pairs_;
+    }
+
+   private:
+    bool ConstraintIsInactive(int c, const std::vector<Domain>& domains) const;
+
+    const CpModelProto& model_proto_;
+    CompactVectorVector<int, int> var_to_constraints_;
+    CompactVectorVector<int, int> constraint_to_variables_;
+    CompactVectorVector<int, int> interval_to_constraints_;
+    CompactVectorVector<int, int> constraint_to_intervals_;
+    CompactVectorVector<int, int> interval_to_no_overlap_2d_pairs_;
+    CompactVectorVector<int, int> no_overlap_2d_pair_to_variables_;
+    CompactVectorVector<int, int> constraint_to_no_overlap_2d_pairs_;
+    std::vector<NoOverlap2DPair> no_overlap_2d_pairs_;
+
+    // Reused stamps avoid initializing model-sized visited arrays per shave.
+    std::vector<uint32_t> selected_variables_epoch_;
+    std::vector<uint32_t> queued_variables_epoch_;
+    std::vector<uint32_t> queued_intervals_epoch_;
+    std::vector<uint32_t> active_constraints_epoch_;
+    std::vector<uint32_t> active_no_overlap_2d_constraints_epoch_;
+    std::vector<uint32_t> active_no_overlap_2d_pairs_epoch_;
+    std::vector<int> active_no_overlap_2d_constraints_;
+    uint32_t current_epoch_ = 0;
+  };
+
   std::string Info();
 
   int64_t DomainSize(int var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   bool VarIsFixed(int int_var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  bool ConstraintIsInactive(int c) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
-
   bool FindNextVar(State* state) ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   // Returns false if the model is infeasible.
-  ABSL_MUST_USE_RESULT bool CopyModelConnectedToVar(State* state,
-                                                    Model* local_model,
-                                                    CpModelProto* shaving_proto,
-                                                    bool* has_no_overlap_2d)
+  ABSL_MUST_USE_RESULT bool CopyModelNeighborhood(State* state,
+                                                  Model* local_model,
+                                                  CpModelProto* shaving_proto,
+                                                  bool* has_no_overlap_2d)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_model,
@@ -140,6 +204,7 @@ class VariablesShavingSolver : public SubSolver {
   std::atomic<bool> stop_current_chunk_;
 
   const CpModelProto& model_proto_;
+  ShavingGraph graph_;
 
   absl::Mutex mutex_;
   int64_t current_index_ = -1;
