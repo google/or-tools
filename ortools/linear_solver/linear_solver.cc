@@ -2237,7 +2237,6 @@ std::string MPSolver::GetMPModelRequestLoggingInfo(
   MPModelRequest abbreviated_request;
   abbreviated_request = request;
   abbreviated_request.clear_model();
-  abbreviated_request.clear_model_delta();
   CHECK(google::protobuf::TextFormat::PrintToString(abbreviated_request, &out));
 #else   // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
   static_assert(!kTargetOsSupportsProtoDescriptor);

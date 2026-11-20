@@ -42,6 +42,7 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::google::protobuf::contrib::parse_proto::ParseTextOrDie;
+using ::google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
 
 CpSolverResponse SolveAndCheck(
     const CpModelProto& initial_model, absl::string_view extra_parameters = "",
@@ -409,6 +410,216 @@ TEST(ReservoirExpandTest, FalseActive) {
   )pb");
   const CpSolverResponse response = Solve(initial_model);
   EXPECT_EQ(OPTIMAL, response.status());
+}
+
+TEST(ReservoirExpandTest, VariableDemandNearOverflow) {
+  const CpModelProto model_positive = ParseTestProto(R"pb(
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 3500000000000000000
+        time_exprs { offset: 0 }
+        active_literals: 1
+        level_changes {
+          vars: 0
+          coeffs: 2000000000000000000
+          offset: 2000000000000000000
+        }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model_positive), "");
+  EXPECT_EQ(
+      SolveWithParameters(model_positive, "cp_model_presolve:true").status(),
+      CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(
+      SolveWithParameters(model_positive, "cp_model_presolve:false").status(),
+      CpSolverStatus::OPTIMAL);
+
+  const CpModelProto model_negative = ParseTestProto(R"pb(
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        min_level: -3500000000000000000
+        max_level: 0
+        time_exprs { offset: 0 }
+        active_literals: 1
+        level_changes {
+          vars: 0
+          coeffs: 2000000000000000000
+          offset: -2000000000000000000
+        }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model_negative), "");
+  EXPECT_EQ(
+      SolveWithParameters(model_negative, "cp_model_presolve:true").status(),
+      CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(
+      SolveWithParameters(model_negative, "cp_model_presolve:false").status(),
+      CpSolverStatus::OPTIMAL);
+
+  const CpModelProto model_within_limit = ParseTestProto(R"pb(
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 2500000000000000000
+        time_exprs { offset: 0 }
+        active_literals: 1
+        level_changes {
+          vars: 0
+          coeffs: 1537228672809129301
+          offset: 1537228672809129301
+        }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model_within_limit), "");
+  EXPECT_EQ(SolveWithParameters(model_within_limit, "cp_model_presolve:false")
+                .status(),
+            CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, CombinedSumOverflowTrueActiveVarDemands) {
+  const CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 1, 2 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 2500000000000000000
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        active_literals: [ 2, 2 ]
+        level_changes {
+          vars: 0
+          coeffs: 1500000000000000000
+          offset: -1500000000000000000
+        }
+        level_changes {
+          vars: 3
+          coeffs: 1500000000000000000
+          offset: -1500000000000000000
+        }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model), "");
+  EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
+            CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, CombinedSumOverflowPositiveFixedDemand) {
+  const CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 3000000000000000000
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        active_literals: [ 2, 1 ]
+        level_changes {
+          vars: 0
+          coeffs: 1500000000000000000
+          offset: -1500000000000000000
+        }
+        level_changes { offset: 2000000000000000000 }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model), "");
+  EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
+            CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, CombinedSumOverflowNegatedFixedDemand) {
+  const CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ -2, -1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ -2, -1 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 2500000000000000000
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        active_literals: [ 2, 2, -2 ]
+        level_changes {
+          vars: 0
+          coeffs: 1000000000000000000
+          offset: 2000000000000000000
+        }
+        level_changes {
+          vars: 3
+          coeffs: 1000000000000000000
+          offset: 2000000000000000000
+        }
+        level_changes { offset: 1000000000000000000 }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model), "");
+  EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
+            CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, CombinedSumOverflowOptionalVarDemand) {
+  const CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 0, 2000000000000000000 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 3000000000000000000
+        time_exprs { offset: 0 }
+        time_exprs { offset: 1 }
+        active_literals: [ 2, 1 ]
+        level_changes {
+          vars: 0
+          coeffs: 1500000000000000000
+          offset: -1500000000000000000
+        }
+        level_changes { vars: 3 coeffs: 1 }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model), "");
+  EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
+            CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, CombinedSumOverflowDomainOffsetShift) {
+  const CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 1 ] }
+    constraints {
+      reservoir {
+        min_level: -9000000000000000000
+        max_level: 2000000000000000000
+        time_exprs { offset: 0 }
+        active_literals: [ 1 ]
+        level_changes { vars: 0 coeffs: 1 offset: 2000000000000000000 }
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model), "");
+  EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
+            CpSolverStatus::OPTIMAL);
 }
 
 TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitPreservesSolutionHint) {
@@ -1087,6 +1298,225 @@ TEST(ElementExpandTest, ConstantArrayWithEnforcementLiteral) {
     }
   }
   EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest,
+     EnforcedVariableElementWithLargeIndexDomainAndUnusedTarget) {
+  // Regression test for enforced element with a huge index domain and a unique
+  // removable target variable.
+  const CpModelProto fuzzer_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables {
+      domain: [
+        -4148831703394303963,
+        2147483649,
+        2968198892542177682,
+        2968198892542177682
+      ]
+    }
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 50 ] }
+    constraints {
+      enforcement_literal: [ 3, 0 ]
+      element {
+        index: 1
+        target: 2
+        vars: [ 4, 4, 4, 4, 4, 4 ]
+      }
+    }
+    constraints {
+      reservoir {
+        min_level: -1267215284737095731
+        max_level: 2
+        time_exprs { offset: 1 }
+        active_literals: -1
+        level_changes { vars: 3 coeffs: 1 offset: -876796315928551468 }
+      }
+    }
+    floating_point_objective {
+      vars: [ 2, 1 ]
+      coeffs: [ 0.49723353194748354, 1 ]
+      offset: -0.47945893537471951
+    }
+  )pb");
+
+  const CpSolverResponse fuzzer_response =
+      SolveAndCheck(fuzzer_model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  EXPECT_EQ(fuzzer_response.status(), CpSolverStatus::OPTIMAL);
+
+  CpModelProto model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -1000000000000, 10 ] }
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 50 ] }
+    constraints {
+      enforcement_literal: 0
+      element {
+        index: 1
+        target: 2
+        vars: [ 3, 3, 3, 3, 3, 3 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 3 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    objective {
+      vars: [ 1 ]
+      coeffs: [ -1 ]
+    }
+  )pb");
+
+  const CpSolverResponse unenforced_opt =
+      SolveAndCheck(model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  ASSERT_EQ(unenforced_opt.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(unenforced_opt.solution(0), 0);
+  EXPECT_EQ(unenforced_opt.solution(1), 10);
+
+  *model.mutable_objective() = ParseTextProtoOrDie(R"pb(
+    vars: [ 0, 1 ]
+    coeffs: [ -100, -1 ]
+  )pb");
+  const CpSolverResponse enforced_opt =
+      SolveAndCheck(model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  ASSERT_EQ(enforced_opt.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(enforced_opt.solution(0), 1);
+  EXPECT_EQ(enforced_opt.solution(1), 5);
+  EXPECT_GE(enforced_opt.solution(3), 0);
+  EXPECT_LE(enforced_opt.solution(3), 1);
+  EXPECT_EQ(enforced_opt.solution(2), enforced_opt.solution(3));
+}
+
+TEST(ElementExpandTest, EnforcedVariableElementWithUnusedIndex) {
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ -1000000000000, 10 ] }
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 3, 4 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 4
+      element {
+        index: 0
+        vars: [ 1, 2 ]
+        target: 3
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2, 3, 4 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 0, 6 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4 ]
+      values: [ -5, 1, 3, 0, 0 ]
+    }
+    objective {
+      vars: [ 4 ]
+      coeffs: [ -1 ]
+    }
+  )pb");
+
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(4), 1);
+  EXPECT_EQ(response.solution(0), 0);
+  EXPECT_EQ(response.solution(1), 1);
+  EXPECT_EQ(response.solution(3), 1);
+}
+
+TEST(ElementExpandTest, UnenforcedVariableElementWithUnusedIndex) {
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 1, 5 ] }
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 4, 5 ] }
+    variables { domain: [ 7, 8 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      element {
+        linear_index { vars: 0 coeffs: 1 offset: -2 }
+        linear_target { vars: 4 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4 ]
+      values: [ 3, 1, 5, 7, 5 ]
+    }
+    objective {
+      vars: [ 4 ]
+      coeffs: [ -1 ]
+    }
+  )pb");
+
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(0), 4);
+  EXPECT_EQ(response.solution(3), 8);
+  EXPECT_EQ(response.solution(4), 8);
+
+  CpModelProto shared_index_model = initial_model;
+  shared_index_model.clear_solution_hint();
+  shared_index_model.clear_objective();
+  ConstraintProto* const index_lb = shared_index_model.add_constraints();
+  index_lb->mutable_linear()->add_vars(0);
+  index_lb->mutable_linear()->add_coeffs(1);
+  index_lb->mutable_linear()->add_domain(3);
+  index_lb->mutable_linear()->add_domain(5);
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse enum_response =
+      SolveAndCheck(shared_index_model, "", &found_solutions);
+  EXPECT_EQ(enum_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(found_solutions.size(), 16);
+}
+
+TEST(ElementExpandTest, EnforcedVariableElementWithTargetAsEnforcementLiteral) {
+  const CpModelProto initial_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      enforcement_literal: 0
+      element {
+        index: 1
+        target: 0
+        vars: [ 2, 3 ]
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &found_solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(found_solutions.size(), 24);
+
+  const CpSolverResponse presolve_response =
+      SolveAndCheck(initial_model,
+                    "enumerate_all_solutions:false "
+                    "keep_all_feasible_solutions_in_presolve:false");
+  EXPECT_EQ(presolve_response.status(), CpSolverStatus::OPTIMAL);
 }
 
 TEST(AutomatonExpandTest, NonogramRule) {

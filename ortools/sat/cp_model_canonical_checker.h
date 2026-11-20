@@ -14,16 +14,82 @@
 #ifndef ORTOOLS_SAT_CP_MODEL_CANONICAL_CHECKER_H_
 #define ORTOOLS_SAT_CP_MODEL_CANONICAL_CHECKER_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
+
+// Tag type representing infeasibility (UNSAT). Implicitly converts to the
+// UNSAT state of both `FeasibilityStatus` and `CanonicalizationStatus`.
+class [[nodiscard]] UnsatStatus {
+ public:
+  friend constexpr bool operator==(UnsatStatus, UnsatStatus) = default;
+};
+inline constexpr UnsatStatus kUnsat{};
+
+// TODO(user): Move this somewhere else where it can easily be used
+// throughout the codebase, and use it to replace `bool` return types meaning
+// "unsat".
+class [[nodiscard]] FeasibilityStatus {
+ public:
+  constexpr FeasibilityStatus(UnsatStatus) : is_unsat_(true) {}
+  explicit constexpr FeasibilityStatus(bool might_be_feasible)
+      : is_unsat_(!might_be_feasible) {}
+  constexpr bool unsat() const { return is_unsat_; }
+  constexpr bool unknown() const { return !is_unsat_; }
+  friend constexpr bool operator==(FeasibilityStatus,
+                                   FeasibilityStatus) = default;
+
+ private:
+  bool is_unsat_;
+};
+inline constexpr FeasibilityStatus kUnknown{true};
+
+// Returned by single-constraint presolve helpers that may either detect UNSAT
+// or mutate constraint `c` in place without updating its canonicality or
+// constraint-variable graph:
+// - `kUnsat`: model infeasibility was detected; caller must abort immediately.
+// - `kCanonical`: no infeasibility was detected, and `c` is untouched, cleared,
+//   already canonicalized, or already marked for lazy canonicalization.
+// - `kNeedsCanonicalization`: no infeasibility was detected, and caller must
+//   mark or canonicalize `c`.
+class [[nodiscard]] CanonicalizationStatus {
+ public:
+  constexpr CanonicalizationStatus(UnsatStatus) : state_(State::kUnsat) {}
+  explicit constexpr CanonicalizationStatus(FeasibilityStatus status)
+      : state_(status.unsat() ? State::kUnsat : State::kCanonical) {}
+  explicit constexpr CanonicalizationStatus(bool needs_canonicalization)
+      : state_(needs_canonicalization ? State::kNeedsCanonicalization
+                                      : State::kCanonical) {}
+  constexpr bool unsat() const { return state_ == State::kUnsat; }
+  constexpr bool needs_canonicalization() const {
+    return state_ == State::kNeedsCanonicalization;
+  }
+  explicit constexpr operator FeasibilityStatus() const {
+    DCHECK(!needs_canonicalization());
+    return unsat() ? FeasibilityStatus(kUnsat) : kUnknown;
+  }
+  friend constexpr bool operator==(CanonicalizationStatus,
+                                   CanonicalizationStatus) = default;
+
+ private:
+  enum class State : uint8_t {
+    kUnsat,
+    kCanonical,
+    kNeedsCanonicalization,
+  };
+  State state_;
+};
+inline constexpr CanonicalizationStatus kCanonical{false};
+inline constexpr CanonicalizationStatus kNeedsCanonicalization{true};
 
 // Compares two LinearExpressionProtos lexicographically by (vars, coeffs,
 // offset). Used as the canonical expression sort order in kLinMax, kIntProd,

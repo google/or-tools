@@ -911,7 +911,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
     const int64_t demand_min = MinOfExpression(model, demand);
     const int64_t demand_max = MaxOfExpression(model, demand);
     sum_abs = CapAdd(sum_abs, std::max(CapAbs(demand_min), CapAbs(demand_max)));
-    if (sum_abs == kint64max) {
+    if (sum_abs > kint64max / 2) {
       return "Possible integer overflow in constraint: " +
              ProtobufDebugString(ct);
     }

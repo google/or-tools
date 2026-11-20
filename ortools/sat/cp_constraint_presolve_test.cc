@@ -25,6 +25,7 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/parse_text_proto.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
@@ -52,7 +53,7 @@ CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
-  presolver.PresolveOneConstraint(constraint_index);
+  EXPECT_EQ(presolver.PresolveOneConstraint(constraint_index), kUnknown);
   presolver.RemoveEmptyConstraints();
   for (int i = 0; i < presolved_model.variables_size(); ++i) {
     FillDomainInProto(context.DomainOf(i),
@@ -155,7 +156,7 @@ TEST(PresolveCpModelTest, InferAllDiffsControlsNoOverlapConversion) {
 
   context.InitializeNewDomains();
 
-  presolver.PresolveOneConstraint(3);
+  EXPECT_EQ(presolver.PresolveOneConstraint(3), kUnknown);
   presolver.RemoveEmptyConstraints();
 
   bool has_no_overlap = false;
@@ -848,9 +849,11 @@ TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
     PresolveContext context(&model, &model_proto, &mapping_model);
     CpConstraintPresolver presolver(&context);
     context.InitializeNewDomains();
-    presolver.DetectTwoTermTilting(model_proto.mutable_constraints(0),
-                                   context.BuildMergedLinearConstraintView(
-                                       model_proto.constraints(0).linear()));
+    ASSERT_FALSE(
+        presolver
+            .DetectTwoTermTilting(0, context.BuildMergedLinearConstraintView(
+                                         model_proto.constraints(0).linear()))
+            .unsat());
 
     const auto& new_lin = model_proto.constraints(0).linear();
     const Domain rhs_domain = ReadDomainFromProto(new_lin);
@@ -970,8 +973,8 @@ TEST(PresolveCpModelTest, DetectApproximateGCDWithMultipleDistinctMergedTerms) {
 }
 
 TEST(PresolveCpModelTest, DecoupleOpposingBigMInEquality) {
-  // x + y + 100*b1 - 100*b2 == 1 with x, y, b1, b2 in [0, 1].
-  // Any non-zero value of 100*(b1 - b2) pushes the LHS outside [1, 1], so the
+  // x + y + 101*b1 - 101*b2 == 1 with x, y, b1, b2 in [0, 1].
+  // Any non-zero value of 101*(b1 - b2) pushes the LHS outside [1, 1], so the
   // constraint decouples into b1 - b2 == 0 and x + y == 1.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -981,7 +984,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMInEquality) {
     constraints {
       linear {
         vars: [ 0, 1, 2, 3 ]
-        coeffs: [ 1, 1, 100, -100 ]
+        coeffs: [ 1, 1, 101, -101 ]
         domain: [ 1, 1 ]
       }
     }
@@ -1056,7 +1059,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMInNarrowRange) {
 }
 
 TEST(PresolveCpModelTest, DecoupleOpposingBigMWithNonZeroForcedMultiple) {
-  // x + y + 100*y1 - 100*y2 == 101 with x, y in [0, 1] and y1, y2 in [1, 3].
+  // x + y + 101*y1 - 101*y2 == 102 with x, y in [0, 1] and y1, y2 in [1, 3].
   // Domain propagation tightens y1 to [2, 3] and y2 to [1, 2], and big-M
   // decoupling splits the constraint into y1 - y2 == 1 and x + y == 1.
   const CpModelProto initial_model = ParseTestProto(R"pb(
@@ -1067,8 +1070,8 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMWithNonZeroForcedMultiple) {
     constraints {
       linear {
         vars: [ 0, 1, 2, 3 ]
-        coeffs: [ 1, 1, 100, -100 ]
-        domain: [ 101, 101 ]
+        coeffs: [ 1, 1, 101, -101 ]
+        domain: [ 102, 102 ]
       }
     }
   )pb");
@@ -1199,8 +1202,8 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMDoesNotTriggerAtBoundary) {
 }
 
 TEST(PresolveCpModelTest, DecoupleOpposingBigMStopsOnFirstSplit) {
-  // x + y + 100*b1 - 100*b2 + 200*c1 - 200*c2 == 1 on Booleans: stopping on the
-  // first valid suffix split (big_gcd = 200 > 102) immediately peels off
+  // x + y + 101*b1 - 101*b2 + 202*c1 - 202*c2 == 1 on Booleans: stopping on the
+  // first valid suffix split (big_gcd = 202 > 103) immediately peels off
   // c1 - c2 == 0 rather than mixing tiers into b1 - b2 + 2*c1 - 2*c2 == 0.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -1212,7 +1215,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMStopsOnFirstSplit) {
     constraints {
       linear {
         vars: [ 0, 1, 2, 3, 4, 5 ]
-        coeffs: [ 1, 1, 100, -100, 200, -200 ]
+        coeffs: [ 1, 1, 101, -101, 202, -202 ]
         domain: [ 1, 1 ]
       }
     }
@@ -1235,7 +1238,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMStopsOnFirstSplit) {
     constraints {
       linear {
         vars: [ 0, 1, 2, 3 ]
-        coeffs: [ 1, 1, 100, -100 ]
+        coeffs: [ 1, 1, 101, -101 ]
         domain: [ 1, 1 ]
       }
     }
@@ -1495,7 +1498,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMSkipsNewlyFixedVar) {
     constraints {
       linear {
         vars: [ 0, 1, 2, 3, 4 ]
-        coeffs: [ 1, 1, 1, 100, -100 ]
+        coeffs: [ 1, 1, 1, 101, -101 ]
         domain: [ 6, 6 ]
       }
     }
@@ -1521,7 +1524,7 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMSkipsNewlyFixedVar) {
   PresolveContext context(&model, &presolved, &mapping_model);
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
-  presolver.PresolveOneConstraint(0);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
   presolver.RemoveEmptyConstraints();
 
   ASSERT_EQ(presolved.constraints_size(), 4);
@@ -1682,7 +1685,7 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintDetectsUnsat) {
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
-  presolver.PresolveOneConstraint(0);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
   EXPECT_TRUE(context.ModelIsUnsat());
 }
 
@@ -1782,10 +1785,9 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintRandomEquivalence) {
     PresolveContext context(&model, &presolved_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
     context.InitializeNewDomains();
-    presolver.PresolveOneConstraint(0);
+    const bool is_unsat = presolver.PresolveOneConstraint(0).unsat();
+    EXPECT_EQ(is_unsat, context.ModelIsUnsat());
     presolver.RemoveEmptyConstraints();
-
-    const bool is_unsat = context.ModelIsUnsat();
     if (!is_unsat && presolved_model.constraints_size() == 1 &&
         presolved_model.constraints(0).constraint_case() ==
             ConstraintProto::kLinear &&
@@ -1926,7 +1928,7 @@ TEST(PresolveCpModelTest,
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
-  presolver.PresolveOneConstraint(/*c=*/2);
+  EXPECT_EQ(presolver.PresolveOneConstraint(/*c=*/2), kUnknown);
   presolver.RemoveEmptyConstraints();
 
   bool has_no_overlap = false;
@@ -1991,10 +1993,10 @@ TEST(PresolveCpModelTest,
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
-  presolver.PresolveOneConstraint(0);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
   EXPECT_GT(context.num_presolve_operations, 0);
   const int64_t ops_after_first_pass = context.num_presolve_operations;
-  EXPECT_FALSE(presolver.PresolveOneConstraint(0));
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
   EXPECT_EQ(context.num_presolve_operations, ops_after_first_pass);
   presolver.RemoveEmptyConstraints();
   EXPECT_THAT(presolved_model, EqualsProto(expected_model));
@@ -2379,8 +2381,8 @@ TEST(PresolveCpModelTest,
   context.InitializeNewDomains();
   context.CanonicalizeConstraintsLazily();
 
-  EXPECT_FALSE(presolver.PresolveOneConstraint(0));
-  EXPECT_FALSE(presolver.PresolveOneConstraint(1));
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
   EXPECT_FALSE(context.NeedsCanonicalization());
   context.CanonicalizeConstraintsLazily();
   EXPECT_TRUE(context.ModelProtoIsCanonical());
@@ -2462,7 +2464,7 @@ TEST(PresolveCpModelTest,
   CpConstraintPresolver presolver(&context);
   context.InitializeNewDomains();
 
-  presolver.PresolveOneConstraint(0);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
   EXPECT_TRUE(context.ModelIsUnsat());
 }
 
@@ -2537,7 +2539,7 @@ TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesSimpleSumAndTwoSided) {
     context.InitializeNewDomains();
     context.CanonicalizeConstraintsLazily();
 
-    EXPECT_FALSE(presolver.PresolveOneConstraint(0));
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
     EXPECT_EQ(context.DomainOf(8), Domain(0));
     EXPECT_EQ(context.DomainOf(9), Domain(3, 4));
     EXPECT_THAT(working_model.constraints(0).linear().vars(),
@@ -2546,6 +2548,414 @@ TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesSimpleSumAndTwoSided) {
     context.CanonicalizeConstraintsLazily();
     EXPECT_TRUE(context.ModelProtoIsCanonical());
   }
+}
+
+TEST(PresolveCpModelTest,
+     PresolveOneConstraintDoesNotMarkCanonicalOutputsForRecanonicalization) {
+  CpModelProto working_model = ParseTestProto(R"pb(
+    # 0..2: literals for at_most_one (var 2 is a removable singleton).
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    # 3..5: integer vars for linear equality with removable singleton var 5
+    # (vars 3 and 4 also appear in c3 below so only var 5 is a singleton).
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 10 ] }
+    # 6: removable singleton literal in bool_or (triggers ClearConstraint).
+    variables { domain: [ 0, 1 ] }
+    # c0: at_most_one with singleton var 2 -> removes 2 and canonicalizes in
+    # place without dirtying lazy canonicalization.
+    constraints { at_most_one { literals: [ 0, 1, 2 ] } }
+    # c1: linear inequality 2*v3 + 2*v4 + v5 <= 10? Use equality with coeff 1 on
+    # v3, v4, v5 so PresolveLinearEqualityWithModulo does not fire and only
+    # singleton v5 is eliminated by RemoveSingletonInLinear.
+    constraints {
+      linear {
+        vars: [ 3, 4, 5 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 5, 5 ]
+      }
+    }
+    # c2: bool_or with singleton var 6 -> fixes var 6 to 1 and clears c2.
+    constraints { bool_or { literals: [ 0, 1, 6 ] } }
+    # c3: keeps vars 3 and 4 non-singleton during PresolveOneConstraint(1).
+    constraints {
+      linear {
+        vars: [ 3, 4 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 1, 8 ]
+      }
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.NeedsCanonicalization());
+
+  // PresolveAtMostOne removes singleton var 2 (fixing it, which only touches
+  // c0; var 2 is no longer in c0 after PresolveAtMostOne canonicalizes c0).
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  context.CanonicalizeConstraintsLazily();
+  ASSERT_FALSE(context.NeedsCanonicalization());
+
+  // RemoveSingletonInLinear removes var 5 without fixing any variable, so
+  // NeedsCanonicalization() stays false immediately.
+  EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  // Entry canonicalization: append an unsorted linear constraint, presolve it
+  // directly via PresolveOneConstraint, and check that NeedsCanonicalization()
+  // is false immediately after PresolveOneConstraint.
+  ConstraintProto* c4 = context.AddConstraint();
+  c4->mutable_linear()->add_vars(4);
+  c4->mutable_linear()->add_coeffs(2);
+  c4->mutable_linear()->add_vars(3);
+  c4->mutable_linear()->add_coeffs(2);
+  c4->mutable_linear()->add_vars(0);
+  c4->mutable_linear()->add_coeffs(2);
+  c4->mutable_linear()->add_domain(2);
+  c4->mutable_linear()->add_domain(8);
+  EXPECT_TRUE(context.NeedsCanonicalization());
+  EXPECT_EQ(presolver.PresolveOneConstraint(4), kUnknown);
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  // PresolveLinearOnBooleans converting 3 non-singleton Booleans to kBoolOr
+  // leaves NeedsCanonicalization() false immediately.
+  working_model.add_variables()->mutable_domain()->Add(0);
+  working_model.mutable_variables(7)->mutable_domain()->Add(1);
+  context.InitializeNewDomains();
+  ConstraintProto* c5 = context.AddConstraint();
+  c5->mutable_bool_or()->add_literals(0);
+  c5->mutable_bool_or()->add_literals(1);
+  c5->mutable_bool_or()->add_literals(7);
+  context.CanonicalizeConstraintsLazily();
+  ConstraintProto* c6 = context.AddConstraint();
+  c6->mutable_linear()->add_vars(0);
+  c6->mutable_linear()->add_coeffs(1);
+  c6->mutable_linear()->add_vars(1);
+  c6->mutable_linear()->add_coeffs(1);
+  c6->mutable_linear()->add_vars(7);
+  c6->mutable_linear()->add_coeffs(1);
+  c6->mutable_linear()->add_domain(1);
+  c6->mutable_linear()->add_domain(3);
+  EXPECT_EQ(presolver.PresolveOneConstraint(6), kUnknown);
+  EXPECT_EQ(context.Constraint(6).constraint_case(), ConstraintProto::kBoolOr);
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.ModelProtoIsCanonical());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+
+  // PresolveBoolOr fixes singleton var 6 and clears c2; after flushing var 6's
+  // domain invalidation (which has no remaining constraints), c2 is cleared and
+  // canonical.
+  EXPECT_EQ(presolver.PresolveOneConstraint(2), kUnknown);
+  EXPECT_EQ(context.Constraint(2).constraint_case(),
+            ConstraintProto::CONSTRAINT_NOT_SET);
+  context.CanonicalizeConstraintsLazily();
+  EXPECT_FALSE(context.NeedsCanonicalization());
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+}
+
+TEST(PresolveCpModelTest,
+     PresolveSmallLinearHandlesEncodingInducedAffineRelation) {
+  for (const bool start_at_size_two : {true, false}) {
+    Model model;
+    CpModelProto working_model = ParseTextProtoOrDie(
+        start_at_size_two ? R"pb(
+              variables { domain: [ 0, 1 ] }
+              variables { domain: [ 1, 3 ] }
+              variables { domain: [ 0, 1 ] }
+              # c0: ~v0 => v1 == 1
+              constraints {
+                enforcement_literal: -1
+                linear {
+                  vars: [ 1 ]
+                  coeffs: [ 1 ]
+                  domain: [ 1, 1 ]
+                }
+              }
+              # c1: v0 => v1 + 10 * v2 in [3, 4], rewritten to v0 => v1 == 3 by
+              # PresolveLinear2WithBooleans before PresolveLinearOfSizeOne pairs
+              # it with c0 to register v1 = 2 * v0 + 1.
+              constraints {
+                enforcement_literal: 0
+                linear {
+                  vars: [ 1, 2 ]
+                  coeffs: [ 1, 10 ]
+                  domain: [ 3, 4 ]
+                }
+              }
+            )pb"
+                          : R"pb(
+          variables { domain: [ 0, 1 ] }
+          variables { domain: [ 1, 3 ] }
+          # c0: ~v0 => v1 == 1
+          constraints {
+            enforcement_literal: -1
+            linear {
+              vars: [ 1 ]
+              coeffs: [ 1 ]
+              domain: [ 1, 1 ]
+            }
+          }
+          # c1: already size-1 canonical v0 => v1 == 3 on entry; registers
+          # v1 = 2 * v0 + 1 inside PresolveLinearOfSizeOne.
+          constraints {
+            enforcement_literal: 0
+            linear {
+              vars: [ 1 ]
+              coeffs: [ 1 ]
+              domain: [ 3, 3 ]
+            }
+          }
+        )pb");
+    CpModelProto mapping_model;
+
+    PresolveContext context(&model, &working_model, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    context.CanonicalizeConstraintsLazily();
+
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+    EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
+    EXPECT_TRUE(context.ConstraintIsCanonical(1));
+    context.CanonicalizeConstraintsLazily();
+    EXPECT_FALSE(context.NeedsCanonicalization());
+    EXPECT_TRUE(context.ModelProtoIsCanonical());
+    EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+  }
+}
+
+TEST(PresolveCpModelTest, PresolveDiophantineInfeasibleAbortsLinearPipeline) {
+  // 9 * (x0 + x1) + 11 * (x2 + x3) == 19 has no integer solution in [0, 3]^4
+  // (non-negative combinations of 9 and 11 are 0, 9, 11, 18, 20, 22, >= 27),
+  // even though activity bounds [0, 120] contain 19.
+  {
+    CpModelProto working_model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      constraints {
+        linear {
+          vars: [ 0, 1, 2, 3 ]
+          coeffs: [ 9, 9, 11, 11 ]
+          domain: [ 19, 19 ]
+        }
+      }
+      constraints {
+        linear {
+          vars: [ 0, 1, 2, 3 ]
+          coeffs: [ 1, 1, 1, 1 ]
+          domain: [ 0, 10 ]
+        }
+      }
+    )pb");
+    CpModelProto mapping_model;
+    Model model;
+    PresolveContext context(&model, &working_model, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    context.CanonicalizeConstraintsLazily();
+
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
+    EXPECT_TRUE(context.ModelIsUnsat());
+    EXPECT_FALSE(context.NeedsCanonicalization());
+  }
+
+  // Enforced case: c0 is rewritten to bool_and (b0 => ~b1) and marked for lazy
+  // canonicalization without falling through into the kLinear view pipeline.
+  {
+    CpModelProto working_model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 3 ] }
+      variables { domain: [ 0, 1 ] }
+      variables { domain: [ 0, 1 ] }
+      constraints {
+        enforcement_literal: [ 4, 5 ]
+        linear {
+          vars: [ 0, 1, 2, 3 ]
+          coeffs: [ 9, 9, 11, 11 ]
+          domain: [ 19, 19 ]
+        }
+      }
+      constraints {
+        linear {
+          vars: [ 0, 1, 2, 3 ]
+          coeffs: [ 1, 1, 1, 1 ]
+          domain: [ 0, 10 ]
+        }
+      }
+      constraints {
+        linear {
+          vars: [ 4, 5 ]
+          coeffs: [ 1, 2 ]
+          domain: [ 0, 2 ]
+        }
+      }
+    )pb");
+    CpModelProto mapping_model;
+    Model model;
+    PresolveContext context(&model, &working_model, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    context.CanonicalizeConstraintsLazily();
+
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+    EXPECT_FALSE(context.ModelIsUnsat());
+    EXPECT_EQ(working_model.constraints(0).constraint_case(),
+              ConstraintProto::kBoolAnd);
+    EXPECT_TRUE(context.NeedsCanonicalization());
+    context.CanonicalizeConstraintsLazily();
+    EXPECT_TRUE(context.ModelProtoIsCanonical());
+    EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+  }
+}
+
+TEST(PresolveCpModelTest, PresolveStatusTypesContract) {
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 17, 40 ]
+        domain: [ 0, 100 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 2 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 0, 3 ]
+      }
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+
+  // CanonicalizationStatus: tilting rewrites c0 in place without
+  // canonicalizing.
+  EXPECT_EQ(presolver.DetectTwoTermTilting(
+                0, context.BuildMergedLinearConstraintView(
+                       working_model.constraints(0).linear())),
+            kNeedsCanonicalization);
+  EXPECT_EQ(presolver.DetectTwoTermTilting(
+                0, context.BuildMergedLinearConstraintView(
+                       working_model.constraints(0).linear())),
+            kCanonical);
+
+  // ModificationStatus: duplicate terms in LinearExpressionProto are merged.
+  ConstraintProto empty_ct;
+  LinearExpressionProto expr = ParseTestProto(R"pb(
+    vars: [ 0, 0 ]
+    coeffs: [ 2, 3 ]
+  )pb");
+  EXPECT_EQ(presolver.CanonicalizeLinearExpression(empty_ct, &expr), kModified);
+  EXPECT_EQ(presolver.CanonicalizeLinearExpression(empty_ct, &expr),
+            kUnchanged);
+
+  // FeasibilityStatus: singly-enforced infeasible temp_ct fixes its
+  // enforcement literal to false without proving UNSAT; marking an enforced
+  // model constraint false stays feasible; marking an unenforced constraint
+  // false proves UNSAT.
+  ConstraintProto infeasible_enforced_temp = ParseTestProto(R"pb(
+    enforcement_literal: [ 3 ]
+    linear {
+      vars: [ 0 ]
+      coeffs: [ 1 ]
+      domain: [ 10, 20 ]
+    }
+  )pb");
+  EXPECT_EQ(presolver.PropagateDomainsInLinear(&infeasible_enforced_temp),
+            kUnknown);
+  EXPECT_TRUE(context.LiteralIsFalse(3));
+  EXPECT_FALSE(context.ModelIsUnsat());
+
+  const CanonicalizationStatus marked_false =
+      presolver.MarkConstraintAsFalse(1, "test enforced false");
+  EXPECT_EQ(marked_false, kCanonical);
+  EXPECT_EQ(FeasibilityStatus(marked_false), kUnknown);
+  EXPECT_TRUE(context.ModelStatus().unknown());
+  EXPECT_EQ(context.ModelStatus(), kUnknown);
+
+  // ClearedConstraintStatus can be ignored as a statement or converted to
+  // kCanonical / kUnknown.
+  const CanonicalizationStatus cleared_canon = context.ClearConstraint(1);
+  EXPECT_EQ(cleared_canon, kCanonical);
+  const FeasibilityStatus cleared_feas = context.ClearConstraint(1);
+  EXPECT_EQ(cleared_feas, kUnknown);
+  context.ClearConstraint(1);
+
+  EXPECT_EQ(presolver.MarkConstraintAsFalse(0, "test unenforced false"),
+            kUnsat);
+  EXPECT_EQ(context.ModelStatus(), kUnsat);
+
+  // 3rd state of CanonicalizationStatus: kUnsat is distinct from kCanonical
+  // and kNeedsCanonicalization.
+  const CanonicalizationStatus unsat_canon = presolver.DetectTwoTermTilting(
+      0, context.BuildMergedLinearConstraintView(
+             working_model.constraints(0).linear()));
+  EXPECT_EQ(unsat_canon, kUnsat);
+  EXPECT_EQ(FeasibilityStatus(unsat_canon), kUnsat);
+  EXPECT_TRUE(unsat_canon.unsat());
+  EXPECT_FALSE(unsat_canon.needs_canonicalization());
+  EXPECT_NE(unsat_canon, kCanonical);
+  EXPECT_NE(unsat_canon, kNeedsCanonicalization);
+}
+
+TEST(PresolveCpModelTest,
+     PresolveLinearEqualityWithModuloCanonicalizesAfterOddBooleans) {
+  // x0 + x1 + 4*x2 + 6*x3 == 20 with Booleans x0, x1 and integers x2, x3.
+  // PresolveLinearEqualityWithModulo links x0 == x1 and must immediately
+  // recanonicalize the constraint (merging x0 + x1 into 2*x0 and dividing by
+  // GCD 2 to x0 + 2*x2 + 3*x3 == 10) so no non-representative variable remains
+  // for subsequent rules in PresolveOneConstraint.
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 4, 6 ]
+        domain: [ 20, 20 ]
+      }
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+  context.InitializeNewDomains();
+  context.CanonicalizeConstraintsLazily();
+
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_TRUE(context.ConstraintIsCanonical(0));
+  EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
+  EXPECT_EQ(context.GetAffineRelation(1), AffineRelation::Relation(0, 1, 0));
+  EXPECT_THAT(working_model.constraints(0).linear(), EqualsProto(R"pb(
+                vars: [ 0, 2, 3 ]
+                coeffs: [ 1, 2, 3 ]
+                domain: [ 10, 10 ]
+              )pb"));
 }
 }  // namespace
 }  // namespace sat

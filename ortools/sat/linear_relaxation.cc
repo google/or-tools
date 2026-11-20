@@ -1708,8 +1708,11 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
     LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
     lc.AddLinearExpression(negated_target);
     lc.AddLinearExpression(expr);
-    AppendLinearConstraintRelaxation(ct.enforcement_literal(), lc.Build(),
-                                     model, relaxation, activity_helper);
+    LinearConstraint built_ct;
+    if (!lc.BuildIntoConstraintAndCheckOverflow(&built_ct)) continue;
+    AppendLinearConstraintRelaxation(ct.enforcement_literal(),
+                                     std::move(built_ct), model, relaxation,
+                                     activity_helper);
   }
 }
 
@@ -1893,8 +1896,14 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
                                       Model* model,
                                       LinearRelaxation* relaxation,
                                       ActivityBoundHelper* activity_helper) {
+  for (int i = 0; i < linear_constraint.num_terms; ++i) {
+    if (AtMinOrMaxInt64I(linear_constraint.coeffs[i])) return;
+  }
   if (enforcement.empty()) {
-    relaxation->linear_constraints.push_back(std::move(linear_constraint));
+    if (!PossibleOverflow(*model->GetOrCreate<IntegerTrail>(),
+                          linear_constraint)) {
+      relaxation->linear_constraints.push_back(std::move(linear_constraint));
+    }
     return;
   }
 
@@ -1979,8 +1988,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         }
 
         // Add the tighter constraint.
-        LinearConstraint built_ct = lc.Build();
-        if (!PossibleOverflow(*integer_trail, built_ct)) {
+        LinearConstraint built_ct;
+        if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+            !PossibleOverflow(*integer_trail, built_ct)) {
           ub_done = true;
           ++relaxation->counters.num_tighter_multi_enforced_linear1;
           relaxation->linear_constraints.push_back(std::move(built_ct));
@@ -2009,8 +2019,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         }
 
         // Add the tighter constraint.
-        LinearConstraint built_ct = lc.Build();
-        if (!PossibleOverflow(*integer_trail, built_ct)) {
+        LinearConstraint built_ct;
+        if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+            !PossibleOverflow(*integer_trail, built_ct)) {
           lb_done = true;
           ++relaxation->counters.num_tighter_multi_enforced_linear1;
           relaxation->linear_constraints.push_back(std::move(built_ct));
@@ -2063,8 +2074,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     for (int i = 0; i < linear_constraint.num_terms; i++) {
       lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
-    LinearConstraint built_ct = lc.Build();
-    if (!PossibleOverflow(*integer_trail, built_ct)) {
+    LinearConstraint built_ct;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+        !PossibleOverflow(*integer_trail, built_ct)) {
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
@@ -2081,8 +2093,9 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     for (int i = 0; i < linear_constraint.num_terms; i++) {
       lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
-    LinearConstraint built_ct = lc.Build();
-    if (!PossibleOverflow(*integer_trail, built_ct)) {
+    LinearConstraint built_ct;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_ct) &&
+        !PossibleOverflow(*integer_trail, built_ct)) {
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }

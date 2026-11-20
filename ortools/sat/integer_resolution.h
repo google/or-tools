@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -207,10 +208,12 @@ class IntegerConflictResolution {
     IntegerVariable var = kNoIntegerVariable;
     IntegerValue coeff = 0;
 
-    // The slack of the reason, and by how much the propagated bound is higher
-    // than the one that we need to explain.
+    // The slack of the reason, by how much the propagated bound is higher than
+    // the one that we need to explain, and the slack increase from this term if
+    // its variable is already settled above its required bound.
     IntegerValue slack = 0;
     IntegerValue bound_diff = 0;
+    absl::int128 settled_increase = 0;
   };
   std::vector<PropagatedTerm> tmp_propagated_terms_;
 

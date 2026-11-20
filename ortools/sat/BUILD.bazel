@@ -604,6 +604,7 @@ or_cc_library(
     srcs = ["presolve_encoding.cc"],
     hdrs = ["presolve_encoding.h"],
     deps = [
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":integer_base",
@@ -1361,6 +1362,7 @@ or_cc_test(
         ":cp_model_checker",
         ":cp_model_solver",
         ":cp_model_test_utils",
+        ":cp_model_utils",
         ":lp_utils",
         ":model",
         ":mp_model_wrapper",
@@ -1372,6 +1374,7 @@ or_cc_test(
         "//ortools/base/macros:os_support",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:logging",
+        "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
@@ -1676,6 +1679,7 @@ or_cc_library(
         ":2d_rectangle_presolve",
         ":circuit",
         ":clause",
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_mapping",
@@ -1728,6 +1732,7 @@ or_cc_test(
     srcs = ["cp_constraint_presolve_test.cc"],
     deps = [
         ":cp_constraint_presolve",
+        ":cp_model_canonical_checker",
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":model",
@@ -1910,6 +1915,7 @@ or_cc_library(
     hdrs = ["cp_model_expand.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_checker",
         ":cp_model_table",
         ":cp_model_utils",
         ":presolve_context",
@@ -1919,6 +1925,7 @@ or_cc_library(
         "//ortools/base:types",
         "//ortools/port:proto_utils",
         "//ortools/util:logging",
+        "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:btree",
@@ -2657,6 +2664,24 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "integer_resolution_test",
+    size = "small",
+    srcs = ["integer_resolution_test.cc"],
+    deps = [
+        ":integer",
+        ":integer_base",
+        ":integer_resolution",
+        ":linear_propagation",
+        ":model",
+        ":sat_literal",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        ":sat_trail",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 or_cc_library(
     name = "integer_search",
     srcs = ["integer_search.cc"],
@@ -3013,9 +3038,7 @@ or_cc_test(
     deps = [
         ":integer",
         ":integer_base",
-        ":integer_resolution",
         ":integer_search",
-        ":linear_propagation",
         ":model",
         ":sat_assignment",
         ":sat_literal",
@@ -4081,14 +4104,13 @@ or_cc_library(
         "//visibility:public",
     ],
     deps = [
+        ":cp_model_cc_proto",
         ":cp_model_checker",
         ":lp_utils",
         ":mp_model_wrapper",
         ":sat_parameters_cc_proto",
         ":util",
-        "//ortools/base:accurate_sum",
         "//ortools/base:types",
-        "//ortools/graph:connected_components",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:sparse",
@@ -4114,7 +4136,6 @@ or_cc_test(
         ":tum",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
-        "//ortools/base:parse_text_proto",
         "//ortools/base:types",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",

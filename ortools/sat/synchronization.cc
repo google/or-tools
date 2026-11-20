@@ -804,6 +804,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
     response->clear_objective_value();
     response->clear_best_objective_bound();
     response->clear_inner_objective_lower_bound();
+    response->clear_inner_objective_value();
     return;
   }
 
@@ -815,6 +816,8 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
   } else {
     response->set_objective_value(
         ScaleObjectiveValue(obj, best_solution_objective_value_));
+    response->set_inner_objective_value(
+        PostsolveInnerObjectiveValue(obj, best_solution_objective_value_));
   }
 
   // Update the best bound in the response.

@@ -423,6 +423,7 @@ TEST(SharedResponseManagerTest, UnknownResponseMinimization) {
   EXPECT_EQ(result.objective_value(), 7);
   EXPECT_EQ(result.best_objective_bound(), -4);
   EXPECT_EQ(result.inner_objective_lower_bound(), -4);
+  EXPECT_EQ(result.inner_objective_value(), 0);
   EXPECT_EQ(result.status(), UNKNOWN);
 }
 
@@ -448,6 +449,7 @@ TEST(SharedResponseManagerTest, UnknownResponseMaximization) {
   EXPECT_EQ(result.objective_value(), -28);
   EXPECT_EQ(result.best_objective_bound(), 16);
   EXPECT_EQ(result.inner_objective_lower_bound(), -4);
+  EXPECT_EQ(result.inner_objective_value(), 0);
   EXPECT_EQ(result.status(), UNKNOWN);
 }
 
@@ -585,7 +587,8 @@ TEST(SharedResponseManagerTest, Solution) {
       solution: [ 1, 2, 1 ]
       objective_value: 12
       best_objective_bound: 2
-      inner_objective_lower_bound: 2)pb");
+      inner_objective_lower_bound: 2
+      inner_objective_value: 12)pb");
     EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
     EXPECT_FALSE(shared_response->ProblemIsSolved());
   }
@@ -599,9 +602,55 @@ TEST(SharedResponseManagerTest, Solution) {
       solution: [ 1, 2, 1 ]
       objective_value: 12
       best_objective_bound: 12
-      inner_objective_lower_bound: 12)pb");
+      inner_objective_lower_bound: 12
+      inner_objective_value: 12)pb");
     EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
     EXPECT_TRUE(shared_response->ProblemIsSolved());
+  }
+}
+
+TEST(SharedResponseManagerTest, SolutionWithPresolvedObjectiveScaling) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    objective: {
+      vars: [ 0, 1 ]
+      coeffs: [ 1, 2 ]
+      offset: 7.0
+      scaling_factor: 2.0
+      integer_before_offset: 3
+      integer_scaling_factor: 2
+      integer_after_offset: 1
+    })pb");
+
+  Model model;
+  auto* shared_response = model.GetOrCreate<SharedResponseManager>();
+  shared_response->InitializeObjective(model_proto);
+  shared_response->UpdateInnerObjectiveBounds("", IntegerValue(2),
+                                              IntegerValue(20));
+  shared_response->NewSolution({1, 2}, "test");
+
+  {
+    const CpSolverResponse response = ParseTestProto(R"pb(
+      status: FEASIBLE
+      solution_info: "test"
+      solution: [ 1, 2 ]
+      objective_value: 24
+      best_objective_bound: 18
+      inner_objective_lower_bound: 11
+      inner_objective_value: 17)pb");
+    EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
+  }
+
+  shared_response->NotifyThatImprovingProblemIsInfeasible("");
+  {
+    const CpSolverResponse response = ParseTestProto(R"pb(
+      status: OPTIMAL
+      solution_info: "test"
+      solution: [ 1, 2 ]
+      objective_value: 24
+      best_objective_bound: 24
+      inner_objective_lower_bound: 17
+      inner_objective_value: 17)pb");
+    EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
   }
 }
 
@@ -676,7 +725,8 @@ TEST(SharedResponseManagerTest, OptimalReachedBecauseOfBounds) {
     solution: [ 1, 2, 1 ]
     objective_value: 12
     best_objective_bound: 12
-    inner_objective_lower_bound: 12)pb");
+    inner_objective_lower_bound: 12
+    inner_objective_value: 12)pb");
   EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
   EXPECT_TRUE(shared_response->ProblemIsSolved());
 }
@@ -731,7 +781,8 @@ TEST(SharedResponseManagerTest, ProblemCanBeClosedWithJustBoundUpdates2) {
     solution: [ 1, 2, 1 ]
     objective_value: 12
     best_objective_bound: 12,
-    inner_objective_lower_bound: 12)pb");
+    inner_objective_lower_bound: 12
+    inner_objective_value: 12)pb");
   EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
   EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
   EXPECT_TRUE(shared_response->ProblemIsSolved());
@@ -788,7 +839,8 @@ TEST(SharedResponseManagerDeathTest, OptimalCannotBeImproved) {
       solution: [ 1, 2, 1 ]
       objective_value: 12
       best_objective_bound: 12
-      inner_objective_lower_bound: 12)pb");
+      inner_objective_lower_bound: 12
+      inner_objective_value: 12)pb");
     EXPECT_THAT(shared_response->GetResponse(), EqualsProto(response));
   }
 
@@ -840,9 +892,11 @@ TEST(SharedResponseManagerTest, Callback) {
   shared_response->InitializeObjective(model_proto);
 
   int num_solutions = 0;
+  std::vector<int64_t> callback_inner_objectives;
   const int callback_id = shared_response->AddSolutionCallback(
-      [&num_solutions](const CpSolverResponse& /*response*/) {
+      [&](const CpSolverResponse& response) {
         ++num_solutions;
+        callback_inner_objectives.push_back(response.inner_objective_value());
       });
 
   {
@@ -885,6 +939,8 @@ TEST(SharedResponseManagerTest, Callback) {
     shared_response->NewSolution(solution.solution(), solution.solution_info());
     EXPECT_EQ(num_solutions, 2);
   }
+  EXPECT_THAT(callback_inner_objectives, ElementsAre(9, 7));
+  EXPECT_EQ(shared_response->GetResponse().inner_objective_value(), 3);
 }
 
 TEST(SharedClausesManagerTest, GetRepresentatives) {

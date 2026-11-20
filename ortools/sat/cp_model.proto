@@ -733,7 +733,7 @@ message CpSolverSolution {
 
 // The response returned by a solver trying to solve a CpModelProto.
 //
-// Next id: 32
+// Next id: 33
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -778,7 +778,10 @@ message CpSolverResponse {
   // Warning: For an optimization problem, these will correspond to valid bounds
   // for the problem of finding an improving solution to the best one found so
   // far. It might be better to solve a feasibility version if one just wants to
-  // explore the feasible region.
+  // explore the feasible region. When a CpSolverResponse is returned (whether
+  // final or by callback), it is guaranteed that if there is a solution that
+  // has a strictly better inner objective value than inner_objective_value,
+  // then there is one in the feasible region defined by the tightened domains.
   repeated IntegerVariableProto tightened_variables = 21;
 
   // A subset of the model "assumptions" field. This will only be filled if the
@@ -813,9 +816,14 @@ message CpSolverResponse {
   // bound on the expression in the returned integer_objective or on the integer
   // expression of the original objective if the problem already has an integer
   // objective.
-  //
   // TODO(user): This should be renamed integer_objective_lower_bound.
   int64 inner_objective_lower_bound = 29;
+
+  // The objective value of the returned solution in the integer domain. This is
+  // either the value of the expression in the returned integer_objective or of
+  // the integer expression of the original objective if the problem already has
+  // an integer objective. Only filled in if there is a solution.
+  int64 inner_objective_value = 32;
 
   // Some statistics about the solve.
   //

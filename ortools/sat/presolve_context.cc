@@ -783,11 +783,11 @@ bool PresolveContext::ConstraintIsInactive(int index) const {
   return false;
 }
 
-bool PresolveContext::MarkConstraintAsFalse(ConstraintProto* ct,
-                                            std::string_view reason) {
+FeasibilityStatus PresolveContext::MarkConstraintAsFalse(
+    ConstraintProto* ct, std::string_view reason) {
   DCHECK(!reason.empty());
   if (!HasEnforcementLiteral(*ct)) {
-    return NotifyThatModelIsUnsat(reason);
+    return NotifyUnsat(reason);
   }
   // Change the constraint to a bool_or.
   ct->mutable_bool_or()->clear_literals();
@@ -797,28 +797,7 @@ bool PresolveContext::MarkConstraintAsFalse(ConstraintProto* ct,
   ct->clear_enforcement_literal();
   UpdateRuleStats(reason);
   CanonicalizeConstraint(ct);
-  return !is_unsat_;
-}
-
-bool PresolveContext::MarkConstraintAsEquivalentToLinear(
-    ConstraintProto* ct, const LinearExpressionProto& expr,
-    const Domain& domain, std::string_view reason) {
-  DCHECK(!reason.empty());
-  if (!HasEnforcementLiteral(*ct)) {
-    const bool ret = IntersectDomainWith(expr, domain);
-    ct->Clear();
-    return ret;
-  }
-  const Domain intersection = DomainSuperSetOf(expr).IntersectionWith(domain);
-  if (intersection.IsEmpty()) {
-    return MarkConstraintAsFalse(ct, reason);
-  }
-  const LinearExpressionProto expr_copy = expr;
-  ct->mutable_linear()->Clear();  // This clears the other one_of possibilities.
-  FillDomainInProto(intersection, ct->mutable_linear());
-  AddLinearExpressionToLinearConstraint(expr_copy, 1, ct->mutable_linear());
-  UpdateRuleStats(reason);
-  return true;
+  return ModelStatus();
 }
 
 bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
@@ -3679,7 +3658,7 @@ void PresolveContext::ConstraintCanonicalizer::RemoveConstraint() {
 
 void PresolveContext::ConstraintCanonicalizer::MarkConstraintAsFalse(
     absl::string_view reason) {
-  if (!context_->MarkConstraintAsFalse(ct_, reason)) return;
+  if (context_->MarkConstraintAsFalse(ct_, reason).unsat()) return;
   changed_ = true;
 }
 
@@ -3908,7 +3887,7 @@ bool PresolveContext::CanonicalizeConstraint(int c,
     canonicalization_.constraints_to_canonicalize.Resize(c + 1);
     for (int i = old_size; i < c; ++i) {
       if (!ConstraintIsEmpty(i)) {
-        canonicalization_.constraints_to_canonicalize.Set(i);
+        canonicalization_.MarkDirty(i);
       }
       if (Constraint(i).constraint_case() == ConstraintProto::kRoutes &&
           !Constraint(i).routes().dimensions().empty()) {
@@ -3919,6 +3898,8 @@ bool PresolveContext::CanonicalizeConstraint(int c,
         !Constraint(c).routes().dimensions().empty()) {
       canonicalization_.routes_with_dimensions.push_back(c);
     }
+  } else {
+    canonicalization_.ClearDirty(c);
   }
   if (changed || force_variable_usage_update) {
     graph_.MarkForLazyUpdate(c);
@@ -3931,9 +3912,7 @@ bool PresolveContext::NeedsCanonicalization() const {
   if (is_unsat_) return false;
   return canonicalization_.constraints_to_canonicalize.size() <
              NumConstraints() ||
-         !canonicalization_.constraints_to_canonicalize
-              .PositionsSetAtLeastOnce()
-              .empty() ||
+         canonicalization_.num_dirty_constraints > 0 ||
          !vars_invalidating_canonicality_.PositionsSetAtLeastOnce().empty();
 }
 
@@ -3947,7 +3926,7 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
       canonicalization_.constraints_to_canonicalize.Resize(num_constraints);
       for (int c = old_size; c < num_constraints; ++c) {
         if (!ConstraintIsEmpty(c)) {
-          canonicalization_.constraints_to_canonicalize.Set(c);
+          canonicalization_.MarkDirty(c);
         }
         if (Constraint(c).constraint_case() == ConstraintProto::kRoutes &&
             !Constraint(c).routes().dimensions().empty()) {
@@ -3963,7 +3942,7 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
            vars_invalidating_canonicality_.PositionsSetAtLeastOnce()) {
         for (const int c : VarToConstraints(v)) {
           if (c >= 0 && c < num_constraints) {
-            canonicalization_.constraints_to_canonicalize.Set(c);
+            canonicalization_.MarkDirty(c);
           }
         }
       }
@@ -3974,7 +3953,7 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
               Constraint(c).constraint_case() == ConstraintProto::kRoutes &&
               !Constraint(c).routes().dimensions().empty()) {
             canonicalization_.routes_with_dimensions[write++] = c;
-            canonicalization_.constraints_to_canonicalize.Set(c);
+            canonicalization_.MarkDirty(c);
           }
         }
         canonicalization_.routes_with_dimensions.resize(write);
@@ -3983,13 +3962,17 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
     }
 
     // 3. Collect and sort dirty constraint indices for deterministic execution.
-    canonicalization_.tmp_dirty_constraints.assign(
-        canonicalization_.constraints_to_canonicalize.PositionsSetAtLeastOnce()
-            .begin(),
-        canonicalization_.constraints_to_canonicalize.PositionsSetAtLeastOnce()
-            .end());
+    canonicalization_.tmp_dirty_constraints.clear();
+    for (const int c : canonicalization_.constraints_to_canonicalize
+                           .PositionsSetAtLeastOnce()) {
+      if (canonicalization_.constraints_to_canonicalize[c]) {
+        canonicalization_.constraints_to_canonicalize.Clear(c);
+        canonicalization_.tmp_dirty_constraints.push_back(c);
+      }
+    }
+    canonicalization_.constraints_to_canonicalize.NotifyAllClear();
+    canonicalization_.num_dirty_constraints = 0;
     absl::c_sort(canonicalization_.tmp_dirty_constraints);
-    canonicalization_.constraints_to_canonicalize.ResetAllToFalse();
 
     // 4. Arena-safe detach -> canonicalize -> reattach.
     for (const int c : canonicalization_.tmp_dirty_constraints) {

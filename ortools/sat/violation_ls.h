@@ -391,7 +391,8 @@ class SharedLsStates {
 class ViolationLsSolver : public SubSolver {
  public:
   // TODO(user): Use an options struct for the constructor.
-  ViolationLsSolver(absl::string_view name, bool fj_enabled, bool vls_enabled,
+  ViolationLsSolver(absl::string_view name, bool find_first_solution,
+                    bool improve_solutions,
                     const CpModelProto& input_model_proto, SatParameters params,
                     std::shared_ptr<SharedLsStates> ls_states,
                     ModelSharedTimeLimit* shared_time_limit,
@@ -402,8 +403,8 @@ class ViolationLsSolver : public SubSolver {
                     SharedStatTables* stat_tables,
                     std::function<bool(int)> active_constraints = nullptr)
       : SubSolver(name, SubSolver::INCOMPLETE),
-        fj_enabled_(fj_enabled),
-        vls_enabled_(vls_enabled),
+        find_first_solution_(find_first_solution),
+        improve_solutions_(improve_solutions),
         input_model_proto_(input_model_proto),
         dense_model_(name, input_model_proto, shared_bounds, shared_clauses,
                      std::move(active_constraints)),
@@ -419,13 +420,12 @@ class ViolationLsSolver : public SubSolver {
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~ViolationLsSolver() override;
 
-  // No synchronization needed for TaskIsAvailable().
-  void Synchronize() final {}
+  void Synchronize() final;
 
   // Shall we delete this subsolver?
   bool IsDone() final {
     if (!model_is_supported_.load()) return true;
-    return !vls_enabled_ &&
+    return !improve_solutions_ &&
            shared_response_->first_solution_solvers_should_stop()->load();
   }
 
@@ -434,14 +434,18 @@ class ViolationLsSolver : public SubSolver {
     if (task_generated_.load()) return false;
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
-    return shared_response_->HasFeasibleSolution() ? vls_enabled_ : fj_enabled_;
+    return shared_response_->HasFeasibleSolution() ? improve_solutions_
+                                                   : find_first_solution_;
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) final;
 
  private:
+  friend class ViolationLsSolverTestPeer;
+
   void ImportState();
-  void ReleaseState();
+  void FinishTask();
+  bool ShouldImportNewSolution();
   bool ShouldStop();
 
   // Return false if we could not initialize the evaluator in the time limit.
@@ -517,8 +521,8 @@ class ViolationLsSolver : public SubSolver {
            dtime_.GetElapsedDeterministicTime();
   }
 
-  const bool fj_enabled_;
-  const bool vls_enabled_;
+  const bool find_first_solution_;
+  const bool improve_solutions_;
   const CpModelProto& input_model_proto_;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
@@ -567,6 +571,7 @@ class ViolationLsSolver : public SubSolver {
   std::vector<double> for_weight_update_;
 
   // The current state we work on, based on the `dense_model_` variables.
+  // In interleaved search it stays reserved until the next Synchronize().
   LsState* state_ = nullptr;
 
   // A list of `dense_model_` variables that might be relevant to check for

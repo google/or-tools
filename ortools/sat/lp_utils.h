@@ -46,7 +46,7 @@ namespace sat {
 // into disjoint residual continuous components and process them one by one. The
 // wrapper is never modified during that phase: instead, each wrapper variable x
 // is mapped to a CP-SAT variable x' with
-//   x = x' / scaling + shift
+//   x = (x' + shift) / scaling
 // and this struct holds the current state of x'. Constraints and objective are
 // transformed on the fly when they are converted.
 struct MipVariableState {
@@ -55,7 +55,7 @@ struct MipVariableState {
   double ub = std::numeric_limits<double>::infinity();
   bool is_integer = false;
 
-  // See the formula above. The shift is expressed in the wrapper space.
+  // See the formula above. The shift is expressed in the scaled space.
   double scaling = 1.0;
   double shift = 0.0;
 
@@ -75,6 +75,7 @@ inline void ScaleVariableState(double scaling, MipVariableState* state) {
                                        : state->lb * scaling;
   state->ub = std::isfinite(state->ub) ? ProdBounds(state->ub, scaling).second
                                        : state->ub * scaling;
+  if (state->shift != 0.0) state->shift *= scaling;
   state->scaling *= scaling;
 }
 
@@ -225,14 +226,29 @@ inline void ComputeScalingErrors(const BoundedLinearExpression& expr,
       max_relative_coeff_error, max_scaled_sum_error);
 }
 
-// Prescribed scaling of a constraint of a residual component that was made
-// integral by MarkComponentTotallyUnimodularAsInteger(). The component matrix
-// is TUM (`modular_factor = 1`) or 2-modular (`modular_factor = 2`), and with
-// `scaling_factor` the scaled constraint has +/-1 coefficients on the component
-// variables and multiples of `modular_factor` on the external ones.
-struct ModularConstraintScaling {
+// A constraint that was already scaled to integer coefficients and bounds,
+// see ConstraintScaler::AddAlreadyScaledConstraint().
+struct ScaledLinearConstraint {
+  // The terms with a non-zero coefficient, and the CP-SAT domain
+  // `[var_lbs[i], var_ubs[i]]` of each variable.
+  std::vector<int> vars;
+  std::vector<int64_t> coeffs;
+  std::vector<int64_t> var_lbs;
+  std::vector<int64_t> var_ubs;
+
+  // The constraint is `lb <= sum_i coeffs[i] * vars[i] <= ub`, where a missing
+  // side is left to its default value. It is infeasible if `lb > ub`.
+  int64_t lb = std::numeric_limits<int64_t>::min();
+  int64_t ub = std::numeric_limits<int64_t>::max();
+
+  // The factor by which the original constraint was scaled and the resulting
+  // errors, for the statistics of the ConstraintScaler.
   double scaling_factor = 0.0;
-  int64_t modular_factor = 0;
+  double relative_coeff_error = 0.0;
+  double absolute_rhs_error = 0.0;
+  double discretization_error = 0.0;
+  double rounding_error = 0.0;
+  double unrounding_error = 0.0;
 };
 
 // Helper to scale linear constraints with floating point coefficients to
@@ -250,11 +266,9 @@ struct ConstraintScaler {
   // "scaling_target". We usually scale with a power of two scaling factor or
   // a rational scaling factor if we detect a good one via FindRationalFactor().
   //
-  // If `modular` is given, we use its scaling factor instead and round the
-  // scaled constraint bounds to multiples of its `modular_factor` (outward if
-  // `use_proper_relaxation` is true) so that the LP extreme points of the
-  // component stay integral. The caller must make sure that the scaled
-  // constraint cannot overflow.
+  // If the coefficients are not exact, `coeffs_lb` and `coeffs_ub` can give
+  // bounds on each of them, which are then taken into account in the error
+  // bounds. By default, these are `coeffs`.
   //
   // Returns an error if the given constraint contained huge coefficients or
   // infinity. Note that we do not consider it an error if the wanted precision
@@ -264,8 +278,8 @@ struct ConstraintScaler {
       absl::Span<const int> vars, absl::Span<const double> coeffs,
       double ct_lower_bound, double ct_upper_bound, absl::string_view name,
       absl::Span<const IntegerVariableProto* const> var_domains,
-      ConstraintProto* constraint,
-      std::optional<ModularConstraintScaling> modular = std::nullopt);
+      ConstraintProto* constraint, absl::Span<const double> coeffs_lb = {},
+      absl::Span<const double> coeffs_ub = {});
 
   // Scales an individual EnforcedLinearConstraint and adds it to the given
   // CpModelProto.
@@ -276,8 +290,20 @@ struct ConstraintScaler {
   // variable in `states` (see MipVariableState).
   absl::Status ScaleAndAddConstraint(
       const EnforcedLinearConstraint& mp_constraint,
-      absl::Span<const MipVariableState> states, CpModelProto* cp_model,
-      std::optional<ModularConstraintScaling> modular = std::nullopt);
+      absl::Span<const MipVariableState> states, CpModelProto* cp_model);
+
+  // Adds a constraint that the caller already scaled itself: `scaled` is
+  // `mp_constraint` transformed according to `states` and scaled to integers.
+  // This adds it with the enforcement of `mp_constraint` to the given
+  // CpModelProto, and updates the statistics below. The caller must make sure
+  // that `scaled` cannot overflow.
+  //
+  // This is called by DetectAndConvertTotallyUnimodularComponent() in tum.cc,
+  // which needs to scale all the constraints of a component consistently.
+  absl::Status AddAlreadyScaledConstraint(
+      const EnforcedLinearConstraint& mp_constraint,
+      absl::Span<const MipVariableState> states,
+      const ScaledLinearConstraint& scaled, CpModelProto* cp_model);
 
   // Statistics over all scaled constraints. This can be inspected to know the
   // final error produced by ScaleAndAddConstraint().
@@ -289,7 +315,7 @@ struct ConstraintScaler {
   double max_rounding_error = 0.0;
   double max_unrounding_error = 0.0;
 
-  // Used when params.use_mip_tight_bounds() is true.
+  // Helper to compute tight rounding and unrounding error bounds.
   TightScalingErrorHelper tight_error_helper;
 
   // Statistics for trivial constraints.
@@ -305,7 +331,6 @@ struct ConstraintScaler {
 
   // Parameters passed to FindBestScalingAndComputeErrors(), see documentation
   // there to understand their meaning.
-  bool use_tight_bounds = false;
   bool use_proper_relaxation = false;
   double tight_precision = 1e-8;
   double wanted_precision = 1e-6;
@@ -314,14 +339,33 @@ struct ConstraintScaler {
   // Private temporary field to reuse memory.
   std::vector<int> var_indices;
   BoundedLinearExpression bounded_expr;
+  std::vector<double> coefficients_lb;
+  std::vector<double> coefficients_ub;
   std::vector<int64_t> int_lower_bounds;
   std::vector<int64_t> int_upper_bounds;
   std::vector<double> tmp_transformed_coeffs;
+  std::vector<double> tmp_transformed_coeffs_lb;
+  std::vector<double> tmp_transformed_coeffs_ub;
   std::vector<int64_t> tmp_enforcement_values;
   TightSum tmp_discretization_lb;
   TightSum tmp_discretization_ub;
   TightSum tmp_scaled_lb;
   TightSum tmp_scaled_ub;
+
+  // Private helpers. The first one fills `tmp_enforcement_values` with the
+  // enforcement values of `mp_constraint` transformed according to `states`,
+  // and sets `is_never_enforced` if one of them is outside the domain of its
+  // variable. The second one adds the enforcement to a `constraint` whose
+  // variable domains are in `int_lower_bounds` and `int_upper_bounds`.
+  absl::Status TransformEnforcementValues(
+      const EnforcedLinearConstraint& mp_constraint,
+      absl::Span<const MipVariableState> states,
+      absl::Span<const IntegerVariableProto* const> var_domains,
+      bool* is_never_enforced);
+  absl::Status AddEnforcement(
+      const EnforcedLinearConstraint& mp_constraint,
+      absl::Span<const IntegerVariableProto* const> var_domains,
+      ConstraintProto* constraint);
 };
 
 // Initializes the state of all variables from the current wrapper bounds and
@@ -329,12 +373,32 @@ struct ConstraintScaler {
 std::vector<MipVariableState> InitialVariableStates(
     const MPModelProtoWrapper& mp_model);
 
+// Helpers for transforming constraints and propagating discretization errors
+// according to MipVariableState.
+void AddShiftedTermOffset(double c_lb, double c_ub, double shift,
+                          TightSum* neg_offset_lb, TightSum* neg_offset_ub);
+void AddTermErrorBounds(double c_lb, double c_ub, double err_lb, double err_ub,
+                        TightSum* sum_lb, TightSum* sum_ub);
+void TransformConstraint(const LinearConstraintView& ct,
+                         absl::Span<const MipVariableState> states,
+                         std::vector<double>* coeffs, double* lb, double* ub);
+
 // Writes back the given states into `mp_model`: variable bounds and
 // integrality, scaled constraint coefficients, shifted constraint bounds,
 // scaled objective and shifted objective offset, and scaled/shifted solution
 // hint. This is mainly useful for tests.
 void ApplyVariableStatesToModel(absl::Span<const MipVariableState> states,
                                 MPModelProto* mp_model);
+
+// Partitions `residual_var_indices` (mapped via `to_dense_index`, with `-1` for
+// external variables) and non-trivial constraints of `mp_model` into connected
+// residual components. Optionally records constraints with no residual variable
+// in `pure_integer_constraints`.
+std::vector<ResidualContinuousComponent> PartitionResidualComponents(
+    const MPModelProtoWrapper& mp_model,
+    absl::Span<const int> residual_var_indices,
+    absl::Span<const int> to_dense_index,
+    std::vector<int>* pure_integer_constraints = nullptr);
 
 // Splits `mp_model` into pure integer constraints (constraints with no
 // continuous variable with a non-zero coefficient) and disjoint residual
@@ -425,24 +489,6 @@ void ScaleOneVariableResidualMatrix(const SatParameters& params,
 void ScaleComponentContinuousVariables(const SatParameters& params,
                                        const ResidualContinuousComponent& compo,
                                        absl::Span<MipVariableState> states);
-
-// Per-variable limits (indexed by the position of the variable in the
-// component) used to pick power-of-two scaling factors for continuous
-// variables, see ComputeComponentPrecisionScalingBounds().
-struct ComponentPrecisionScalingBounds {
-  // Largest power of two keeping the variable domain within the target bound.
-  std::vector<double> max_var_scaling;
-  // Scaling needed to reach the wanted precision on the activities of all the
-  // constraints containing the variable.
-  std::vector<double> max_scaling_needed;
-  // Largest power-of-two scaling that still allows all the constraints
-  // containing the variable to be scaled to integers.
-  std::vector<double> min_headroom;
-};
-ComponentPrecisionScalingBounds ComputeComponentPrecisionScalingBounds(
-    const SatParameters& params, const MPModelProtoWrapper& mp_model,
-    const ResidualContinuousComponent& compo,
-    absl::Span<const MipVariableState> states, double max_target_bound);
 
 // Controls how constraint headroom is computed in
 // ScaleComponentContinuousVariablesForGivenPrecision():
@@ -540,15 +586,11 @@ inline double MaxAbsScaledTightSum(const TightSum& sum,
   return std::max(std::abs(dlb), std::abs(dub));
 }
 
-// Rounds a scaled lower bound `y` to an integer, given the allowed tolerance
-// `tol >= 0` in the same scaled space:
-// - Under `proper_relaxation`, enlarges downward to `floor(y)`, except when `y`
-//   is within `tol` below `round(y)` (snapping to `round(y)`).
-// - Otherwise, restricts inward to `ceil(y)`, except when `y` is within `tol`
-//   above `round(y)` (snapping to `round(y)`).
+// Rounds a scaled lower bound `y` outward to `floor(y)`, except when `y` is
+// within `tol >= 0` below `round(y)` (snapping to `round(y)`).
 // Upper bounds `w <= u` are handled symmetrically by passing `-u` and negating
 // the result (since `std::round(-u) == -std::round(u)`).
-double RoundScaledLowerBound(double y, double tol, bool proper_relaxation);
+double RoundScaledLowerBound(double y, double tol);
 
 // Utility useful for RestrictBoundsWithDualReasoning() but also the
 // PropagateBounds() MIP presolve.
@@ -561,12 +603,12 @@ struct LeftRightActivityBounds {
   template <bool exact = true, bool fill_min = true, bool fill_max = true>
   void FillFromConstraint(absl::Span<const double> var_lbs,
                           absl::Span<const double> var_ubs,
-                          const MPConstraintProto& ct);
+                          const EnforcedLinearConstraint& ct);
 
   template <bool exact = true>
   void FillFromConstraint(absl::Span<const double> var_lbs,
                           absl::Span<const double> var_ubs,
-                          const MPConstraintProto& ct, bool fill_min,
+                          const EnforcedLinearConstraint& ct, bool fill_min,
                           bool fill_max) {
     if (fill_min && fill_max) {
       FillFromConstraint<exact, true, true>(var_lbs, var_ubs, ct);
