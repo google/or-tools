@@ -236,6 +236,18 @@ class TightScalingErrorHelper {
                               absl::Span<const int64_t> input_lbs,
                               absl::Span<const int64_t> input_ubs);
 
+  // Same as above when each exact unscaled coefficient is bounded by
+  // [input_coeffs_lb[i], input_coeffs_ub[i]] (for instance when dividing an
+  // exact coefficient by a variable scaling that is not a power of two), while
+  // `input_coeffs[i]` is the double approximation used by the caller to compute
+  // std::round(input_coeffs[i] * scaling_factor). Each interval must have a
+  // single sign and contain `input_coeffs[i]`.
+  void LoadUnscaledConstraint(absl::Span<const double> input_coeffs,
+                              absl::Span<const double> input_coeffs_lb,
+                              absl::Span<const double> input_coeffs_ub,
+                              absl::Span<const int64_t> input_lbs,
+                              absl::Span<const int64_t> input_ubs);
+
   // This and LoadUnscaledConstraint() must be called before any of the
   // GetLowerBoundRoundingError() functions. The API is done like this so we can
   // compute the error for multiple scaling factor on the same constraint.
@@ -428,7 +440,9 @@ class TightScalingErrorHelper {
                   TightSum& result_sum);
 
   // Input constraint data. only change on LoadConstraint().
-  std::vector<double> coeffs_;  // non-negative.
+  std::vector<double> coeffs_;     // non-negative.
+  std::vector<double> coeffs_lb_;  // non-negative.
+  std::vector<double> coeffs_ub_;  // non-negative.
   std::vector<int64_t> lbs_;
   std::vector<int64_t> ubs_;
 

@@ -763,5 +763,29 @@ TEST(TightScalingErrorHelperTest, RelaxationCoversInexactScaledCoefficients) {
   EXPECT_EQ(lb_relax_sum.Int64Ceil(), -1);
 }
 
+TEST(TightScalingErrorHelperTest,
+     RelaxationCoversIntervalUnscaledCoefficients) {
+  // In IEEE-754 binary64, `q = 1.0 / 3.0` rounds down (`3 * q = 1 - 2^-54`), so
+  // `1 - 3 * q = +2^-54 > 0`. On `(1/3) * x0 - x1 >= 0` with `x0` in
+  // `[1000, 3000]` and `x1` in `[0, 1000]` scaled by `3`, the exact point
+  // `(x0, x1) = (1002, 334)` is feasible with rounded activity `0`, whereas
+  // treating `q` as exact tightens the lower bound to `ceil(1000 * 2^-54) = 1`.
+  // Passing the 1-ulp interval `[q, FastStepUp(q)]` keeps the lower bound at 0.
+  const double q = 1.0 / 3.0;
+  const double q_ub = FastStepUp(q);
+  TightScalingErrorHelper helper;
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{q, -1.0},
+                                /*input_coeffs_lb=*/{q, -1.0},
+                                /*input_coeffs_ub=*/{q_ub, -1.0},
+                                /*input_lbs=*/{1000, 0},
+                                /*input_ubs=*/{3000, 1000});
+  helper.LoadScalingFactor(3.0);
+
+  TightSum lb_relax_sum;
+  lb_relax_sum.Add(0.0);
+  lb_relax_sum.Add(helper.GetRelaxationLowerBoundError(lb_relax_sum));
+  EXPECT_EQ(lb_relax_sum.Int64Ceil(), 0);
+}
+
 }  // namespace
 }  // namespace operations_research
