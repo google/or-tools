@@ -272,31 +272,53 @@ int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
 void TightScalingErrorHelper::LoadUnscaledConstraint(
     absl::Span<const double> input_coeffs, absl::Span<const int64_t> input_lbs,
     absl::Span<const int64_t> input_ubs) {
+  LoadUnscaledConstraint(input_coeffs, input_coeffs, input_coeffs, input_lbs,
+                         input_ubs);
+}
+
+void TightScalingErrorHelper::LoadUnscaledConstraint(
+    absl::Span<const double> input_coeffs,
+    absl::Span<const double> input_coeffs_lb,
+    absl::Span<const double> input_coeffs_ub,
+    absl::Span<const int64_t> input_lbs, absl::Span<const int64_t> input_ubs) {
   // To simplify code, lets make all coefficient positive.
   // Being super-fast here shouldn't matter that much since we will only
   // do that once per constraint.
   const int num_terms = input_coeffs.size();
+  DCHECK_EQ(input_coeffs_lb.size(), num_terms);
+  DCHECK_EQ(input_coeffs_ub.size(), num_terms);
   DCHECK_EQ(input_lbs.size(), num_terms);
   DCHECK_EQ(input_ubs.size(), num_terms);
   coeffs_.assign(input_coeffs.begin(), input_coeffs.end());
+  coeffs_lb_.assign(input_coeffs_lb.begin(), input_coeffs_lb.end());
+  coeffs_ub_.assign(input_coeffs_ub.begin(), input_coeffs_ub.end());
   lbs_.assign(input_lbs.begin(), input_lbs.end());
   ubs_.assign(input_ubs.begin(), input_ubs.end());
   has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
     DCHECK(std::isfinite(coeffs_[i]));
-    CHECK_NE(coeffs_[i], 0.0);
+    DCHECK(std::isfinite(coeffs_lb_[i]));
+    DCHECK(std::isfinite(coeffs_ub_[i]));
+    DCHECK_LE(coeffs_lb_[i], coeffs_[i]);
+    DCHECK_LE(coeffs_[i], coeffs_ub_[i]);
+    CHECK(coeffs_lb_[i] != 0.0 || coeffs_ub_[i] != 0.0);
     DCHECK_GT(lbs_[i], kint64min);
     DCHECK_LT(ubs_[i], kint64max);
     DCHECK_LE(lbs_[i], ubs_[i]);
 
-    // Canonicalized the domain and the coefficient.
-    // We only care about the set of integer feasible solution.
-    if (coeffs_[i] < 0) {
+    // Canonicalize the domain and the coefficient.
+    // We only care about the set of integer feasible solutions.
+    if (coeffs_ub_[i] < 0.0 || (coeffs_ub_[i] == 0.0 && coeffs_lb_[i] < 0.0)) {
       std::swap(lbs_[i], ubs_[i]);
       lbs_[i] = -lbs_[i];
       ubs_[i] = -ubs_[i];
       coeffs_[i] = -coeffs_[i];
+      std::swap(coeffs_lb_[i], coeffs_ub_[i]);
+      coeffs_lb_[i] = -coeffs_lb_[i];
+      coeffs_ub_[i] = -coeffs_ub_[i];
     }
+    CHECK_GE(coeffs_lb_[i], 0.0);
+    CHECK_GE(coeffs_[i], 0.0);
   }
 }
 
@@ -377,15 +399,18 @@ void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
   has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
     // The callers scale with std::round(coeff * scaling_factor), where the
-    // product is rounded to the nearest double.
+    // product is rounded to the nearest double, while the exact unscaled
+    // coefficient lies in [coeffs_lb_[i], coeffs_ub_[i]].
     const double rounded = std::round(coeffs_[i] * scaling_factor);
-    if (!std::isfinite(rounded * kint64max)) {
+    const double scaled_lb = ProdBounds(coeffs_lb_[i], scaling_factor).first;
+    const double scaled_ub = ProdBounds(coeffs_ub_[i], scaling_factor).second;
+    if (!std::isfinite(scaled_ub * kint64max) ||
+        !std::isfinite(rounded * kint64max)) {
       has_overflow_ = true;
       return;
     }
-    // The exact product is usually not a double, keep tight bounds on it.
-    std::tie(scaled_coeffs_lb_[i], scaled_coeffs_ub_[i]) =
-        ProdBounds(coeffs_[i], scaling_factor);
+    scaled_coeffs_lb_[i] = scaled_lb;
+    scaled_coeffs_ub_[i] = scaled_ub;
     rounded_coeffs_[i] = rounded;
   }
 }

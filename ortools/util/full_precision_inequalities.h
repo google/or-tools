@@ -319,6 +319,19 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
 std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
     double a, double b, PowerOfTwo p = PowerOfTwo(0));
 
+// For any combination of int64_t, finite double, SumFloorCeil(a, b) returns
+// Floor(a + b) and Ceil(a + b) as int64_t. If the result is not representable
+// as int64_t, returns {nullopt, int64min} or {int64max, nullopt} depending on
+// the sign.
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    int64_t a, int64_t b);
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    int64_t a, double b);
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    double a, int64_t b);
+std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
+    double a, double b);
+
 // Returns a tight double interval containing n.
 std::pair<double, double> Int64DoubleBounds(int64_t n);
 

@@ -1026,6 +1026,576 @@ INSTANTIATE_TEST_SUITE_P(
             .expected_bounds = {std::nullopt,
                                 std::numeric_limits<int64_t>::min()}}));
 
+struct SumFloorCeilIntIntTestCase {
+  int64_t a;
+  int64_t b;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using SumFloorCeilIntIntTest =
+    testing::TestWithParam<SumFloorCeilIntIntTestCase>;
+
+TEST_P(SumFloorCeilIntIntTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumFloorCeil(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumFloorCeil(param.b, param.a), param.expected_bounds);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumFloorCeilIntIntTest,
+    testing::Values(
+        SumFloorCeilIntIntTestCase{.a = 0, .b = 0, .expected_bounds = {0, 0}},
+        SumFloorCeilIntIntTestCase{.a = 0, .b = 7, .expected_bounds = {7, 7}},
+        SumFloorCeilIntIntTestCase{
+            .a = 0, .b = -7, .expected_bounds = {-7, -7}},
+        SumFloorCeilIntIntTestCase{.a = 3, .b = 4, .expected_bounds = {7, 7}},
+        SumFloorCeilIntIntTestCase{.a = -3, .b = 4, .expected_bounds = {1, 1}},
+        SumFloorCeilIntIntTestCase{
+            .a = 3, .b = -4, .expected_bounds = {-1, -1}},
+        SumFloorCeilIntIntTestCase{
+            .a = -3, .b = -4, .expected_bounds = {-7, -7}},
+        SumFloorCeilIntIntTestCase{
+            .a = 42, .b = -42, .expected_bounds = {0, 0}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntIntTestCase{.a = std::numeric_limits<int64_t>::max(),
+                                   .b = -std::numeric_limits<int64_t>::max(),
+                                   .expected_bounds = {0, 0}},
+        SumFloorCeilIntIntTestCase{.a = std::numeric_limits<int64_t>::min(),
+                                   .b = std::numeric_limits<int64_t>::max(),
+                                   .expected_bounds = {-1, -1}},
+        SumFloorCeilIntIntTestCase{.a = std::numeric_limits<int64_t>::min() + 1,
+                                   .b = std::numeric_limits<int64_t>::max(),
+                                   .expected_bounds = {0, 0}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max() - 1,
+            .b = 1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min() + 1,
+            .b = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntIntTestCase{
+            .a = -(int64_t{1} << 62),
+            .b = -(int64_t{1} << 62),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        // Overflows above kMaxInt.
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntIntTestCase{
+            .a = int64_t{1} << 62,
+            .b = int64_t{1} << 62,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::numeric_limits<int64_t>::max(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        // Underflows below kMinInt.
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -1,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min() + 1,
+            .b = -2,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<int64_t>::min(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}}));
+
+struct SumFloorCeilIntDoubleTestCase {
+  int64_t a;
+  double b;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using SumFloorCeilIntDoubleTest =
+    testing::TestWithParam<SumFloorCeilIntDoubleTestCase>;
+
+TEST_P(SumFloorCeilIntDoubleTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumFloorCeil(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumFloorCeil(param.b, param.a), param.expected_bounds);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumFloorCeilIntDoubleTest,
+    testing::Values(
+        // Zeros (+0.0 and -0.0).
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = 0.0, .expected_bounds = {0, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = -0.0, .expected_bounds = {0, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 5, .b = 0.0, .expected_bounds = {5, 5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -5, .b = -0.0, .expected_bounds = {-5, -5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -0.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 0.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        // Simple integers and fractions.
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = 0.5, .expected_bounds = {0, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = -0.5, .expected_bounds = {-1, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 3, .b = 1.5, .expected_bounds = {4, 5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 3, .b = -1.5, .expected_bounds = {1, 2}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -3, .b = 1.5, .expected_bounds = {-2, -1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -3, .b = -1.5, .expected_bounds = {-5, -4}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 3, .b = 2.0, .expected_bounds = {5, 5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 3, .b = -2.0, .expected_bounds = {1, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -3, .b = -2.0, .expected_bounds = {-5, -5}},
+        // Tiny magnitudes (0 < |b| < 1, including subnormals and < 2^-128).
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 5,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {5, 6}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 5,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {4, 5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -5,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-5, -4}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -5,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-6, -5}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = std::ldexp(1.0, -200), .expected_bounds = {0, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = -std::ldexp(1.0, -200), .expected_bounds = {-1, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = std::nextafter(1.0, 0.0), .expected_bounds = {0, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0, .b = -std::nextafter(1.0, 0.0), .expected_bounds = {-1, 0}},
+        // High-precision integers (> 53 bits, not representable in double).
+        SumFloorCeilIntDoubleTestCase{.a = (int64_t{1} << 53) + 1,
+                                      .b = -std::ldexp(1.0, 53),
+                                      .expected_bounds = {1, 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 0.5,
+            .expected_bounds = {(int64_t{1} << 53) + 1,
+                                (int64_t{1} << 53) + 2}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = -0.5,
+            .expected_bounds = {int64_t{1} << 53, (int64_t{1} << 53) + 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -((int64_t{1} << 53) + 1),
+            .b = 0.5,
+            .expected_bounds = {-((int64_t{1} << 53) + 1),
+                                -(int64_t{1} << 53)}},
+        // Boundaries and cancellations near kMaxInt and kMinInt.
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max() - 1,
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max() - 1,
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max() - 1,
+            .b = 1.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min() + 2,
+            .b = -1.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -0.5,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min() + 1,
+            .b = -1.5,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = -std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -1,
+            .b = -std::ldexp(1.0, 63),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = -1,
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilIntDoubleTestCase{.a = std::numeric_limits<int64_t>::min(),
+                                      .b = std::ldexp(1.0, 63),
+                                      .expected_bounds = {0, 0}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::nextafter(std::ldexp(1.0, 64), 0.0),
+            .expected_bounds = {std::numeric_limits<int64_t>::max() - 2047,
+                                std::numeric_limits<int64_t>::max() - 2047}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -std::nextafter(std::ldexp(1.0, 64), 0.0),
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 2047,
+                                std::numeric_limits<int64_t>::min() + 2047}},
+        // Huge doubles (|b| >= 2^64).
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::ldexp(1.0, 64),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -std::ldexp(1.0, 64),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = 1e100,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = -1e100,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilIntDoubleTestCase{
+            .a = 0,
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}}));
+
+struct SumFloorCeilDoubleDoubleTestCase {
+  double a;
+  double b;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using SumFloorCeilDoubleDoubleTest =
+    testing::TestWithParam<SumFloorCeilDoubleDoubleTestCase>;
+
+TEST_P(SumFloorCeilDoubleDoubleTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumFloorCeil(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumFloorCeil(param.b, param.a), param.expected_bounds);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumFloorCeilDoubleDoubleTest,
+    testing::Values(
+        // Zeros (+0.0 and -0.0).
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 0.0, .b = 0.0, .expected_bounds = {0, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -0.0, .b = -0.0, .expected_bounds = {0, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -0.0, .b = 3.5, .expected_bounds = {3, 4}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -3.5, .b = 0.0, .expected_bounds = {-4, -3}},
+        // Simple exact and fractional sums.
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.5, .b = 2.5, .expected_bounds = {4, 4}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = -2.5, .expected_bounds = {-4, -4}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.25, .b = 2.5, .expected_bounds = {3, 4}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.25, .b = -2.5, .expected_bounds = {-4, -3}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.25, .b = 2.5, .expected_bounds = {1, 2}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.25, .b = -2.5, .expected_bounds = {-2, -1}},
+        // Subnormals and large exponent gaps (both exp_diff <= 70 and > 70).
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::denorm_min(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {1, 2}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.0,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-2, -1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.5,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {1, 2}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1.5,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {1, 2}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.5,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-2, -1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -1.5,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-2, -1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 55),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {int64_t{1} << 55, (int64_t{1} << 55) + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 55),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {(int64_t{1} << 55) - 1, int64_t{1} << 55}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 55),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-(int64_t{1} << 55), -(int64_t{1} << 55) + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 55),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-(int64_t{1} << 55) - 1, -(int64_t{1} << 55)}},
+        // Transition across exp_diff == 70 and exp_diff == 71.
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 52),
+            .b = std::ldexp(1.0, -18),
+            .expected_bounds = {int64_t{1} << 52, (int64_t{1} << 52) + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 52),
+            .b = -std::ldexp(1.0, -18),
+            .expected_bounds = {(int64_t{1} << 52) - 1, int64_t{1} << 52}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 52),
+            .b = std::ldexp(1.0, -19),
+            .expected_bounds = {int64_t{1} << 52, (int64_t{1} << 52) + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 52),
+            .b = -std::ldexp(1.0, -19),
+            .expected_bounds = {(int64_t{1} << 52) - 1, int64_t{1} << 52}},
+        // High-precision sums (> 53 significant bits) and huge cancellations.
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 60),
+            .b = 123.25,
+            .expected_bounds = {(int64_t{1} << 60) + 123,
+                                (int64_t{1} << 60) + 124}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 60),
+            .b = -123.25,
+            .expected_bounds = {-(int64_t{1} << 60) - 124,
+                                -(int64_t{1} << 60) - 123}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = 1e100, .b = -1e100, .expected_bounds = {0, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {0, 0}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 100),
+            .b = -FastStepDown(std::ldexp(1.0, 100)),
+            .expected_bounds = {int64_t{1} << 47, int64_t{1} << 47}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 100),
+            .b = FastStepDown(std::ldexp(1.0, 100)),
+            .expected_bounds = {-(int64_t{1} << 47), -(int64_t{1} << 47)}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 52),
+            .b = -FastStepDown(std::ldexp(1.0, 52)),
+            .expected_bounds = {0, 1}},
+        // Boundaries near kMaxInt (2^63 - 1) and kMinInt (-2^63).
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 63),
+            .b = -1.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max() - 1,
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 63),
+            .b = -1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 63),
+            .b = -0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 63),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::nextafter(std::ldexp(1.0, 63), 0.0),
+            .b = 1023.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::nextafter(std::ldexp(1.0, 63), 0.0),
+            .b = 1023.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 63),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 1,
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 63),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 63),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::nextafter(std::ldexp(1.0, 63), 0.0),
+            .b = -1024.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 62),
+            .b = -std::ldexp(1.0, 62),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 63),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 63),
+            .b = -0.5,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        // Overflows and underflows (|a| >= 2^64).
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 64),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 64),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 64),
+            .b = -1.0,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 64),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        SumFloorCeilDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::max(),
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}}));
+
 struct Int64DoubleBoundsTestCase {
   int64_t n;
   std::pair<double, double> expected_bounds;
