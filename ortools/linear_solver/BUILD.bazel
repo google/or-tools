@@ -521,6 +521,26 @@ or_cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
+or_cc_test(
+    name = "cbc_interface_test",
+    srcs = ["cbc_interface_test.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_cbc": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":linear_solver_cbc",
+        ":linear_solver_lib",
+        ":solve_mp_model",
+        "//ortools/base:gmock_main",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
 or_cc_library(
     name = "linear_solver_gurobi",
     srcs = ["gurobi_interface.cc"],

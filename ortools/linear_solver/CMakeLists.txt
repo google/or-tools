@@ -157,4 +157,11 @@ if(BUILD_CXX_TESTING)
       GTest::gtest_main
   )
 
+  if(USE_COINOR)
+    add_executable(test_cbc_interface cbc_interface_test.cc)
+    target_compile_features(test_cbc_interface PRIVATE cxx_std_17)
+    target_link_libraries(test_cbc_interface PRIVATE ortools::ortools GTest::gtest_main Threads::Threads)
+
+    add_test(NAME cxx_unittests_cbc_interface COMMAND test_cbc_interface)
+  endif()
 endif ()
