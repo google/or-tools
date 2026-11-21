@@ -222,6 +222,12 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
+    def test_all_subsets_property(self):
+        model = create_knights_cover_model(4, 4)
+        all_subsets = model.all_subsets
+        self.assertLen(all_subsets, model.num_subsets)
+        self.assertEqual(all_subsets, list(range(model.num_subsets)))
+
     # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
     # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
     # KnightsCoverMip
