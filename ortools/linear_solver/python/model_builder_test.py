@@ -143,6 +143,43 @@ class ModelBuilderTest(absltest.TestCase):
     def test_minimal_linear_example(self):
         self.run_minimal_linear_example("glop")
 
+    def test_export_generated_name_collisions(self):
+        model = mb.Model()
+        x = model.new_num_var(0, 5, "Constant")
+        y = model.new_num_var(0, 5, "Constant_1")
+        model.add(x >= 2, "COST")
+        model.add(y >= 0, "COST_1")
+        for offset in (0, 7, -7):
+            model.minimize(x + y + offset)
+            for obfuscate in (False, True):
+                with self.subTest(format="LP", offset=offset, obfuscate=obfuscate):
+                    lp = model.export_to_lp_string(obfuscate)
+                    bounds = lp.split("Bounds\n")[1].split("End\n")[0].splitlines()
+                    names = [line.split()[2] for line in bounds]
+                    self.assertLen(names, 2 + bool(offset))
+                    self.assertLen(set(names), len(names))
+                    if offset:
+                        self.assertEqual(f" 1 <= {names[0]} <= 1", bounds[0])
+                        self.assertIn(f"{offset:+} {names[0]} ", lp)
+                    if not obfuscate:
+                        self.assertIn("Constant", names)
+                        self.assertIn("Constant_1", names)
+                with self.subTest(format="MPS", offset=offset, obfuscate=obfuscate):
+                    mps = model.export_to_mps_string(obfuscate)
+                    rows = mps.split("ROWS\n")[1].split("COLUMNS\n")[0].splitlines()
+                    names = [line.split()[1] for line in rows]
+                    self.assertLen(names, 3)
+                    self.assertLen(set(names), len(names))
+                    imported = mb.Model()
+                    self.assertTrue(imported.import_from_mps_string(mps))
+                    solver = mb.Solver("glop")
+                    self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(imported))
+                    self.assertEqual(2 + offset, solver.objective_value)
+                    self.assertEqual(2, solver.value(imported.var_from_index(0)))
+                    if not obfuscate:
+                        self.assertIn("COST", names)
+                        self.assertIn("COST_1", names)
+
     def test_export_to_mps_string_preserves_bounds(self):
         for lb, ub, is_integer in [
             (1234566, 1234568, False),

@@ -121,12 +121,14 @@ class MPModelProtoExporter {
   // name is used.
   //
   // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
+  // If provided, 'generated_name' is then made unique among those names.
   template <class ListOfProtosWithNameFields>
   std::vector<std::string> ExtractAndProcessNames(
       const ListOfProtosWithNameFields& proto, absl::string_view prefix,
       bool obfuscate, bool log_invalid_names,
       const std::string& forbidden_first_chars,
-      const std::string& forbidden_chars);
+      const std::string& forbidden_chars,
+      std::string* generated_name = nullptr);
 
   // Appends a general "Comment" section with useful metadata about the model
   // to "output".
@@ -203,6 +205,9 @@ class MPModelProtoExporter {
 
   // Vector of general constraint names as they will be exported.
   std::vector<std::string> exported_general_constraint_names_;
+
+  // Name of the objective row in MPS format.
+  std::string exported_objective_name_;
 
   // Number of integer variables in proto_.
   int num_integer_variables_;
@@ -322,7 +327,7 @@ std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
     const ListOfProtosWithNameFields& proto, absl::string_view prefix,
     bool obfuscate, bool log_invalid_names,
     const std::string& forbidden_first_chars,
-    const std::string& forbidden_chars) {
+    const std::string& forbidden_chars, std::string* generated_name) {
   const int num_items = proto.size();
   std::vector<std::string> result(num_items);
   NameManager namer;
@@ -361,6 +366,9 @@ std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
 
     // Prepare for the next round.
     ++i;
+  }
+  if (generated_name != nullptr) {
+    *generated_name = namer.MakeUniqueName(*generated_name);
   }
   return result;
 }
@@ -569,9 +577,10 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
   exported_general_constraint_names_ = ExtractAndProcessNames(
       proto_.general_constraint(), "C", options.obfuscate,
       options.log_invalid_names, kForbiddenFirstChars, kForbiddenChars);
+  std::string constant_name = "Constant";
   exported_variable_names_ = ExtractAndProcessNames(
       proto_.variable(), "V", options.obfuscate, options.log_invalid_names,
-      kForbiddenFirstChars, kForbiddenChars);
+      kForbiddenFirstChars, kForbiddenChars, &constant_name);
 
   // Comments section.
   AppendComments("\\", output);
@@ -585,7 +594,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
   obj_line_breaker.Append(" Obj: ");
   if (proto_.objective_offset() != 0.0) {
     obj_line_breaker.Append(absl::StrCat(
-        DoubleToStringWithForcedSign(proto_.objective_offset()), " Constant "));
+        DoubleToStringWithForcedSign(proto_.objective_offset()), " ",
+        constant_name, " "));
   }
   std::vector<bool> show_variable(proto_.variable_size(),
                                   options.show_unused_variables);
@@ -664,7 +674,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
   // Bounds
   absl::StrAppend(output, "Bounds\n");
   if (proto_.objective_offset() != 0.0) {
-    absl::StrAppend(output, " 1 <= Constant <= 1\n");
+    absl::StrAppend(output, " 1 <= ", constant_name, " <= 1\n");
   }
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     if (!show_variable[var_index]) continue;
@@ -778,7 +788,7 @@ void MPModelProtoExporter::AppendMpsColumns(
     const std::string& var_name = exported_variable_names_[var_index];
     current_mps_column_ = 0;
     if (var_proto.objective_coefficient() != 0.0) {
-      AppendMpsTermWithContext(var_name, "COST",
+      AppendMpsTermWithContext(var_name, exported_objective_name_,
                                var_proto.objective_coefficient(), output);
     }
     for (const std::pair<int, double>& cst_index_and_coeff :
@@ -799,9 +809,10 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   ComputeMpsSmartColumnWidths(options.obfuscate);
   const std::string kForbiddenFirstChars = "";
   const std::string kForbiddenChars = " ";
+  exported_objective_name_ = "COST";
   exported_constraint_names_ = ExtractAndProcessNames(
       proto_.constraint(), "C", options.obfuscate, options.log_invalid_names,
-      kForbiddenFirstChars, kForbiddenChars);
+      kForbiddenFirstChars, kForbiddenChars, &exported_objective_name_);
   exported_variable_names_ = ExtractAndProcessNames(
       proto_.variable(), "V", options.obfuscate, options.log_invalid_names,
       kForbiddenFirstChars, kForbiddenChars);
@@ -820,7 +831,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   // ROWS section.
   current_mps_column_ = 0;
   std::string rows_section;
-  AppendMpsLineHeaderWithNewLine("N", "COST", &rows_section);
+  AppendMpsLineHeaderWithNewLine("N", exported_objective_name_, &rows_section);
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double lb = ct_proto.lower_bound();
@@ -884,8 +895,8 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   // Follow Gurobi's MPS format for objective offsets.
   // See https://www.gurobi.com/documentation/9.1/refman/mps_format.html
   if (proto_.objective_offset() != 0) {
-    AppendMpsTermWithContext("RHS", "COST", -proto_.objective_offset(),
-                             &rhs_section);
+    AppendMpsTermWithContext("RHS", exported_objective_name_,
+                             -proto_.objective_offset(), &rhs_section);
   }
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
