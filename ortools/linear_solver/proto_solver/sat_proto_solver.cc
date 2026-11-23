@@ -420,8 +420,8 @@ MPSolutionResponse SatSolveProtoInternal(
     return response;
   }
 
-  // We will presolve directly on the MPModelProto, so get a copy or transfer
-  // ownership from the LazyMutableCopy<MPModelProto>().
+  // We will wrap the MPModelProto, so get a copy or transfer ownership from the
+  // LazyMutableCopy<MPModelProto>().
   std::unique_ptr<MPModelProto> mp_model =
       std::move(optional_model).value().copy_or_move_as_unique_ptr();
 
@@ -445,24 +445,34 @@ MPSolutionResponse SatSolveProtoInternal(
     return InvalidModelResponse(*logger, "Extra CP-SAT validation failed.");
   }
 
+  // Note that as we wrap the model, each general constraint get their own
+  // new basic linear constraint, so the number of constraint can grow.
+  auto mp_model_wrapper =
+      std::make_unique<sat::MPModelProtoWrapper>(std::move(*mp_model), logger);
+  mp_model.reset();  // Prevent using empty mp_model.
+  const bool is_maximize = mp_model_wrapper->is_original_model_maximize();
+
   // This is good to do before any presolve.
-  if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
-                                                logger)) {
+  if (!sat::MakeBoundsOfIntegerVariablesInteger(
+          params, mp_model_wrapper->mutable_underlying_model(), logger)) {
     return InfeasibleResponse(*logger,
                               "An integer variable has an empty domain");
   }
 
   // Coefficients really close to zero can cause issues.
   // We remove them right away according to our parameters.
-  RemoveNearZeroTerms(params, mp_model.get(), logger);
+  RemoveNearZeroTerms(params, mp_model_wrapper->mutable_underlying_model(),
+                      logger);
 
   // NOTE(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
+  int old_num_constraints = mp_model_wrapper->num_constraints();
   if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
-    const glop::ProblemStatus status = ApplyMipPresolveSteps(
-        glop_params, mp_model.get(), &for_postsolve, logger);
+    const glop::ProblemStatus status =
+        ApplyMipPresolveSteps(glop_params, mp_model_wrapper.get(),
+                              &for_postsolve, &old_num_constraints, logger);
     switch (status) {
       case glop::ProblemStatus::INIT:
         // Continue with the solve.
@@ -492,14 +502,9 @@ MPSolutionResponse SatSolveProtoInternal(
     }
   }
 
-  // Note that as we wrap the model, each general constraint get their own
-  // new basic linear constraint, so the number of constraint can grow.
-  const int old_num_variables = mp_model->variable().size();
-  const int old_num_constraints = mp_model->constraint().size();
-  const bool is_maximize = mp_model->maximize();
-  auto mp_model_wrapper =
-      std::make_unique<sat::MPModelProtoWrapper>(std::move(*mp_model), logger);
-  mp_model.reset();  // Prevent using empty mp_model.
+  // Note that the Glop presolve can remove variables, so this must be computed
+  // after it.
+  const int old_num_variables = mp_model_wrapper->num_variables();
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Scaling to pure integer problem.");
