@@ -307,7 +307,7 @@ or_cc_test(
         ":recordio",
         ":recordio_test_cc_proto",
         ":temp_file",
-        "@abseil-cpp//absl/base:core_headers",
+        "//ortools/port:attributes",
         "@abseil-cpp//absl/log:check",
     ],
 )

@@ -20,7 +20,6 @@
 #include <optional>
 #include <string>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "gtest/gtest.h"
 #include "ortools/base/file.h"
@@ -29,6 +28,7 @@
 #include "ortools/base/options.h"
 #include "ortools/base/recordio_test.pb.h"
 #include "ortools/base/temp_file.h"
+#include "ortools/port/attributes.h"
 
 namespace ORTOOLS_RECORDIO_NAMESPACE {
 namespace {
@@ -36,7 +36,7 @@ namespace {
 // Parameters for RecordReaderInvalidPayloadTest.
 struct RecordReaderInvalidPayloadTestParams {
   // Name of the test; must be snake_case.
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // All tests should fail, but we also want to make sure the test code itself
   // is correct enough so that valid data don't fail as well.%
@@ -48,7 +48,7 @@ struct RecordReaderInvalidPayloadTestParams {
 
   // Change the value of RecordWriter::set_use_compression() used to create the
   // valid data.
-  bool use_compression ABSL_REQUIRE_EXPLICIT_INIT;
+  bool use_compression ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // Function to change the valid data and make them invalid (unless
   // expect_failure is false).
