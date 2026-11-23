@@ -19,8 +19,8 @@
 
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -36,10 +36,15 @@ namespace operations_research {
 // - INFEASIBLE_OR_UNBOUNDED if the presolve couldn't distinguish between these
 //   two statuses.
 // - ABNORMAL if an error occurred.
+//
+// The presolve is skipped if the model has a solution hint or any enforced
+// constraint. The model is only modified if INIT is returned. In all cases,
+// `num_presolved_constraints` is set to the number of constraints expected by
+// the `for_postsolve` preprocessors when recovering a solution.
 glop::ProblemStatus ApplyMipPresolveSteps(
-    const glop::GlopParameters& glop_params, MPModelProto* model,
+    const glop::GlopParameters& glop_params, sat::MPModelProtoWrapper* model,
     std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,
-    SolverLogger* logger);
+    int* num_presolved_constraints, SolverLogger* logger);
 
 }  // namespace operations_research
 #endif  // ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_SOLVER_UTILS_H_
