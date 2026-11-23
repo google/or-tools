@@ -1274,17 +1274,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertPairs(
                         &delivery_to_entries);
       }
     }
-    // In case all pairs could not be inserted, pushing uninserted ones to the
-    // next bucket.
-    for (auto it = pair_indices_to_insert.begin(),
-              last = pair_indices_to_insert.end();
-         it != last;) {
-      if (pair_is_performed(*it)) {
-        pair_indices_to_insert.erase(it++);
-      } else {
-        ++it;
-      }
-    }
+    // Keep uninserted pairs as we move to the next bucket.
+    absl::erase_if(pair_indices_to_insert,
+                   [&](int p) { return pair_is_performed(p); });
   }
   return true;
 }
