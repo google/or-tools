@@ -3450,6 +3450,76 @@ TEST_F(MetaheuristicFirstSolutionTest, RoundRobinCompoundObjectiveMonitor) {
   RunTests(make_metaheuristic);
 }
 
+class FakeObjectiveMonitor : public BaseObjectiveMonitor {
+ public:
+  FakeObjectiveMonitor(Solver* solver, IntVar* var,
+                       bool at_local_optimum_result)
+      : BaseObjectiveMonitor(solver),
+        var_(var),
+        at_local_optimum_result_(at_local_optimum_result) {}
+
+  bool AtLocalOptimum() override {
+    ++at_local_optimum_calls_;
+    return at_local_optimum_result_;
+  }
+  IntVar* ObjectiveVar(int) const override { return var_; }
+  IntVar* MinimizationVar(int) const override { return var_; }
+  int64_t Step(int) const override { return 1; }
+  bool Maximize(int) const override { return false; }
+  int64_t BestValue(int) const override { return 0; }
+  int Size() const override { return 1; }
+  std::string DebugString() const override { return "FakeObjectiveMonitor"; }
+
+  int at_local_optimum_calls() const { return at_local_optimum_calls_; }
+
+ private:
+  IntVar* const var_;
+  const bool at_local_optimum_result_;
+  int at_local_optimum_calls_ = 0;
+};
+
+TEST(RoundRobinCompoundObjectiveMonitorTest, SkipsDisabledMonitor) {
+  Solver solver("RoundRobinCompoundObjectiveMonitorTest");
+  IntVar* const var = solver.MakeIntVar(0, 10, "var");
+  auto* const m0 =
+      solver.RevAlloc(new FakeObjectiveMonitor(&solver, var, true));
+  auto* const m1 =
+      solver.RevAlloc(new FakeObjectiveMonitor(&solver, var, false));
+  auto* const m2 =
+      solver.RevAlloc(new FakeObjectiveMonitor(&solver, var, true));
+  BaseObjectiveMonitor* const compound =
+      solver.MakeRoundRobinCompoundObjectiveMonitor({m0, m1, m2}, 1);
+
+  compound->EnterSearch();
+  EXPECT_TRUE(compound->AtLocalOptimum());  // m0 -> m1
+  EXPECT_TRUE(compound->AtLocalOptimum());  // m1 returns false, disabled -> m2
+  EXPECT_TRUE(compound->AtLocalOptimum());  // m2 -> m0
+  EXPECT_TRUE(compound->AtLocalOptimum());  // m0 skips disabled m1 -> m2
+  EXPECT_EQ(m0->at_local_optimum_calls(), 2);
+  EXPECT_EQ(m1->at_local_optimum_calls(), 1);
+  EXPECT_EQ(m2->at_local_optimum_calls(), 1);
+  EXPECT_TRUE(m2->is_active());
+  EXPECT_FALSE(m0->is_active());
+  EXPECT_FALSE(m1->is_active());
+}
+
+TEST(RoundRobinCompoundObjectiveMonitorTest, StopsWhenAllMonitorsDisabled) {
+  Solver solver("RoundRobinCompoundObjectiveMonitorTest");
+  IntVar* const var = solver.MakeIntVar(0, 10, "var");
+  auto* const m0 =
+      solver.RevAlloc(new FakeObjectiveMonitor(&solver, var, false));
+  auto* const m1 =
+      solver.RevAlloc(new FakeObjectiveMonitor(&solver, var, false));
+  BaseObjectiveMonitor* const compound =
+      solver.MakeRoundRobinCompoundObjectiveMonitor({m0, m1}, 1);
+
+  compound->EnterSearch();
+  EXPECT_TRUE(compound->AtLocalOptimum());   // m0 disabled -> m1
+  EXPECT_FALSE(compound->AtLocalOptimum());  // m1 disabled, none left -> false
+  EXPECT_EQ(m0->at_local_optimum_calls(), 1);
+  EXPECT_EQ(m1->at_local_optimum_calls(), 1);
+}
+
 class AtSolutionDecisionBuilder : public DecisionBuilder {
  public:
   AtSolutionDecisionBuilder(SearchMonitor* monitor, std::vector<IntVar*> vars,
