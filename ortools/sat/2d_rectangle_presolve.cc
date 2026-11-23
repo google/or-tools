@@ -38,6 +38,7 @@
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/sat_status.h"
 
 namespace operations_research {
 namespace sat {
@@ -122,13 +123,13 @@ std::vector<Rectangle> FindSpacesThatCannotBeOccupied(
 
 }  // namespace
 
-bool PresolveFixed2dRectangles(
+ModificationStatus PresolveFixed2dRectangles(
     absl::Span<const RectangleInRange> non_fixed_boxes,
     std::vector<Rectangle>* fixed_boxes) {
   // This implementation compiles a set of areas that cannot be occupied by any
   // item, then calls ReduceNumberofBoxes() to use these areas to minimize
   // `fixed_boxes`.
-  bool changed = false;
+  ModificationStatus status = kUnchanged;
 
   DCHECK(FindPartialRectangleIntersections(*fixed_boxes).empty());
   IntegerValue original_area = 0;
@@ -148,9 +149,7 @@ bool PresolveFixed2dRectangles(
   // reduce the size of large trivial instances.
   if (fixed_boxes->size() > 1) {
     std::vector<Rectangle> empty_vec;
-    if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
-      changed = true;
-    }
+    status |= ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec);
   }
 
   IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();
@@ -177,25 +176,25 @@ bool PresolveFixed2dRectangles(
     DCHECK_GT(rectangle.SizeY(), 0);
     if (rectangle.x_min < bounding_box.x_min) {
       rectangle.x_min = bounding_box.x_min;
-      changed = true;
+      status = kModified;
     }
     if (rectangle.x_max > bounding_box.x_max) {
       rectangle.x_max = bounding_box.x_max;
-      changed = true;
+      status = kModified;
     }
     if (rectangle.y_min < bounding_box.y_min) {
       rectangle.y_min = bounding_box.y_min;
-      changed = true;
+      status = kModified;
     }
     if (rectangle.y_max > bounding_box.y_max) {
       rectangle.y_max = bounding_box.y_max;
-      changed = true;
+      status = kModified;
     }
     if (rectangle.SizeX() <= 0 || rectangle.SizeY() <= 0) {
       // The whole rectangle was outside of the domain, remove it.
       std::swap(rectangle, (*fixed_boxes)[fixed_boxes->size() - 1]);
       fixed_boxes->resize(fixed_boxes->size() - 1);
-      changed = true;
+      status = kModified;
       continue;
     } else {
       new_size++;
@@ -224,14 +223,10 @@ bool PresolveFixed2dRectangles(
   //
   // Since fewer turns mean fewer edges, this should be a good way to reduce the
   // number of boxes.
-  if (ReduceNumberofBoxesGreedy(fixed_boxes, &optional_boxes)) {
-    changed = true;
-  }
+  status |= ReduceNumberofBoxesGreedy(fixed_boxes, &optional_boxes);
   const int num_after_first_pass = fixed_boxes->size();
-  if (ReduceNumberOfBoxesExactMandatory(fixed_boxes, &optional_boxes)) {
-    changed = true;
-  }
-  if (changed && VLOG_IS_ON(1)) {
+  status |= ReduceNumberOfBoxesExactMandatory(fixed_boxes, &optional_boxes);
+  if (status.modified() && VLOG_IS_ON(1)) {
     IntegerValue area = 0;
     for (const Rectangle& r : *fixed_boxes) {
       area += r.Area();
@@ -251,7 +246,7 @@ bool PresolveFixed2dRectangles(
                                                   RenderDot(bounding_box,
                                                             optional_boxes)));
   }
-  return changed;
+  return status;
 }
 
 namespace {
@@ -303,8 +298,9 @@ struct Edge {
 };
 }  // namespace
 
-bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
-                               std::vector<Rectangle>* optional_rectangles) {
+ModificationStatus ReduceNumberofBoxesGreedy(
+    std::vector<Rectangle>* mandatory_rectangles,
+    std::vector<Rectangle>* optional_rectangles) {
   // The current implementation just greedily merges rectangles that share an
   // edge.
   std::deque<Rectangle> rectangle_storage;
@@ -426,7 +422,7 @@ bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
     }
     *optional_rectangles = std::move(new_rectangles);
   }
-  return changed_mandatory;
+  return ModificationStatus(changed_mandatory);
 }
 
 Neighbours BuildNeighboursGraph(absl::Span<const Rectangle> rectangles) {
@@ -1229,10 +1225,10 @@ std::vector<Rectangle> CutShapeIntoRectangles(const SingleShape& shape) {
   return result;
 }
 
-bool ReduceNumberOfBoxesExactMandatory(
+ModificationStatus ReduceNumberOfBoxesExactMandatory(
     std::vector<Rectangle>* mandatory_rectangles,
     std::vector<Rectangle>* optional_rectangles) {
-  if (mandatory_rectangles->empty()) return false;
+  if (mandatory_rectangles->empty()) return kUnchanged;
   std::vector<Rectangle> result = *mandatory_rectangles;
   std::vector<Rectangle> new_optional_rectangles = *optional_rectangles;
 
@@ -1292,10 +1288,10 @@ bool ReduceNumberOfBoxesExactMandatory(
 
   // It is possible that the algorithm actually increases the number of boxes.
   // See the "Problematic2" test.
-  if (result.size() >= mandatory_rectangles->size()) return false;
+  if (result.size() >= mandatory_rectangles->size()) return kUnchanged;
   mandatory_rectangles->swap(result);
   optional_rectangles->swap(new_optional_rectangles);
-  return true;
+  return kModified;
 }
 
 Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(

@@ -21,6 +21,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -102,8 +103,8 @@ class OrderEncoding {
   absl::btree_map<int64_t, int> encoded_le_literal_;
 };
 
-void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
-                                       SolutionCrush& solution_crush);
+FeasibilityStatus TryToReplaceVariableByItsEncoding(
+    int var, PresolveContext* context, SolutionCrush& solution_crush);
 
 }  // namespace sat
 }  // namespace operations_research

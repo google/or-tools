@@ -32,6 +32,7 @@
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
 
 namespace operations_research::sat {
@@ -1031,8 +1032,9 @@ PlantedModel BuildReferenceModel(ModelKind kind, int target_num_vars,
   PlantedModel model = BuildRawReferenceModel(kind, target_num_vars, rng);
   CpModelProto copied_proto;
   Model sat_model;
-  CHECK(CopyModel(model.proto, /*clear_internal_fields=*/false, &copied_proto,
-                  &sat_model));
+  CHECK_EQ(CopyModel(model.proto, /*clear_internal_fields=*/false,
+                     &copied_proto, &sat_model),
+           kOk);
   CHECK_EQ(copied_proto.variables_size(), model.proto.variables_size());
   model.proto.Swap(&copied_proto);
   return model;
@@ -1050,8 +1052,9 @@ void BM_EmptyModelCopy(benchmark::State& state) {
     CpModelProto* copied =
         google::protobuf::Arena::Create<CpModelProto>(&arena);
     Model sat_model;
-    CHECK(
-        CopyModel(empty, /*clear_internal_fields=*/false, copied, &sat_model));
+    CHECK_EQ(
+        CopyModel(empty, /*clear_internal_fields=*/false, copied, &sat_model),
+        kOk);
     benchmark::DoNotOptimize(copied);
   }
   state.SetLabel(absl::StrFormat(
@@ -1064,7 +1067,7 @@ void BM_EmptyModelRebuild(benchmark::State& state) {
     DenseModelCopy copy("ls", empty, /*shared_bounds=*/nullptr,
                         /*shared_clauses=*/nullptr, [](int) { return true; });
     bool updated = false;
-    CHECK(copy.MaybeUpdate(updated));
+    CHECK_EQ(copy.MaybeUpdate(updated), kOk);
     CHECK(updated);
     benchmark::DoNotOptimize(&copy.proto());
   }
@@ -1085,8 +1088,9 @@ void BM_InitialCopy(benchmark::State& state) {
     CpModelProto* copied =
         google::protobuf::Arena::Create<CpModelProto>(&arena);
     Model sat_model;
-    CHECK(CopyModel(raw.proto, /*clear_internal_fields=*/false, copied,
-                    &sat_model));
+    CHECK_EQ(CopyModel(raw.proto, /*clear_internal_fields=*/false, copied,
+                       &sat_model),
+             kOk);
     if (!has_stats) {
       state.PauseTiming();
       stats = ComputeModelStats(*copied);
@@ -1129,10 +1133,10 @@ void BM_ModelReduction(benchmark::State& state) {
     DenseModelCopy prep_copy("prep", model.proto, &prep_bounds,
                              /*shared_clauses=*/nullptr);
     bool updated = false;
-    CHECK(prep_copy.MaybeUpdate(updated));
+    CHECK_EQ(prep_copy.MaybeUpdate(updated), kOk);
     prep_bounds.ReportPotentialNewBounds("sat", vars, vals, vals);
     prep_bounds.Synchronize();
-    CHECK(prep_copy.MaybeUpdate(updated));
+    CHECK_EQ(prep_copy.MaybeUpdate(updated), kOk);
     CHECK(updated);
     stage_proto = prep_copy.proto();
     stage_stats = ComputeModelStats(stage_proto);
@@ -1176,7 +1180,7 @@ void BM_ModelReduction(benchmark::State& state) {
     shared_bounds->Synchronize();
     bool updated = false;
     state.ResumeTiming();
-    CHECK(copy->MaybeUpdate(updated));
+    CHECK_EQ(copy->MaybeUpdate(updated), kOk);
     CHECK(updated);
     benchmark::DoNotOptimize(copy->var_domains().size());
     state.PauseTiming();
@@ -1255,7 +1259,8 @@ void BM_DomainReductions(benchmark::State& state) {
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
                         /*shared_clauses=*/nullptr);
     bool updated = false;
-    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    CHECK_EQ(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()),
+             kOk);
     ModelStats stats = ComputeModelStats(copy.proto());
     double search_dtime = 0.0;
     int64_t iter_rebuilds = updated ? 1 : 0;
@@ -1266,7 +1271,7 @@ void BM_DomainReductions(benchmark::State& state) {
       const double pre_dtime = EstimateCopyDeterministicTime(stats);
       search_dtime += 3.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
+      CHECK_EQ(copy.MaybeUpdate(updated, pre_dtime / search_dtime), kOk);
       if (updated) {
         stats = ComputeModelStats(copy.proto());
         search_dtime = 0.0;
@@ -1319,7 +1324,8 @@ void BM_FixedVariables(benchmark::State& state) {
     DenseModelCopy copy("ls", model.proto, &shared_bounds,
                         /*shared_clauses=*/nullptr);
     bool updated = false;
-    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    CHECK_EQ(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()),
+             kOk);
     ModelStats stats = ComputeModelStats(copy.proto());
     double pre_dtime = EstimateCopyDeterministicTime(stats);
     double search_dtime = 0.0;
@@ -1332,7 +1338,7 @@ void BM_FixedVariables(benchmark::State& state) {
       pre_dtime = EstimateCopyDeterministicTime(stats);
       search_dtime += 10.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
+      CHECK_EQ(copy.MaybeUpdate(updated, pre_dtime / search_dtime), kOk);
       if (updated) {
         stats = ComputeModelStats(copy.proto());
         search_dtime = 0.0;
@@ -1450,7 +1456,8 @@ void BM_MixedUpdates(benchmark::State& state) {
         shared_clauses.RegisterNewId("sat", /*may_terminate_early=*/true);
     DenseModelCopy copy("ls", model.proto, &shared_bounds, &shared_clauses);
     bool updated = false;
-    CHECK(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()));
+    CHECK_EQ(copy.MaybeUpdate(updated, std::numeric_limits<double>::infinity()),
+             kOk);
     ModelStats stats = ComputeModelStats(copy.proto());
     double pre_dtime = EstimateCopyDeterministicTime(stats);
     double search_dtime = 0.0;
@@ -1468,7 +1475,7 @@ void BM_MixedUpdates(benchmark::State& state) {
       pre_dtime = EstimateCopyDeterministicTime(stats);
       search_dtime += 3.0 * pre_dtime;
       updated = false;
-      CHECK(copy.MaybeUpdate(updated, pre_dtime / search_dtime));
+      CHECK_EQ(copy.MaybeUpdate(updated, pre_dtime / search_dtime), kOk);
       if (updated) {
         stats = ComputeModelStats(copy.proto());
         search_dtime = 0.0;

@@ -90,6 +90,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/scheduling_local_search.h"
 #include "ortools/sat/shaving_solver.h"
 #include "ortools/sat/solution_crush.h"
@@ -1583,7 +1584,7 @@ class LnsSolver : public SubSolver {
           }
         }
         ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
-        if (!copier.ImportVariables(neighborhood.delta)) return;
+        if (copier.ImportVariables(neighborhood.delta).unsat()) return;
 
         if (use_hint) {
           if (neighborhood.delta.has_solution_hint()) {
@@ -1595,35 +1596,40 @@ class LnsSolver : public SubSolver {
 
         // Copy and simplify the constraints from the initial model.
         if (!ignored_constraints.empty()) {
-          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
+          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())
+                   .ok()) {
             return;
           }
         } else {
           auto active_constraints = [&ignored_constraints](int c) {
             return !ignored_constraints.contains(c);
           };
-          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto(),
-                                                   /*first_copy=*/false,
-                                                   active_constraints)) {
+          if (!copier
+                   .ImportAndSimplifyConstraints(helper_->ModelProto(),
+                                                 /*first_copy=*/false,
+                                                 active_constraints)
+                   .ok()) {
             return;
           }
         }
 
         // Copy and simplify the constraints from the delta model.
         if (!neighborhood.delta.constraints().empty() &&
-            !copier.ImportAndSimplifyConstraints(neighborhood.delta)) {
+            !copier.ImportAndSimplifyConstraints(neighborhood.delta).ok()) {
           return;
         }
 
         // Copy the rest of the model, except symmetries (we don't want to use
         // the symmetry of the main problem in the LNS presolved problem).
-        if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-                helper_->ModelProto(), /*clear_internal_fields=*/false,
-                /*copy_symmetry=*/false)) {
+        if (copier
+                .ImportEverythingExceptVariablesConstraintsAndHint(
+                    helper_->ModelProto(), /*clear_internal_fields=*/false,
+                    /*copy_symmetry=*/false)
+                .unsat()) {
           return;
         }
 
-        if (!copier.FinishCopy(neighborhood.delta)) return;
+        if (copier.FinishCopy(neighborhood.delta).unsat()) return;
       }
 
       lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
@@ -2695,15 +2701,16 @@ void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
   }
 }
 
-void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
-                             PresolveContext* context, SolverLogger* logger) {
+FeasibilityStatus FixVariablesToHintValue(
+    const PartialVariableAssignment& solution_hint, PresolveContext* context,
+    SolverLogger* logger) {
   SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
              " variables to their value in the solution hint.");
-  context->InitializeNewDomains();
+  if (context->InitializeNewDomains().unsat()) return kUnsat;
   for (int i = 0; i < solution_hint.vars_size(); ++i) {
     const int var = solution_hint.vars(i);
     const int64_t value = solution_hint.values(i);
-    if (!context->IntersectDomainWith(var, Domain(value))) {
+    if (context->IntersectDomainWith(var, Domain(value)).unsat()) {
       const IntegerVariableProto& var_proto =
           context->WorkingModel().variables(var);
       const std::string var_name = var_proto.name().empty()
@@ -2714,9 +2721,10 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
       SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
                  var_name, "' with domain ", var_domain.ToString(),
                  " the value ", value);
-      break;
+      return kUnsat;
     }
   }
+  return kOk;
 }
 
 class CpModelSolver {
@@ -2819,9 +2827,10 @@ class CpModelSolver {
 
   // Presolve.
   virtual bool Presolve();
-  void MaybeFixVariablesToHintValue(PresolveContext* context);
+  FeasibilityStatus MaybeFixVariablesToHintValue(PresolveContext* context);
   void AddFloatingPointObjectiveResponsePostprocessor();
-  bool FixAssumptionsIfNotSupported(PresolveContext* context);
+  FeasibilityStatus FixAssumptionsIfNotSupported(PresolveContext* context,
+                                                 FeasibilityStatus hint_status);
   virtual CpSolverStatus PresolveCpModel(PresolveContext* context);
 
   void InitializeDebugSolutionFromHint();
@@ -3010,8 +3019,9 @@ bool CpModelSolver::CopyInputProto() {
     model_->Register<LratProofHandler>(presolve_lrat_proof_handler_.get());
   }
 
-  if (!CopyModel(model_proto_, /*clear_internal_fields=*/true,
-                 presolved_model_proto_, model_)) {
+  if (CopyModel(model_proto_, /*clear_internal_fields=*/true,
+                presolved_model_proto_, model_)
+          .unsat()) {
     const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger_, info);
     if (model_->Mutable<LratProofHandler>() != nullptr) {
@@ -3071,7 +3081,8 @@ bool CpModelSolver::Presolve() {
       solution_crush_proto_.get());
 
   // Checks for hints early in case they are forced to be hard constraints.
-  MaybeFixVariablesToHintValue(context.get());
+  const FeasibilityStatus hint_status =
+      MaybeFixVariablesToHintValue(context.get());
 
   // For the case where the assumptions are currently not supported, we just
   // assume they are fixed, and will always report all of them in the UNSAT
@@ -3079,13 +3090,18 @@ bool CpModelSolver::Presolve() {
   //
   // If the mode is not degraded, we will hopefully report a small subset
   // in case there is no feasible solution under these assumptions.
-  if (!FixAssumptionsIfNotSupported(context.get())) {
+  if (FixAssumptionsIfNotSupported(context.get(), hint_status).unsat()) {
     shared_response_manager_->NotifyPresolveEnd(CpModelProto());
     return false;
   }
 
   // Do the actual presolve.
-  const CpSolverStatus presolve_status = PresolveCpModel(context.get());
+  CpSolverStatus presolve_status = CpSolverStatus::INFEASIBLE;
+  if (hint_status.unsat()) {
+    if (logger_->LoggingIsEnabled()) context->LogInfo();
+  } else {
+    presolve_status = PresolveCpModel(context.get());
+  }
 
   // Delete the presolve_lrat_proof_handler_.
   // This is needed to properly write the first proof file.
@@ -3131,14 +3147,17 @@ bool CpModelSolver::Presolve() {
   return true;
 }
 
-void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
+FeasibilityStatus CpModelSolver::MaybeFixVariablesToHintValue(
+    PresolveContext* context) {
   // Note that this still uses the original user-given hint, which is not
   // clamped. We also don't have a hint for potential new variables created
   // during copy/canonicalization. But we should be able to recover their value
   // quite quickly when we fix the hint.
+  FeasibilityStatus status = kOk;
   if (params_.fix_variables_to_their_hinted_value() &&
       model_proto_.has_solution_hint()) {
-    FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
+    status =
+        FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
   }
 
   // If the hint is complete, we can use the solution checker to do more
@@ -3146,13 +3165,15 @@ void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
   // are no duplicate variables in the solution hint, so we can just check the
   // size.
   hint_feasible_before_presolve_ = false;
-  if (!context->ModelIsUnsat()) {
+  if (!status.unsat()) {
     hint_feasible_before_presolve_ =
         SolutionHintIsCompleteAndFeasible(model_proto_, logger_);
   }
+  return status;
 }
 
-bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
+FeasibilityStatus CpModelSolver::FixAssumptionsIfNotSupported(
+    PresolveContext* context, FeasibilityStatus hint_status) {
   if (!model_proto_.assumptions().empty() &&
       (params_.num_workers() > 1 || model_proto_.has_objective() ||
        model_proto_.has_floating_point_objective() ||
@@ -3177,20 +3198,27 @@ bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
     // Clear them from the new proto.
     presolved_model_proto_->clear_assumptions();
 
-    context->InitializeNewDomains();
+    if (hint_status.unsat() || context->InitializeNewDomains().unsat()) {
+      CpSolverResponse status_response;
+      status_response.set_status(CpSolverStatus::INFEASIBLE);
+      shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                         &status_response);
+      shared_response_manager_->AppendResponseToBeMerged(status_response);
+      return kUnsat;
+    }
     for (const int ref : model_proto_.assumptions()) {
-      if (!context->SetLiteralToTrue(ref)) {
+      if (context->SetLiteralToTrue(ref).unsat()) {
         CpSolverResponse status_response;
         status_response.set_status(CpSolverStatus::INFEASIBLE);
         status_response.add_sufficient_assumptions_for_infeasibility(ref);
         shared_response_manager_->FillSolveStatsInResponse(model_,
                                                            &status_response);
         shared_response_manager_->AppendResponseToBeMerged(status_response);
-        return false;
+        return kUnsat;
       }
     }
   }
-  return true;
+  return kOk;
 }
 
 void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {

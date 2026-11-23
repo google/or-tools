@@ -18,6 +18,7 @@
 
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 
 namespace operations_research {
 namespace sat {
@@ -26,7 +27,7 @@ namespace sat {
 // simpler constraints.
 // This is different from PresolveCpModel() as there is no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
-void ExpandCpModel(PresolveContext* context);
+FeasibilityStatus ExpandCpModel(PresolveContext* context);
 
 // Linear constraints with a complex rhs need to be expanded at the end of the
 // presolve. We do that at the end, because the presolve is allowed to simplify

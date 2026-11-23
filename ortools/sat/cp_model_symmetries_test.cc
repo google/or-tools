@@ -28,6 +28,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -683,9 +684,9 @@ TEST(FindCpModelSymmetries, BinPacking) {
   model.GetOrCreate<SolverLogger>()->EnableLogging(true);
   model.GetOrCreate<SolverLogger>()->SetLogToStdOut(true);
   PresolveContext context(&model, &proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
+  EXPECT_EQ(DetectAndExploitSymmetriesInPresolve(&context), kOk);
   context.LogInfo();
 
   // We have a 10 x 7 orbitope.
@@ -1023,16 +1024,16 @@ TEST(DetectAndExploitSymmetriesInPresolveTest,
   CpModelProto mapping_model;
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
   for (int j = 0; j < 3; ++j) {
-    ASSERT_TRUE(context.StoreBooleanEqualityRelation(6 + j, 3 + j));
-    ASSERT_TRUE(context.StoreBooleanEqualityRelation(9 + j, 3 + j));
+    ASSERT_EQ(context.StoreBooleanEqualityRelation(6 + j, 3 + j), kOk);
+    ASSERT_EQ(context.StoreBooleanEqualityRelation(9 + j, 3 + j), kOk);
   }
 
-  ASSERT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
+  ASSERT_EQ(DetectAndExploitSymmetriesInPresolve(&context), kOk);
   // The 4 x 3 orbitope should be detected and order the objective row:
   // p_0 - p_1 >= 0 and p_1 - p_2 >= 0 (adding 2 linear constraints).
   ASSERT_EQ(working_model.constraints_size(), 6);

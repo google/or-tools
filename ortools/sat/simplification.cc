@@ -35,6 +35,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -363,7 +364,7 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     const BooleanVariable var = var_pq_.Top()->variable;
     var_pq_.Pop();
     if (!can_be_removed[var.value()]) continue;
-    if (CrossProduct(Literal(var, true))) {
+    if (CrossProduct(Literal(var, true)).modified()) {
       if (!ProcessAllClauses()) return false;
 
       if (num_deleted_literals_since_last_cleanup_ > 1e7) {
@@ -590,7 +591,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     // early as a speed optimization.
     if (ci != clause_index && (clause_signature & ~ci_signature) == 0 &&
         SimplifyClause(clause, &clauses_[ci], &opposite_literal,
-                       &num_inspected_literals_)) {
+                       &num_inspected_literals_)
+            .modified()) {
       if (opposite_literal == kNoLiteralIndex) {
         need_cleaning = true;
         Remove(ci);
@@ -671,7 +673,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
       // ProcessClauseToSimplifyOthersUsingLiteral() above too.
       if ((clause_signature & ~ci_signature) == 0 &&
           SimplifyClause(clause, &clauses_[ci], &opposite_literal,
-                         &num_inspected_literals_)) {
+                         &num_inspected_literals_)
+              .modified()) {
         DCHECK_EQ(opposite_literal, lit.NegatedIndex());
         if (clauses_[ci].empty()) return false;  // UNSAT.
 
@@ -714,18 +717,18 @@ void SatPresolver::RemoveAllClauseContaining(Literal x,
   literal_to_clause_sizes_[x] = 0;
 }
 
-bool SatPresolver::CrossProduct(Literal x) {
+ModificationStatus SatPresolver::CrossProduct(Literal x) {
   const int s1 = literal_to_clause_sizes_[x];
   const int s2 = literal_to_clause_sizes_[x.NegatedIndex()];
 
   // Note that if s1 or s2 is equal to 0, this function will implicitly just
   // fix the variable x.
-  if (s1 == 0 && s2 == 0) return false;
+  if (s1 == 0 && s2 == 0) return kUnchanged;
 
   // Heuristic. Abort if the work required to decide if x should be removed
   // seems too big.
   if (s1 > 1 && s2 > 1 && s1 * s2 > parameters_.presolve_bve_threshold()) {
-    return false;
+    return kUnchanged;
   }
 
   // Compute the threshold under which we don't remove x.Variable().
@@ -767,7 +770,7 @@ bool SatPresolver::CrossProduct(Literal x) {
         size += clause_weight + rs;
 
         // Abort early if the "size" becomes too big.
-        if (size > threshold) return false;
+        if (size > threshold) return kUnchanged;
       }
     }
     if (no_resolvant && parameters_.presolve_blocked_clause()) {
@@ -820,7 +823,7 @@ bool SatPresolver::CrossProduct(Literal x) {
 
   // TODO(user): At this point x.Variable() is added back to the priority queue.
   // Avoid doing that.
-  return true;
+  return kModified;
 }
 
 void SatPresolver::Remove(ClauseIndex ci) {
@@ -962,10 +965,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
              " singleton_clauses:", FormatCounter(num_singleton_clauses));
 }
 
-bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal,
-                    int64_t* num_inspected_literals) {
-  if (b->size() < a.size()) return false;
+ModificationStatus SimplifyClause(const std::vector<Literal>& a,
+                                  std::vector<Literal>* b,
+                                  LiteralIndex* opposite_literal,
+                                  int64_t* num_inspected_literals) {
+  if (b->size() < a.size()) return kUnchanged;
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b->begin(), b->end()));
   if (num_inspected_literals != nullptr) {
@@ -989,25 +993,25 @@ bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
       ++ib;
     } else if (*ia == ib->Negated()) {  // Opposite literal.
       ++num_diff;
-      if (num_diff > 1) return false;  // Too much difference.
+      if (num_diff > 1) return kUnchanged;  // Too much difference.
       to_remove = ib;
       ++ia;
       ++ib;
     } else if (*ia < *ib) {
-      return false;  // A literal of a is not in b.
-    } else {         // *ia > *ib
+      return kUnchanged;  // A literal of a is not in b.
+    } else {              // *ia > *ib
       ++ib;
 
       // A literal of b is not in a, we can abort early by comparing the sizes
       // left.
-      if (--size_diff < 0) return false;
+      if (--size_diff < 0) return kUnchanged;
     }
   }
   if (num_diff == 1) {
     *opposite_literal = to_remove->Index();
     b->erase(to_remove);
   }
-  return true;
+  return kModified;
 }
 
 LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,

@@ -42,6 +42,7 @@
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -4423,8 +4424,8 @@ TEST(PresolveCpModelTest, DetectDifferentVariablesAndAddNoOverlap) {
   PresolveContext context(&model, &cp_model, &mapping_model);
   std::vector<int> mapping;
   CpModelPresolver presolver(&context, &mapping);
-  context.InitializeNewDomains();
-  presolver.DetectDifferentVariables();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.DetectDifferentVariables(), kOk);
   context.WriteVariableDomainsToProto();
 
   bool has_no_overlap_constraint = false;
@@ -8338,8 +8339,8 @@ TEST(PresolveCpModelTest, DuplicateColumns) {
   std::vector<int> mapping;
   CpModelPresolver presolver(&context, &mapping);
 
-  context.InitializeNewDomains();
-  presolver.DetectDuplicateColumns();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.DetectDuplicateColumns(), kOk);
   context.WriteVariableDomainsToProto();
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
@@ -10668,6 +10669,89 @@ TEST(PresolveCpModelTest,
     EXPECT_EQ(response.solution(2), 0);
     EXPECT_EQ(response.solution(3), 1);
   }
+}
+
+TEST(PresolveCpModelTest,
+     EnforcedReservoirWithLargeLevelChangeOffsetDoesNotOverflow) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -100, 100 ] }
+    constraints {
+      enforcement_literal: -2
+      exactly_one { literals: [ -5, 0, 1, 2, 0, 0 ] }
+    }
+    constraints {
+      enforcement_literal: 1
+      reservoir {
+        min_level: -354243663943431788
+        max_level: 1498667567261978554
+        time_exprs { offset: 1 }
+        active_literals: -1
+        level_changes { vars: 5 coeffs: -1 offset: -4611615649683210239 }
+      }
+    }
+    search_strategy {
+      variable_selection_strategy: CHOOSE_LOWEST_MIN
+      domain_reduction_strategy: SELECT_MEDIAN_VALUE
+    }
+    search_strategy { exprs { vars: 3 coeffs: 2251631094839595986 offset: -1 } }
+    floating_point_objective {}
+  )pb");
+  ASSERT_EQ(ValidateCpModel(initial_model), "");
+
+  for (const bool enable_presolve : {true, false}) {
+    SatParameters params;
+    params.set_cp_model_presolve(enable_presolve);
+    const CpSolverResponse response =
+        SolveWithParameters(initial_model, params);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+  }
+}
+
+TEST(PresolveCpModelTest, ReplaceVariableByEncodingMappingOverflowFallback) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables {
+      domain: [
+        -4000000000000000000,
+        -4000000000000000000,
+        0,
+        10,
+        4000000000000000000,
+        4000000000000000000
+      ]
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: 2
+        coeffs: 1
+        domain: [ 4000000000000000000, 4000000000000000000 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -2
+      linear {
+        vars: 2
+        coeffs: 1
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints { bool_or { literals: [ 0 ] } }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(initial_model), "");
+
+  const CpSolverResponse response = Solve(initial_model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+  EXPECT_EQ(response.solution(0), 1);
+  EXPECT_EQ(response.solution(2), 4000000000000000000LL);
 }
 
 }  // namespace

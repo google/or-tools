@@ -169,6 +169,7 @@ MPSolutionResponse TimeLimitResponse(SolverLogger& logger) {
 std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     const sat::SatParameters& params, int num_clamped,
     const sat::MPModelProtoWrapper& mp_model_wrapper,
+    absl::Span<const double> pre_var_scaling,
     std::vector<sat::MipVariableState>* states, sat::CpModelProto* cp_model,
     SolverLogger* logger) {
   const int num_variables = mp_model_wrapper.num_variables();
@@ -382,8 +383,11 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
   final_shift_stats.max_shift =
       std::max(final_shift_stats.max_shift, tum_stats.shift_stats.max_shift);
   sat::LogShiftStats(final_shift_stats, logger);
-  sat::DisplayConstraintScalingStats(
-      params, scaler, num_clamped + num_extra_clamp, num_small_domains, logger);
+  const double max_var_unscaling_error = sat::ComputeMaxVariableUnscalingError(
+      mp_model_wrapper, *states, *cp_model, pre_var_scaling);
+  sat::DisplayConstraintScalingStats(params, max_var_unscaling_error, scaler,
+                                     num_clamped + num_extra_clamp,
+                                     num_small_domains, logger);
   return std::nullopt;
 }
 
@@ -607,8 +611,8 @@ MPSolutionResponse SatSolveProtoInternal(
   sat::CpModelProto cp_model;
   if (std::optional<MPSolutionResponse> error_response =
           ConvertComponentsToCpModelProto(params, num_clamped,
-                                          *mp_model_wrapper, &states, &cp_model,
-                                          logger);
+                                          *mp_model_wrapper, var_scaling,
+                                          &states, &cp_model, logger);
       error_response.has_value()) {
     return *std::move(error_response);
   }
