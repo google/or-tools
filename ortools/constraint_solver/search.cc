@@ -2915,7 +2915,7 @@ class RoundRobinCompoundObjectiveMonitor : public BaseObjectiveMonitor {
       int next_active_monitor = (active_monitor_ + 1) % monitors_.size();
       while (!enabled_monitors_[next_active_monitor]) {
         if (next_active_monitor == active_monitor_) return false;
-        next_active_monitor = (active_monitor_ + 1) % monitors_.size();
+        next_active_monitor = (next_active_monitor + 1) % monitors_.size();
       }
       active_monitor_ = next_active_monitor;
       monitors_[active_monitor_]->set_active(true);
