@@ -48,6 +48,27 @@ constraint {
 
 class PyWrapLp(unittest.TestCase):
 
+    def test_scip_relax_integer_variable(self):
+        for lb, ub, integer_max in [(0.25, 2.75, 2), (-2.75, -0.25, -1)]:
+            solver = pywraplp.Solver.CreateSolver("SCIP")
+            if not solver:
+                self.skipTest("SCIP is not available")
+            with self.subTest(lb=lb, ub=ub):
+                x = solver.IntVar(lb, ub, "x")
+                solver.Maximize(x)
+                self.assertEqual(solver.Solve(), pywraplp.Solver.OPTIMAL)
+                self.assertEqual(x.solution_value(), integer_max)
+
+                x.SetInteger(False)
+                self.assertEqual(solver.Solve(), pywraplp.Solver.OPTIMAL)
+                self.assertEqual(x.solution_value(), ub)
+                self.assertEqual(solver.Objective().Value(), ub)
+
+                solver.Minimize(x)
+                self.assertEqual(solver.Solve(), pywraplp.Solver.OPTIMAL)
+                self.assertEqual(x.solution_value(), lb)
+                self.assertEqual(solver.Objective().Value(), lb)
+
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)
