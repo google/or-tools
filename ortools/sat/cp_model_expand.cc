@@ -1912,7 +1912,7 @@ void ProcessOneCompressedColumn(
     if (values[i].size() == 1) {
       // It is slightly better to use a bool_and if size is 1 instead of
       // reconverting it at a later stage.
-      const int v = values[i][0];
+      const int64_t v = values[i][0];
       ct->mutable_bool_and()->add_literals(
           context->GetOrCreateVarValueEncoding(variable, v));
       continue;
