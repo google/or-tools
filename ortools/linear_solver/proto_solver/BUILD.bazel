@@ -349,6 +349,7 @@ or_cc_library(
         "//ortools/lp_data",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:proto_utils",
+        "//ortools/sat:mp_model_wrapper",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log:check",
