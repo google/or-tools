@@ -30,6 +30,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -52,8 +53,8 @@ CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
       ->set_keep_all_feasible_solutions_in_presolve(true);
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  EXPECT_EQ(presolver.PresolveOneConstraint(constraint_index), kUnknown);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(constraint_index), kOk);
   presolver.RemoveEmptyConstraints();
   for (int i = 0; i < presolved_model.variables_size(); ++i) {
     FillDomainInProto(context.DomainOf(i),
@@ -154,9 +155,9 @@ TEST(PresolveCpModelTest, InferAllDiffsControlsNoOverlapConversion) {
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-  EXPECT_EQ(presolver.PresolveOneConstraint(3), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(3), kOk);
   presolver.RemoveEmptyConstraints();
 
   bool has_no_overlap = false;
@@ -848,11 +849,12 @@ TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
     Model model;
     PresolveContext context(&model, &model_proto, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
     ASSERT_FALSE(
         presolver
-            .DetectTwoTermTilting(0, context.BuildMergedLinearConstraintView(
-                                         model_proto.constraints(0).linear()))
+            .DetectTwoTermTilting(model_proto.mutable_constraints(0),
+                                  context.BuildMergedLinearConstraintView(
+                                      model_proto.constraints(0).linear()))
             .unsat());
 
     const auto& new_lin = model_proto.constraints(0).linear();
@@ -1523,8 +1525,8 @@ TEST(PresolveCpModelTest, DecoupleOpposingBigMSkipsNewlyFixedVar) {
   Model model;
   PresolveContext context(&model, &presolved, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
   presolver.RemoveEmptyConstraints();
 
   ASSERT_EQ(presolved.constraints_size(), 4);
@@ -1684,9 +1686,8 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintDetectsUnsat) {
   Model model;
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
-  EXPECT_TRUE(context.ModelIsUnsat());
 }
 
 TEST(PresolveCpModelTest,
@@ -1784,9 +1785,8 @@ TEST(PresolveCpModelTest, TightenBigMInBoxedLinearConstraintRandomEquivalence) {
     params->set_presolve_extract_integer_enforcement(false);
     PresolveContext context(&model, &presolved_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
     const bool is_unsat = presolver.PresolveOneConstraint(0).unsat();
-    EXPECT_EQ(is_unsat, context.ModelIsUnsat());
     presolver.RemoveEmptyConstraints();
     if (!is_unsat && presolved_model.constraints_size() == 1 &&
         presolved_model.constraints(0).constraint_case() ==
@@ -1927,8 +1927,8 @@ TEST(PresolveCpModelTest,
   Model model;
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  EXPECT_EQ(presolver.PresolveOneConstraint(/*c=*/2), kUnknown);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(/*c=*/2), kOk);
   presolver.RemoveEmptyConstraints();
 
   bool has_no_overlap = false;
@@ -1992,11 +1992,11 @@ TEST(PresolveCpModelTest,
       ->set_keep_all_feasible_solutions_in_presolve(true);
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
   EXPECT_GT(context.num_presolve_operations, 0);
   const int64_t ops_after_first_pass = context.num_presolve_operations;
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
   EXPECT_EQ(context.num_presolve_operations, ops_after_first_pass);
   presolver.RemoveEmptyConstraints();
   EXPECT_THAT(presolved_model, EqualsProto(expected_model));
@@ -2378,13 +2378,13 @@ TEST(PresolveCpModelTest,
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
-  EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(1), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear().domain(),
               ElementsAre(0, 0, 4, 8));
@@ -2462,10 +2462,9 @@ TEST(PresolveCpModelTest,
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
-  EXPECT_TRUE(context.ModelIsUnsat());
 }
 
 TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesSimpleSumAndTwoSided) {
@@ -2536,16 +2535,16 @@ TEST(PresolveCpModelTest, FixVariablesExceedingRhsEnablesSimpleSumAndTwoSided) {
         ->set_keep_all_feasible_solutions_in_presolve(true);
     PresolveContext context(&model, &working_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
     EXPECT_EQ(context.DomainOf(8), Domain(0));
     EXPECT_EQ(context.DomainOf(9), Domain(3, 4));
     EXPECT_THAT(working_model.constraints(0).linear().vars(),
                 ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 9));
     EXPECT_TRUE(context.ConstraintIsCanonical(0));
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
     EXPECT_TRUE(context.ModelProtoIsCanonical());
   }
 }
@@ -2592,19 +2591,19 @@ TEST(PresolveCpModelTest,
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ASSERT_FALSE(context.NeedsCanonicalization());
 
   // PresolveAtMostOne removes singleton var 2 (fixing it, which only touches
   // c0; var 2 is no longer in c0 after PresolveAtMostOne canonicalizes c0).
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ASSERT_FALSE(context.NeedsCanonicalization());
 
   // RemoveSingletonInLinear removes var 5 without fixing any variable, so
   // NeedsCanonicalization() stays false immediately.
-  EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(1), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -2622,7 +2621,7 @@ TEST(PresolveCpModelTest,
   c4->mutable_linear()->add_domain(2);
   c4->mutable_linear()->add_domain(8);
   EXPECT_TRUE(context.NeedsCanonicalization());
-  EXPECT_EQ(presolver.PresolveOneConstraint(4), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(4), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -2631,12 +2630,12 @@ TEST(PresolveCpModelTest,
   // leaves NeedsCanonicalization() false immediately.
   working_model.add_variables()->mutable_domain()->Add(0);
   working_model.mutable_variables(7)->mutable_domain()->Add(1);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   ConstraintProto* c5 = context.AddConstraint();
   c5->mutable_bool_or()->add_literals(0);
   c5->mutable_bool_or()->add_literals(1);
   c5->mutable_bool_or()->add_literals(7);
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ConstraintProto* c6 = context.AddConstraint();
   c6->mutable_linear()->add_vars(0);
   c6->mutable_linear()->add_coeffs(1);
@@ -2646,7 +2645,7 @@ TEST(PresolveCpModelTest,
   c6->mutable_linear()->add_coeffs(1);
   c6->mutable_linear()->add_domain(1);
   c6->mutable_linear()->add_domain(3);
-  EXPECT_EQ(presolver.PresolveOneConstraint(6), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(6), kOk);
   EXPECT_EQ(context.Constraint(6).constraint_case(), ConstraintProto::kBoolOr);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
@@ -2655,10 +2654,10 @@ TEST(PresolveCpModelTest,
   // PresolveBoolOr fixes singleton var 6 and clears c2; after flushing var 6's
   // domain invalidation (which has no remaining constraints), c2 is cleared and
   // canonical.
-  EXPECT_EQ(presolver.PresolveOneConstraint(2), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(2), kOk);
   EXPECT_EQ(context.Constraint(2).constraint_case(),
             ConstraintProto::CONSTRAINT_NOT_SET);
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 }
@@ -2720,13 +2719,13 @@ TEST(PresolveCpModelTest,
 
     PresolveContext context(&model, &working_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
-    EXPECT_EQ(presolver.PresolveOneConstraint(1), kUnknown);
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
+    EXPECT_EQ(presolver.PresolveOneConstraint(1), kOk);
     EXPECT_TRUE(context.ConstraintIsCanonical(1));
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
     EXPECT_FALSE(context.NeedsCanonicalization());
     EXPECT_TRUE(context.ModelProtoIsCanonical());
     EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -2762,11 +2761,10 @@ TEST(PresolveCpModelTest, PresolveDiophantineInfeasibleAbortsLinearPipeline) {
     Model model;
     PresolveContext context(&model, &working_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
     EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnsat);
-    EXPECT_TRUE(context.ModelIsUnsat());
     EXPECT_FALSE(context.NeedsCanonicalization());
   }
 
@@ -2807,15 +2805,14 @@ TEST(PresolveCpModelTest, PresolveDiophantineInfeasibleAbortsLinearPipeline) {
     Model model;
     PresolveContext context(&model, &working_model, &mapping_model);
     CpConstraintPresolver presolver(&context);
-    context.InitializeNewDomains();
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-    EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
-    EXPECT_FALSE(context.ModelIsUnsat());
+    EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
     EXPECT_EQ(working_model.constraints(0).constraint_case(),
               ConstraintProto::kBoolAnd);
     EXPECT_TRUE(context.NeedsCanonicalization());
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
     EXPECT_TRUE(context.ModelProtoIsCanonical());
     EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
   }
@@ -2847,18 +2844,20 @@ TEST(PresolveCpModelTest, PresolveStatusTypesContract) {
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
   // CanonicalizationStatus: tilting rewrites c0 in place without
   // canonicalizing.
   EXPECT_EQ(presolver.DetectTwoTermTilting(
-                0, context.BuildMergedLinearConstraintView(
-                       working_model.constraints(0).linear())),
+                working_model.mutable_constraints(0),
+                context.BuildMergedLinearConstraintView(
+                    working_model.constraints(0).linear())),
             kNeedsCanonicalization);
   EXPECT_EQ(presolver.DetectTwoTermTilting(
-                0, context.BuildMergedLinearConstraintView(
-                       working_model.constraints(0).linear())),
+                working_model.mutable_constraints(0),
+                context.BuildMergedLinearConstraintView(
+                    working_model.constraints(0).linear())),
             kCanonical);
 
   // ModificationStatus: duplicate terms in LinearExpressionProto are merged.
@@ -2883,35 +2882,28 @@ TEST(PresolveCpModelTest, PresolveStatusTypesContract) {
       domain: [ 10, 20 ]
     }
   )pb");
-  EXPECT_EQ(presolver.PropagateDomainsInLinear(&infeasible_enforced_temp),
-            kUnknown);
+  EXPECT_EQ(presolver.PropagateDomainsInLinear(&infeasible_enforced_temp), kOk);
   EXPECT_TRUE(context.LiteralIsFalse(3));
-  EXPECT_FALSE(context.ModelIsUnsat());
 
-  const CanonicalizationStatus marked_false =
+  const FeasibilityStatus marked_false =
       presolver.MarkConstraintAsFalse(1, "test enforced false");
-  EXPECT_EQ(marked_false, kCanonical);
-  EXPECT_EQ(FeasibilityStatus(marked_false), kUnknown);
-  EXPECT_TRUE(context.ModelStatus().unknown());
-  EXPECT_EQ(context.ModelStatus(), kUnknown);
+  EXPECT_EQ(marked_false, kOk);
+  EXPECT_TRUE(marked_false.ok());
 
   // ClearedConstraintStatus can be ignored as a statement or converted to
-  // kCanonical / kUnknown.
+  // kCanonical / kOk.
   const CanonicalizationStatus cleared_canon = context.ClearConstraint(1);
   EXPECT_EQ(cleared_canon, kCanonical);
   const FeasibilityStatus cleared_feas = context.ClearConstraint(1);
-  EXPECT_EQ(cleared_feas, kUnknown);
+  EXPECT_EQ(cleared_feas, kOk);
   context.ClearConstraint(1);
 
   EXPECT_EQ(presolver.MarkConstraintAsFalse(0, "test unenforced false"),
             kUnsat);
-  EXPECT_EQ(context.ModelStatus(), kUnsat);
 
   // 3rd state of CanonicalizationStatus: kUnsat is distinct from kCanonical
   // and kNeedsCanonicalization.
-  const CanonicalizationStatus unsat_canon = presolver.DetectTwoTermTilting(
-      0, context.BuildMergedLinearConstraintView(
-             working_model.constraints(0).linear()));
+  const CanonicalizationStatus unsat_canon = kUnsat;
   EXPECT_EQ(unsat_canon, kUnsat);
   EXPECT_EQ(FeasibilityStatus(unsat_canon), kUnsat);
   EXPECT_TRUE(unsat_canon.unsat());
@@ -2944,10 +2936,10 @@ TEST(PresolveCpModelTest,
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
   CpConstraintPresolver presolver(&context);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  ASSERT_EQ(context.InitializeNewDomains(), kOk);
+  ASSERT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-  EXPECT_EQ(presolver.PresolveOneConstraint(0), kUnknown);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
   EXPECT_TRUE(context.ConstraintIsCanonical(0));
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
   EXPECT_EQ(context.GetAffineRelation(1), AffineRelation::Relation(0, 1, 0));

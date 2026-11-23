@@ -137,7 +137,8 @@ void LogTumStats(const TumStats& stats, SolverLogger* logger);
 // `states`, which may have been tightened.
 //
 // This processes a single residual continuous component (whose
-// `var_to_local_col` must be set). The external variables of its constraints
+// `var_to_local_col` must be set). All variables must have finite bounds
+// (clamped by ClampVariableBounds()), the external variables of its constraints
 // must be in their final state, and the ones used as enforcement must already
 // have their domain in `cp_model`.
 bool DetectAndConvertTotallyUnimodularComponent(

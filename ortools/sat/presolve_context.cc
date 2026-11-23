@@ -52,6 +52,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
@@ -188,8 +189,6 @@ void LazyConstraintVariableGraph::UpdateConstraintVariableUsage(int c) {
 
 // TODO(user): Also test var_to_constraints_ !!
 bool PresolveContext::ConstraintVariableUsageIsConsistent() const {
-  // We do not care in these cases.
-  if (is_unsat_) return true;
   if (time_limit_->LimitReached()) return true;
 
   const int num_vars = working_model_->variables_size();
@@ -242,9 +241,10 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() const {
 void PresolveContext::ClearStats() { stats_by_rule_name_.clear(); }
 
 int PresolveContext::NewIntVar(const Domain& domain) {
+  DCHECK(!domain.IsEmpty());
   IntegerVariableProto* const var = working_model_->add_variables();
   FillDomainInProto(domain, var);
-  InitializeNewDomains();
+  CHECK_EQ(InitializeNewDomains(), kOk);
   return working_model_->variables_size() - 1;
 }
 
@@ -680,22 +680,22 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
       .Contains((value - expr.offset()) / expr.coeffs(0));
 }
 
-[[nodiscard]] bool PresolveContext::IntersectDomainWith(int ref,
-                                                        const Domain& domain,
-                                                        bool* domain_modified) {
+FeasibilityStatus PresolveContext::IntersectDomainWith(int ref,
+                                                       const Domain& domain,
+                                                       bool* domain_modified) {
   DCHECK(!DomainIsEmpty(ref));
   const int var = PositiveRef(ref);
   const bool was_fixed = domains_[var].IsFixed();
 
   if (RefIsPositive(ref)) {
     if (domains_[var].IsIncludedIn(domain)) {
-      return true;
+      return kOk;
     }
     domains_[var] = domains_[var].IntersectionWith(domain);
   } else {
     const Domain temp = domain.Negation();
     if (domains_[var].IsIncludedIn(temp)) {
-      return true;
+      return kOk;
     }
     domains_[var] = domains_[var].IntersectionWith(temp);
   }
@@ -705,7 +705,7 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   }
   modified_domains.Set(var);
   if (domains_[var].IsEmpty()) {
-    return NotifyThatModelIsUnsat(
+    return NotifyUnsat(
         absl::StrCat("var #", ref, " has empty domain after intersecting with ",
                      domain.ToString()));
   }
@@ -718,7 +718,7 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   // Propagate the domain of the representative right away.
   // Note that the recursive call should only be one level deep.
   const AffineRelation::Relation r = GetAffineRelation(var);
-  if (r.representative == var) return true;
+  if (r.representative == var) return kOk;
   return IntersectDomainWith(r.representative,
                              DomainOf(var)
                                  .AdditionWith(Domain(-r.offset))
@@ -726,14 +726,14 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
                              /*domain_modified=*/nullptr);
 }
 
-[[nodiscard]] bool PresolveContext::IntersectDomainWith(
+FeasibilityStatus PresolveContext::IntersectDomainWith(
     const LinearExpressionProto& expr, const Domain& domain,
     bool* domain_modified) {
   if (expr.vars().empty()) {
     if (domain.Contains(expr.offset())) {
-      return true;
+      return kOk;
     } else {
-      return NotifyThatModelIsUnsat(absl::StrCat(
+      return NotifyUnsat(absl::StrCat(
           ProtobufShortDebugString(expr),
           " has empty domain after intersecting with ", domain.ToString()));
     }
@@ -746,7 +746,7 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   }
 
   // We don't do anything for longer expressions for now.
-  return true;
+  return kOk;
 }
 
 [[nodiscard]] bool PresolveContext::IntersectionOfAffineExprsIsNotEmpty(
@@ -761,13 +761,13 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
       a_var_domain, a_coeff, b_var_domain, -b_coeff, -a.offset() + b.offset());
 }
 
-[[nodiscard]] bool PresolveContext::SetLiteralToFalse(int lit) {
+FeasibilityStatus PresolveContext::SetLiteralToFalse(int lit) {
   const int var = PositiveRef(lit);
   const int64_t value = RefIsPositive(lit) ? 0 : 1;
   return IntersectDomainWith(var, Domain(value));
 }
 
-[[nodiscard]] bool PresolveContext::SetLiteralToTrue(int lit) {
+FeasibilityStatus PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
@@ -796,8 +796,7 @@ FeasibilityStatus PresolveContext::MarkConstraintAsFalse(
   }
   ct->clear_enforcement_literal();
   UpdateRuleStats(reason);
-  CanonicalizeConstraint(ct);
-  return ModelStatus();
+  return FeasibilityStatus(CanonicalizeConstraint(ct));
 }
 
 bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
@@ -833,7 +832,6 @@ void PresolveContext::UpdateRuleStats(std::string_view name, int num_times) {
 }
 
 bool PresolveContext::HasUnusedAffineVariable() const {
-  if (is_unsat_) return false;  // We do not care in this case.
   if (params_.keep_all_feasible_solutions_in_presolve()) return false;
 
   // We can leave non-optimal stuff around if we reach the time limit.
@@ -917,15 +915,16 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
       repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y));
 }
 
-bool PresolveContext::PropagateAffineRelation(int var) {
+FeasibilityStatus PresolveContext::PropagateAffineRelation(int var) {
   DCHECK(RefIsPositive(var));
   const AffineRelation::Relation r = GetAffineRelation(var);
-  if (r.representative == var) return true;
+  if (r.representative == var) return kOk;
   return PropagateAffineRelation(var, r.representative, r.coeff, r.offset);
 }
 
-bool PresolveContext::PropagateAffineRelation(int var, int rep, int64_t coeff,
-                                              int64_t offset) {
+FeasibilityStatus PresolveContext::PropagateAffineRelation(int var, int rep,
+                                                           int64_t coeff,
+                                                           int64_t offset) {
   DCHECK(RefIsPositive(var));
   DCHECK(RefIsPositive(rep));
   DCHECK(!DomainIsEmpty(var));
@@ -933,18 +932,20 @@ bool PresolveContext::PropagateAffineRelation(int var, int rep, int64_t coeff,
 
   // Propagate domains both ways.
   // var = coeff * rep + offset
-  if (!IntersectDomainWith(rep, DomainOf(var)
-                                    .AdditionWith(Domain(-offset))
-                                    .InverseMultiplicationBy(coeff))) {
-    return false;
+  if (IntersectDomainWith(rep, DomainOf(var)
+                                   .AdditionWith(Domain(-offset))
+                                   .InverseMultiplicationBy(coeff))
+          .unsat()) {
+    return kUnsat;
   }
-  if (!IntersectDomainWith(
+  if (IntersectDomainWith(
           var,
-          DomainOf(rep).MultiplicationBy(coeff).AdditionWith(Domain(offset)))) {
-    return false;
+          DomainOf(rep).MultiplicationBy(coeff).AdditionWith(Domain(offset)))
+          .unsat()) {
+    return kUnsat;
   }
 
-  return true;
+  return kOk;
 }
 
 void PresolveContext::RemoveAllVariablesFromAffineRelationConstraint() {
@@ -1014,7 +1015,9 @@ void PresolveContext::CanonicalizeVariable(int ref) {
   if (min == 0 || IsFixed(var)) return;  // Nothing to do.
 
   const int new_var = NewIntVar(DomainOf(var).AdditionWith(Domain(-min)));
-  CHECK(StoreAffineRelation(var, new_var, 1, min, /*debug_no_recursion=*/true));
+  CHECK_EQ(
+      StoreAffineRelation(var, new_var, 1, min, /*debug_no_recursion=*/true),
+      kOk);
   UpdateRuleStats("variables: canonicalize domain");
 }
 
@@ -1035,15 +1038,17 @@ bool ScaleFloatingPointObjective(const SatParameters& params,
   return ScaleAndSetObjective(params, terms, offset, maximize, proto, logger);
 }
 
-bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
-                                                 int64_t mod, int64_t rhs) {
+FeasibilityStatus PresolveContext::CanonicalizeAffineVariable(int ref,
+                                                              int64_t coeff,
+                                                              int64_t mod,
+                                                              int64_t rhs) {
   CHECK_NE(mod, 0);
   CHECK_NE(coeff, 0);
 
   const int64_t gcd = std::gcd(coeff, mod);
   if (gcd != 1) {
     if (rhs % gcd != 0) {
-      return NotifyThatModelIsUnsat(
+      return NotifyUnsat(
           absl::StrCat("Infeasible ", coeff, " * X = ", rhs, " % ", mod));
     }
     coeff /= gcd;
@@ -1052,7 +1057,7 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   }
 
   // We just abort in this case as there is no point introducing a new variable.
-  if (std::abs(mod) == 1) return true;
+  if (std::abs(mod) == 1) return kOk;
 
   int var = ref;
   if (!RefIsPositive(var)) {
@@ -1069,8 +1074,7 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   const Domain new_domain =
       DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
   if (new_domain.IsEmpty()) {
-    return NotifyThatModelIsUnsat(
-        "Empty domain in CanonicalizeAffineVariable()");
+    return NotifyUnsat("Empty domain in CanonicalizeAffineVariable()");
   }
   if (new_domain.IsFixed()) {
     UpdateRuleStats("variables: fixed value due to affine relation");
@@ -1092,19 +1096,19 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
     working_model_->mutable_variables(new_var)->set_name(
         working_model_->variables(var).name());
   }
-  CHECK(StoreAffineRelation(var, new_var, mod, offset + mod * min_value,
-                            /*debug_no_recursion=*/true));
+  CHECK_EQ(StoreAffineRelation(var, new_var, mod, offset + mod * min_value,
+                               /*debug_no_recursion=*/true),
+           kOk);
   UpdateRuleStats("variables: canonicalize affine domain");
-  return true;
+  return kOk;
 }
 
-bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
-                                          int64_t offset,
-                                          bool debug_no_recursion) {
+FeasibilityStatus PresolveContext::StoreAffineRelation(
+    int var_x, int var_y, int64_t coeff, int64_t offset,
+    bool debug_no_recursion) {
   DCHECK(RefIsPositive(var_x));
   DCHECK(RefIsPositive(var_y));
   DCHECK_NE(coeff, 0);
-  if (is_unsat_) return false;
 
   // Sets var_y's value to the solution of
   //   "var_x's value - coeff * var_y's value = offset".
@@ -1116,14 +1120,16 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   // representative (never downward from a representative to its dependent
   // variables), so the representative of var_x or var_y may already be fixed
   // (or tighter) on entry without var_x or var_y reflecting it yet.
-  if (!PropagateAffineRelation(var_x)) return false;
-  if (!PropagateAffineRelation(var_y)) return false;
-  if (!PropagateAffineRelation(var_x, var_y, coeff, offset)) return false;
+  if (PropagateAffineRelation(var_x).unsat()) return kUnsat;
+  if (PropagateAffineRelation(var_y).unsat()) return kUnsat;
+  if (PropagateAffineRelation(var_x, var_y, coeff, offset).unsat()) {
+    return kUnsat;
+  }
 
   if (IsFixed(var_x)) {
     const int64_t lhs = DomainOf(var_x).FixedValue() - offset;
     if (lhs % std::abs(coeff) != 0) {
-      return NotifyThatModelIsUnsat();
+      return NotifyUnsat();
     }
     UpdateRuleStats("affine: fixed");
     return IntersectDomainWith(var_y, Domain(lhs / coeff));
@@ -1148,26 +1154,26 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
     const int64_t a = coeff * ry.coeff - rx.coeff;
     const int64_t b = coeff * ry.offset + offset - rx.offset;
     if (a == 0) {
-      if (b != 0) return NotifyThatModelIsUnsat();
-      return true;
+      if (b != 0) return NotifyUnsat();
+      return kOk;
     }
     if (b % a != 0) {
-      return NotifyThatModelIsUnsat();
+      return NotifyUnsat();
     }
     UpdateRuleStats("affine: unique solution");
     const int64_t unique_value = -b / a;
-    if (!IntersectDomainWith(rx.representative, Domain(unique_value))) {
-      return false;
+    if (IntersectDomainWith(rx.representative, Domain(unique_value)).unsat()) {
+      return kUnsat;
     }
-    if (!IntersectDomainWith(var_x,
-                             Domain(unique_value * rx.coeff + rx.offset))) {
-      return false;
+    if (IntersectDomainWith(var_x, Domain(unique_value * rx.coeff + rx.offset))
+            .unsat()) {
+      return kUnsat;
     }
-    if (!IntersectDomainWith(var_y,
-                             Domain(unique_value * ry.coeff + ry.offset))) {
-      return false;
+    if (IntersectDomainWith(var_y, Domain(unique_value * ry.coeff + ry.offset))
+            .unsat()) {
+      return kUnsat;
     }
-    return true;
+    return kOk;
   }
 
   // var_x = coeff * var_y + offset;
@@ -1185,7 +1191,7 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
     if (gcd != 1) {
       a /= gcd;
       b /= gcd;
-      if (o % gcd != 0) return NotifyThatModelIsUnsat();
+      if (o % gcd != 0) return NotifyUnsat();
       o /= gcd;
     }
   }
@@ -1194,8 +1200,9 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   // become the representative for both.
   if (std::abs(a) > 1 && std::abs(b) > 1) {
     UpdateRuleStats("affine: created common representative");
-    if (!CanonicalizeAffineVariable(rx.representative, a, std::abs(b), o)) {
-      return false;
+    if (CanonicalizeAffineVariable(rx.representative, a, std::abs(b), o)
+            .unsat()) {
+      return kUnsat;
     }
 
     // Re-add the relation now that a will resolve to a multiple of b.
@@ -1227,23 +1234,24 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   CHECK(RefIsPositive(y));
 
   // Let's propagate domains first.
-  if (!IntersectDomainWith(
-          y, DomainOf(x).AdditionWith(Domain(-o)).InverseMultiplicationBy(c))) {
-    return false;
+  if (IntersectDomainWith(
+          y, DomainOf(x).AdditionWith(Domain(-o)).InverseMultiplicationBy(c))
+          .unsat()) {
+    return kUnsat;
   }
-  if (!IntersectDomainWith(
-          x,
-          DomainOf(y).ContinuousMultiplicationBy(c).AdditionWith(Domain(o)))) {
-    return false;
+  if (IntersectDomainWith(
+          x, DomainOf(y).ContinuousMultiplicationBy(c).AdditionWith(Domain(o)))
+          .unsat()) {
+    return kUnsat;
   }
 
   if (IsFixed(x) || IsFixed(y)) {
     DCHECK(IsFixed(x));
     DCHECK(IsFixed(y));
     UpdateRuleStats("affine: fixed");
-    if (!PropagateAffineRelation(var_x)) return false;
-    if (!PropagateAffineRelation(var_y)) return false;
-    return true;
+    if (PropagateAffineRelation(var_x).unsat()) return kUnsat;
+    if (PropagateAffineRelation(var_y).unsat()) return kUnsat;
+    return kOk;
   }
 
   // To avoid corner cases where replacing x by y in a linear expression
@@ -1272,8 +1280,8 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   // as possible and not all call sites do it.
   //
   // TODO(user): I am not sure this is needed given the propagation above.
-  if (!PropagateAffineRelation(var_x)) return false;
-  if (!PropagateAffineRelation(var_y)) return false;
+  if (PropagateAffineRelation(var_x).unsat()) return kUnsat;
+  if (PropagateAffineRelation(var_y).unsat()) return kUnsat;
 
   // These maps should only contain representatives, so only need to remap
   // either x or y.
@@ -1288,13 +1296,11 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
 
   graph_.AddToAffineRelation(x);
   graph_.AddToAffineRelation(y);
-  return true;
+  return kOk;
 }
 
-[[nodiscard]] bool PresolveContext::StoreBooleanEqualityRelation(int ref_a,
-                                                                 int ref_b) {
-  if (is_unsat_) return false;
-
+FeasibilityStatus PresolveContext::StoreBooleanEqualityRelation(int ref_a,
+                                                                int ref_b) {
   CHECK(!graph_.VariableWasRemoved(PositiveRef(ref_a)));
   CHECK(!graph_.VariableWasRemoved(PositiveRef(ref_b)));
   CHECK(!DomainOf(PositiveRef(ref_a)).IsEmpty());
@@ -1302,10 +1308,9 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
-  if (ref_a == ref_b) return true;
+  if (ref_a == ref_b) return kOk;
   if (ref_a == NegatedRef(ref_b)) {
-    is_unsat_ = true;
-    return false;
+    return NotifyUnsat("boolean variable equal to its negation");
   }
 
   const int var_a = PositiveRef(ref_a);
@@ -1369,10 +1374,10 @@ void PresolveContext::ResetAfterCopy() {
 }
 
 // Create the internal structure for any new variables in working_model_.
-void PresolveContext::InitializeNewDomains() {
+FeasibilityStatus PresolveContext::InitializeNewDomains() {
   const int new_size = working_model_->variables().size();
   DCHECK_GE(new_size, domains_.size());
-  if (domains_.size() == new_size) return;
+  if (domains_.size() == new_size) return kOk;
 
   modified_domains.Resize(new_size);
   vars_invalidating_canonicality_.Resize(new_size);
@@ -1386,8 +1391,7 @@ void PresolveContext::InitializeNewDomains() {
     modified_domains.Set(i);
     domains_[i] = ReadDomainFromProto(working_model_->variables(i));
     if (domains_[i].IsEmpty()) {
-      is_unsat_ = true;
-      return;
+      return NotifyUnsat("empty initial variable domain");
     }
     if (domains_[i].IsFixed()) {
       vars_invalidating_canonicality_.Set(i);
@@ -1396,6 +1400,7 @@ void PresolveContext::InitializeNewDomains() {
 
   // We resize the hint too even if not loaded.
   solution_crush_.Resize(new_size);
+  return kOk;
 }
 
 void PresolveContext::LoadAndClampSolutionHint() {
@@ -1427,8 +1432,6 @@ void PresolveContext::LoadAndClampSolutionHint() {
 }
 
 void PresolveContext::WriteHintToProto() {
-  if (ModelIsUnsat()) return;
-
   if (!solution_crush_.SolutionIsLoaded()) return;
   const int num_vars = NumVariables();
   for (int i = 0; i < num_vars; ++i) {
@@ -1448,13 +1451,11 @@ void PresolveContext::WriteHintToProto() {
   solution_crush_.StoreSolutionAsHint(*working_model_);
 }
 
-void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
+FeasibilityStatus PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   CHECK(RefIsPositive(var));
   CHECK_EQ(DomainOf(var).Size(), 2);
   const int64_t var_min = MinOf(var);
   const int64_t var_max = MaxOf(var);
-
-  if (is_unsat_) return;
 
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
@@ -1486,8 +1487,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     max_literal = max_it->second.Get(this);
     if (min_literal != NegatedRef(max_literal)) {
       UpdateRuleStats("variables with 2 values: merge encoding literals");
-      if (!StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal))) {
-        return;
+      if (StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal))
+              .unsat()) {
+        return kUnsat;
       }
     }
     min_literal = GetLiteralRepresentative(min_literal);
@@ -1517,9 +1519,9 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     CHECK(IsFixed(max_literal));
     UpdateRuleStats("variables with 2 values: fixed encoding");
     if (LiteralIsTrue(min_literal)) {
-      return static_cast<void>(IntersectDomainWith(var, Domain(var_min)));
+      return IntersectDomainWith(var, Domain(var_min));
     } else {
-      return static_cast<void>(IntersectDomainWith(var, Domain(var_max)));
+      return IntersectDomainWith(var, Domain(var_max));
     }
   }
 
@@ -1527,22 +1529,21 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   if (GetAffineRelation(var).representative != PositiveRef(min_literal)) {
     UpdateRuleStats("variables with 2 values: new affine relation");
     if (RefIsPositive(max_literal)) {
-      (void)StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_max - var_min, var_min);
+      return StoreAffineRelation(var, PositiveRef(max_literal),
+                                 var_max - var_min, var_min);
     } else {
-      (void)StoreAffineRelation(var, PositiveRef(max_literal),
-                                var_min - var_max, var_max);
+      return StoreAffineRelation(var, PositiveRef(max_literal),
+                                 var_min - var_max, var_max);
     }
   }
+  return kOk;
 }
 
-bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
-                                                     int64_t value,
-                                                     bool add_constraints) {
+FeasibilityStatus PresolveContext::InsertVarValueEncodingInternal(
+    int literal, int var, int64_t value, bool add_constraints) {
   DCHECK(RefIsPositive(var));
   DCHECK(!graph_.VariableWasRemoved(PositiveRef(literal)));
   DCHECK(!graph_.VariableWasRemoved(var));
-  if (is_unsat_) return false;
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
   // The code below is not 100% correct if this is not the case.
@@ -1575,20 +1576,19 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
       if (literal != previous_literal) {
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
-        if (!StoreBooleanEqualityRelation(literal, previous_literal)) {
-          return false;
+        if (StoreBooleanEqualityRelation(literal, previous_literal).unsat()) {
+          return kUnsat;
         }
       }
     }
-    return true;
+    return kOk;
   }
 
   if (DomainOf(var).Size() == 2) {
     if (!CanBeUsedAsLiteral(var)) {
       // TODO(user): There is a bug here if the var == value was not in the
       // domain, it will just be ignored.
-      CanonicalizeDomainOfSizeTwo(var);
-      if (is_unsat_) return false;
+      if (CanonicalizeDomainOfSizeTwo(var).unsat()) return kUnsat;
 
       if (IsFixed(var)) {
         if (FixedValue(var) == value) {
@@ -1604,12 +1604,12 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
 
     CHECK(CanBeUsedAsLiteral(var));
     if (value == 0) {
-      if (!StoreBooleanEqualityRelation(literal, NegatedRef(var))) {
-        return false;
+      if (StoreBooleanEqualityRelation(literal, NegatedRef(var)).unsat()) {
+        return kUnsat;
       }
     } else {
       CHECK_EQ(value, 1);
-      if (!StoreBooleanEqualityRelation(literal, var)) return false;
+      if (StoreBooleanEqualityRelation(literal, var).unsat()) return kUnsat;
     }
   } else if (add_constraints) {
     UpdateRuleStats("variables: add encoding constraint");
@@ -1617,13 +1617,12 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     AddImplyInDomain(NegatedRef(literal), var, Domain(value).Complement());
   }
 
-  // The canonicalization might have proven UNSAT.
-  return !ModelIsUnsat();
+  return kOk;
 }
 
-bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
-                                                 int64_t value, bool imply_eq) {
-  if (is_unsat_) return false;
+ChangeStatus PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
+                                                         int64_t value,
+                                                         bool imply_eq) {
   DCHECK(RefIsPositive(var));
 
   // Creates the linking sets on demand.
@@ -1633,9 +1632,10 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   if (!insert_result.second) {
     if (insert_result.first->second != value && imply_eq) {
       UpdateRuleStats("variables: detect half reified incompatible value");
-      return SetLiteralToFalse(literal);
+      if (SetLiteralToFalse(literal).unsat()) return kUnsat;
+      return kModified;
     }
-    return false;  // Already there.
+    return kUnchanged;  // Already there.
   }
 
   int fully_encoded_lit = 0;
@@ -1646,7 +1646,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
     UpdateRuleStats(
         "variables: half reified value encoding implies fully reified");
     AddImplication(literal, fully_encoded_lit);
-    return true;
+    return kModified;
   }
 
   if (imply_eq) {
@@ -1656,8 +1656,8 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
       if (negated_encoding->second == value) {
         UpdateRuleStats(
             "variables: both boolean and its negation imply same equality");
-        if (!IntersectDomainWith(var, Domain(value))) {
-          return false;
+        if (IntersectDomainWith(var, Domain(value)).unsat()) {
+          return kUnsat;
         }
       } else {
         const int64_t other_value = negated_encoding->second;
@@ -1666,12 +1666,13 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
         // var = (value - other_value) * b + other_value
         UpdateRuleStats(
             "variables: both boolean and its negation fix the same variable");
-        if (RefIsPositive(literal)) {
-          StoreAffineRelation(var, literal, value - other_value, other_value);
-        } else {
-          StoreAffineRelation(var, NegatedRef(literal), other_value - value,
-                              value);
-        }
+        const FeasibilityStatus status =
+            RefIsPositive(literal)
+                ? StoreAffineRelation(var, literal, value - other_value,
+                                      other_value)
+                : StoreAffineRelation(var, NegatedRef(literal),
+                                      other_value - value, value);
+        if (status.unsat()) return kUnsat;
       }
     }
   }
@@ -1686,13 +1687,14 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   if (it != other_set.end() && it->second == value) {
     UpdateRuleStats("variables: detect fully reified value encoding");
     const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
-    if (!InsertVarValueEncodingInternal(imply_eq_literal, var, value,
-                                        /*add_constraints=*/false)) {
-      return false;
+    if (InsertVarValueEncodingInternal(imply_eq_literal, var, value,
+                                       /*add_constraints=*/false)
+            .unsat()) {
+      return kUnsat;
     }
   }
 
-  return true;
+  return kModified;
 }
 
 bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) const {
@@ -1703,39 +1705,62 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) const {
   return true;
 }
 
-bool PresolveContext::InsertVarValueEncoding(int literal, int var,
-                                             int64_t value) {
+FeasibilityStatus PresolveContext::InsertVarValueEncoding(int literal, int var,
+                                                          int64_t value) {
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
-  if (!InsertVarValueEncodingInternal(literal, var, value,
-                                      /*add_constraints=*/true)) {
-    return false;
+  if (InsertVarValueEncodingInternal(literal, var, value,
+                                     /*add_constraints=*/true)
+          .unsat()) {
+    return kUnsat;
   }
 
   solution_crush_.MaybeSetLiteralToValueEncoding(literal, var, value);
-  return true;
+  return kOk;
 }
 
-bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
-                                                    int64_t value) {
+ChangeStatus PresolveContext::StoreLiteralImpliesVarEqValue(int literal,
+                                                            int var,
+                                                            int64_t value) {
+  const int original_var = PositiveRef(var);
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
     // The literal cannot be true.
-    return SetLiteralToFalse(literal);
+    if (SetLiteralToFalse(literal).unsat()) return kUnsat;
+    modified_domains.Set(original_var);
+    return kModified;
   }
   literal = GetLiteralRepresentative(literal);
-  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
+  const ChangeStatus status =
+      InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
+  if (status.modified()) {
+    // The domain is not actually modified, but we want to rescan the
+    // constraints linked to this variable.
+    modified_domains.Set(var);
+    modified_domains.Set(original_var);
+  }
+  return status;
 }
 
-bool PresolveContext::StoreLiteralImpliesVarNeValue(int literal, int var,
-                                                    int64_t value) {
+ChangeStatus PresolveContext::StoreLiteralImpliesVarNeValue(int literal,
+                                                            int var,
+                                                            int64_t value) {
+  const int original_var = PositiveRef(var);
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
     // The constraint is trivial.
-    return false;
+    return kUnchanged;
   }
   literal = GetLiteralRepresentative(literal);
-  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
+  const ChangeStatus status =
+      InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
+  if (status.modified()) {
+    // The domain is not actually modified, but we want to rescan the
+    // constraints linked to this variable.
+    modified_domains.Set(var);
+    modified_domains.Set(original_var);
+  }
+  return status;
 }
 
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
@@ -1867,18 +1892,14 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
       return value == 1 ? representative : NegatedRef(representative);
     } else {
       const int literal = NewBoolVar("integer encoding");
-      if (!InsertVarValueEncoding(literal, var, var_max)) {
-        return GetFalseLiteral();
-      }
+      CHECK_EQ(InsertVarValueEncoding(literal, var, var_max), kOk);
       const int representative = GetLiteralRepresentative(literal);
       return value == var_max ? representative : NegatedRef(representative);
     }
   }
 
   const int literal = NewBoolVar("integer encoding");
-  if (!InsertVarValueEncoding(literal, var, value)) {
-    return GetFalseLiteral();
-  }
+  CHECK_EQ(InsertVarValueEncoding(literal, var, value), kOk);
   return GetLiteralRepresentative(literal);
 }
 
@@ -1971,8 +1992,9 @@ void PresolveContext::ReadObjectiveFromProto() {
   }
 }
 
-bool PresolveContext::RestrictObjectiveDomain(const Domain& domain) {
-  if (objective_domain_.IsIncludedIn(domain)) return true;
+FeasibilityStatus PresolveContext::RestrictObjectiveDomain(
+    const Domain& domain) {
+  if (objective_domain_.IsIncludedIn(domain)) return kOk;
 
   UpdateRuleStats("objective: restricted objective domain");
   objective_domain_ = objective_domain_.IntersectionWith(domain);
@@ -1981,16 +2003,16 @@ bool PresolveContext::RestrictObjectiveDomain(const Domain& domain) {
   objective_domain_is_constraining_ = true;
   objective_proto_is_up_to_date_ = false;
   if (objective_domain_.IsEmpty()) {
-    return NotifyThatModelIsUnsat(
+    return NotifyUnsat(
         "Constraint parallel to the objective makes the objective domain "
         "empty");
   }
-  return true;
+  return kOk;
 }
 
-bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
+FeasibilityStatus PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   const auto it = objective_map_.find(var);
-  if (it == objective_map_.end()) return true;
+  if (it == objective_map_.end()) return kOk;
   const int64_t coeff = it->second;
 
   // If a variable only appears in the objective, we can fix it!
@@ -2003,12 +2025,12 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
       graph_.VarToConstraints(var).contains(kObjectiveConstraint)) {
     UpdateRuleStats("objective: variable not used elsewhere");
     if (coeff > 0) {
-      if (!IntersectDomainWith(var, Domain(MinOf(var)))) {
-        return false;
+      if (IntersectDomainWith(var, Domain(MinOf(var))).unsat()) {
+        return kUnsat;
       }
     } else {
-      if (!IntersectDomainWith(var, Domain(MaxOf(var)))) {
-        return false;
+      if (IntersectDomainWith(var, Domain(MaxOf(var))).unsat()) {
+        return kUnsat;
       }
     }
   }
@@ -2016,11 +2038,11 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   if (IsFixed(var)) {
     AddToObjectiveOffset(coeff * MinOf(var));
     RemoveVariableFromObjective(var);
-    return true;
+    return kOk;
   }
 
   const AffineRelation::Relation r = GetAffineRelation(var);
-  if (r.representative == var) return true;
+  if (r.representative == var) return kOk;
 
   RemoveVariableFromObjective(var);
 
@@ -2043,11 +2065,10 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
       AddToObjectiveOffset(new_coeff * MinOf(r.representative));
     }
   }
-  return true;
+  return kOk;
 }
 
-bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
-  if (ModelIsUnsat()) return false;
+FeasibilityStatus PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   objective_proto_is_up_to_date_ = false;
 
   // We replace each entry by its affine representative.
@@ -2063,8 +2084,8 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
   for (const auto& entry : tmp_entries_) {
-    if (!CanonicalizeOneObjectiveVariable(entry.first)) {
-      return NotifyThatModelIsUnsat("canonicalize objective one term");
+    if (CanonicalizeOneObjectiveVariable(entry.first).unsat()) {
+      return kUnsat;
     }
   }
 
@@ -2104,7 +2125,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     }
     objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
     if (objective_domain_.IsEmpty()) {
-      return NotifyThatModelIsUnsat("empty objective domain");
+      return NotifyUnsat("empty objective domain");
     }
 
     objective_offset_ /= static_cast<double>(gcd);
@@ -2130,7 +2151,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   }
 
   if (objective_domain_.IsEmpty()) {
-    return NotifyThatModelIsUnsat("empty objective domain");
+    return NotifyUnsat("empty objective domain");
   }
 
   // Recompute objective_overflow_detection_ after canonicalizing variables and
@@ -2157,25 +2178,25 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
             << ", implied: " << implied_domain.ToString()
             << " objective: " << objective_domain_.ToString();
   }
-  return true;
+  return kOk;
 }
 
-bool PresolveContext::RecomputeSingletonObjectiveDomain() {
+FeasibilityStatus PresolveContext::RecomputeSingletonObjectiveDomain() {
   CHECK_EQ(objective_map_.size(), 1);
   const int var = objective_map_.begin()->first;
   const int64_t coeff = objective_map_.begin()->second;
 
   // Transfer all the info to the domain of var.
-  if (!IntersectDomainWith(var,
-                           objective_domain_.InverseMultiplicationBy(coeff))) {
-    return false;
+  if (IntersectDomainWith(var, objective_domain_.InverseMultiplicationBy(coeff))
+          .unsat()) {
+    return kUnsat;
   }
 
   // Recompute a correct and non-constraining objective domain.
   objective_proto_is_up_to_date_ = false;
   objective_domain_ = DomainOf(var).ContinuousMultiplicationBy(coeff);
   objective_domain_is_constraining_ = false;
-  return true;
+  return kOk;
 }
 
 void PresolveContext::RemoveVariableFromObjective(int ref) {
@@ -2227,11 +2248,10 @@ bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
   return true;
 }
 
-bool PresolveContext::SubstituteVariableInObjective(
+ChangeStatus PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64_t coeff_in_equality,
     const ConstraintProto& equality,
     bool substitution_does_not_change_objective_domain) {
-  objective_proto_is_up_to_date_ = false;
   CHECK(equality.enforcement_literal().empty());
   CHECK(RefIsPositive(var_in_equality));
 
@@ -2260,7 +2280,7 @@ bool PresolveContext::SubstituteVariableInObjective(
                  std::abs(coeff_in_equality) *
                      std::max(std::abs(MinOf(var_in_equality)),
                               std::abs(MaxOf(var_in_equality))));
-  if (new_value > kint64max / 2) return false;
+  if (new_value > kint64max / 2) return kUnchanged;
 
   // Compute the objective offset change.
   Domain offset = ReadDomainFromProto(equality.linear());
@@ -2271,7 +2291,8 @@ bool PresolveContext::SubstituteVariableInObjective(
   CHECK(!offset.IsEmpty());
 
   // We also need to make sure the integer_offset will not overflow.
-  if (!AddToObjectiveOffset(offset.Min())) return false;
+  if (!AddToObjectiveOffset(offset.Min())) return kUnchanged;
+  objective_proto_is_up_to_date_ = false;
   objective_overflow_detection_ = new_value;
 
   // Perform the substitution.
@@ -2322,7 +2343,7 @@ bool PresolveContext::SubstituteVariableInObjective(
                             .SimplifyUsingImpliedDomain(implied_domain);
 
     if (objective_domain_.IsEmpty()) {
-      return NotifyThatModelIsUnsat("empty objective domain");
+      return NotifyUnsat("empty objective domain");
     }
 
     // Detect if the objective domain does not limit the "optimal" objective
@@ -2342,7 +2363,7 @@ bool PresolveContext::SubstituteVariableInObjective(
     objective_domain_is_constraining_ = true;
   }
 
-  return true;
+  return kModified;
 }
 
 bool PresolveContext::ExploitExactlyOneInObjective(
@@ -2641,9 +2662,8 @@ void PresolveContext::LogInfo() {
 //
 // TODO(user): Maybe do not load slow-to-propagate constraints? For instance
 // we do not use any linear relaxation here.
-bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
-  if (context->ModelIsUnsat()) return false;
-
+FeasibilityStatus LoadModelForProbing(PresolveContext* context,
+                                      Model* local_model) {
   // Update the domain in the current CpModelProto.
   context->WriteVariableDomainsToProto();
   const CpModelProto& model_proto = context->WorkingModel();
@@ -2654,9 +2674,11 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
                               local_model, "probing");
 }
 
-bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
-                          PresolveContext* context, Model* local_model,
-                          absl::string_view name_for_logging) {
+FeasibilityStatus LoadModelForPresolve(const CpModelProto& model_proto,
+                                       SatParameters params,
+                                       PresolveContext* context,
+                                       Model* local_model,
+                                       absl::string_view name_for_logging) {
   *local_model->GetOrCreate<SatParameters>() = std::move(params);
   local_model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
       context->time_limit());
@@ -2675,26 +2697,28 @@ bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
   ExtractEncoding(model_proto, local_model);
   auto* sat_solver = local_model->GetOrCreate<SatSolver>();
   if (sat_solver->ModelIsUnsat()) {
-    return context->NotifyThatModelIsUnsat(
+    return context->NotifyUnsat(
         absl::StrCat("Initial loading for ", name_for_logging));
   }
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));
     if (sat_solver->ModelIsUnsat()) {
-      return context->NotifyThatModelIsUnsat(
+      return context->NotifyUnsat(
           absl::StrCat("after loading constraint during ", name_for_logging,
                        " ", ProtobufShortDebugString(ct)));
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
-  if (sat_solver->ModelIsUnsat()) return false;
+  if (sat_solver->ModelIsUnsat()) {
+    return context->NotifyUnsat(
+        absl::StrCat("after adding implications during ", name_for_logging));
+  }
   if (!sat_solver->Propagate()) {
-    return context->NotifyThatModelIsUnsat(
-        "during probing initial propagation");
+    return context->NotifyUnsat("during probing initial propagation");
   }
 
-  return true;
+  return kOk;
 }
 
 PresolveContext::MergedLinearConstraintView
@@ -2750,7 +2774,7 @@ PresolveContext::BuildMergedLinearConstraintView(
 }
 
 template <typename ProtoWithVarsAndCoeffs, typename PresolveContextT>
-bool CanonicalizeLinearExpressionInternal(
+ModificationStatus CanonicalizeLinearExpressionInternal(
     absl::Span<const int> enforcements, ProtoWithVarsAndCoeffs* proto,
     int64_t* offset, std::vector<std::pair<int, int64_t>>* tmp_terms,
     PresolveContextT* context) {
@@ -2848,7 +2872,7 @@ bool CanonicalizeLinearExpressionInternal(
     context->UpdateRuleStats("linear: fixed or dup variables");
   }
   *offset = sum_of_fixed_terms;
-  return remapped || proto->vars().size() < old_size;
+  return ModificationStatus(remapped || proto->vars().size() < old_size);
 }
 
 namespace {
@@ -2867,13 +2891,12 @@ bool DomainMatchesProto(const Domain& domain,
 }
 }  // namespace
 
-bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                                   bool* is_impossible,
-                                                   bool* is_trivial) {
+ModificationStatus PresolveContext::CanonicalizeLinearConstraint(
+    ConstraintProto* ct, bool* is_impossible, bool* is_trivial) {
   int64_t offset = 0;
   if (is_impossible != nullptr) *is_impossible = false;
   if (is_trivial != nullptr) *is_trivial = false;
-  bool result = CanonicalizeLinearExpressionInternal(
+  ModificationStatus status = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
   const auto [min_activity, max_activity] = ComputeMinMaxActivity(ct->linear());
@@ -2887,36 +2910,35 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
     // Let's just replace the domain by one that is overflow-safe.
     const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);
     FillDomainInProto(bad_domain, ct->mutable_linear());
-    result = true;
+    status = kModified;
   } else if (!DomainMatchesProto(tight_domain, ct->linear())) {
     FillDomainInProto(tight_domain, ct->mutable_linear());
-    result = true;
+    status = kModified;
   }
   if (is_trivial != nullptr && implied.IsIncludedIn(original_domain)) {
     *is_trivial = true;
   }
-  return result;
+  return status;
 }
 
-bool PresolveContext::CanonicalizeLinearExpression(
+ModificationStatus PresolveContext::CanonicalizeLinearExpression(
     absl::Span<const int> enforcements, LinearExpressionProto* expr) {
   int64_t offset = 0;
-  const bool result = CanonicalizeLinearExpressionInternal(
+  const ModificationStatus status = CanonicalizeLinearExpressionInternal(
       enforcements, expr, &offset, &tmp_terms_, this);
   if (offset != 0) {
     expr->set_offset(expr->offset() + offset);
   }
-  return result;
+  return status;
 }
 
-bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
-  if (context_->ModelIsUnsat()) return false;
+ChangeStatus PresolveContext::ConstraintCanonicalizer::Canonicalize() {
   if (ct_->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
     if (!ct_->enforcement_literal().empty()) {
       ct_->Clear();
-      return true;
+      return kModified;
     }
-    return false;
+    return kUnchanged;
   }
 
   // When LRAT proof checking is enabled with presolve disabled, problem
@@ -2926,15 +2948,14 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
   if (ct_->constraint_case() == ConstraintProto::kBoolOr &&
       !HasEnforcementLiteral(*ct_) && context_->lrat_proof_handler != nullptr &&
       !context_->params_.cp_model_presolve()) {
-    return false;
+    return kUnchanged;
   }
 
   // Generic presolve to exploit variable/literal equivalence.
   ExploitEquivalenceRelations();
-  if (context_->ModelIsUnsat()) return changed_;
 
   // Generic presolve for reified constraint.
-  if (!CanonicalizeEnforcementLiterals()) return changed_;
+  if (!CanonicalizeEnforcementLiterals()) return ChangeStatus(changed_);
 
   switch (ct_->constraint_case()) {
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
@@ -2943,28 +2964,31 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
-      CanonicalizeGraph(/*is_routes=*/false, ct_->mutable_circuit());
+      if (CanonicalizeGraph(/*is_routes=*/false, ct_->mutable_circuit())
+              .unsat()) {
+        return kUnsat;
+      }
       break;
     case ConstraintProto::ConstraintCase::kBoolOr:
-      CanonicalizeBoolOr();
+      if (CanonicalizeBoolOr().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kBoolAnd:
-      CanonicalizeBoolAnd();
+      if (CanonicalizeBoolAnd().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kAtMostOne:
-      CanonicalizeAtMostOne();
+      if (CanonicalizeAtMostOne().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kExactlyOne:
-      CanonicalizeExactlyOne();
+      if (CanonicalizeExactlyOne().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
-      CanonicalizeBoolXor();
+      if (CanonicalizeBoolXor().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kLinMax:
       CanonicalizeLinMax();
       break;
     case ConstraintProto::ConstraintCase::kLinear:
-      CanonicalizeLinear();
+      if (CanonicalizeLinear().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
       CanonicalizeAllExprs();
@@ -2976,10 +3000,13 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       CanonicalizeAllExprs();
-      CanonicalizeGraph(/*is_routes=*/true, ct_->mutable_routes());
+      if (CanonicalizeGraph(/*is_routes=*/true, ct_->mutable_routes())
+              .unsat()) {
+        return kUnsat;
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
-      CanonicalizeReservoir();
+      if (CanonicalizeReservoir().unsat()) return kUnsat;
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
     case ConstraintProto::ConstraintCase::kIntMod:
@@ -2992,12 +3019,11 @@ bool PresolveContext::ConstraintCanonicalizer::Canonicalize() {
       CanonicalizeAllExprs();
       break;
   }
-  return changed_;
+  return ChangeStatus(changed_);
 }
 
-void PresolveContext::ConstraintCanonicalizer::DivideLinearByGcd() {
-  if (context_->ModelIsUnsat()) return;
-
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::DivideLinearByGcd() {
   // Compute the GCD of all coefficients.
   int64_t gcd = 0;
   const int num_vars = ct_->linear().vars().size();
@@ -3015,35 +3041,35 @@ void PresolveContext::ConstraintCanonicalizer::DivideLinearByGcd() {
     FillDomainInProto(rhs.InverseMultiplicationBy(gcd), ct_->mutable_linear());
     changed_ = true;
     if (ct_->linear().domain_size() == 0) {
-      MarkConstraintAsFalse("linear: not satisfied after GCD");
+      return MarkConstraintAsFalse("linear: not satisfied after GCD");
     }
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinear() {
-  if (ct_->constraint_case() != ConstraintProto::kLinear) return;
-  if (context_->ModelIsUnsat()) return;
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeLinear() {
+  if (ct_->constraint_case() != ConstraintProto::kLinear) return kOk;
 
   if (ct_->linear().domain().empty()) {
-    MarkConstraintAsFalse("linear: no domain");
-    return;
+    return MarkConstraintAsFalse("linear: no domain");
   }
 
   bool is_impossible = false;
   bool is_trivial = false;
   changed_ |=
-      context_->CanonicalizeLinearConstraint(ct_, &is_impossible, &is_trivial);
+      context_->CanonicalizeLinearConstraint(ct_, &is_impossible, &is_trivial)
+          .modified();
   if (is_impossible) {
-    MarkConstraintAsFalse("linear: never in domain");
-    return;
+    return MarkConstraintAsFalse("linear: never in domain");
   }
   if (is_trivial) {
     context_->UpdateRuleStats("linear: always true");
     RemoveConstraint();
-    return;
+    return kOk;
   }
-  DivideLinearByGcd();
-  if (ct_->constraint_case() != ConstraintProto::kLinear) return;
+  if (DivideLinearByGcd().unsat()) return kUnsat;
+  if (ct_->constraint_case() != ConstraintProto::kLinear) return kOk;
 
   // For duplicate detection, we always make the first coeff positive.
   //
@@ -3058,11 +3084,13 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinear() {
     changed_ = true;
   }
   if (ct_->linear().vars().size() == 1) {
-    CanonicalizeLinearOfSizeOne();
+    return CanonicalizeLinearOfSizeOne();
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
   CHECK_EQ(ct_->linear().vars().size(), 1);
   CHECK(RefIsPositive(ct_->linear().vars(0)));
   DCHECK(context_->VariableIsAffineRepresentative(ct_->linear().vars(0)));
@@ -3074,13 +3102,12 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
           .InverseMultiplicationBy(ct_->linear().coeffs(0));
   const Domain rhs = proto_rhs.IntersectionWith(var_domain);
   if (rhs.IsEmpty()) {
-    MarkConstraintAsFalse("linear1: infeasible");
-    return;
+    return MarkConstraintAsFalse("linear1: infeasible");
   }
   if (rhs == var_domain) {
     context_->UpdateRuleStats("linear1: always true");
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   // We can always canonicalize the constraint to a coefficient of 1.
@@ -3094,9 +3121,9 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
   // Size one constraint with no enforcement?
   if (!HasEnforcementLiteral(*ct_)) {
     context_->UpdateRuleStats("linear1: without enforcement");
-    if (!context_->IntersectDomainWith(var, rhs)) return;
+    if (context_->IntersectDomainWith(var, rhs).unsat()) return kUnsat;
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   const Domain simplified_rhs =
@@ -3105,11 +3132,11 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinearOfSizeOne() {
     FillDomainInProto(simplified_rhs, ct_->mutable_linear());
     changed_ = true;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
-  if (context_->ModelIsUnsat()) return;
-
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
   // Move the enforcement literal inside the clause if any.
   if (HasEnforcementLiteral(*ct_)) {
     context_->UpdateRuleStats("bool_or: removed enforcement literal");
@@ -3122,7 +3149,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
 
   if (context_->lrat_proof_handler != nullptr &&
       !context_->params_.cp_model_presolve()) {
-    return;
+    return kOk;
   }
 
   // Inspects the literals, removes fixed ones, sorts, and handles duplicates
@@ -3139,7 +3166,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
     if (context_->LiteralIsTrue(literal)) {
       context_->UpdateRuleStats("bool_or: always true");
       RemoveConstraint();
-      return;
+      return kOk;
     }
     context_->tmp_literals.push_back(literal);
   }
@@ -3162,19 +3189,20 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
   if (SortedLiteralsHaveOppositePair(context_->tmp_literals)) {
     context_->UpdateRuleStats("bool_or: always true");
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   if (context_->tmp_literals.empty()) {
     context_->UpdateRuleStats("bool_or: empty");
-    (void)context_->NotifyThatModelIsUnsat();
-    return;
+    return context_->NotifyUnsat();
   }
   if (context_->tmp_literals.size() == 1) {
     context_->UpdateRuleStats("bool_or: only one literal");
-    if (!context_->SetLiteralToTrue(context_->tmp_literals[0])) return;
+    if (context_->SetLiteralToTrue(context_->tmp_literals[0]).unsat()) {
+      return kUnsat;
+    }
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   if (removed_fixed_or_dup) {
@@ -3185,18 +3213,18 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolOr() {
         context_->tmp_literals.begin(), context_->tmp_literals.end());
     changed_ = true;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
-  if (context_->ModelIsUnsat()) return;
-
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   if (!HasEnforcementLiteral(*ct_)) {
     context_->UpdateRuleStats("bool_and: non-reified");
     for (const int literal : ct_->bool_and().literals()) {
-      if (!context_->SetLiteralToTrue(literal)) return;
+      if (context_->SetLiteralToTrue(literal).unsat()) return kUnsat;
     }
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   bool changed = false;
@@ -3204,8 +3232,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   context_->tmp_literals.clear();
   for (const int literal : ct_->bool_and().literals()) {
     if (context_->LiteralIsFalse(literal)) {
-      MarkConstraintAsFalse("bool_and: always false");
-      return;
+      return MarkConstraintAsFalse("bool_and: always false");
     }
     if (context_->LiteralIsTrue(literal)) {
       changed = true;
@@ -3236,8 +3263,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   const absl::Span<const int> enforcements = ct_->enforcement_literal();
   DCHECK(absl::c_is_sorted(enforcements));
   if (SortedLiteralsHaveOppositeAcross(enforcements, context_->tmp_literals)) {
-    MarkConstraintAsFalse("bool_and: x => not x");
-    return;
+    return MarkConstraintAsFalse("bool_and: x => not x");
   }
 
   {
@@ -3259,8 +3285,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   }
 
   if (SortedLiteralsHaveOppositePair(context_->tmp_literals)) {
-    MarkConstraintAsFalse("bool_and: cannot be enforced");
-    return;
+    return MarkConstraintAsFalse("bool_and: cannot be enforced");
   }
 
   // Note that this is not the same behavior as a bool_or:
@@ -3268,7 +3293,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
   // - bool_and means "all literals inside true", so it is true if empty.
   if (context_->tmp_literals.empty()) {
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   if (removed_fixed_or_dup) {
@@ -3279,10 +3304,11 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolAnd() {
         context_->tmp_literals.begin(), context_->tmp_literals.end());
     changed_ = true;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::
-    CanonicalizeAtMostOrExactlyOne() {
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeAtMostOrExactlyOne() {
   const bool is_at_most_one =
       ct_->constraint_case() == ConstraintProto::kAtMostOne;
   const std::string name = is_at_most_one ? "at_most_one: " : "exactly_one: ";
@@ -3305,7 +3331,7 @@ void PresolveContext::ConstraintCanonicalizer::
     int num_negative = 0;
     for (const int other : *literals) {
       if (PositiveRef(other) != comp_var) {
-        if (!context_->SetLiteralToFalse(other)) return;
+        if (context_->SetLiteralToFalse(other).unsat()) return kUnsat;
         context_->UpdateRuleStats(absl::StrCat(name, "x and not(x)"));
       } else if (other == comp_var) {
         ++num_positive;
@@ -3316,18 +3342,18 @@ void PresolveContext::ConstraintCanonicalizer::
 
     // This is tricky for the case where the at most one reduce to (lit,
     // not(lit), not(lit)) for instance.
-    if (num_positive > 1 && !context_->SetLiteralToFalse(comp_var)) {
-      return;
+    if (num_positive > 1 && context_->SetLiteralToFalse(comp_var).unsat()) {
+      return kUnsat;
     }
-    if (num_negative > 1 && !context_->SetLiteralToTrue(comp_var)) {
-      return;
+    if (num_negative > 1 && context_->SetLiteralToTrue(comp_var).unsat()) {
+      return kUnsat;
     }
     RemoveConstraint();
-    return;
+    return kOk;
   }
   for (int i = 1; i < literals->size(); ++i) {
     if (literals->Get(i) == literals->Get(i - 1)) {
-      if (!context_->SetLiteralToFalse(literals->Get(i))) return;
+      if (context_->SetLiteralToFalse(literals->Get(i)).unsat()) return kUnsat;
       context_->UpdateRuleStats(absl::StrCat(name, "duplicate literals"));
     }
   }
@@ -3340,11 +3366,11 @@ void PresolveContext::ConstraintCanonicalizer::
       context_->UpdateRuleStats(absl::StrCat(name, "satisfied"));
       for (const int other : *literals) {
         if (other != literal) {
-          if (!context_->SetLiteralToFalse(other)) return;
+          if (context_->SetLiteralToFalse(other).unsat()) return kUnsat;
         }
       }
       RemoveConstraint();
-      return;
+      return kOk;
     }
 
     if (context_->LiteralIsFalse(literal)) {
@@ -3363,57 +3389,56 @@ void PresolveContext::ConstraintCanonicalizer::
     context_->UpdateRuleStats(absl::StrCat(name, "removed literals"));
     changed_ = true;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeAtMostOne() {
-  if (context_->ModelIsUnsat()) return;
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeAtMostOne() {
   CHECK(!HasEnforcementLiteral(*ct_));
-  CanonicalizeAtMostOrExactlyOne();
-  if (context_->ModelIsUnsat()) return;
-  if (ct_->constraint_case() != ConstraintProto::kAtMostOne) return;
+  if (CanonicalizeAtMostOrExactlyOne().unsat()) return kUnsat;
+  if (ct_->constraint_case() != ConstraintProto::kAtMostOne) return kOk;
 
   // Size zero: ok.
   const auto& literals = ct_->at_most_one().literals();
   if (literals.empty()) {
     context_->UpdateRuleStats("at_most_one: empty or all false");
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   // Size one: always satisfied.
   if (literals.size() == 1) {
     context_->UpdateRuleStats("at_most_one: size one");
     RemoveConstraint();
-    return;
+    return kOk;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeExactlyOne() {
-  if (context_->ModelIsUnsat()) return;
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeExactlyOne() {
   CHECK(!HasEnforcementLiteral(*ct_));
-  CanonicalizeAtMostOrExactlyOne();
-  if (context_->ModelIsUnsat()) return;
-  if (ct_->constraint_case() != ConstraintProto::kExactlyOne) return;
+  if (CanonicalizeAtMostOrExactlyOne().unsat()) return kUnsat;
+  if (ct_->constraint_case() != ConstraintProto::kExactlyOne) return kOk;
 
   // Size zero: UNSAT.
   const auto& literals = ct_->exactly_one().literals();
   if (literals.empty()) {
-    (void)context_->NotifyThatModelIsUnsat("exactly_one: empty or all false");
-    return;
+    return context_->NotifyUnsat("exactly_one: empty or all false");
   }
 
   // Size one: fix variable.
   if (literals.size() == 1) {
     context_->UpdateRuleStats("exactly_one: size one");
-    if (!context_->SetLiteralToTrue(literals[0])) return;
+    if (context_->SetLiteralToTrue(literals[0]).unsat()) return kUnsat;
     RemoveConstraint();
-    return;
+    return kOk;
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
-  if (context_->ModelIsUnsat()) return;
-
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
   auto* literals = ct_->mutable_bool_xor()->mutable_literals();
   const int old_size = literals->size();
   int new_size = 0;
@@ -3510,12 +3535,12 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
 
   if (new_size == 0) {
     if (!odd_parity) {
-      MarkConstraintAsFalse("bool_xor: always false");
+      return MarkConstraintAsFalse("bool_xor: always false");
     } else {
       context_->UpdateRuleStats("bool_xor: always true");
       RemoveConstraint();
     }
-    return;
+    return kOk;
   }
 
   if (odd_parity) {
@@ -3526,22 +3551,21 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeBoolXor() {
     const int single_lit = literals->Get(0);
     context_->UpdateRuleStats("bool_xor: one active literal");
     if (!HasEnforcementLiteral(*ct_)) {
-      if (!context_->SetLiteralToTrue(single_lit)) {
-        (void)context_->NotifyThatModelIsUnsat(
-            "bool_xor: cannot fix last literal");
-        return;
+      if (context_->SetLiteralToTrue(single_lit).unsat()) {
+        return kUnsat;
       }
       RemoveConstraint();
+      return kOk;
     } else {
       ct_->mutable_bool_or()->clear_literals();
       ct_->mutable_bool_or()->add_literals(single_lit);
       changed_ = true;
-      CanonicalizeBoolOr();
+      return CanonicalizeBoolOr();
     }
-    return;
   }
 
   changed_ |= changed;
+  return kOk;
 }
 
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeLinMax() {
@@ -3572,7 +3596,6 @@ void PresolveContext::ConstraintCanonicalizer::ExploitEquivalenceRelations() {
 
 bool PresolveContext::ConstraintCanonicalizer::
     CanonicalizeEnforcementLiterals() {
-  if (context_->ModelIsUnsat()) return false;
   if (!HasEnforcementLiteral(*ct_)) return true;
 
   auto remove_if_not_interval = [this]() {
@@ -3656,30 +3679,33 @@ void PresolveContext::ConstraintCanonicalizer::RemoveConstraint() {
   changed_ = true;
 }
 
-void PresolveContext::ConstraintCanonicalizer::MarkConstraintAsFalse(
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::MarkConstraintAsFalse(
     absl::string_view reason) {
-  if (context_->MarkConstraintAsFalse(ct_, reason).unsat()) return;
+  if (context_->MarkConstraintAsFalse(ct_, reason).unsat()) return kUnsat;
   changed_ = true;
+  return kOk;
 }
 
 void PresolveContext::ConstraintCanonicalizer::CanonicalizeAllExprs() {
   const absl::Span<const int> enf = ct_->enforcement_literal();
   ApplyToAllLinearExpressions(
       [this, enf](LinearExpressionProto* expr) {
-        changed_ |= context_->CanonicalizeLinearExpression(enf, expr);
+        changed_ |=
+            context_->CanonicalizeLinearExpression(enf, expr).modified();
       },
       ct_);
 }
 
 template <typename GraphProto>
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
+FeasibilityStatus PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
     bool is_routes, GraphProto* proto) {
   const int num_arcs = proto->literals_size();
   DCHECK_EQ(proto->tails_size(), num_arcs);
   DCHECK_EQ(proto->heads_size(), num_arcs);
   if (num_arcs == 0) {
     RemoveConstraint();
-    return;
+    return kOk;
   }
 
   const absl::Span<const int> enforcements = ct_->enforcement_literal();
@@ -3712,7 +3738,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
     changed_ = true;
     context_->UpdateRuleStats("enforcement: literal in constraint");
   }
-  if (!has_false_arc && !has_true_arc) return;
+  if (!has_false_arc && !has_true_arc) return kOk;
 
   struct NodeDegrees {
     bool has_self_loop = false;
@@ -3753,9 +3779,9 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
   for (const auto& [node, deg] : degrees) {
     if (is_routes && node == 0) continue;
     if (deg.in == 0 || deg.out == 0 || deg.true_in > 1 || deg.true_out > 1) {
-      MarkConstraintAsFalse(is_routes ? "routes: infeasible arc fixing"
-                                      : "circuit: infeasible arc fixing");
-      return;
+      return MarkConstraintAsFalse(is_routes
+                                       ? "routes: infeasible arc fixing"
+                                       : "circuit: infeasible arc fixing");
     }
   }
 
@@ -3767,9 +3793,8 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
       // formed and all non-depot nodes must be skipped via self-loops.
       for (const auto& [node, deg] : degrees) {
         if (node != 0 && !deg.has_self_loop) {
-          MarkConstraintAsFalse(
+          return MarkConstraintAsFalse(
               "routes: empty depot and self-loop missing for node");
-          return;
         }
       }
       changed_ = true;
@@ -3777,13 +3802,15 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
       if (!HasEnforcementLiteral(*ct_)) {
         for (int i = 0; i < new_size; ++i) {
           if (proto->tails(i) == proto->heads(i)) {
-            if (!context_->SetLiteralToTrue(proto->literals(i))) return;
+            if (context_->SetLiteralToTrue(proto->literals(i)).unsat())
+              return kUnsat;
           } else {
-            if (!context_->SetLiteralToFalse(proto->literals(i))) return;
+            if (context_->SetLiteralToFalse(proto->literals(i)).unsat())
+              return kUnsat;
           }
         }
         RemoveConstraint();
-        return;
+        return kOk;
       }
       std::vector<int> required_literals;
       required_literals.reserve(new_size);
@@ -3794,8 +3821,7 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
       }
       ct_->mutable_bool_and()->mutable_literals()->Assign(
           required_literals.begin(), required_literals.end());
-      CanonicalizeBoolAnd();
-      return;
+      return CanonicalizeBoolAnd();
     }
   }
 
@@ -3807,9 +3833,11 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeGraph(
     context_->UpdateRuleStats(is_routes ? "routes: removed false arcs"
                                         : "circuit: removed false arcs");
   }
+  return kOk;
 }
 
-void PresolveContext::ConstraintCanonicalizer::CanonicalizeReservoir() {
+FeasibilityStatus
+PresolveContext::ConstraintCanonicalizer::CanonicalizeReservoir() {
   CanonicalizeAllExprs();
   ReservoirConstraintProto& proto = *ct_->mutable_reservoir();
   const absl::Span<const int> enforcements = ct_->enforcement_literal();
@@ -3866,21 +3894,32 @@ void PresolveContext::ConstraintCanonicalizer::CanonicalizeReservoir() {
       context_->UpdateRuleStats("reservoir: always feasible");
       RemoveConstraint();
     } else {
-      MarkConstraintAsFalse("reservoir: trivially infeasible");
+      return MarkConstraintAsFalse("reservoir: trivially infeasible");
     }
   }
+  return kOk;
 }
 
-bool PresolveContext::CanonicalizeConstraint(ConstraintProto* ct) {
+ChangeStatus PresolveContext::CanonicalizeConstraint(ConstraintProto* ct) {
   return ConstraintCanonicalizer(this, ct).Canonicalize();
 }
 
-bool PresolveContext::CanonicalizeConstraint(int c,
-                                             bool force_variable_usage_update) {
+ChangeStatus PresolveContext::CanonicalizeConstraint(int c) {
+  return CanonicalizeConstraintInternal(c,
+                                        /*force_variable_usage_update=*/false);
+}
+
+FeasibilityStatus PresolveContext::CanonicalizeModifiedConstraint(int c) {
+  return FeasibilityStatus(
+      CanonicalizeConstraintInternal(c, /*force_variable_usage_update=*/true));
+}
+
+ChangeStatus PresolveContext::CanonicalizeConstraintInternal(
+    int c, bool force_variable_usage_update) {
   DCHECK_GE(c, 0);
   DCHECK_LT(c, NumConstraints());
-  const bool changed = CanonicalizeConstraint(MutableConstraint(c));
-  if (is_unsat_) return changed;
+  const ChangeStatus status = CanonicalizeConstraint(MutableConstraint(c));
+  if (status.unsat()) return kUnsat;
 
   const int old_size = canonicalization_.constraints_to_canonicalize.size();
   if (c >= old_size) {
@@ -3901,23 +3940,22 @@ bool PresolveContext::CanonicalizeConstraint(int c,
   } else {
     canonicalization_.ClearDirty(c);
   }
-  if (changed || force_variable_usage_update) {
+  if (status.modified() || force_variable_usage_update) {
     graph_.MarkForLazyUpdate(c);
   }
   DCHECK(ConstraintIsCanonical(c));
-  return changed;
+  return status;
 }
 
 bool PresolveContext::NeedsCanonicalization() const {
-  if (is_unsat_) return false;
   return canonicalization_.constraints_to_canonicalize.size() <
              NumConstraints() ||
          canonicalization_.num_dirty_constraints > 0 ||
          !vars_invalidating_canonicality_.PositionsSetAtLeastOnce().empty();
 }
 
-void PresolveContext::CanonicalizeConstraintsLazily() {
-  while (NeedsCanonicalization() && !is_unsat_) {
+FeasibilityStatus PresolveContext::CanonicalizeConstraintsLazily() {
+  while (NeedsCanonicalization()) {
     // 1. Expand bitset and mark newly appended constraints.
     const int old_size = canonicalization_.constraints_to_canonicalize.size();
     const int num_constraints = NumConstraints();
@@ -3976,7 +4014,6 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
 
     // 4. Arena-safe detach -> canonicalize -> reattach.
     for (const int c : canonicalization_.tmp_dirty_constraints) {
-      if (is_unsat_) break;
       if (c >= NumConstraints()) continue;
       if (Constraint(c).constraint_case() ==
           ConstraintProto::CONSTRAINT_NOT_SET) {
@@ -3993,7 +4030,7 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
       ct->Swap(working_model_->mutable_constraints(c));
       canonicalization_.detached_constraint_index = c;
 
-      const bool changed = CanonicalizeConstraint(ct);
+      const ChangeStatus status = CanonicalizeConstraint(ct);
 
       canonicalization_.detached_constraint_index = -1;
       if (ct->constraint_case() != ConstraintProto::CONSTRAINT_NOT_SET) {
@@ -4001,11 +4038,13 @@ void PresolveContext::CanonicalizeConstraintsLazily() {
       } else {
         ct->Clear();
       }
-      if (changed && !is_unsat_) {
+      if (status.unsat()) return kUnsat;
+      if (status.modified()) {
         graph_.MarkForLazyUpdate(c);
       }
     }
   }
+  return kOk;
 }
 
 CanonicalizationChecker::Options PresolveContext::MakeCanonicalCheckerOptions()
@@ -4021,7 +4060,6 @@ CanonicalizationChecker::Options PresolveContext::MakeCanonicalCheckerOptions()
 }
 
 bool PresolveContext::ModelProtoIsCanonical(bool check_sorted) const {
-  if (ModelIsUnsat()) return true;
   if (check_sorted && NeedsCanonicalization()) return false;
   for (int c = 0; c < NumConstraints(); ++c) {
     if (!canonical_checker_.ConstraintIsCanonical(Constraint(c),
@@ -4143,9 +4181,8 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
   Model local_model;
   CpModelProto mapping_model;
   PresolveContext mini_context(&local_model, mini_model, &mapping_model);
-  mini_context.InitializeNewDomains();
-  mini_context.CanonicalizeConstraintsLazily();
-  if (mini_context.ModelIsUnsat()) {
+  if (mini_context.InitializeNewDomains().unsat() ||
+      mini_context.CanonicalizeConstraintsLazily().unsat()) {
     mini_model->mutable_constraints()->Clear();
     mini_model->add_constraints()->mutable_bool_or();
   } else {

@@ -34,6 +34,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -868,7 +869,7 @@ TEST(IntProdExpandTest, EnforcementLiterals) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { name: "b" domain: 0 domain: 1 }
@@ -1757,7 +1758,7 @@ TEST(AutomatonExpandTest, EverythingZero) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 0 }
@@ -1792,7 +1793,7 @@ TEST(AutomatonExpandTest, EverythingZeroWithEnforcementLiteral) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
@@ -2386,8 +2387,8 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
     })pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  context.InitializeNewDomains();
-  ExpandCpModel(&context);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -2632,7 +2633,7 @@ TEST(LinMaxExpansionTest, GoldenTest) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_max_lin_max_size_for_expansion(4);
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 5 }
@@ -2676,7 +2677,7 @@ TEST(LinMaxExpansionTest, GoldenTestWithEnforcementLiterals) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_max_lin_max_size_for_expansion(4);
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 5 }
@@ -2765,7 +2766,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
@@ -2836,7 +2837,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansionWithInteger) {
       ->set_encode_complex_linear_constraint_with_integer(true);
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
@@ -2889,7 +2890,7 @@ TEST(FinalExpansionForLinearConstraintTest,
   model.GetOrCreate<SatParameters>()->set_enumerate_all_solutions(true);
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);

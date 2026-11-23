@@ -570,7 +570,9 @@ void TightSum::AddTerm(const Term& term) {
     // Takes into account the term -2^(64 * digits_.size()).
     --rem;
   }
-  if (rem != 0) digits_.push_back(rem);
+  // Avoid pushing a redundant sign-extension limb (0 when non-negative,
+  // -1 / kuint64max when negative).
+  if (rem != (neg_added ? -1 : 0)) digits_.push_back(rem);
   negative_ = neg_added;
 }
 

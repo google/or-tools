@@ -22,36 +22,11 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
-
-// Tag type representing infeasibility (UNSAT). Implicitly converts to the
-// UNSAT state of both `FeasibilityStatus` and `CanonicalizationStatus`.
-class [[nodiscard]] UnsatStatus {
- public:
-  friend constexpr bool operator==(UnsatStatus, UnsatStatus) = default;
-};
-inline constexpr UnsatStatus kUnsat{};
-
-// TODO(user): Move this somewhere else where it can easily be used
-// throughout the codebase, and use it to replace `bool` return types meaning
-// "unsat".
-class [[nodiscard]] FeasibilityStatus {
- public:
-  constexpr FeasibilityStatus(UnsatStatus) : is_unsat_(true) {}
-  explicit constexpr FeasibilityStatus(bool might_be_feasible)
-      : is_unsat_(!might_be_feasible) {}
-  constexpr bool unsat() const { return is_unsat_; }
-  constexpr bool unknown() const { return !is_unsat_; }
-  friend constexpr bool operator==(FeasibilityStatus,
-                                   FeasibilityStatus) = default;
-
- private:
-  bool is_unsat_;
-};
-inline constexpr FeasibilityStatus kUnknown{true};
 
 // Returned by single-constraint presolve helpers that may either detect UNSAT
 // or mutate constraint `c` in place without updating its canonicality or
@@ -66,6 +41,8 @@ class [[nodiscard]] CanonicalizationStatus {
   constexpr CanonicalizationStatus(UnsatStatus) : state_(State::kUnsat) {}
   explicit constexpr CanonicalizationStatus(FeasibilityStatus status)
       : state_(status.unsat() ? State::kUnsat : State::kCanonical) {}
+  explicit constexpr CanonicalizationStatus(ModificationStatus status)
+      : CanonicalizationStatus(status.modified()) {}
   explicit constexpr CanonicalizationStatus(bool needs_canonicalization)
       : state_(needs_canonicalization ? State::kNeedsCanonicalization
                                       : State::kCanonical) {}
@@ -73,9 +50,15 @@ class [[nodiscard]] CanonicalizationStatus {
   constexpr bool needs_canonicalization() const {
     return state_ == State::kNeedsCanonicalization;
   }
+  constexpr CanonicalizationStatus& operator|=(ModificationStatus status) {
+    if (status.modified() && state_ == State::kCanonical) {
+      state_ = State::kNeedsCanonicalization;
+    }
+    return *this;
+  }
   explicit constexpr operator FeasibilityStatus() const {
     DCHECK(!needs_canonicalization());
-    return unsat() ? FeasibilityStatus(kUnsat) : kUnknown;
+    return unsat() ? FeasibilityStatus(kUnsat) : kOk;
   }
   friend constexpr bool operator==(CanonicalizationStatus,
                                    CanonicalizationStatus) = default;

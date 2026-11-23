@@ -20,6 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -67,10 +68,9 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
 //   not allow both to be true.
 //
 // Also returns a list of literals that fully encodes a domain for the variable.
-// Returns false if we prove unsat.
-bool BasicPresolveAndGetFullyEncodedDomains(
+ChangeStatus BasicPresolveAndGetFullyEncodedDomains(
     PresolveContext* context, VariableEncodingLocalModel& local_model,
-    absl::flat_hash_map<int, Domain>* result, bool* changed);
+    absl::flat_hash_map<int, Domain>* result);
 
 // If we have a model containing:
 //    l1 => var in [0, 10]
@@ -89,8 +89,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
 // bool_or with an at_most_one or an exactly_one, but requires imposing
 // (unconditionally) that the variable cannot be both in the domain encoded by
 // `l1` and in the domain encoded by `l2`.
-bool DetectAllEncodedComplexDomain(PresolveContext* context,
-                                   VariableEncodingLocalModel& local_model);
+FeasibilityStatus DetectAllEncodedComplexDomain(
+    PresolveContext* context, VariableEncodingLocalModel& local_model);
 
 // If we have a bunch of constraints of the form literal => Y \in domain and
 // another constraint Y = f(X), we can remove Y, that constraint, and transform
@@ -103,8 +103,7 @@ bool DetectAllEncodedComplexDomain(PresolveContext* context,
 // If we have l => X = -1, we can't transfer that to abs(X) for instance, since
 // X=1 will also map to abs(-1). We can only do it if for all implied domains D
 // we have f^-1(f(D)) = D, which is not easy to check.
-// Returns false if we prove unsat.
-bool MaybeTransferLinear1ToAnotherVariable(
+FeasibilityStatus MaybeTransferLinear1ToAnotherVariable(
     VariableEncodingLocalModel& local_model, PresolveContext* context);
 
 }  // namespace sat

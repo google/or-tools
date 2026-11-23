@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -84,7 +85,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnIntVar) {
   context.NewIntVar({1, 5});
   context.NewBoolVar("test");
 
-  context.InsertVarValueEncoding(1, 0, 2);
+  EXPECT_EQ(context.InsertVarValueEncoding(1, 0, 2), kOk);
   EXPECT_EQ(1, context.GetOrCreateVarValueEncoding(0, 2));
   EXPECT_EQ(1, context.GetOrCreateVarValueEncoding(-1, -2));
 }
@@ -96,7 +97,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnSize2Var) {
   context.NewIntVar(Domain::FromValues({1, 4}));
   context.NewBoolVar("test");
 
-  context.InsertVarValueEncoding(1, 0, 1);
+  EXPECT_EQ(context.InsertVarValueEncoding(1, 0, 1), kOk);
   EXPECT_EQ(1, context.GetOrCreateVarValueEncoding(0, 1));
   EXPECT_EQ(-2, context.GetOrCreateVarValueEncoding(0, 4));
 }
@@ -108,7 +109,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnSize2VarBis) {
   context.NewIntVar(Domain::FromValues({1, 4}));
   context.NewBoolVar("test");
 
-  context.InsertVarValueEncoding(1, 0, 4);
+  EXPECT_EQ(context.InsertVarValueEncoding(1, 0, 4), kOk);
   EXPECT_EQ(1, context.GetOrCreateVarValueEncoding(0, 4));
   EXPECT_EQ(-2, context.GetOrCreateVarValueEncoding(0, 1));
 }
@@ -119,7 +120,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnPosLitMinLit) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewBoolVar("test");
-  context.InsertVarValueEncoding(a, b, 0);
+  EXPECT_EQ(context.InsertVarValueEncoding(a, b, 0), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(b), NegatedRef(a));
   EXPECT_TRUE(context.VarToConstraints(a).contains(kAffineRelationConstraint));
   EXPECT_TRUE(context.VarToConstraints(b).contains(kAffineRelationConstraint));
@@ -131,7 +132,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnPosLitPosMaxLit) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewBoolVar("test");
-  context.InsertVarValueEncoding(a, b, 1);
+  EXPECT_EQ(context.InsertVarValueEncoding(a, b, 1), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(b), a);
   EXPECT_TRUE(context.VarToConstraints(a).contains(kAffineRelationConstraint));
   EXPECT_TRUE(context.VarToConstraints(b).contains(kAffineRelationConstraint));
@@ -143,7 +144,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnNegLitMinLit) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewBoolVar("test");
-  context.InsertVarValueEncoding(NegatedRef(a), b, 0);
+  EXPECT_EQ(context.InsertVarValueEncoding(NegatedRef(a), b, 0), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(b), a);
   EXPECT_TRUE(context.VarToConstraints(a).contains(kAffineRelationConstraint));
   EXPECT_TRUE(context.VarToConstraints(b).contains(kAffineRelationConstraint));
@@ -155,7 +156,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnNegLitMaxLit) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewBoolVar("test");
-  context.InsertVarValueEncoding(NegatedRef(a), b, 1);
+  EXPECT_EQ(context.InsertVarValueEncoding(NegatedRef(a), b, 1), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(b), NegatedRef(a));
   EXPECT_TRUE(context.VarToConstraints(a).contains(kAffineRelationConstraint));
   EXPECT_TRUE(context.VarToConstraints(b).contains(kAffineRelationConstraint));
@@ -167,7 +168,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnPosLitMinVar) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewIntVar(Domain::FromValues({2, 5}));
-  context.InsertVarValueEncoding(a, b, 2);
+  EXPECT_EQ(context.InsertVarValueEncoding(a, b, 2), kOk);
 
   EXPECT_EQ(context.GetAffineRelation(b).representative, a);
   EXPECT_EQ(context.GetAffineRelation(b).coeff, -3);
@@ -183,7 +184,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnPosLitMaxVar) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewIntVar(Domain::FromValues({2, 5}));
-  context.InsertVarValueEncoding(a, b, 5);
+  EXPECT_EQ(context.InsertVarValueEncoding(a, b, 5), kOk);
 
   EXPECT_EQ(context.GetAffineRelation(b).representative, a);
   EXPECT_EQ(context.GetAffineRelation(b).coeff, 3);
@@ -199,7 +200,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnNegLitMinVar) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewIntVar(Domain::FromValues({2, 5}));
-  context.InsertVarValueEncoding(NegatedRef(a), b, 2);
+  EXPECT_EQ(context.InsertVarValueEncoding(NegatedRef(a), b, 2), kOk);
 
   EXPECT_EQ(context.GetAffineRelation(b).representative, a);
   EXPECT_EQ(context.GetAffineRelation(b).coeff, 3);
@@ -215,7 +216,7 @@ TEST(PresolveContextTest, InsertVarValueEncodingOnNegLitMaxVar) {
   PresolveContext context(&model, &working_model, nullptr);
   const int a = context.NewBoolVar("test");
   const int b = context.NewIntVar(Domain::FromValues({2, 5}));
-  context.InsertVarValueEncoding(NegatedRef(a), b, 5);
+  EXPECT_EQ(context.InsertVarValueEncoding(NegatedRef(a), b, 5), kOk);
 
   EXPECT_EQ(context.GetAffineRelation(b).representative, a);
   EXPECT_EQ(context.GetAffineRelation(b).coeff, -3);
@@ -311,9 +312,9 @@ TEST(PresolveContextTest, ObjectiveReadCanonicalizeWrite) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
   context.WriteObjectiveToProto();
 
   const CpModelProto expected = ParseTestProto(R"pb(
@@ -350,16 +351,16 @@ TEST(PresolveContextTest, ExploitAtMostOneInObjective) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
 
   // Do not crash if called with empty exactly one. The problem should be UNSAT
   // in this case, but we might call this before reporting it.
   EXPECT_FALSE(context.ExploitExactlyOneInObjective({}));
 
   EXPECT_TRUE(context.ExploitExactlyOneInObjective({0, 1, 2}));
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
   context.WriteObjectiveToProto();
 
   const CpModelProto expected = ParseTestProto(R"pb(
@@ -395,11 +396,11 @@ TEST(PresolveContextTest, ExploitAtMostOneInObjectiveNegatedRef) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
   EXPECT_TRUE(context.ExploitExactlyOneInObjective({0, NegatedRef(1), 2}));
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
   context.WriteObjectiveToProto();
 
   // The objective is 2X + 3(1 - Y) + 7Z  with X + Y + Z = 1
@@ -439,9 +440,9 @@ TEST(PresolveContextTest,
   working_model.mutable_objective()->add_coeffs(1);
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
 
   // Shifting {0, 1, 2, 3} by kQuarterMax would produce objective terms
   // -kQuarterMax * x1 - kQuarterMax * x2 - kQuarterMax * x3 + x4, which has
@@ -469,9 +470,9 @@ TEST(PresolveContextTest, ObjectiveSubstitution) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(context.CanonicalizeObjective());
+  EXPECT_EQ(context.CanonicalizeObjective(), kOk);
 
   const ConstraintProto constraint = ParseTestProto(R"pb(
     linear {
@@ -480,7 +481,8 @@ TEST(PresolveContextTest, ObjectiveSubstitution) {
       domain: [ 6, 6 ]
     }
   )pb");
-  EXPECT_TRUE(context.SubstituteVariableInObjective(0, -1, constraint));
+  EXPECT_EQ(context.SubstituteVariableInObjective(0, -1, constraint),
+            kModified);
 
   context.WriteObjectiveToProto();
   const CpModelProto expected = ParseTestProto(R"pb(
@@ -518,7 +520,7 @@ TEST(PresolveContextTest, ObjectiveSubstitutionWithLargeCoeff) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
 
   const ConstraintProto constraint = ParseTestProto(R"pb(
@@ -528,7 +530,8 @@ TEST(PresolveContextTest, ObjectiveSubstitutionWithLargeCoeff) {
       domain: [ 6, 6 ]
     }
   )pb");
-  EXPECT_TRUE(context.SubstituteVariableInObjective(0, -2, constraint));
+  EXPECT_EQ(context.SubstituteVariableInObjective(0, -2, constraint),
+            kModified);
 
   context.WriteObjectiveToProto();
   const CpModelProto expected = ParseTestProto(R"pb(
@@ -558,21 +561,25 @@ TEST(PresolveContextTest, VarValueEncoding) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  EXPECT_TRUE(context.StoreLiteralImpliesVarEqValue(0, 2, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarEqValue(0, 2, 4));
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  context.modified_domains.ResetAllToFalse();
+  EXPECT_EQ(context.StoreLiteralImpliesVarEqValue(0, 2, 4), kModified);
+  EXPECT_TRUE(context.modified_domains[2]);
+  context.modified_domains.ResetAllToFalse();
+  EXPECT_EQ(context.StoreLiteralImpliesVarEqValue(0, 2, 4), kUnchanged);
+  EXPECT_FALSE(context.modified_domains[2]);
   EXPECT_FALSE(context.HasVarValueEncoding(2, 4));
 
-  EXPECT_TRUE(context.StoreLiteralImpliesVarNeValue(-1, 2, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarNeValue(-1, 2, 4));
+  EXPECT_EQ(context.StoreLiteralImpliesVarNeValue(-1, 2, 4), kModified);
+  EXPECT_EQ(context.StoreLiteralImpliesVarNeValue(-1, 2, 4), kUnchanged);
   EXPECT_TRUE(context.HasVarValueEncoding(2, 4));
 
-  EXPECT_TRUE(context.StoreLiteralImpliesVarNeValue(0, 1, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarNeValue(0, 1, 4));
+  EXPECT_EQ(context.StoreLiteralImpliesVarNeValue(0, 1, 4), kModified);
+  EXPECT_EQ(context.StoreLiteralImpliesVarNeValue(0, 1, 4), kUnchanged);
   EXPECT_FALSE(context.HasVarValueEncoding(1, 4));
 
-  EXPECT_TRUE(context.StoreLiteralImpliesVarEqValue(-1, 1, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarEqValue(-1, 1, 4));
+  EXPECT_EQ(context.StoreLiteralImpliesVarEqValue(-1, 1, 4), kModified);
+  EXPECT_EQ(context.StoreLiteralImpliesVarEqValue(-1, 1, 4), kUnchanged);
   EXPECT_TRUE(context.HasVarValueEncoding(1, 4));
 }
 
@@ -605,10 +612,13 @@ TEST(PresolveContextTest, DetectVarEqValueHalfEncoding) {
   const int64_t kValue = 6;
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-  context.StoreLiteralImpliesVarEqValue(kLiteral, kVar, kValue);
-  context.StoreLiteralImpliesVarNeValue(NegatedRef(kLiteral), kVar, kValue);
+  EXPECT_EQ(context.StoreLiteralImpliesVarEqValue(kLiteral, kVar, kValue),
+            kModified);
+  EXPECT_EQ(
+      context.StoreLiteralImpliesVarNeValue(NegatedRef(kLiteral), kVar, kValue),
+      kModified);
   int encoding_literal = 0;
   EXPECT_TRUE(context.HasVarValueEncoding(kVar, kValue, &encoding_literal));
   EXPECT_EQ(encoding_literal, kLiteral);
@@ -623,7 +633,7 @@ TEST(PresolveContextTest, GetLiteralRepresentative) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   EXPECT_NE(context.GetLiteralRepresentative(0),
             context.GetLiteralRepresentative(1));
@@ -638,7 +648,7 @@ TEST(PresolveContextTest, GetLiteralRepresentative) {
   EXPECT_NE(context.GetLiteralRepresentative(-2),
             context.GetLiteralRepresentative(-3));
 
-  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, 1));
+  EXPECT_EQ(context.StoreBooleanEqualityRelation(0, 1), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(0),
             context.GetLiteralRepresentative(1));
   EXPECT_NE(context.GetLiteralRepresentative(0),
@@ -652,7 +662,7 @@ TEST(PresolveContextTest, GetLiteralRepresentative) {
   EXPECT_NE(context.GetLiteralRepresentative(-2),
             context.GetLiteralRepresentative(-3));
 
-  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -3));
+  EXPECT_EQ(context.StoreBooleanEqualityRelation(0, -3), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(0),
             context.GetLiteralRepresentative(1));
   EXPECT_EQ(context.GetLiteralRepresentative(0),
@@ -677,22 +687,22 @@ TEST(PresolveContextTest, GetLiteralRepresentativeWithAffineRelations) {
   )pb");
   CpModelProto mapping_model;
   PresolveContext context(&model, &working_model, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // Linking [-1, 0] with [0, 1] via x0 = -x1 chooses the [0, 1] variable x1 as
   // representative and keeps GetLiteralRepresentative valid even after fixing.
-  ASSERT_TRUE(context.StoreAffineRelation(0, 1, -1, 0));
+  ASSERT_EQ(context.StoreAffineRelation(0, 1, -1, 0), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(1), 1);
   EXPECT_EQ(context.GetLiteralRepresentative(NegatedRef(1)), NegatedRef(1));
-  ASSERT_TRUE(context.IntersectDomainWith(1, Domain(0)));
+  ASSERT_EQ(context.IntersectDomainWith(1, Domain(0)), kOk);
   EXPECT_EQ(context.GetLiteralRepresentative(1), 1);
 
   // When x3 = x2 + 1 shrinks into [0, 1] after being linked, canonicalizing its
   // [-1, 0] representative x2 restores a [0, 1] representative for x3.
-  ASSERT_TRUE(context.StoreAffineRelation(3, 2, 1, 1));
-  ASSERT_TRUE(context.IntersectDomainWith(3, Domain(0, 1)));
+  ASSERT_EQ(context.StoreAffineRelation(3, 2, 1, 1), kOk);
+  ASSERT_EQ(context.IntersectDomainWith(3, Domain(0, 1)), kOk);
   EXPECT_EQ(context.DomainOf(2), Domain(-1, 0));
-  context.CanonicalizeDomainOfSizeTwo(2);
+  EXPECT_EQ(context.CanonicalizeDomainOfSizeTwo(2), kOk);
   const int rep = context.GetAffineRelation(3).representative;
   EXPECT_TRUE(context.CanBeUsedAsLiteral(rep));
   EXPECT_EQ(context.GetLiteralRepresentative(3), rep);
@@ -732,7 +742,7 @@ TEST(PresolveContextTest, VarIsOnlyUsedInEncoding) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(0));
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(1));
   EXPECT_TRUE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(2));
@@ -753,7 +763,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
@@ -786,7 +796,7 @@ TEST(PresolveContextTest, ExploitFixedDomainOverflow) {
     constraints { dummy_constraint { vars: 0 vars: 1 } }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 }
 
 TEST(PresolveContextTest, IntersectDomainWithConstant) {
@@ -796,8 +806,8 @@ TEST(PresolveContextTest, IntersectDomainWithConstant) {
 
   LinearExpressionProto constant;
   constant.set_offset(3);
-  EXPECT_TRUE(context.IntersectDomainWith(constant, Domain(2, 3)));
-  EXPECT_FALSE(context.IntersectDomainWith(constant, Domain(2, 2)));
+  EXPECT_EQ(context.IntersectDomainWith(constant, Domain(2, 3)), kOk);
+  EXPECT_EQ(context.IntersectDomainWith(constant, Domain(2, 2)), kUnsat);
 }
 
 // Most of the logic is already tested by the Domain() manipulation function,
@@ -808,14 +818,14 @@ TEST(PresolveContextTest, IntersectDomainWithAffineExpression) {
     variables { domain: 0 domain: 5 }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // -2 x + 3 in [2, 3] so -2x in [-1, 0] and x must be in [0, 1].
   LinearExpressionProto expr;
   expr.add_vars(0);
   expr.add_coeffs(-1);
   expr.set_offset(3);
-  EXPECT_TRUE(context.IntersectDomainWith(expr, Domain(2, 3)));
+  EXPECT_EQ(context.IntersectDomainWith(expr, Domain(2, 3)), kOk);
   EXPECT_EQ(context.DomainOf(0), Domain(0, 1));
 }
 
@@ -829,10 +839,10 @@ TEST(PresolveContextTest, IntersectDomainWithUpdatesHint) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
-  EXPECT_TRUE(context.IntersectDomainWith(0, Domain(5, 20)));
+  EXPECT_EQ(context.IntersectDomainWith(0, Domain(5, 20)), kOk);
 
   EXPECT_EQ(context.DomainOf(0), Domain(5, 10));
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 5);
@@ -844,7 +854,7 @@ TEST(PresolveContextTest, DomainSuperSetOf) {
     variables { domain: 0 domain: 1000 }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   const LinearExpressionProto expr1 =
       ParseTestProto(R"pb(vars: 0 coeffs: 1 offset: 4)pb");
@@ -861,7 +871,7 @@ TEST(PresolveContextTest, DomainSuperSetOfDiscrete) {
     variables { domain: 0 domain: 1 }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   const LinearExpressionProto expr1 =
       ParseTestProto(R"pb(vars: 0 coeffs: -2 offset: 4)pb");
@@ -877,11 +887,11 @@ TEST(PresolveContextTest, AddAffineRelation) {
     variables { domain: [ 0, 1000 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-  EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 0));  // x0 = 3x1
-  EXPECT_TRUE(context.StoreAffineRelation(2, 3, 5, 0));  // x2 = 5x3
-  EXPECT_TRUE(context.StoreAffineRelation(0, 2, 2, 0));  // x0 = 2x2 !
+  EXPECT_EQ(context.StoreAffineRelation(0, 1, 3, 0), kOk);  // x0 = 3x1
+  EXPECT_EQ(context.StoreAffineRelation(2, 3, 5, 0), kOk);  // x2 = 5x3
+  EXPECT_EQ(context.StoreAffineRelation(0, 2, 2, 0), kOk);  // x0 = 2x2 !
 
   // A new variable is created: x4 !
   // x0 = 2x2 gets expanded into 3x1 = 10 x3, so x1 is a multiple of 10.
@@ -911,11 +921,13 @@ TEST(PresolveContextTest, AddAffineRelationWithOffset) {
     variables { domain: [ 0, 1000 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-  EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 10));  // x0 = 3x1 + 10
-  EXPECT_TRUE(context.StoreAffineRelation(2, 3, 1, 30));  // x2 = x3 + 30
-  EXPECT_TRUE(context.StoreAffineRelation(0, 2, 1, 0));   // x0 = x2 !
+  EXPECT_EQ(context.StoreAffineRelation(0, 1, 3, 10),
+            kOk);  // x0 = 3x1 + 10
+  EXPECT_EQ(context.StoreAffineRelation(2, 3, 1, 30),
+            kOk);                                           // x2 = x3 + 30
+  EXPECT_EQ(context.StoreAffineRelation(0, 2, 1, 0), kOk);  // x0 = x2 !
 
   // x0 = 3x1 + 10
   EXPECT_EQ(context.GetAffineRelation(0).representative, 1);
@@ -946,13 +958,15 @@ TEST(PresolveContextTest, AddAffineRelationCommonRepresentativeWithOffsets) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
-  ASSERT_TRUE(context.StoreAffineRelation(0, 1, 3, 1));  // x0 = 3 * x1 + 1
-  ASSERT_TRUE(context.StoreAffineRelation(2, 3, 5, 2));  // x2 = 5 * x3 + 2
+  ASSERT_EQ(context.StoreAffineRelation(0, 1, 3, 1),
+            kOk);  // x0 = 3 * x1 + 1
+  ASSERT_EQ(context.StoreAffineRelation(2, 3, 5, 2),
+            kOk);  // x2 = 5 * x3 + 2
   // 3 * x1 + 1 = 2 * (5 * x3 + 2) -> 3 * x1 - 10 * x3 = 3.
-  ASSERT_TRUE(context.StoreAffineRelation(0, 2, 2, 0));
+  ASSERT_EQ(context.StoreAffineRelation(0, 2, 2, 0), kOk);
 
   EXPECT_EQ(context.DomainOf(4), Domain(0, 33));
   EXPECT_EQ(context.GetAffineRelation(1),
@@ -984,13 +998,14 @@ TEST(PresolveContextTest, AddAffineRelationCommonRepresentativeWithGcd) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
-  ASSERT_TRUE(context.StoreAffineRelation(0, 1, 6, 0));   // x0 = 6 * x1
-  ASSERT_TRUE(context.StoreAffineRelation(2, 3, 10, 0));  // x2 = 10 * x3
+  ASSERT_EQ(context.StoreAffineRelation(0, 1, 6, 0), kOk);  // x0 = 6 * x1
+  ASSERT_EQ(context.StoreAffineRelation(2, 3, 10, 0),
+            kOk);  // x2 = 10 * x3
   // 6 * x1 = 10 * x3 + 2 -> 3 * x1 - 5 * x3 = 1 after dividing by gcd(6, 10).
-  ASSERT_TRUE(context.StoreAffineRelation(0, 2, 1, 2));
+  ASSERT_EQ(context.StoreAffineRelation(0, 2, 1, 2), kOk);
 
   EXPECT_EQ(context.DomainOf(4), Domain(0, 32));
   EXPECT_EQ(context.GetAffineRelation(1),
@@ -1016,10 +1031,10 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
     variables { domain: [ 100000001, 100000004 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // x0 = 10 x2 - 1e9.
-  EXPECT_TRUE(context.StoreAffineRelation(0, 1, 10, -1000000000));
+  EXPECT_EQ(context.StoreAffineRelation(0, 1, 10, -1000000000), kOk);
 
   // To avoid "future" overflow a new variable is created.
   // And everything is expressed using that one.
@@ -1054,11 +1069,11 @@ TEST(PresolveContextTest,
       }
     )pb");
     PresolveContext context(&model, &working_model, nullptr);
-    context.InitializeNewDomains();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
     context.LoadAndClampSolutionHint();
 
-    ASSERT_TRUE(context.StoreAffineRelation(1, 0, 10, 0));
-    ASSERT_TRUE(context.StoreAffineRelation(2, 1, 1, -1000));
+    ASSERT_EQ(context.StoreAffineRelation(1, 0, 10, 0), kOk);
+    ASSERT_EQ(context.StoreAffineRelation(2, 1, 1, -1000), kOk);
 
     EXPECT_EQ(context.DomainOf(0), Domain(100));
     EXPECT_EQ(context.DomainOf(1), Domain(1000));
@@ -1084,11 +1099,11 @@ TEST(PresolveContextTest,
       variables { domain: [ -10, 800 ] }
     )pb");
     PresolveContext context(&model, &working_model, nullptr);
-    context.InitializeNewDomains();
+    EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-    ASSERT_TRUE(context.StoreAffineRelation(2, 0, 2, 0));
-    ASSERT_TRUE(context.StoreAffineRelation(3, 1, -4, -2));
-    ASSERT_TRUE(context.StoreAffineRelation(2, 3, 1, 0));
+    ASSERT_EQ(context.StoreAffineRelation(2, 0, 2, 0), kOk);
+    ASSERT_EQ(context.StoreAffineRelation(3, 1, -4, -2), kOk);
+    ASSERT_EQ(context.StoreAffineRelation(2, 3, 1, 0), kOk);
 
     EXPECT_EQ(context.DomainOf(0), Domain(1));
     EXPECT_EQ(context.DomainOf(1), Domain(-1));
@@ -1114,7 +1129,7 @@ TEST(PresolveContextTest, ObjectiveScalingMinimize) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
                                           &working_model));
   ASSERT_TRUE(working_model.has_objective());
@@ -1139,7 +1154,7 @@ TEST(PresolveContextTest, ObjectiveScalingMaximize) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   ASSERT_TRUE(ScaleFloatingPointObjective(context.params(), context.logger(),
                                           &working_model));
   ASSERT_TRUE(working_model.has_objective());
@@ -1158,7 +1173,7 @@ TEST(ExpressionIsALiteralTest, BasicApi) {
     variables { domain: [ 0, 1 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   int ref;
   const LinearExpressionProto expr1 = ParseTestProto(R"pb(
@@ -1201,7 +1216,7 @@ TEST(PresolveContextTest, CanonicalizeAffineVariable) {
 
   // 3 * x + 9  is a multiple of 6.
   // This is the same as x + 3 is a multiple of 2.
-  EXPECT_TRUE(context.CanonicalizeAffineVariable(x, 3, 6, 9));
+  EXPECT_EQ(context.CanonicalizeAffineVariable(x, 3, 6, 9), kOk);
 
   const AffineRelation::Relation r = context.GetAffineRelation(x);
   EXPECT_EQ(r.coeff, 2);
@@ -1224,7 +1239,7 @@ TEST(PresolveContextTest, ComputeMinMaxActivity) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   const auto [min_activity, max_activity] =
       context.ComputeMinMaxActivity(working_model.objective());
   EXPECT_EQ(min_activity, 2 * 0 + 4 * 3 - 2 * 7 - 4 * -2 - 2 * 11);
@@ -1257,7 +1272,7 @@ TEST(PresolveContextTest, BuildMergedLinearConstraintView) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // Ranges are [5, 4, 8, 2, 3, 0] with magnitudes [10, 10, 3, 7, 3, 5]:
   //   magnitude 3  -> 8 + 3 = 11
@@ -1302,7 +1317,7 @@ TEST(PresolveContextTest, BuildMergedLinearConstraintViewClampsBounds) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // min_activity = 2*1 - 3*3 = -7, max_activity = 2*4 - 3*(-2) = 14.
   // Bounds [-100, 100] are clamped to
@@ -1341,7 +1356,7 @@ TEST(PresolveContextTest, BuildMergedLinearConstraintViewInfeasible) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // min_activity = -7, max_activity = 14.
   // Constraint 0 has ct_lb = 15 > max_activity.
@@ -1379,7 +1394,7 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   context.CanonicalizeLinearConstraint(working_model.mutable_constraints(0));
 
@@ -1405,7 +1420,7 @@ TEST(PresolveContextTest, LoadAndClampSolutionHint) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   context.solution_crush().StoreSolutionAsHint(working_model);
@@ -1425,7 +1440,7 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_easy) {
     variables { domain: [ 0, 10 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   LinearExpressionProto expr1;
   expr1.add_vars(0);
   expr1.add_coeffs(1);
@@ -1442,7 +1457,7 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_shifted) {
     variables { domain: [ 0, 10 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   LinearExpressionProto expr1;
   expr1.add_vars(0);
   expr1.add_coeffs(2);
@@ -1460,7 +1475,7 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_nosol) {
     variables { domain: [ 1, 4 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   LinearExpressionProto expr1;
   expr1.add_vars(0);
   expr1.add_coeffs(5);
@@ -1477,7 +1492,7 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_nosol2) {
     variables { domain: [ 1, 5 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   LinearExpressionProto expr1;
   expr1.add_vars(0);
   expr1.add_coeffs(5);
@@ -1494,7 +1509,7 @@ TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_reach) {
     variables { domain: [ 1, 5 ] }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   LinearExpressionProto expr1;
   expr1.add_vars(0);
   expr1.add_coeffs(5);
@@ -1536,9 +1551,9 @@ TEST(PresolveContextTest, CanonicalizeLinMaxSortsTermsAndExpressions) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
@@ -1590,9 +1605,9 @@ TEST(PresolveContextTest, CanonicalizeLinMaxCancelsZeroCoefficientTerms) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
@@ -1633,9 +1648,9 @@ TEST(PresolveContextTest, CanonicalizeLinMaxEnforcementLiterals) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   const ConstraintProto expected = ParseTestProto(R"pb(
@@ -1677,9 +1692,9 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraintWithEnforcements) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  EXPECT_TRUE(
-      context.CanonicalizeLinearConstraint(context.MutableConstraint(0)));
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeLinearConstraint(context.MutableConstraint(0)),
+            kModified);
   const ConstraintProto expected = ParseTestProto(R"pb(
     enforcement_literal: [ 0, -2 ]
     linear {
@@ -1712,8 +1727,8 @@ TEST(PresolveContextTest, CanonicalizeLinMaxLiteralAndNegationInInitialProto) {
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  EXPECT_TRUE(context.CanonicalizeConstraint(0));
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(kModified, context.CanonicalizeConstraint(0));
   EXPECT_EQ(context.Constraint(0).constraint_case(),
             ConstraintProto::CONSTRAINT_NOT_SET);
 }
@@ -1741,10 +1756,10 @@ TEST(PresolveContextTest,
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   // Substitute literal 1 with not(0) (-1).
-  EXPECT_TRUE(context.StoreBooleanEqualityRelation(0, -2));
-  EXPECT_TRUE(context.CanonicalizeConstraint(0));
+  EXPECT_EQ(context.StoreBooleanEqualityRelation(0, -2), kOk);
+  EXPECT_EQ(kModified, context.CanonicalizeConstraint(0));
   EXPECT_EQ(context.Constraint(0).constraint_case(),
             ConstraintProto::CONSTRAINT_NOT_SET);
 }
@@ -1897,11 +1912,11 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_TRUE(context.NeedsCanonicalization());
 
   // Initial sync canonicalizes unsorted inputs.
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -1913,15 +1928,14 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyAcrossFamilies) {
   // - Fix var 9 = 3 (folds constant into c0, c6, c8, c9, c10, c11).
   // - Link var 7 = 2 * var 6 + 1 (wakes up c0, c6, c8, c9, c10, and c11!).
   // - Link literal 3 == literal 2 (wakes up c1, c2, c3, c4, c5).
-  ASSERT_TRUE(context.SetLiteralToFalse(4));
-  ASSERT_TRUE(context.SetLiteralToTrue(5));
-  ASSERT_TRUE(context.IntersectDomainWith(9, Domain(3)));
-  ASSERT_TRUE(context.StoreAffineRelation(7, 6, 2, 1));
-  ASSERT_TRUE(context.StoreBooleanEqualityRelation(3, 2));
+  ASSERT_EQ(context.SetLiteralToFalse(4), kOk);
+  ASSERT_EQ(context.SetLiteralToTrue(5), kOk);
+  ASSERT_EQ(context.IntersectDomainWith(9, Domain(3)), kOk);
+  ASSERT_EQ(context.StoreAffineRelation(7, 6, 2, 1), kOk);
+  ASSERT_EQ(context.StoreBooleanEqualityRelation(3, 2), kOk);
 
   EXPECT_TRUE(context.NeedsCanonicalization());
-  context.CanonicalizeConstraintsLazily();
-  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
@@ -1998,16 +2012,15 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyCascadingPropagation) {
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // Fix a = 1; a single CanonicalizeConstraintsLazily() call must cascade
   // a=1 -> b=1 -> x=4 -> canonicalize interval c2.
-  ASSERT_TRUE(context.SetLiteralToTrue(0));
-  context.CanonicalizeConstraintsLazily();
+  ASSERT_EQ(context.SetLiteralToTrue(0), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-  ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_TRUE(context.LiteralIsTrue(1));
   EXPECT_TRUE(context.IsFixed(2));
   EXPECT_EQ(context.FixedValue(2), 4);
@@ -2043,8 +2056,8 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   Model model;
   PresolveContext context(&model, working_model, nullptr);
 
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
@@ -2053,11 +2066,11 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   // Re-running CanonicalizeConstraint on already-canonical constraints is a
   // pure read-only no-op returning false.
   for (int c = 0; c < context.NumConstraints(); ++c) {
-    EXPECT_FALSE(context.CanonicalizeConstraint(c));
+    EXPECT_EQ(kUnchanged, context.CanonicalizeConstraint(c));
   }
 
   for (int iter = 0; iter < 10; ++iter) {
-    context.CanonicalizeConstraintsLazily();
+    EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   }
   EXPECT_EQ(arena.SpaceUsed(), space_after_first_sync);
 
@@ -2066,7 +2079,7 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   context.MarkConstraintForCanonicalization(0);
   context.MarkConstraintForCanonicalization(1);
   EXPECT_TRUE(context.NeedsCanonicalization());
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_EQ(arena.SpaceUsed(), space_after_first_sync);
 
@@ -2078,8 +2091,8 @@ TEST(PresolveContextTest, CanonicalizeConstraintsLazilyArenaAndIdempotence) {
   EXPECT_FALSE(context.NeedsCanonicalization());
 
   // Non-fixing bound tightening does not invalidate lazy canonicality.
-  ASSERT_TRUE(context.IntersectDomainWith(2, Domain(0, 2)));
-  ASSERT_TRUE(context.IntersectDomainWith(3, Domain(0, 2)));
+  ASSERT_EQ(context.IntersectDomainWith(2, Domain(0, 2)), kOk);
+  ASSERT_EQ(context.IntersectDomainWith(3, Domain(0, 2)), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 }
@@ -2104,8 +2117,8 @@ TEST(PresolveContextTest,
   )pb");
   CpModelProto mapping_model;
   PresolveContext context(&model, &working_model, &mapping_model);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ASSERT_TRUE(context.ModelProtoIsCanonical());
 
   // Map var 4 -> var 0 while both are unfixed, then fix var 0 (the
@@ -2113,12 +2126,12 @@ TEST(PresolveContextTest,
   // var 4's own domain in domains_ remains [0, 1] because
   // IntersectDomainWith(0, ...) does not eagerly push down to
   // non-representative variables.
-  ASSERT_TRUE(context.StoreBooleanEqualityRelation(4, 0));
-  ASSERT_TRUE(context.SetLiteralToTrue(0));
+  ASSERT_EQ(context.StoreBooleanEqualityRelation(4, 0), kOk);
+  ASSERT_EQ(context.SetLiteralToTrue(0), kOk);
   EXPECT_FALSE(context.IsFixed(4));
   EXPECT_TRUE(context.IsFixed(0));
 
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
                 vars: [ 1, 2, 3 ]
@@ -2143,9 +2156,9 @@ TEST(PresolveContextTest,
     }
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_THAT(working_model.constraints(0).linear(), testing::EqualsProto(R"pb(
                 vars: [ 1 ]
@@ -2154,7 +2167,7 @@ TEST(PresolveContextTest,
               )pb"));
 
   // Re-canonicalizing is a no-op and preserves the simplified 2-interval RHS.
-  EXPECT_FALSE(context.CanonicalizeConstraint(0));
+  EXPECT_EQ(kUnchanged, context.CanonicalizeConstraint(0));
   EXPECT_THAT(working_model.constraints(0).linear().domain(),
               testing::ElementsAre(0, 0, 4, 8));
 }
@@ -2265,17 +2278,16 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
   // Fix z = 3 and link y = 2 * x + 1.
-  ASSERT_TRUE(context.IntersectDomainWith(3, Domain(3)));
-  ASSERT_TRUE(context.StoreAffineRelation(2, 1, 2, 1));
+  ASSERT_EQ(context.IntersectDomainWith(3, Domain(3)), kOk);
+  ASSERT_EQ(context.StoreAffineRelation(2, 1, 2, 1), kOk);
   EXPECT_TRUE(context.NeedsCanonicalization());
 
-  context.CanonicalizeConstraintsLazily();
-  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
 
@@ -2394,10 +2406,9 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-  ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -2472,16 +2483,15 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   // Before canonicalization, unary enforced kBoolXor and kBoolXor containing
   // enforcement variables are non-canonical.
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
   EXPECT_FALSE(context.ConstraintIsCanonical(2));
 
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
-  ASSERT_FALSE(context.ModelIsUnsat());
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
@@ -2545,7 +2555,7 @@ TEST(PresolveContextTest, CheckSortedParameterInConstraintIsCanonical) {
   )pb");
   Model model;
   PresolveContext context(&model, &permuted_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   for (int c = 0; c < context.NumConstraints(); ++c) {
     EXPECT_FALSE(context.ConstraintIsCanonical(c, /*check_sorted=*/true));
   }
@@ -2612,13 +2622,12 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_FALSE(context.ConstraintIsCanonical(0));
   EXPECT_FALSE(context.ConstraintIsCanonical(1));
   EXPECT_FALSE(context.ConstraintIsCanonical(2));
 
-  context.CanonicalizeConstraintsLazily();
-  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
@@ -2646,10 +2655,9 @@ TEST(PresolveContextTest,
 
   // Link `var 2 == ~var 1` (`2 -> -2`), mapping literal `2` onto `~e1` in c1
   // and c2; lazy re-canonicalization must remove the newly false arc/event.
-  ASSERT_TRUE(context.StoreBooleanEqualityRelation(2, -2));
+  ASSERT_EQ(context.StoreBooleanEqualityRelation(2, -2), kOk);
   EXPECT_TRUE(context.NeedsCanonicalization());
-  context.CanonicalizeConstraintsLazily();
-  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
@@ -2731,9 +2739,8 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
-  ASSERT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_TRUE(context.ModelProtoIsCanonical());
   EXPECT_TRUE(context.ConstraintVariableUsageIsConsistent());
 
@@ -2764,17 +2771,16 @@ TEST(PresolveContextTest,
   )pb");
 
   PresolveContext context(&model, &working_model, nullptr);
-  context.InitializeNewDomains();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ASSERT_FALSE(context.NeedsCanonicalization());
 
   // Mutating c0 into a smaller already-canonical clause and calling
-  // CanonicalizeConstraint(0, /*force_variable_usage_update=*/true) updates
-  // VarToConstraints without marking c0 for re-canonicalization.
+  // CanonicalizeModifiedConstraint(0) updates VarToConstraints without marking
+  // c0 for re-canonicalization.
   context.MutableConstraint(0)->mutable_bool_or()->mutable_literals()->Truncate(
       2);
-  EXPECT_FALSE(
-      context.CanonicalizeConstraint(0, /*force_variable_usage_update=*/true));
+  EXPECT_EQ(context.CanonicalizeModifiedConstraint(0), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_THAT(context.VarToConstraints(2), testing::ElementsAre(1));
 
@@ -2798,7 +2804,7 @@ TEST(PresolveContextTest,
   // CanonicalizeConstraint(int c) normalizes c0 in-place and updates the graph
   // without leaving NeedsCanonicalization() set when no other dirty state
   // exists. Flush first, then test AddConstraint() + CanonicalizeConstraint.
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   ASSERT_FALSE(context.NeedsCanonicalization());
 
   // Appending a single constraint and immediately calling
@@ -2809,7 +2815,7 @@ TEST(PresolveContextTest,
   c2->mutable_bool_or()->add_literals(1);
   c2->mutable_bool_or()->add_literals(1);
   EXPECT_TRUE(context.NeedsCanonicalization());
-  EXPECT_TRUE(context.CanonicalizeConstraint(2));
+  EXPECT_EQ(kModified, context.CanonicalizeConstraint(2));
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_THAT(context.Constraint(2), testing::EqualsProto(R"pb(
                 bool_or { literals: [ 1, 3 ] }
@@ -2825,15 +2831,15 @@ TEST(PresolveContextTest,
   ConstraintProto* c4 = context.AddConstraint();
   c4->mutable_at_most_one()->add_literals(3);
   c4->mutable_at_most_one()->add_literals(1);
-  EXPECT_TRUE(context.CanonicalizeConstraint(4));
+  EXPECT_EQ(kModified, context.CanonicalizeConstraint(4));
   ConstraintProto* c5 = context.AddConstraint();
   c5->mutable_bool_or()->add_literals(0);
   c5->mutable_bool_or()->add_literals(1);
-  context.CanonicalizeConstraint(5);
+  EXPECT_EQ(context.CanonicalizeConstraint(5), kUnchanged);
   context.RemoveLastConstraint();
 
   EXPECT_TRUE(context.NeedsCanonicalization());
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
   EXPECT_FALSE(context.NeedsCanonicalization());
   EXPECT_THAT(context.Constraint(3), testing::EqualsProto(R"pb(
                 bool_or { literals: [ 0, 2 ] }
@@ -2871,7 +2877,7 @@ TEST(PresolveContextTest, AddNeverSeenBeforeImplication) {
 
   // ResetAfterCopy() clears the seen set so remapped models start fresh.
   context.ResetAfterCopy();
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   EXPECT_TRUE(context.AddNeverSeenBeforeImplication(a, b));
   EXPECT_EQ(context.NumConstraints(), 3);
 }

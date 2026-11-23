@@ -504,6 +504,10 @@ TEST(TightScalingErrorHelperTest, BasicLowerBound) {
   // Minimum scaled activity at x0 + x1 >= 10.0 is at (x0, x1) = (0, 10),
   // where rounded = 10.0 and scaled = 7.0 (error = 3.0).
   EXPECT_NEAR(helper.GetLowerBoundUnroundingError(10.0), 3.0, 1e-10);
+  TightSum lb_sum;
+  lb_sum.Add(10);
+  EXPECT_NEAR(helper.GetUnroundingLowerBoundError(lb_sum).TightLowerBound(),
+              -3.0, 1e-10);
 }
 
 TEST(TightScalingErrorHelperTest, BasicUpperBound) {
@@ -523,6 +527,10 @@ TEST(TightScalingErrorHelperTest, BasicUpperBound) {
   // Maximum scaled activity at x0 + x1 <= 10.0 is at (x0, x1) = (0, 10),
   // where rounded = 10.0 and scaled = 14.0 (exceeds 10.0 by +4.0).
   EXPECT_NEAR(helper.GetUpperBoundUnroundingError(10.0), 4.0, 1e-10);
+  TightSum ub_sum;
+  ub_sum.Add(10);
+  EXPECT_NEAR(helper.GetUnroundingUpperBoundError(ub_sum).TightUpperBound(),
+              4.0, 1e-10);
 
   // Regression test where delta == coeff (0.5) and slack requires > 53 bits of
   // precision due to a large upper bound.
@@ -622,6 +630,16 @@ TEST(TightScalingErrorHelperTest, BruteForceComparisonWithAllIntegerSolutions) {
     const double r_ub = absl::Uniform<double>(random, min_rounded, max_rounded);
     const double lb_unround_err = helper.GetLowerBoundUnroundingError(r_lb);
     const double ub_unround_err = helper.GetUpperBoundUnroundingError(r_ub);
+    TightSum r_lb_sum;
+    r_lb_sum.Add(r_lb);
+    const double lb_unround_tight =
+        -helper.GetUnroundingLowerBoundError(r_lb_sum).TightLowerBound();
+    TightSum r_ub_sum;
+    r_ub_sum.Add(r_ub);
+    const double ub_unround_tight =
+        helper.GetUnroundingUpperBoundError(r_ub_sum).TightUpperBound();
+    EXPECT_DOUBLE_EQ(lb_unround_err, lb_unround_tight);
+    EXPECT_DOUBLE_EQ(ub_unround_err, ub_unround_tight);
     for (const auto& act : activities) {
       if (act.rounded >= r_lb) {
         EXPECT_GE(act.scaled, r_lb - lb_unround_err - 1e-9);

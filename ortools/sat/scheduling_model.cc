@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -41,6 +42,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -289,7 +291,7 @@ std::vector<VariableBoundsGroup> ExtractUpperBounds(
       if (!model_proto.constraints(i).enforcement_literal().empty()) continue;
 
       const auto& interval = model_proto.constraints(i).interval();
-      if (interval.end().vars().size() == 1) {
+      if (interval.end().vars().size() == 1 && interval.end().coeffs(0) != 0) {
         const IntegerVariable end_var(2 * interval.end().vars(0));
         if (interval.end().coeffs(0) > 0)
           builder.Add(end_var, i);
@@ -328,16 +330,45 @@ std::vector<VariableBoundsGroup> ExtractUpperBounds(
         if (interval.end().vars().size() != 1) continue;
 
         const int64_t interval_end_coeff = interval.end().coeffs(0);
+        if (interval_end_coeff == 0 || interval_end_coeff == kint64min) {
+          continue;
+        }
         if (interval_end_coeff % var_proto_coeff.value() != 0) continue;
 
         const int64_t factor = interval_end_coeff / var_proto_coeff.value();
+        DCHECK_GT(factor, 0);
         DCHECK_EQ(interval.end().vars(0), proto_var);
 
-        raw_bounds.push_back(IntervalAffine{
-            interval_idx,
-            {.var = other_proto_var,
-             .coeff = -other_proto_coeff * factor,
-             .offset = offset.value() * factor + interval.end().offset()}});
+        int64_t bound_coeff = 0;
+        if (MulIntoOverflow(other_proto_coeff, -factor, &bound_coeff)) continue;
+        if (bound_coeff < -kint64max / 2 || bound_coeff > kint64max / 2) {
+          continue;
+        }
+
+        int64_t bound_offset = 0;
+        if (MulIntoOverflow(offset.value(), factor, &bound_offset)) continue;
+        if (AddIntoOverflow(interval.end().offset(), &bound_offset)) continue;
+        if (bound_offset < -kint64max / 2 || bound_offset > kint64max / 2) {
+          continue;
+        }
+
+        const auto& other_var_proto = model_proto.variables(other_proto_var);
+        if (!other_var_proto.domain().empty()) {
+          const int64_t d_min = other_var_proto.domain(0);
+          const int64_t d_max =
+              other_var_proto.domain(other_var_proto.domain_size() - 1);
+          const int64_t p1 = CapProd(bound_coeff, d_min);
+          const int64_t p2 = CapProd(bound_coeff, d_max);
+          if (CapAdd(std::abs(bound_offset), std::max(CapAbs(p1), CapAbs(p2))) >
+              kint64max / 2) {
+            continue;
+          }
+        }
+
+        raw_bounds.push_back(IntervalAffine{interval_idx,
+                                            {.var = other_proto_var,
+                                             .coeff = bound_coeff,
+                                             .offset = bound_offset}});
       }
     }
   }
@@ -817,7 +848,9 @@ std::vector<std::pair<int, int>> DetectIntervalPrecedences(
     for (const int interval_idx : interval_indices) {
       const IntervalConstraintProto& interval =
           model_proto.constraints(interval_idx).interval();
-      if (interval.end().vars().size() != 1) continue;
+      if (interval.end().vars().size() != 1 || interval.end().coeffs(0) == 0) {
+        continue;
+      }
       const IntegerVariable end_var =
           IntegerVariable(2 * interval.end().vars(0));
       if (interval.end().coeffs(0) > 0) {
@@ -837,7 +870,10 @@ std::vector<std::pair<int, int>> DetectIntervalPrecedences(
     for (const int interval_idx : interval_indices) {
       const IntervalConstraintProto& interval =
           model_proto.constraints(interval_idx).interval();
-      if (interval.start().vars().size() != 1) continue;
+      if (interval.start().vars().size() != 1 ||
+          interval.start().coeffs(0) == 0) {
+        continue;
+      }
       const IntegerVariable start_var =
           IntegerVariable(2 * interval.start().vars(0));
       if (interval.start().coeffs(0) > 0) {
@@ -879,12 +915,21 @@ std::vector<std::pair<int, int>> DetectIntervalPrecedences(
           if (other_interval_end.vars().size() != 1) continue;
 
           // Do we know if other_interval.end <= interval.start ?
+          if (interval_start.coeffs(0) == 0 ||
+              interval_start.coeffs(0) == kint64min) {
+            continue;
+          }
           const LinearExpression2 expr2 = GetLinearExpression2FromProto(
               other_interval_end.vars(0), other_interval_end.coeffs(0),
               interval_start.vars(0), -interval_start.coeffs(0));
+          const int64_t raw_ub =
+              CapSub(interval_start.offset(), other_interval_end.offset());
+          if (raw_ub < kMinIntegerValue.value() ||
+              raw_ub >= kMaxIntegerValue.value()) {
+            continue;
+          }
           const IntegerValue lb = kMinIntegerValue;
-          const IntegerValue ub(interval_start.offset() -
-                                other_interval_end.offset());
+          const IntegerValue ub(raw_ub);
           const RelationStatus status = precedences.GetStatus(expr2, lb, ub);
           if (status == RelationStatus::IS_TRUE) {
             // We have a precedence relation.
@@ -921,12 +966,15 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
       }
     }
 
-    if (ct.has_linear() && ct.linear().vars().size() == 2) {
+    if (ct.has_linear() && ct.linear().vars().size() == 2 &&
+        !ct.linear().domain().empty()) {
       const LinearConstraintProto& lin = ct.linear();
       const LinearExpression2 expr2 = GetLinearExpression2FromProto(
           lin.vars(0), lin.coeffs(0), lin.vars(1), lin.coeffs(1));
-      const IntegerValue lb(lin.domain(0));
-      const IntegerValue ub(lin.domain(lin.domain().size() - 1));
+      const IntegerValue lb =
+          std::max(kMinIntegerValue, IntegerValue(lin.domain(0)));
+      const IntegerValue ub = std::min(
+          kMaxIntegerValue, IntegerValue(lin.domain(lin.domain().size() - 1)));
 
       precedences.Add(expr2, lb, ub);
     }
