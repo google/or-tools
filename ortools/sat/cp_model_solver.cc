@@ -1081,6 +1081,13 @@ bool SolutionHintIsCompleteAndFeasible(
       // Add it to the pool right away! Note that we already have a log in this
       // case, so we don't log anything more.
       manager->NewSolution(solution, "complete_hint");
+
+      // In interleaved multi-thread mode, solutions only become visible in the
+      // pool after a Synchronize(). Since no subsolver is running yet, we can
+      // synchronize now deterministically. Otherwise, if the search stops
+      // before the first synchronization (e.g. stop_after_first_solution), the
+      // response would be FEASIBLE but with an empty solution.
+      manager->Synchronize();
     } else if (logger != nullptr) {
       std::string message = "The solution hint is complete and is feasible.";
       if (model_proto.has_objective()) {
