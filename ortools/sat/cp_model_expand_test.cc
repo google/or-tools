@@ -2592,6 +2592,60 @@ TEST(TableExpandTest, UsedToFail) {
   EXPECT_EQ(INFEASIBLE, response.status());
 }
 
+TEST(TableExpandTest, LargeInt64ValuesInEnforcedTable) {
+  // Value 3000000000 exceeds INT32_MAX; truncating to int32_t falls outside the
+  // variable domain and would falsely forbid the enforced tuple.
+  const CpModelProto out_of_domain_truncation_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 3000000000, 3000000001 ] }
+    constraints {
+      enforcement_literal: -1
+      table {
+        exprs { vars: 1 coeffs: 1 }
+        values: 3000000000
+      }
+    }
+    objective { vars: 0 coeffs: 1 }
+  )pb");
+  const CpSolverResponse out_of_domain_response = SolveWithParameters(
+      out_of_domain_truncation_model, "cp_model_presolve:false");
+  ASSERT_EQ(out_of_domain_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(out_of_domain_response.solution(0), 0);
+  EXPECT_EQ(out_of_domain_response.solution(1), 3000000000);
+
+  // Value -1966646743685194926 truncates to int32_t -1343404206, which lies
+  // inside variable 1's domain and used to produce an infeasible solution when
+  // presolve was disabled.
+  const CpModelProto in_domain_truncation_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables {
+      domain: [
+        -4611686018427387903,
+        1,
+        2862917735133603612,
+        2862917735133603613
+      ]
+    }
+    constraints {
+      enforcement_literal: -1
+      table { vars: 1 values: -1966646743685194926 }
+    }
+    search_strategy {
+      variable_selection_strategy: CHOOSE_LOWEST_MIN
+      exprs { offset: 152611499891835901 }
+    }
+    floating_point_objective { vars: 1 coeffs: 1 offset: 5.2570550136088467 }
+  )pb");
+  EXPECT_EQ(
+      SolveWithParameters(in_domain_truncation_model, "cp_model_presolve:true")
+          .status(),
+      CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(
+      SolveWithParameters(in_domain_truncation_model, "cp_model_presolve:false")
+          .status(),
+      CpSolverStatus::OPTIMAL);
+}
+
 TEST(LinMaxExpansionTest, SimpleEnumeration) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 5 ] }
