@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "gtest/gtest.h"
 #include "ortools/base/file.h"
@@ -48,7 +49,7 @@ struct RecordReaderInvalidPayloadTestParams {
 
   // Change the value of RecordWriter::set_use_compression() used to create the
   // valid data.
-  bool use_compression ORTOOLS_REQUIRE_EXPLICIT_INIT;
+  bool use_compression ABSL_REQUIRE_EXPLICIT_INIT;
 
   // Function to change the valid data and make them invalid (unless
   // expect_failure is false).
