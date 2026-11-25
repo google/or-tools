@@ -579,8 +579,9 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
 
  private:
   int num_items_;
-  int64_t profits_weights_[kMaxNumberOfBruteForceItems * 2];
-  int64_t capacity_;
+  std::vector<int64_t> profits_;
+  std::vector<std::vector<int64_t>> weights_;
+  std::vector<int64_t> capacities_;
   int64_t best_solution_profit_;
   uint32_t best_solution_;
 };
@@ -589,7 +590,9 @@ KnapsackBruteForceSolver::KnapsackBruteForceSolver(
     absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       num_items_(0),
-      capacity_(0LL),
+      profits_(),
+      weights_(),
+      capacities_(),
       best_solution_profit_(0LL),
       best_solution_(0U) {}
 
@@ -597,23 +600,20 @@ void KnapsackBruteForceSolver::Init(
     const std::vector<int64_t>& profits,
     const std::vector<std::vector<int64_t>>& weights,
     const std::vector<int64_t>& capacities) {
-  // TODO(user): Implement multi-dimensional brute force solver.
-  CHECK_EQ(weights.size(), 1)
-      << "Brute force solver only works with one dimension.";
   CHECK_EQ(capacities.size(), weights.size());
 
   num_items_ = profits.size();
-  CHECK_EQ(num_items_, weights.at(0).size());
+  for (const std::vector<int64_t>& w : weights) {
+    CHECK_EQ(num_items_, w.size());
+  }
   CHECK_LE(num_items_, kMaxNumberOfBruteForceItems)
       << "To use KnapsackBruteForceSolver the number of items should be "
       << "less than " << kMaxNumberOfBruteForceItems
       << ". Current value: " << num_items_ << ".";
 
-  for (int i = 0; i < num_items_; ++i) {
-    profits_weights_[i * 2] = profits.at(i);
-    profits_weights_[i * 2 + 1] = weights.at(0).at(i);
-  }
-  capacity_ = capacities.at(0);
+  profits_ = profits;
+  weights_ = weights;
+  capacities_ = capacities;
 }
 
 int64_t KnapsackBruteForceSolver::Solve(TimeLimit* /*time_limit*/,
@@ -625,37 +625,55 @@ int64_t KnapsackBruteForceSolver::Solve(TimeLimit* /*time_limit*/,
   best_solution_ = 0U;
 
   const uint32_t num_states = OneBit32(num_items_);
+  const int num_dimensions = static_cast<int>(weights_.size());
   uint32_t prev_state = 0U;
   uint64_t sum_profit = 0ULL;
-  uint64_t sum_weight = 0ULL;
+  std::vector<uint64_t> sum_weights(num_dimensions, 0ULL);
   uint32_t diff_state = 0U;
   uint32_t local_state = 0U;
   int item_id = 0;
   // This loop starts at 1, because state = 0 was already considered previously,
   // ie. when no items are in, sum_profit = 0.
+  // shortcut: signed sums are updated modulo 2^64; callers must keep every sum
+  // representable in int64_t, as before.
   for (uint32_t state = 1U; state < num_states; ++state, ++prev_state) {
     diff_state = state ^ prev_state;
     local_state = state;
     item_id = 0;
     while (diff_state) {
-      if (diff_state & 1U) {     // There is a diff.
-        if (local_state & 1U) {  // This item is now in the knapsack.
-          sum_profit += profits_weights_[item_id];
-          sum_weight += profits_weights_[item_id + 1];
-          CHECK_LT(item_id + 1, 2 * num_items_);
-        } else {  // This item has been removed of the knapsack.
-          sum_profit -= profits_weights_[item_id];
-          sum_weight -= profits_weights_[item_id + 1];
-          CHECK_LT(item_id + 1, 2 * num_items_);
+      if (diff_state & 1U) {  // There is a diff.
+        const bool is_in = (local_state & 1U) != 0U;
+        const uint64_t profit_delta = static_cast<uint64_t>(profits_[item_id]);
+        if (is_in) {
+          sum_profit += profit_delta;
+        } else {
+          sum_profit -= profit_delta;
+        }
+        for (int dim = 0; dim < num_dimensions; ++dim) {
+          const uint64_t weight_delta =
+              static_cast<uint64_t>(weights_[dim][item_id]);
+          if (is_in) {
+            sum_weights[dim] += weight_delta;
+          } else {
+            sum_weights[dim] -= weight_delta;
+          }
         }
       }
-      item_id += 2;
-      local_state = local_state >> 1;
-      diff_state = diff_state >> 1;
+      ++item_id;
+      local_state >>= 1;
+      diff_state >>= 1;
     }
 
-    if (sum_weight <= capacity_ && best_solution_profit_ < sum_profit) {
-      best_solution_profit_ = sum_profit;
+    bool is_feasible = true;
+    for (int dim = 0; dim < num_dimensions; ++dim) {
+      if (static_cast<int64_t>(sum_weights[dim]) > capacities_[dim]) {
+        is_feasible = false;
+        break;
+      }
+    }
+    if (is_feasible &&
+        best_solution_profit_ < static_cast<int64_t>(sum_profit)) {
+      best_solution_profit_ = static_cast<int64_t>(sum_profit);
       best_solution_ = state;
     }
   }

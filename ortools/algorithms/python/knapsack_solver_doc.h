@@ -526,8 +526,8 @@ KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.)doc";
 static const char *mkd_doc_operations_research_KnapsackSolver_SolverType_KNAPSACK_BRUTE_FORCE_SOLVER =
 R"doc(Brute force method.
 
-Limited to 30 items and one dimension, this solver uses a brute force
-algorithm, ie. explores all possible states. Experiments show
+Limited to 30 items, this solver supports multiple dimensions and uses a
+brute force algorithm, ie. explores all possible states. Experiments show
 competitive performance for instances with less than 15 items.)doc";
 
 static const char *mkd_doc_operations_research_KnapsackSolver_SolverType_KNAPSACK_DIVIDE_AND_CONQUER_SOLVER =
