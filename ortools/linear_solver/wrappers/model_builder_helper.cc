@@ -597,7 +597,9 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
 #endif  // defined(USE_SCIP)
 #if defined(USE_PDLP)
     case MPModelRequest::PDLP_LINEAR_PROGRAMMING: {
-      response_ = PdlpSolveProto(std::move(request));
+      response_ = PdlpSolveProto(std::move(request),
+                                 /*relax_integer_variables=*/false,
+                                 &interrupt_solve_, log_callback_);
       break;
     }
 #endif  // defined(USE_PDLP)
