@@ -13,6 +13,9 @@
 
 // A pybind11 wrapper for pdlp.
 
+#include <atomic>
+#include <functional>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -26,7 +29,9 @@
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/quadratic_program_io.h"
 #include "ortools/pdlp/solvers.pb.h"
+#include "ortools/pdlp/termination.h"
 #include "pybind11/eigen.h"
+#include "pybind11/gil.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -35,6 +40,24 @@
 namespace operations_research::pdlp {
 
 using ::pybind11::arg;
+
+namespace {
+
+class Interrupter {
+ public:
+  void Interrupt() { interrupted_.store(true, std::memory_order_release); }
+
+  bool IsInterrupted() const {
+    return interrupted_.load(std::memory_order_acquire);
+  }
+
+  const std::atomic<bool>* flag() const { return &interrupted_; }
+
+ private:
+  std::atomic<bool> interrupted_{false};
+};
+
+}  // namespace
 
 PYBIND11_MODULE(pdlp, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
@@ -139,15 +162,72 @@ PYBIND11_MODULE(pdlp, m) {
       .def_readwrite("reduced_costs", &SolverResult::reduced_costs)
       .def_readwrite("solve_log", &SolverResult::solve_log);
 
-  // TODO(user): Expose interrupt_solve and iteration_stats_callback.
+  pybind11::enum_<IterationType>(m, "IterationType")
+      .value("kNormal", IterationType::kNormal)
+      .value("kPrimalFeasibility", IterationType::kPrimalFeasibility)
+      .value("kDualFeasibility", IterationType::kDualFeasibility)
+      .value("kPresolveTermination", IterationType::kPresolveTermination)
+      .value("kNormalTermination", IterationType::kNormalTermination)
+      .value("kFeasibilityPolishingTermination",
+             IterationType::kFeasibilityPolishingTermination);
+
+  pybind11::class_<QuadraticProgramBoundNorms>(m, "QuadraticProgramBoundNorms")
+      .def_readonly(
+          "l2_norm_primal_linear_objective",
+          &QuadraticProgramBoundNorms::l2_norm_primal_linear_objective)
+      .def_readonly("l2_norm_constraint_bounds",
+                    &QuadraticProgramBoundNorms::l2_norm_constraint_bounds)
+      .def_readonly(
+          "l_inf_norm_primal_linear_objective",
+          &QuadraticProgramBoundNorms::l_inf_norm_primal_linear_objective)
+      .def_readonly("l_inf_norm_constraint_bounds",
+                    &QuadraticProgramBoundNorms::l_inf_norm_constraint_bounds);
+
+  pybind11::class_<IterationCallbackInfo>(m, "IterationCallbackInfo")
+      .def_readonly("iteration_type", &IterationCallbackInfo::iteration_type)
+      .def_readonly("termination_criteria",
+                    &IterationCallbackInfo::termination_criteria)
+      .def_readonly("iteration_stats", &IterationCallbackInfo::iteration_stats)
+      .def_readonly("bound_norms", &IterationCallbackInfo::bound_norms);
+
+  pybind11::class_<Interrupter, std::shared_ptr<Interrupter>>(m, "Interrupter")
+      .def(pybind11::init<>())
+      .def("interrupt", &Interrupter::Interrupt)
+      .def_property_readonly("interrupted", &Interrupter::IsInterrupted);
+
   m.def(
       "primal_dual_hybrid_gradient",
       [](QuadraticProgram qp, PrimalDualHybridGradientParams params,
-         std::optional<PrimalAndDualSolution> initial_solution) {
-        return PrimalDualHybridGradient(std::move(qp), params,
-                                        std::move(initial_solution));
+         std::optional<PrimalAndDualSolution> initial_solution,
+         std::shared_ptr<Interrupter> interrupter,
+         pybind11::object iteration_stats_callback) {
+        std::function<void(const IterationCallbackInfo&)> cpp_callback;
+        if (!iteration_stats_callback.is_none()) {
+          if (!PyCallable_Check(iteration_stats_callback.ptr())) {
+            throw pybind11::type_error(
+                "iteration_stats_callback must be callable or None");
+          }
+          // Borrowed pointer: the argument keeps this object alive for the
+          // whole synchronous solve, and no refcount is touched without GIL.
+          PyObject* const callback_ptr = iteration_stats_callback.ptr();
+          cpp_callback = [callback_ptr](const IterationCallbackInfo& info) {
+            pybind11::gil_scoped_acquire acquire;
+            pybind11::object callback =
+                pybind11::reinterpret_borrow<pybind11::object>(callback_ptr);
+            callback(pybind11::cast(info, pybind11::return_value_policy::copy));
+          };
+        }
+        {
+          pybind11::gil_scoped_release release;
+          return PrimalDualHybridGradient(
+              std::move(qp), params, std::move(initial_solution),
+              interrupter ? interrupter->flag() : nullptr,
+              /*message_callback=*/nullptr, std::move(cpp_callback));
+        }
       },
-      arg("qp"), arg("params"), arg("initial_solution") = std::nullopt);
+      arg("qp"), arg("params"), arg("initial_solution") = std::nullopt,
+      arg("interrupter") = std::shared_ptr<Interrupter>(),
+      arg("iteration_stats_callback") = pybind11::none());
 }
 
 }  // namespace operations_research::pdlp
