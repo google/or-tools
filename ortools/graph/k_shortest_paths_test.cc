@@ -14,6 +14,7 @@
 #include "ortools/graph/k_shortest_paths.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <random>
 #include <set>
@@ -467,6 +468,93 @@ TEST(KShortestPathsYenTest, RandomTest) {
           << absl::StrJoin(yen_paths.paths, ", ", format_path) << "]";
     }
   }
+}
+
+TEST(KShortestPathsSignedYenTest, FindsPathsWithNegativeLengths) {
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(1, 3);
+  builder.AddArc(0, 2);
+  builder.AddArc(2, 3);
+  builder.AddArc(0, 3);
+  std::vector<int> permutation;
+  const auto graph = std::move(builder).Build(&permutation);
+  std::vector<int64_t> lengths{-2, 5, 4, 1, 10};
+  Permute(permutation, &lengths);
+
+  const KShortestPathsWithSignedDistances<StaticGraph<>> paths =
+      YenKShortestPathsWithSignedLengths(*graph, lengths, /*source=*/0,
+                                         /*destination=*/3, /*k=*/10);
+  EXPECT_THAT(paths.paths,
+              ElementsAre(std::vector<int>{0, 1, 3}, std::vector<int>{0, 2, 3},
+                          std::vector<int>{0, 3}));
+  EXPECT_THAT(paths.distances, ElementsAre(3, 5, 10));
+}
+
+TEST(KShortestPathsSignedYenDeathTest, RejectsNegativeCycle) {
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(1, 2);
+  builder.AddArc(2, 1);
+  builder.AddArc(2, 3);
+  std::vector<int> permutation;
+  const auto graph = std::move(builder).Build(&permutation);
+  std::vector<int64_t> lengths{1, -2, -1, 1};
+  Permute(permutation, &lengths);
+
+  EXPECT_DEATH(YenKShortestPathsWithSignedLengths(*graph, lengths, /*source=*/0,
+                                                  /*destination=*/3, /*k=*/1),
+               "negative cycle");
+}
+
+TEST(KShortestPathsSignedYenTest, RandomDagMatchesBruteForce) {
+  std::mt19937 random(54321);
+  constexpr int kNumNodes = 8;
+  constexpr int kSource = 0;
+  constexpr int kDestination = kNumNodes - 1;
+
+  StaticGraph<>::Builder builder;
+  std::vector<int64_t> lengths;
+  for (int tail = 0; tail < kNumNodes; ++tail) {
+    for (int head = tail + 1; head < kNumNodes; ++head) {
+      if (absl::Uniform(random, 0, 2) != 0) continue;
+      builder.AddArc(tail, head);
+      lengths.push_back(absl::Uniform(random, -10, 11));
+    }
+  }
+  std::vector<int> permutation;
+  const auto graph = std::move(builder).Build(&permutation);
+  Permute(permutation, &lengths);
+
+  std::map<std::vector<int>, int64_t> brute_force_paths;
+  std::vector<std::pair<std::vector<int>, int64_t>> pending{{{kSource}, 0}};
+  while (!pending.empty()) {
+    const auto [path, distance] = pending.back();
+    pending.pop_back();
+    for (const int arc : graph->OutgoingArcs(path.back())) {
+      const int head = graph->Head(arc);
+      std::vector<int> new_path = path;
+      new_path.push_back(head);
+      const int64_t new_distance = distance + lengths[arc];
+      if (head == kDestination) {
+        brute_force_paths[new_path] = new_distance;
+      } else {
+        pending.emplace_back(std::move(new_path), new_distance);
+      }
+    }
+  }
+  if (brute_force_paths.empty()) return;
+
+  const KShortestPathsWithSignedDistances<StaticGraph<>> paths =
+      YenKShortestPathsWithSignedLengths(*graph, lengths, kSource, kDestination,
+                                         /*k=*/brute_force_paths.size());
+  ASSERT_EQ(paths.paths.size(), brute_force_paths.size());
+  std::map<std::vector<int>, int64_t> actual_paths;
+  for (int i = 0; i < paths.paths.size(); ++i) {
+    actual_paths[paths.paths[i]] = paths.distances[i];
+    if (i > 0) EXPECT_LE(paths.distances[i - 1], paths.distances[i]);
+  }
+  EXPECT_EQ(actual_paths, brute_force_paths);
 }
 
 }  // namespace

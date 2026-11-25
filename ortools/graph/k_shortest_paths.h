@@ -21,6 +21,9 @@
 // |-------|--------------|-------------------|--------------|----------------|
 // | Yen   | No           | No                | (Un)directed | Yes            |
 //
+// YenKShortestPathsWithSignedLengths() also supports signed arc lengths, as
+// long as there is no negative cycle.
+//
 //
 // Loopless path: path not going through the same node more than once. Also
 // called simple path.
@@ -65,10 +68,12 @@
 #define ORTOOLS_GRAPH_K_SHORTEST_PATHS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <iterator>
 #include <limits>
 #include <queue>
+#include <set>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -105,6 +110,13 @@ struct KShortestPaths {
   std::vector<PathDistance> distances;
 };
 
+// Same as KShortestPaths, with signed distances.
+template <class GraphType>
+struct KShortestPathsWithSignedDistances {
+  std::vector<std::vector<typename GraphType::NodeIndex>> paths;
+  std::vector<int64_t> distances;
+};
+
 // Computes up to k shortest paths from the node `source` to the node
 // `destination` in the given directed `graph`. The paths are guaranteed not to
 // have loops.
@@ -112,9 +124,8 @@ struct KShortestPaths {
 // Hypotheses on input (which are not checked at runtime):
 // - No multigraphs (more than one edge or a pair of nodes). The behavior is
 //   undefined otherwise.
-// - The `arc_lengths` are supposed to be nonnegative. The behavior is
-//   undefined otherwise.
-//   TODO(user): relax to "no negative-weight cycles" (no Dijkstra).
+// - The `arc_lengths` are supposed to be nonnegative. Use
+//   YenKShortestPathsWithSignedLengths() for signed lengths.
 // - The graphs might have loops.
 //
 // This function uses Yen's algorithm, which guarantees to find the first k
@@ -127,6 +138,20 @@ struct KShortestPaths {
 template <class GraphType>
 KShortestPaths<GraphType> YenKShortestPaths(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
+    typename GraphType::NodeIndex source,
+    typename GraphType::NodeIndex destination, unsigned k);
+
+// Computes up to k shortest loopless paths with signed arc lengths. This uses
+// Bellman-Ford for detours instead of Dijkstra.
+//
+// In addition to the hypotheses above, the graph must not contain a negative
+// cycle reachable from the source or any spur node; the function CHECK-fails
+// if Bellman-Ford detects one. Arc lengths and path distances must fit in
+// int64_t, and no arc length may be int64_t::max(), which is reserved as a
+// forbidden-arc sentinel.
+template <class GraphType>
+KShortestPathsWithSignedDistances<GraphType> YenKShortestPathsWithSignedLengths(
+    const GraphType& graph, const std::vector<int64_t>& arc_lengths,
     typename GraphType::NodeIndex source,
     typename GraphType::NodeIndex destination, unsigned k);
 
@@ -535,6 +560,195 @@ KShortestPaths<GraphType> YenKShortestPaths(
   }
 
   return paths;
+}
+
+namespace internal {
+
+constexpr int64_t kSignedForbiddenDistance =
+    std::numeric_limits<int64_t>::max();
+
+int64_t AddSignedDistances(const int64_t a, const int64_t b) {
+  if (b > 0) {
+    CHECK_LE(a, std::numeric_limits<int64_t>::max() - b);
+  } else {
+    CHECK_GE(a, std::numeric_limits<int64_t>::min() - b);
+  }
+  return a + b;
+}
+
+template <class GraphType>
+int64_t ComputeSignedPathLength(
+    const GraphType& graph, const std::vector<int64_t>& arc_lengths,
+    const std::vector<typename GraphType::NodeIndex>& path) {
+  int64_t distance = 0;
+  for (int i = 0; i + 1 < path.size(); ++i) {
+    const typename GraphType::ArcIndex arc =
+        FindArcIndex(graph, path[i], path[i + 1]);
+    DCHECK_NE(arc, GraphType::kNilArc);
+    distance = AddSignedDistances(distance, arc_lengths[arc]);
+  }
+  return distance;
+}
+
+template <class GraphType>
+std::pair<std::vector<typename GraphType::NodeIndex>, int64_t>
+ComputeSignedShortestPath(const GraphType& graph,
+                          const std::vector<int64_t>& arc_lengths,
+                          const typename GraphType::NodeIndex source,
+                          const typename GraphType::NodeIndex destination) {
+  using NodeIndex = typename GraphType::NodeIndex;
+  using ArcIndex = typename GraphType::ArcIndex;
+
+  CHECK_EQ(arc_lengths.size(), graph.num_arcs());
+
+  const int num_nodes = graph.num_nodes();
+  std::vector<int64_t> distances(num_nodes, 0);
+  std::vector<NodeIndex> parents(num_nodes, GraphType::kNilNode);
+  std::vector<bool> reached(num_nodes, false);
+  reached[source] = true;
+
+  for (int pass = 0; pass < num_nodes; ++pass) {
+    bool updated = false;
+    for (const NodeIndex tail : graph.AllNodes()) {
+      if (!reached[tail]) continue;
+      for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
+        const int64_t length = arc_lengths[arc];
+        if (length == kSignedForbiddenDistance) continue;
+        const NodeIndex head = graph.Head(arc);
+        const int64_t candidate = AddSignedDistances(distances[tail], length);
+        if (!reached[head] || candidate < distances[head]) {
+          CHECK_LT(pass, num_nodes - 1) << "negative cycle in input graph";
+          reached[head] = true;
+          distances[head] = candidate;
+          parents[head] = tail;
+          updated = true;
+        }
+      }
+    }
+    if (!updated) break;
+  }
+
+  if (!reached[destination]) {
+    return {{}, kSignedForbiddenDistance};
+  }
+
+  std::vector<NodeIndex> reversed_path;
+  NodeIndex node = destination;
+  for (int steps = 0;; ++steps) {
+    reversed_path.push_back(node);
+    if (node == source) break;
+    CHECK_LE(steps, num_nodes) << "cycle in shortest path";
+    node = parents[node];
+    CHECK_NE(node, GraphType::kNilNode);
+  }
+  std::reverse(reversed_path.begin(), reversed_path.end());
+  return {std::move(reversed_path), distances[destination]};
+}
+
+}  // namespace internal
+
+template <class GraphType>
+KShortestPathsWithSignedDistances<GraphType> YenKShortestPathsWithSignedLengths(
+    const GraphType& graph, const std::vector<int64_t>& arc_lengths,
+    typename GraphType::NodeIndex source,
+    typename GraphType::NodeIndex destination, unsigned k) {
+  using NodeIndex = typename GraphType::NodeIndex;
+  using ArcIndex = typename GraphType::ArcIndex;
+
+  CHECK_GE(k, 0) << "k must be nonnegative. Input value: " << k;
+  CHECK_NE(k, 0) << "k cannot be zero: you are requesting zero paths!";
+  CHECK_GT(graph.num_nodes(), 0) << "The graph is empty: it has no nodes";
+  CHECK_GT(graph.num_arcs(), 0) << "The graph is empty: it has no arcs";
+  CHECK_GE(source, 0) << "The source node must be nonnegative. Input value: "
+                      << source;
+  CHECK_LT(source, graph.num_nodes())
+      << "The source node must be a valid node. Input value: " << source
+      << ". Number of nodes in the input graph: " << graph.num_nodes();
+  CHECK_GE(destination, 0)
+      << "The destination node must be nonnegative. Input value: "
+      << destination;
+  CHECK_LT(destination, graph.num_nodes())
+      << "The destination node must be a valid node. Input value: "
+      << destination
+      << ". Number of nodes in the input graph: " << graph.num_nodes();
+  CHECK_EQ(arc_lengths.size(), graph.num_arcs());
+  for (const int64_t length : arc_lengths) {
+    CHECK_NE(length, internal::kSignedForbiddenDistance)
+        << "int64_t::max() is reserved as a forbidden-arc sentinel";
+  }
+
+  KShortestPathsWithSignedDistances<GraphType> result;
+  std::pair<std::vector<NodeIndex>, int64_t> first_path =
+      internal::ComputeSignedShortestPath(graph, arc_lengths, source,
+                                          destination);
+  if (first_path.first.empty()) return result;
+  result.paths.push_back(std::move(first_path.first));
+  result.distances.push_back(first_path.second);
+
+  std::set<std::vector<NodeIndex>> generated_paths;
+  generated_paths.insert(result.paths.front());
+  using Candidate = std::pair<int64_t, std::vector<NodeIndex>>;
+  std::priority_queue<Candidate, std::vector<Candidate>,
+                      std::greater<Candidate>>
+      candidates;
+
+  for (unsigned path_rank = 1; path_rank < k; ++path_rank) {
+    const std::vector<NodeIndex>& last_path = result.paths.back();
+    for (int spur_position = 0;
+         spur_position + 1 < static_cast<int>(last_path.size());
+         ++spur_position) {
+      const NodeIndex spur_node = last_path[spur_position];
+      std::vector<int64_t> detour_lengths = arc_lengths;
+
+      // Forbid taking the same next arc as an accepted path with this root.
+      for (const std::vector<NodeIndex>& previous_path : result.paths) {
+        if (previous_path.size() <= spur_position + 1) continue;
+        bool same_root = true;
+        for (int i = 0; i <= spur_position; ++i) {
+          if (previous_path[i] != last_path[i]) {
+            same_root = false;
+            break;
+          }
+        }
+        if (!same_root) continue;
+        const ArcIndex arc =
+            internal::FindArcIndex(graph, previous_path[spur_position],
+                                   previous_path[spur_position + 1]);
+        detour_lengths[arc] = internal::kSignedForbiddenDistance;
+      }
+
+      // Forbid returning to the root path, which keeps detours loopless.
+      for (int i = 0; i < spur_position; ++i) {
+        for (const ArcIndex arc : graph.OutgoingArcs(last_path[i])) {
+          detour_lengths[arc] = internal::kSignedForbiddenDistance;
+        }
+      }
+
+      std::pair<std::vector<NodeIndex>, int64_t> detour =
+          internal::ComputeSignedShortestPath(graph, detour_lengths, spur_node,
+                                              destination);
+      if (detour.first.empty()) continue;
+
+      std::vector<NodeIndex> new_path(last_path.begin(),
+                                      last_path.begin() + spur_position);
+      new_path.insert(new_path.end(), detour.first.begin(), detour.first.end());
+      const absl::flat_hash_set<NodeIndex> visited_nodes(new_path.begin(),
+                                                         new_path.end());
+      DCHECK_EQ(visited_nodes.size(), new_path.size());
+      if (!generated_paths.insert(new_path).second) continue;
+
+      const int64_t path_length =
+          internal::ComputeSignedPathLength(graph, arc_lengths, new_path);
+      candidates.emplace(path_length, std::move(new_path));
+    }
+
+    if (candidates.empty()) break;
+    result.paths.push_back(candidates.top().second);
+    result.distances.push_back(candidates.top().first);
+    candidates.pop();
+  }
+
+  return result;
 }
 
 }  // namespace operations_research
