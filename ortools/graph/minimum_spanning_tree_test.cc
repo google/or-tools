@@ -37,6 +37,8 @@ TEST(MSTTest, EmptyGraph) {
       BuildKruskalMinimumSpanningTree<ListGraph<int, int>>(
           graph, [&costs](int a, int b) { return costs[a] < costs[b]; });
   EXPECT_EQ(0, mst.size());
+  EXPECT_TRUE(
+      BuildMinimumSpanningTree(graph, [](int) { return int64_t{0}; }).empty());
 }
 
 TEST(MSTTest, NoArcGraph) {
@@ -46,6 +48,8 @@ TEST(MSTTest, NoArcGraph) {
       BuildKruskalMinimumSpanningTree<ListGraph<int, int>>(
           graph, [&costs](int a, int b) { return costs[a] < costs[b]; });
   EXPECT_EQ(0, mst.size());
+  EXPECT_TRUE(
+      BuildMinimumSpanningTree(graph, [](int) { return int64_t{0}; }).empty());
 }
 
 // Helper function to check the expected MST is obtained with Kruskal.
@@ -80,6 +84,15 @@ void CheckMSTWithPrim(const ListGraph<int, int>& graph,
   EXPECT_THAT(expected_arcs, UnorderedElementsAreArray(prim_mst));
 }
 
+// Helper function to check the global API on either code path.
+void CheckMSTWithGlobalApi(const ListGraph<int, int>& graph,
+                           absl::Span<const int64_t> costs,
+                           const std::vector<int>& expected_arcs) {
+  const std::vector<int> mst =
+      BuildMinimumSpanningTree(graph, [costs](int arc) { return costs[arc]; });
+  EXPECT_THAT(expected_arcs, UnorderedElementsAreArray(mst));
+}
+
 // Testing Kruskal MST on a small undirected graph:
 // - original graph:
 // 0 -(1)- 1 -(2)- 2
@@ -107,6 +120,7 @@ TEST(MSTTest, SmallGraph) {
   }
   CheckMSTWithKruskal(graph, costs, {0, 4, 6, 2});
   CheckMSTWithPrim(graph, costs, {0, 4, 6, 2});
+  CheckMSTWithGlobalApi(graph, costs, {0, 4, 6, 2});
 }
 
 // Testing on a small graph with kint64max as value for arcs.
@@ -122,6 +136,7 @@ TEST(MSTTest, SmallGraphWithMaxValueArcs) {
   }
   CheckMSTWithKruskal(graph, costs, {0, 2});
   CheckMSTWithPrim(graph, costs, {0, 2});
+  CheckMSTWithGlobalApi(graph, costs, {0, 2});
 }
 
 // Testing Kruskal MST on a small directed graph:
@@ -179,6 +194,39 @@ TEST(MSTTest, SmallDisconnectedGraph) {
     costs[graph.AddArc(kArcs[i][1], kArcs[i][0])] = kCosts[i];
   }
   CheckMSTWithKruskal(graph, costs, {0, 2, 4});
+}
+
+TEST(MSTTest, DenseGraphUsesPrim) {
+  const int kNodes = 4;
+  ListGraph<int, int> graph(kNodes, kNodes * (kNodes - 1));
+  std::vector<int64_t> costs(kNodes * (kNodes - 1), 0);
+  int arc_cost = 0;
+  for (int tail = 0; tail < kNodes; ++tail) {
+    for (int head = 0; head < kNodes; ++head) {
+      if (tail != head) {
+        costs[graph.AddArc(tail, head)] = arc_cost++;
+      }
+    }
+  }
+  CheckMSTWithGlobalApi(graph, costs, {0, 1, 2});
+}
+
+TEST(MSTTest, DisconnectedDenseGraphFallsBackToKruskal) {
+  const int kComponentSize = 4;
+  const int kBases[] = {0, 4};
+  ListGraph<int, int> graph(8, 8 * (kComponentSize - 1));
+  std::vector<int64_t> costs(2 * kComponentSize * (kComponentSize - 1), 0);
+  int arc_cost = 0;
+  for (const int base : kBases) {
+    for (int i = 0; i < kComponentSize; ++i) {
+      for (int j = 0; j < kComponentSize; ++j) {
+        if (i != j) {
+          costs[graph.AddArc(base + i, base + j)] = arc_cost++;
+        }
+      }
+    }
+  }
+  CheckMSTWithGlobalApi(graph, costs, {0, 1, 2, 12, 13, 14});
 }
 
 }  // namespace

@@ -31,9 +31,6 @@ namespace operations_research {
 // Complexity of the algorithm is O(E * log(E)) where E is the number of arcs
 // in the graph. Memory usage is O(E * log(E)).
 
-// TODO(user): Add a global Minimum Spanning Tree API automatically switching
-// between Prim and Kruskal depending on problem size.
-
 // Version taking sorted graph arcs. Allows somewhat incremental recomputation
 // of minimum spanning trees as most of the processing time is spent sorting
 // arcs.
@@ -177,6 +174,28 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
     }
   }
   return tree_arcs;
+}
+
+// Global minimum spanning tree API. Prim is used for dense graphs and Kruskal
+// for sparse ones. The Prim path requires an undirected graph with both arc
+// directions present; if it does not span a disconnected dense graph, Kruskal
+// is used to return the full forest instead.
+template <typename Graph, typename ArcValue>
+std::vector<typename Graph::ArcIndex> BuildMinimumSpanningTree(
+    const Graph& graph, const ArcValue& arc_value) {
+  using ArcIndex = typename Graph::ArcIndex;
+  const auto arc_comparator = [&arc_value](ArcIndex a, ArcIndex b) {
+    return arc_value(a) < arc_value(b);
+  };
+  if (graph.num_arcs() > 2 * graph.num_nodes()) {
+    std::vector<ArcIndex> tree_arcs =
+        BuildPrimMinimumSpanningTree(graph, arc_value);
+    if (graph.num_nodes() == 0 ||
+        tree_arcs.size() == static_cast<size_t>(graph.num_nodes() - 1)) {
+      return tree_arcs;
+    }
+  }
+  return BuildKruskalMinimumSpanningTree(graph, arc_comparator);
 }
 
 }  // namespace operations_research
