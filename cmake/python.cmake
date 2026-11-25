@@ -755,6 +755,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E remove -f stub_timestamp
   COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.dag_shortest_path --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .

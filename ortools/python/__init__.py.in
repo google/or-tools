@@ -12,6 +12,7 @@ This repository contains several component:
  - `ortools.algorithms.python.knapsack_solver`,
 
 ### Graph and flow algorithms
+- `ortools.graph.python.dag_shortest_path`,
 - `ortools.graph.python.linear_sum_assignment`,
 - `ortools.graph.python.max_flow`,
 - `ortools.graph.python.min_cost_flow`,
