@@ -108,8 +108,8 @@ class KnapsackSolver {
   enum SolverType {
     /** Brute force method.
      *
-     * Limited to 30 items and one dimension, this
-     * solver uses a brute force algorithm, ie. explores all possible states.
+     * Limited to 30 items, this solver supports multiple dimensions and uses
+     * a brute force algorithm, ie. explores all possible states.
      * Experiments show competitive performance for instances with less than
      * 15 items. */
     KNAPSACK_BRUTE_FORCE_SOLVER = 0,

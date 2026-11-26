@@ -146,10 +146,6 @@ int64_t SolveKnapsackProblem(
     return kInvalidSolution;
   }
 
-  if (number_of_dimensions > 1) {
-    return generic_profit;
-  }
-
   if (number_of_items <= kMaxNumberOfItemsForBruteForceSolver) {
     const int64_t brute_force_profit = SolveKnapsackProblemUsingSpecificSolver(
         profit_array, number_of_items, weight_array, capacity_array,
@@ -157,6 +153,10 @@ int64_t SolveKnapsackProblem(
     if (brute_force_profit != generic_profit) {
       return kInvalidSolution;
     }
+  }
+
+  if (number_of_dimensions > 1) {
+    return generic_profit;
   }
 
   if (number_of_items <= kMaxNumberOfItemsFor64ItemsSolver) {
@@ -628,6 +628,46 @@ TEST(KnapsackSolverTest, AllItemsReduced) {
       SolveKnapsackProblem(kProfitArray, kArraySize, kWeightArray,
                            kCapacityArray, kNumberOfDimensions);
   EXPECT_EQ(kOptimalProfit, profit);
+}
+
+TEST(KnapsackSolverTest, SolveThreeDimensionsBruteForce) {
+  const int64_t kProfitArray[] = {10, 12, 8, 20, 7};
+  const int64_t kWeightArray[] = {3, 4, 2, 5, 0,  //
+                                  1, 0, 3, 2, 0,  //
+                                  0, 1, 2, 0, 1};
+  const int64_t kCapacityArray[] = {7, 4, 2};
+  const int kArraySize = ABSL_ARRAYSIZE(kProfitArray);
+  const int kNumberOfDimensions = ABSL_ARRAYSIZE(kCapacityArray);
+
+  // Optimum is items {0, 1, 4}: profit 29, weights {7, 1, 2}.
+  EXPECT_EQ(29, SolveKnapsackProblemUsingSpecificSolver(
+                    kProfitArray, kArraySize, kWeightArray, kCapacityArray,
+                    kNumberOfDimensions,
+                    KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER));
+}
+
+TEST(KnapsackSolverTest, SolveBruteForceWithZeroCapacityAndNegativeWeight) {
+  const int64_t kProfitArray[] = {5, 7, 3, 4};
+  const int64_t kWeightArray[] = {0, 3, -1, 2,  //
+                                  0, 1, 0,  2};
+  const int64_t kCapacityArray[] = {0, 0};
+  const int kArraySize = ABSL_ARRAYSIZE(kProfitArray);
+  const int kNumberOfDimensions = ABSL_ARRAYSIZE(kCapacityArray);
+
+  // Only items {0, 2} fit: profit 8, weights {0, 0} and {-1, 0}.
+  EXPECT_EQ(
+      8, SolveKnapsackProblemUsingSpecificSolver(
+             kProfitArray, kArraySize, kWeightArray, kCapacityArray,
+             kNumberOfDimensions, KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER));
+}
+
+TEST(KnapsackSolverTest, SolveBruteForceWithNoItems) {
+  KnapsackSolver solver(KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER, "solver");
+  solver.set_use_reduction(false);
+  solver.Init(std::vector<int64_t>{}, std::vector<std::vector<int64_t>>(1),
+              std::vector<int64_t>{7});
+  EXPECT_EQ(0, solver.Solve());
+  EXPECT_TRUE(solver.IsSolutionOptimal());
 }
 
 }  // namespace
