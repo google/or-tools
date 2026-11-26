@@ -46,6 +46,36 @@ MPSolutionResponse HighsSolveProtoAndClearSolveInfo(
   return response;
 }
 
+TEST(HighsProtoSolverTest, ReturnsRowDualNotRowActivity) {
+  // max objCoeff * x
+  // (C) x <= 7
+  // Expected values
+  // x value = 7
+  // C dual value objCoeff
+  for (const auto& objCoeff : {1., 5.}) {
+    MPModelRequest request;
+    request.set_solver_type(MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
+    MPModelProto* const model = request.mutable_model();
+    model->set_maximize(true);
+
+    MPVariableProto* const variable = model->add_variable();
+    variable->set_objective_coefficient(objCoeff);
+
+    MPConstraintProto* const constraint = model->add_constraint();
+    constraint->set_upper_bound(7.0);
+    constraint->add_var_index(0);
+    constraint->add_coefficient(1.0);
+
+    const MPSolutionResponse response =
+        HighsSolveProtoAndClearSolveInfo(request);
+    ASSERT_EQ(response.status(), MPSOLVER_OPTIMAL);
+    ASSERT_EQ(response.variable_value_size(), 1);
+    ASSERT_EQ(response.dual_value_size(), 1);
+    EXPECT_NEAR(response.variable_value(0), 7.0, kHighsTolerance);
+    EXPECT_NEAR(response.dual_value(0), objCoeff, kHighsTolerance);
+  }
+}
+
 TEST(HighsProtoSolverTest, NoModelYieldsOptimal) {
   const auto response =
       HighsSolveProtoAndClearSolveInfo(ParseTextProtoOrDie(""));
