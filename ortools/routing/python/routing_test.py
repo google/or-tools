@@ -400,6 +400,28 @@ class ModelTest(absltest.TestCase):
             [1, 3], routing_model.get_amortized_quadratic_cost_factors_of_vehicles()
         )
 
+    def test_vehicle_used_when_empty(self) -> None:
+        # One vehicle whose start (node 0) differs from its end (node 1), and
+        # no other node: the route is always empty.
+        def solve(used_when_empty: bool) -> int:
+            manager = routing.IndexManager(2, 1, [0], [1])
+            routing_model = routing.Model(manager)
+            transit_idx = routing_model.register_transit_callback(lambda i, j: 10)
+            routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
+            self.assertFalse(routing_model.is_vehicle_used_when_empty(0))
+            routing_model.set_vehicle_used_when_empty(used_when_empty, 0)
+            self.assertEqual(
+                used_when_empty, routing_model.is_vehicle_used_when_empty(0)
+            )
+            assignment = routing_model.solve()
+            self.assertIsNotNone(assignment)
+            return assignment.objective_value()
+
+        # By default an empty route costs nothing; when the vehicle is used
+        # when empty, its start->end arc cost is counted.
+        self.assertEqual(0, solve(False))
+        self.assertEqual(10, solve(True))
+
     def test_pickup_and_delivery(self) -> None:
         manager = routing.IndexManager(num_nodes=10, num_vehicles=1, depot=0)
         routing_model = routing.Model(manager)
