@@ -46,6 +46,7 @@
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/running_stat.h"
 #include "ortools/util/time_limit.h"
 
@@ -176,7 +177,7 @@ void ContinuousProber::CompactAndShuffleIntegerVariables(
 // Continuous probing procedure.
 SatSolver::Status ContinuousProber::Probe() {
   while (!time_limit_->LimitReached()) {
-    const double kMaxProbingTimePerMethod = 0.1;
+    const double kMaxProbingTimePerMethod = 0.3;
     const auto time_chunk = [this, kMaxProbingTimePerMethod]() {
       return time_limit_->GetElapsedDeterministicTime() +
              kMaxProbingTimePerMethod;
@@ -381,12 +382,16 @@ std::optional<SatSolver::Status> ContinuousProber::ShaveBooleanVariables(
 
 namespace {
 bool AtLeastOneLiteralIsTrue(absl::Span<const Literal> literals,
-                             const VariablesAssignment& assignment) {
-  for (const Literal literal : literals) {
-    if (assignment.LiteralIsTrue(literal)) {
+                             const VariablesAssignment& assignment,
+                             TimeLimit* time_limit) {
+  DeterministicTimer<{.scale = 2.1e-09, .offset = 3.1e-08}> timer(time_limit);
+  for (int i = 0; i < literals.size(); ++i) {
+    if (assignment.LiteralIsTrue(literals[i])) {
+      timer.Advance(i + 1);
       return true;
     }
   }
+  timer.Advance(literals.size());
   return false;
 };
 }  // namespace
@@ -405,12 +410,18 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeAtLeastOnes(
       clause_manager_->ResetToProbeIndex();
       break;
     }
-    if (AtLeastOneLiteralIsTrue(clause->AsSpan(), assignment)) continue;
+    if (AtLeastOneLiteralIsTrue(clause->AsSpan(), assignment, time_limit_)) {
+      continue;
+    }
 
-    tmp_dnf_.clear();
-    for (const Literal literal : clause->AsSpan()) {
-      if (assignment.LiteralIsAssigned(literal)) continue;
-      tmp_dnf_.push_back({literal});
+    {
+      DeterministicTimer<{.scale = 5.0e-08}> inner_timer(time_limit_,
+                                                         clause->size());
+      tmp_dnf_.clear();
+      for (const Literal literal : clause->AsSpan()) {
+        if (assignment.LiteralIsAssigned(literal)) continue;
+        tmp_dnf_.push_back({literal});
+      }
     }
     ++at_least_one_stats_.num_calls;
     const MethodStats start_stats = GetStats(prober_);
@@ -440,7 +451,7 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeAtMostOnes(
       binary_implication_graph_->ResetAtMostOneIterator();
       break;
     }
-    if (AtLeastOneLiteralIsTrue(at_most_one, assignment)) continue;
+    if (AtLeastOneLiteralIsTrue(at_most_one, assignment, time_limit_)) continue;
 
     tmp_dnf_.clear();
     tmp_literals_.clear();

@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/bits.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
@@ -43,6 +44,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -173,11 +175,16 @@ bool FeasibilityPump::Solve() {
   integer_solution_is_set_ = false;
 
   // Restore the original objective
-  for (ColIndex col(0); col < lp_data_.num_variables(); ++col) {
-    lp_data_.SetObjectiveCoefficient(col, 0.0);
-  }
-  for (const auto& term : integer_objective_) {
-    lp_data_.SetObjectiveCoefficient(term.first, ToDouble(term.second));
+  {
+    DeterministicTimer<{.scale = 4.6e-09}> timer(
+        time_limit_,
+        lp_data_.num_variables().value() + integer_objective_.size());
+    for (ColIndex col(0); col < lp_data_.num_variables(); ++col) {
+      lp_data_.SetObjectiveCoefficient(col, 0.0);
+    }
+    for (const auto& term : integer_objective_) {
+      lp_data_.SetObjectiveCoefficient(term.first, ToDouble(term.second));
+    }
   }
 
   mixing_factor_ = 1.0;
@@ -259,6 +266,8 @@ void FeasibilityPump::InitializeWorkingLP() {
   }
 
   const int num_vars = integer_variables_.size();
+  glop::ColIndexVector integer_variables;
+  const ColIndex num_cols = lp_data_.num_variables();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
     const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(cp_var));
@@ -267,8 +276,6 @@ void FeasibilityPump::InitializeWorkingLP() {
   }
 
   objective_normalization_factor_ = 0.0;
-  glop::ColIndexVector integer_variables;
-  const ColIndex num_cols = lp_data_.num_variables();
   for (ColIndex col : lp_data_.IntegerVariablesList()) {
     var_is_binary_[col.value()] = lp_data_.IsVariableBinary(col);
     if (!var_is_binary_[col.value()]) {
@@ -429,6 +436,7 @@ bool FeasibilityPump::SolveLp() {
 
 void FeasibilityPump::UpdateBoundsOfLpVariables() {
   const int num_vars = integer_variables_.size();
+  DeterministicTimer<{.scale = 4.9e-08}> timer(time_limit_, num_vars);
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
     const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(cp_var));
@@ -587,8 +595,13 @@ bool FeasibilityPump::PropagationRounding() {
         general_fractionality_vars.push_back({fractionality, i});
       }
     }
-    std::sort(binary_fractionality_vars.begin(),
-              binary_fractionality_vars.end());
+    {
+      const uint64_t n = binary_fractionality_vars.size();
+      DeterministicTimer<{.scale = 4.5e-09, .offset = 4.8e-07}> timer(
+          time_limit_, n * absl::bit_width(n));
+      std::sort(binary_fractionality_vars.begin(),
+                binary_fractionality_vars.end());
+    }
     std::sort(general_fractionality_vars.begin(),
               general_fractionality_vars.end());
 

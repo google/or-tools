@@ -15,6 +15,7 @@
 #define ORTOOLS_SAT_CP_MODEL_CHECKER_H_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -56,6 +57,18 @@ struct LinearOverflowChecker {
   // linear equation does not satisfy our overflow preconditions.
   bool AddTerm(int64_t coeff, int64_t min_domain, int64_t max_domain);
 
+  // Returns the contributions of coeff * X for X in [min_domain, max_domain]
+  // to sum_min and sum_max, or std::nullopt if the term alone does not satisfy
+  // our overflow preconditions. The contributions are respectively
+  // non-positive and non-negative.
+  static std::optional<std::pair<int64_t, int64_t>> TermContributions(
+      int64_t coeff, int64_t min_domain, int64_t max_domain);
+
+  // Returns true if the given sum_min and sum_max satisfy our overflow
+  // preconditions. Note that this is monotonic: if it holds for some sums, it
+  // also holds for any smaller sum_max and any larger sum_min.
+  static bool SumsAreValid(int64_t sum_min, int64_t sum_max);
+
   int64_t sum_min = 0;
   int64_t sum_max = 0;
 };
@@ -63,6 +76,11 @@ struct LinearOverflowChecker {
 // Checks if a given linear expression can create overflow. If it doesn't, sets
 // `implied_domain` to a superset of the implied domain of the expression.
 // This is exposed to test new constraints created during the presolve.
+//
+// The terms, without the offset, must pass the LinearOverflowChecker, and the
+// sum of the offset and of any subset of the terms (possibly empty, in any
+// order) must be in [-kint64max / 2, kint64max / 2]. In particular, the offset
+// and all the values of the expression are in this range.
 bool PossibleIntegerOverflow(
     const CpModelProto& model, absl::Span<const int> vars,
     absl::Span<const int64_t> coeffs, int64_t offset = 0,

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -33,6 +34,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
@@ -112,6 +114,7 @@ ClauseManager::ClauseManager(Model* model)
       assignment_(model->GetOrCreate<Trail>()->Assignment()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
@@ -144,6 +147,21 @@ void ClauseManager::AttachOnFalse(Literal literal, Literal blocking_literal,
 
 bool ClauseManager::Propagate(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
+  const int64_t old_num_inspected_clauses = num_inspected_clauses_;
+  const int64_t old_num_inspected_clause_literals =
+      num_inspected_clause_literals_;
+  const int old_propagation_trail_index = propagation_trail_index_;
+  // The second time unit counts the inspected clause literals (including the
+  // watchers skipped because of a true blocking literal), plus the processed
+  // trail literals.
+  DeterministicTimer2<{.scale1 = 9.5e-08, .scale2 = 2.6e-09, .offset = 1.4e-07}>
+      timer(time_limit_);
+  absl::Cleanup advance_timer = [&]() {
+    timer.Advance(num_inspected_clauses_ - old_num_inspected_clauses,
+                  num_inspected_clause_literals_ -
+                      old_num_inspected_clause_literals +
+                      propagation_trail_index_ - old_propagation_trail_index);
+  };
   Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
   const int old_index = trail->Index();
@@ -348,6 +366,8 @@ void ClauseManager::AddRemovableClause(SatClause* clause, Trail* trail,
 // is not already assigned.
 bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
+  uint64_t num_inspected = 0;
+  DeterministicTimer<{.scale = 4.3e-09}> timer(time_limit_);
 
   const int size = clause->size();
   Literal* literals = clause->literals();
@@ -355,25 +375,32 @@ bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   // Select the first two literals that are not assigned to false and put them
   // on position 0 and 1.
   int num_literal_not_false = 0;
-  for (int i = 0; i < size; ++i) {
+  int i = 0;
+  for (; i < size; ++i) {
     if (!trail->Assignment().LiteralIsFalse(literals[i])) {
       std::swap(literals[i], literals[num_literal_not_false]);
       ++num_literal_not_false;
       if (num_literal_not_false == 2) {
+        ++i;
         break;
       }
     }
   }
+  num_inspected += i;
 
   // Returns false if all the literals were false.
   // This should only happen on an UNSAT problem, and there is no need to attach
   // the clause in this case.
-  if (num_literal_not_false == 0) return false;
+  if (num_literal_not_false == 0) {
+    timer.Advance(num_inspected);
+    return false;
+  }
 
   if (num_literal_not_false == 1) {
     // To maintain the validity of the 2-watcher algorithm, we need to watch
     // the false literal with the highest decision level.
     int max_level = trail->AssignmentLevel(literals[1]);
+    num_inspected += size - 2;
     for (int i = 2; i < size; ++i) {
       const int level = trail->AssignmentLevel(literals[i]);
       if (level > max_level) {
@@ -396,6 +423,7 @@ bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   ++num_watched_clauses_;
   AttachOnFalse(literals[0], literals[1], clause);
   AttachOnFalse(literals[1], literals[0], clause);
+  timer.Advance(num_inspected);
   return true;
 }
 
@@ -453,6 +481,8 @@ void ClauseManager::AttachAllClauses() {
   watchers_on_false_.resize(needs_cleaning_.size().value());
 
   DeleteRemovedClauses();
+  DeterministicTimer<{.scale = 1.1e-07, .offset = 2.6e-07}> timer(
+      time_limit_, clauses_.size());
   for (SatClause* clause : clauses_) {
     ++num_watched_clauses_;
     DCHECK_GE(clause->size(), 2);
@@ -504,16 +534,21 @@ void ClauseManager::ChangeLbdIfBetter(const SatClause* const clause,
 
 bool ClauseManager::RemoveFixedLiteralsAndTestIfTrue(SatClause* clause) {
   const int old_size = clause->size();
-  if (clause->RemoveFixedLiteralsAndTestIfTrue(assignment_)) {
-    // The clause is always true, detach it.
-    LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
-    return true;
-  }
-  const int new_size = clause->size();
+  int new_size = 0;
+  {
+    DeterministicTimer<{.scale = 4.0e-09, .offset = 2.5e-08}> timer(time_limit_,
+                                                                    old_size);
+    if (clause->RemoveFixedLiteralsAndTestIfTrue(assignment_)) {
+      // The clause is always true, detach it.
+      LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
+      return true;
+    }
+    new_size = clause->size();
 
-  // We should have dealt with unit and unsat clause before this.
-  CHECK_GE(new_size, 2);
-  ChangeLbdIfBetter(clause, new_size);
+    // We should have dealt with unit and unsat clause before this.
+    CHECK_GE(new_size, 2);
+    ChangeLbdIfBetter(clause, new_size);
+  }
 
   if (lrat_proof_handler_ != nullptr && new_size != old_size) {
     std::vector<ClausePtr>& proof = tmp_proof_;
@@ -563,6 +598,8 @@ bool ClauseManager::InprocessingRewriteClause(
       lrat_proof_handler_->RewriteClause(new_clause_ptr, new_clause, proof);
     }
   }
+  uint64_t work = new_clause.size();
+  DeterministicTimer<{.scale = 3.6e-09, .offset = 8.8e-08}> timer(time_limit_);
   const bool is_reason = ClauseIsUsedAsReason(clause);
 
   CHECK(!is_reason || new_clause[0] == clause->PropagatedLiteral())
@@ -572,6 +609,7 @@ bool ClauseManager::InprocessingRewriteClause(
 
   if (new_clause.size() == 1) {
     if (!InprocessingAddUnitClause(new_clause[0])) return false;
+    timer.Advance(work);
     LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
     return true;
   }
@@ -581,6 +619,7 @@ bool ClauseManager::InprocessingRewriteClause(
   DCHECK(!LiteralsAreFixedAtRoot(*trail_, new_clause));
 
   if (new_clause.size() == 2) {
+    timer.Advance(work);
     if (is_reason) {
       CHECK(implication_graph_->AddBinaryClauseAndChangeReason(new_clause[0],
                                                                new_clause[1]));
@@ -598,6 +637,7 @@ bool ClauseManager::InprocessingRewriteClause(
     clause->MarkForRemoval();
     for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
       needs_cleaning_.Clear(l);
+      work += watchers_on_false_[l].size();
       OpenSourceEraseIf(watchers_on_false_[l], [](const Watcher& watcher) {
         return watcher.clause->IsRemoved();
       });
@@ -620,6 +660,7 @@ bool ClauseManager::InprocessingRewriteClause(
                          propagator_id_);
   }
 
+  timer.Advance(work);
   return true;
 }
 
@@ -692,8 +733,12 @@ SatClause* ClauseManager::InprocessingAddClause(
 
 void ClauseManager::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
-  for (const LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
+  const auto to_clean = needs_cleaning_.PositionsSetAtLeastOnce();
+  uint64_t work = to_clean.size();
+  DeterministicTimer<{.scale = 1.5e-08}> timer(time_limit_);
+  for (const LiteralIndex index : to_clean) {
     if (!needs_cleaning_[index]) continue;
+    work += watchers_on_false_[index].size();
     OpenSourceEraseIf(watchers_on_false_[index], [](const Watcher& watcher) {
       return watcher.clause->IsRemoved();
     });
@@ -701,6 +746,7 @@ void ClauseManager::CleanUpWatchers() {
   }
   needs_cleaning_.NotifyAllClear();
   is_clean_ = true;
+  timer.Advance(work);
 }
 
 // We also update to_minimize_index_/to_probe_index_ correctly.
@@ -722,6 +768,8 @@ void ClauseManager::DeleteRemovedClauses() {
 
   int new_size = 0;
   const int old_size = clauses_.size();
+  DeterministicTimer<{.scale = 1.3e-08, .offset = 7.1e-07}> timer(time_limit_,
+                                                                  old_size);
   for (int i = 0; i < old_size; ++i) {
     if (i == to_minimize_index_) to_minimize_index_ = new_size;
     if (i == to_first_minimize_index_) to_first_minimize_index_ = new_size;
@@ -741,11 +789,13 @@ void ClauseManager::DeleteRemovedClauses() {
 }
 
 SatClause* ClauseManager::NextNewClauseToMinimize() {
+  DeterministicTimer<{.scale = 4.2e-08, .offset = 2.4e-08}> timer(time_limit_);
   // We want to return a clause that has never been minimized before, so we can
   // safely skip anything that has been returned or skipped by the round-robin
   // iterator.
   to_first_minimize_index_ =
       std::max(to_first_minimize_index_, to_minimize_index_);
+  const int start_index = to_first_minimize_index_;
   for (; to_first_minimize_index_ < clauses_.size();
        ++to_first_minimize_index_) {
     // If the round-robin is in-sync with the new clauses, we may as well
@@ -755,31 +805,39 @@ SatClause* ClauseManager::NextNewClauseToMinimize() {
 
     if (clauses_[to_first_minimize_index_]->IsRemoved()) continue;
     if (!IsRemovable(clauses_[to_first_minimize_index_])) {
+      timer.Advance(to_first_minimize_index_ - start_index + 1);
       return clauses_[to_first_minimize_index_++];
     }
   }
+  timer.Advance(to_first_minimize_index_ - start_index);
   return nullptr;
 }
 
 SatClause* ClauseManager::NextClauseToMinimize() {
+  DeterministicTimer<{.scale = 4.6e-08, .offset = 5.1e-08}> timer(time_limit_);
   const int old = to_first_minimize_index_;
+  const int start1 = to_minimize_index_;
   for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
     if (clauses_[to_minimize_index_]->IsRemoved()) continue;
     if (!IsRemovable(clauses_[to_minimize_index_])) {
+      timer.Advance(to_minimize_index_ - start1 + 1);
       return clauses_[to_minimize_index_++];
     }
   }
 
   // Let's reset and try once more to find one.
+  const int loop1_inspected = to_minimize_index_ - start1;
   to_minimize_index_ = 0;
   ++num_to_minimize_index_resets_;
   for (; to_minimize_index_ < old; ++to_minimize_index_) {
     if (clauses_[to_minimize_index_]->IsRemoved()) continue;
     if (!IsRemovable(clauses_[to_minimize_index_])) {
+      timer.Advance(loop1_inspected + to_minimize_index_ + 1);
       return clauses_[to_minimize_index_++];
     }
   }
 
+  timer.Advance(loop1_inspected + to_minimize_index_);
   return nullptr;
 }
 
@@ -941,10 +999,17 @@ bool BinaryImplicationGraph::CleanUpImplicationList(Literal a) {
   const absl::Span<Literal> range = implications_and_amos_[a].literals();
   if (range.empty()) return true;
 
-  std::sort(range.begin(), range.end());
+  {
+    const uint64_t n = range.size();
+    DeterministicTimer<{.scale = 1.2e-09}> sort_timer(time_limit_,
+                                                      n * absl::bit_width(n));
+    std::sort(range.begin(), range.end());
+  }
 
   // We detect and delete duplicate literals by hand to also detect l and not(l)
   // which should appear consecutively because of our LiteralIndex encoding.
+  DeterministicTimer<{.scale = 1.9e-09, .offset = 1.4e-08}> timer(time_limit_,
+                                                                  range.size());
   int new_size = 1;
   for (int i = 1; i < range.size(); ++i) {
     if (range[i] == range[i - 1]) continue;
@@ -981,7 +1046,10 @@ bool BinaryImplicationGraph::RemoveDuplicatesAndFixedVariables() {
 
   // This is a bit tricky: if we fix a variable, we can rewrite an at most one
   // that might become implications and require more cleanup...
+  uint64_t num_cleaned = 0;
+  DeterministicTimer<{.scale = 5.6e-08, .offset = 4.6e-07}> timer(time_limit_);
   while (!to_clean_.empty()) {
+    num_cleaned += to_clean_.size();
     for (const Literal l : to_clean_) {
       might_have_dups_.Clear(l.Index());
       if (!CleanUpImplicationList(l)) return false;
@@ -992,6 +1060,7 @@ bool BinaryImplicationGraph::RemoveDuplicatesAndFixedVariables() {
     RemoveFixedVariables();
   }
 
+  timer.Advance(num_cleaned);
   DCHECK(HasNoDuplicates());
   return true;
 }
@@ -1196,6 +1265,8 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
   const VariablesAssignment& assignment = trail_->Assignment();
   int local_end = base_index;
   const int buffer_size = at_most_one_buffer_.size();
+  uint64_t work = 0;
+  DeterministicTimer<{.scale = 2.6e-08}> timer(time_limit_);
   for (int i = base_index; i < buffer_size;) {
     // Process a new at most one.
     // It will be copied into buffer[local_start + 1, local_end].
@@ -1212,6 +1283,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // We have an at_most_one starting at i, and we increment i to the next one.
     const absl::Span<const Literal> initial_amo = AtMostOne(i);
     i += initial_amo.size() + 1;
+    work += initial_amo.size() + 1;
 
     // Reserve space for size.
     local_end++;
@@ -1236,7 +1308,14 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
       // Sort the copied amo.
       // We only want to expose a const AtMostOne() so we sort directly here.
       Literal* pt = &at_most_one_buffer_[local_start + 1];
-      std::sort(pt, pt + AtMostOne(local_start).size());
+      const int amo_size = AtMostOne(local_start).size();
+      {
+        const uint64_t n = static_cast<uint64_t>(amo_size);
+        DeterministicTimer<{.scale = 2.0e-10}> sort_timer(
+            time_limit_, n * absl::bit_width(n));
+        std::sort(pt, pt + amo_size);
+      }
+      work += amo_size;
 
       LiteralIndex previous = kNoLiteralIndex;
       bool remove_previous = false;
@@ -1281,6 +1360,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // didn't become true because its negation was appearing twice!
     if (some_duplicates) {
       int new_local_end = local_start + 1;
+      work += AtMostOne(local_start).size();
       for (const Literal l : AtMostOne(local_start)) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
@@ -1301,6 +1381,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
 
     // Deal with all false.
     if (set_all_left_to_false || trivializer != kNoBooleanVariable) {
+      work += AtMostOne(local_start).size();
       for (const Literal l : AtMostOne(local_start)) {
         if (l.Variable() == trivializer) continue;
         if (assignment.LiteralIsFalse(l)) continue;
@@ -1320,6 +1401,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // TODO(user): Investigate what the best threshold is.
     if (at_most_one.size() <= std::max(2, at_most_one_max_expansion_size_)) {
       if (at_most_one.size() > 1) {
+        work += at_most_one.size() * at_most_one.size();
         for (const Literal a : at_most_one) {
           implies_something_.Set(a);
           NotifyPossibleDuplicate(a);
@@ -1336,6 +1418,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     }
 
     // Index the new at most one.
+    work += at_most_one.size();
     for (const Literal l : at_most_one) {
       DCHECK_LT(l.Index(), implications_and_amos_.size());
       DCHECK(!is_redundant_[l]);
@@ -1345,6 +1428,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
   }
 
   at_most_one_buffer_.resize(local_end);
+  timer.Advance(work);
   return true;
 }
 
@@ -1355,6 +1439,19 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     propagation_trail_index_ = trail->Index();
     return true;
   }
+  const int64_t old_num_propagations = num_propagations_;
+  const int64_t old_num_inspections = num_inspections_;
+  const int old_propagation_trail_index = propagation_trail_index_;
+  // The second time unit counts the inspected implications and at most one
+  // literals, plus the processed trail literals (including those that imply
+  // nothing).
+  DeterministicTimer2<{.scale1 = 3.6e-08, .scale2 = 4.8e-09, .offset = 1.1e-07}>
+      timer(time_limit_);
+  absl::Cleanup advance_timer = [&]() {
+    timer.Advance(num_propagations_ - old_num_propagations,
+                  num_inspections_ - old_num_inspections +
+                      propagation_trail_index_ - old_propagation_trail_index);
+  };
   Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
   const auto implies_something = implies_something_.view();
@@ -1469,6 +1566,10 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
     bool also_use_decisions) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!conflict->empty());
+  uint64_t other_work = 0;
+  DeterministicTimer2<{.scale1 = 5.1e-09, .scale2 = 2.6e-08}> timer(
+      time_limit_);
+  const int64_t old_mark_work = work_done_in_mark_descendants_;
   is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
 
   tmp_to_keep_.clear();
@@ -1485,16 +1586,22 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   // decision level. Improve?
   std::vector<std::pair<Literal, int>> decisions;
   if (also_use_decisions) {
+    other_work += conflict->size();
     for (int i = 1; i < conflict->size(); ++i) {
       const auto& info = trail_->Info((*conflict)[i].Variable());
       if (info.type == AssignmentType::kSearchDecision) {
         decisions.push_back({(*conflict)[i].Negated(), info.level});
       }
     }
-    absl::c_stable_sort(decisions, [](const std::pair<LiteralIndex, int>& a,
-                                      const std::pair<LiteralIndex, int>& b) {
-      return a.second > b.second;
-    });
+    {
+      const uint64_t n = decisions.size();
+      DeterministicTimer<{.scale = 2.6e-09, .offset = 1.0e-09}> sort_timer(
+          time_limit_, n * absl::bit_width(n));
+      absl::c_stable_sort(decisions, [](const std::pair<LiteralIndex, int>& a,
+                                        const std::pair<LiteralIndex, int>& b) {
+        return a.second > b.second;
+      });
+    }
   }
 
   // Keep marking everything propagated by the decisions, and make sure we
@@ -1509,6 +1616,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
     }
   }
 
+  other_work += is_marked_.PositionsSetAtLeastOnce().size();
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     // TODO(user): if this is false, then we actually have a conflict of size 2.
     // This can only happen if the binary clause was not propagated properly
@@ -1520,7 +1628,9 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   }
 
   // Remove all marked literals from the conflict.
+  other_work += tmp_to_keep_.size();
   for (const Literal l : tmp_to_keep_) is_marked_.Clear(l);
+  timer.Advance(work_done_in_mark_descendants_ - old_mark_work, other_work);
   if (lrat_proof_handler_ != nullptr) {
     RemoveRedundantLiterals</*fill_proof=*/true>(conflict, proof);
   } else {
@@ -1539,13 +1649,17 @@ void BinaryImplicationGraph::UpdateImplications(
     }
   }
 
-  int new_size = 0;
-  for (const Literal l : implications.literals()) {
-    LiteralIndex new_l = update(l);
-    if (new_l == kNoLiteralIndex) continue;
-    implications.literals()[new_size++] = Literal(new_l);
+  {
+    DeterministicTimer<{.scale = 6.0e-09, .offset = 3.6e-08}> timer(
+        time_limit_, implications.num_literals());
+    int new_size = 0;
+    for (const Literal l : implications.literals()) {
+      LiteralIndex new_l = update(l);
+      if (new_l == kNoLiteralIndex) continue;
+      implications.literals()[new_size++] = Literal(new_l);
+    }
+    implications.TruncateLiterals(new_size);
   }
-  implications.TruncateLiterals(new_size);
 
   if (lrat_proof_handler_ != nullptr) {
     for (const Literal l : implications.literals()) {
@@ -1565,6 +1679,8 @@ void BinaryImplicationGraph::RemoveImplicationsIf(
     Literal a, absl::FunctionRef<bool(Literal)> predicate) {
   int new_size = 0;
   auto& implications = implications_and_amos_[a];
+  DeterministicTimer<{.scale = 1.1e-08}> timer(time_limit_,
+                                               implications.num_literals());
   for (const Literal l : implications.literals()) {
     if (predicate(l)) {
       if (lrat_proof_handler_ != nullptr) {
@@ -1604,6 +1720,8 @@ template <bool fill_proof>
 void BinaryImplicationGraph::RemoveRedundantLiterals(
     std::vector<Literal>* conflict, std::vector<ClausePtr>* proof) {
   SCOPED_TIME_STAT(&stats_);
+  DeterministicTimer<{.scale = 3.7e-09, .offset = 9.5e-08}> timer(
+      time_limit_, conflict->size());
   int new_index = 1;
   if constexpr (fill_proof) {
     proof->clear();
@@ -1708,8 +1826,12 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
 
   // TODO(user): This might be a bit slow. Do not call all the time if needed,
   // this shouldn't change the correctness of the code.
-  for (auto& v : implications_and_amos_) {
-    v.ClearOffsets();
+  {
+    DeterministicTimer<{.scale = 4.1e-09, .offset = 1.1e-07}> timer(
+        time_limit_, implications_and_amos_.size());
+    for (auto& v : implications_and_amos_) {
+      v.ClearOffsets();
+    }
   }
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
   DeleteUnusedLratImplications();
@@ -2122,7 +2244,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
-  DeterministicTimer2<{.scale1 = 4e-8, .scale2 = 1e-8}> timer(time_limit_);
+  DeterministicTimer2<{.scale1 = 2.2e-08, .scale2 = 6.5e-08, .offset = 4.3e-07}>
+      timer(time_limit_);
 
   // Let's remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
@@ -2398,7 +2521,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
-  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
+  DeterministicTimer<{.scale = 1.0e-08, .offset = 1.8e-08}> timer(time_limit_);
 
   int64_t num_fixed = 0;
   int64_t num_new_redundant_implications = 0;
@@ -2625,43 +2748,56 @@ BinaryImplicationGraph::FilterAndSortAtMostOnes(
   std::vector<std::pair<int, int>> index_size_vector;
   const int num_amos = at_most_ones.size();
   index_size_vector.reserve(num_amos);
-  for (int index = 0; index < num_amos; ++index) {
-    std::vector<Literal>& clique = at_most_ones[index];
-    if (clique.size() <= 1) continue;
+  {
+    uint64_t work = num_amos;
+    DeterministicTimer<{.scale = 1.1e-08, .offset = 9.5e-08}> timer(
+        time_limit_);
+    for (int index = 0; index < num_amos; ++index) {
+      std::vector<Literal>& clique = at_most_ones[index];
+      if (clique.size() <= 1) continue;
+      work += clique.size();
 
-    // NOTE(user): Because we always use literals with the smallest variable
-    // indices as representatives, this makes sure that if possible, we express
-    // the clique in terms of user-provided variables (that are always created
-    // first).
-    //
-    // Remap the clique to only use representative.
-    for (Literal& ref : clique) {
-      DCHECK_LT(ref.Index(), representative_of_.size());
-      const LiteralIndex rep = representative_of_[ref];
-      if (rep == kNoLiteralIndex) continue;
-      ref = Literal(rep);
-    }
-
-    // We skip anything that can be presolved further as the code below does
-    // not handle duplicates well.
-    //
-    // TODO(user): Shall we presolve it here?
-    bool skip = false;
-    std::sort(clique.begin(), clique.end());
-    for (int i = 1; i < clique.size(); ++i) {
-      if (clique[i] == clique[i - 1] || clique[i] == clique[i - i].Negated()) {
-        skip = true;
-        break;
+      // NOTE(user): Because we always use literals with the smallest variable
+      // indices as representatives, this makes sure that if possible, we
+      // express the clique in terms of user-provided variables (that are always
+      // created first).
+      //
+      // Remap the clique to only use representative.
+      for (Literal& ref : clique) {
+        DCHECK_LT(ref.Index(), representative_of_.size());
+        const LiteralIndex rep = representative_of_[ref];
+        if (rep == kNoLiteralIndex) continue;
+        ref = Literal(rep);
       }
-    }
-    if (skip) continue;
 
-    index_size_vector.push_back({index, clique.size()});
+      // We skip anything that can be presolved further as the code below does
+      // not handle duplicates well.
+      //
+      // TODO(user): Shall we presolve it here?
+      bool skip = false;
+      std::sort(clique.begin(), clique.end());
+      for (int i = 1; i < clique.size(); ++i) {
+        if (clique[i] == clique[i - 1] ||
+            clique[i] == clique[i - i].Negated()) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      index_size_vector.push_back({index, clique.size()});
+    }
+    timer.Advance(work);
   }
-  absl::c_stable_sort(index_size_vector, [](const std::pair<int, int> a,
-                                            const std::pair<int, int> b) {
-    return a.second > b.second;
-  });
+  {
+    const uint64_t n = index_size_vector.size();
+    DeterministicTimer<{.scale = 2.7e-09, .offset = 3.9e-09}> sort_timer(
+        time_limit_, n * absl::bit_width(n));
+    absl::c_stable_sort(index_size_vector, [](const std::pair<int, int> a,
+                                              const std::pair<int, int> b) {
+      return a.second > b.second;
+    });
+  }
   return index_size_vector;
 }
 
@@ -2773,7 +2909,7 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
     absl::Span<std::vector<Literal>> at_most_ones,
     int64_t max_num_explored_nodes) {
   // The code below assumes a DAG.
-  DeterministicTimer2<{.scale1 = 4.2e-09, .scale2 = 4.6e-09, .offset = 2.1e-11}>
+  DeterministicTimer2<{.scale1 = 4.4e-09, .scale2 = 1.5e-08, .offset = 1.9e-08}>
       timer(time_limit_);
   // TODO(user): track deterministic time in DetectEquivalences and
   // FilterAndSortAtMostOnes?
@@ -2924,6 +3060,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     const absl::Span<const Literal> at_most_one,
     const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
     const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values) {
+  DeterministicTimer<{.scale = 6.3e-09, .offset = 3.9e-09}> timer(time_limit_);
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   const int64_t old_work = work_done_in_mark_descendants_;
@@ -2977,6 +3114,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
       }
     }
   }
+  timer.Advance(work_done_in_mark_descendants_ - old_work);
   return clique;
 }
 
@@ -3006,6 +3144,10 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     absl::Span<const double> reduced_costs) {
   // We only want to generate a cut with literals from the LP, not extra ones.
   const int num_literals = implications_and_amos_.size();
+  uint64_t work1 = num_literals + literals.size();
+  uint64_t work2 = 0;
+  DeterministicTimer2<{.scale1 = 3.9e-09, .scale2 = 2.1e-08, .offset = 7.7e-07}>
+      timer(time_limit_);
   util_intops::StrongVector<LiteralIndex, bool> can_be_included(num_literals,
                                                                 false);
   util_intops::StrongVector<LiteralIndex, double> expanded_lp_values(
@@ -3076,6 +3218,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     // We consider only one candidate for each current_literal.
     LiteralIndex best = kNoLiteralIndex;
     double best_value = 0.0;
+    work2 += implications_and_amos_[current_literal].num_literals() + 1;
     for (const Literal l : implications_and_amos_[current_literal].literals()) {
       if (!can_be_included[l]) continue;
       const double activity =
@@ -3127,6 +3270,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     // Prepare a dense mapping.
     int i = 0;
     tmp_mapping_.resize(implications_and_amos_.size(), -1);
+    work1 += fractional_literals.size();
     for (const Literal l : fractional_literals) {
       bron_kerbosch_.SetWeight(i, expanded_lp_values[l]);
       tmp_mapping_[l] = i++;
@@ -3141,7 +3285,9 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     for (const Literal base : fractional_literals) {
       for (const Literal l : {base, base.Negated()}) {
         const int from = tmp_mapping_[l];
-        for (const Literal next : DirectImplications(l)) {
+        const auto& direct = DirectImplications(l);
+        work2 += direct.size();
+        for (const Literal next : direct) {
           // l => next so (l + not(next) <= 1).
           const int to = tmp_mapping_[next.Negated()];
           if (to != -1) {
@@ -3177,6 +3323,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     for (const auto [index, weight] : with_weight) {
       // Convert.
       at_most_one.clear();
+      work2 += cliques[index].size();
       for (const int i : cliques[index]) {
         const Literal l = fractional_literals[i / 2];
         at_most_one.push_back(i % 2 == 1 ? l.Negated() : l);
@@ -3192,12 +3339,14 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     }
 
     // Clear the dense mapping
+    work1 += fractional_literals.size();
     for (const Literal l : fractional_literals) {
       tmp_mapping_[l] = -1;
       tmp_mapping_[l.Negated()] = -1;
     }
   }
 
+  timer.Advance(work1, work2);
   return tmp_cuts_;
 }
 
@@ -3314,14 +3463,22 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 
 absl::Span<const Literal> BinaryImplicationGraph::GetAllImpliedLiterals(
     Literal root) {
+  DeterministicTimer<{.scale = 7.8e-09, .offset = 1.4e-06}> timer(time_limit_);
+  const int64_t old_work = work_done_in_mark_descendants_;
   is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  return MarkDescendants(root);
+  const absl::Span<const Literal> result = MarkDescendants(root);
+  timer.Advance(work_done_in_mark_descendants_ - old_work);
+  return result;
 }
 
 absl::Span<const Literal> BinaryImplicationGraph::GetNewlyImpliedLiterals(
     Literal root) {
   CHECK(!is_marked_[root]);
-  return MarkDescendants(root);
+  DeterministicTimer<{.scale = 9.6e-09}> timer(time_limit_);
+  const int64_t old_work = work_done_in_mark_descendants_;
+  const absl::Span<const Literal> result = MarkDescendants(root);
+  timer.Advance(work_done_in_mark_descendants_ - old_work);
+  return result;
 }
 
 void BinaryImplicationGraph::ClearImpliedLiterals() {
@@ -3382,11 +3539,15 @@ absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
     const absl::Span<const Literal> at_most_one,
     int64_t max_num_explored_nodes) {
+  uint64_t other_work = at_most_one.size();
+  DeterministicTimer2<{.scale1 = 4.9e-09, .scale2 = 3.0e-09, .offset = 7.3e-08}>
+      timer(time_limit_);
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
 
   // Optim.
   for (const Literal l : clique) {
     if (!implies_something_[l]) {
+      timer.Advance(0, other_work);
       return clique;
     }
   }
@@ -3395,6 +3556,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
   // has no descendants in the current intersection. We can keep such literals
   // marked.
   std::vector<LiteralIndex> intersection;
+  const int64_t old_work = work_done_in_mark_descendants_;
   for (int i = 0; i < clique.size(); ++i) {
     if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
     is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
@@ -3402,11 +3564,13 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 
     if (i == 0) {
       intersection = is_marked_.PositionsSetAtLeastOnce();
+      other_work += intersection.size() + clique.size();
       for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());
     }
 
     int new_size = 0;
     is_marked_.Clear(clique[i].NegatedIndex());  // TODO(user): explain.
+    other_work += intersection.size();
     for (const LiteralIndex index : intersection) {
       if (is_marked_[index]) intersection[new_size++] = index;
     }
@@ -3423,6 +3587,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
       intersection.pop_back();
     }
   }
+  timer.Advance(work_done_in_mark_descendants_ - old_work, other_work);
   return clique;
 }
 
@@ -3431,6 +3596,9 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
     Literal literal) {
   DCHECK(!is_removed_[literal]);
+  uint64_t work = direct_implications_.size() +
+                  implications_and_amos_[literal].num_literals() + 1;
+  DeterministicTimer<{.scale = 7.1e-09}> timer(time_limit_);
 
   // Clear old state.
   for (const Literal l : direct_implications_) {
@@ -3453,7 +3621,9 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
     DCHECK(implications_and_amos_[literal].offsets().empty());
   }
   for (const int start : implications_and_amos_[literal].offsets()) {
-    for (const Literal l : AtMostOne(start)) {
+    const auto amo = AtMostOne(start);
+    work += amo.size();
+    for (const Literal l : amo) {
       if (l == literal) continue;
       if (assignment.LiteralIsAssigned(l)) continue;
       if (!is_removed_[l] && !in_direct_implications_[l.NegatedIndex()]) {
@@ -3463,6 +3633,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
     }
   }
   estimated_sizes_[literal] = direct_implications_.size();
+  timer.Advance(work);
   return direct_implications_;
 }
 
@@ -3597,6 +3768,8 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
 
 void BinaryImplicationGraph::RemoveAllRedundantVariables(
     std::deque<std::vector<Literal>>* postsolve_clauses) {
+  DeterministicTimer<{.scale = 1.5e-08}> timer(time_limit_,
+                                               implications_and_amos_.size());
   for (LiteralIndex a(0); a < implications_and_amos_.size(); ++a) {
     if (is_redundant_[a] && !is_removed_[a]) {
       postsolve_clauses->push_back(
@@ -3615,29 +3788,33 @@ void BinaryImplicationGraph::RemoveAllRedundantVariables(
 
 void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
   const VariablesAssignment& assignment = trail_->Assignment();
-  for (LiteralIndex a(0); a < implications_and_amos_.size(); ++a) {
-    if (is_removed_[a] || assignment.LiteralIsAssigned(Literal(a))) {
-      if (DEBUG_MODE && assignment.LiteralIsTrue(Literal(a))) {
-        // The code assumes that everything is already propagated.
-        // Otherwise we will remove implications that didn't propagate yet!
-        for (const Literal lit : implications_and_amos_[a].literals()) {
-          DCHECK(is_removed_[lit] || trail_->Assignment().LiteralIsTrue(lit));
+  {
+    DeterministicTimer<{.scale = 1.6e-08, .offset = 3.2e-07}> timer(
+        time_limit_, implications_and_amos_.size());
+    for (LiteralIndex a(0); a < implications_and_amos_.size(); ++a) {
+      if (is_removed_[a] || assignment.LiteralIsAssigned(Literal(a))) {
+        if (DEBUG_MODE && assignment.LiteralIsTrue(Literal(a))) {
+          // The code assumes that everything is already propagated.
+          // Otherwise we will remove implications that didn't propagate yet!
+          for (const Literal lit : implications_and_amos_[a].literals()) {
+            DCHECK(is_removed_[lit] || trail_->Assignment().LiteralIsTrue(lit));
+          }
         }
+
+        ClearImplications(Literal(a));
+        implications_and_amos_[a].ShrinkToFit();
+        continue;
       }
 
-      ClearImplications(Literal(a));
-      implications_and_amos_[a].ShrinkToFit();
-      continue;
+      RemoveImplicationsIf(Literal(a), [&](Literal l) {
+        return is_removed_[l] || assignment.LiteralIsTrue(l);
+      });
     }
 
-    RemoveImplicationsIf(Literal(a), [&](Literal l) {
-      return is_removed_[l] || assignment.LiteralIsTrue(l);
-    });
-  }
-
-  // Clean-up at most ones.
-  for (auto& v : implications_and_amos_) {
-    v.ClearOffsets();
+    // Clean-up at most ones.
+    for (auto& v : implications_and_amos_) {
+      v.ClearOffsets();
+    }
   }
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
 

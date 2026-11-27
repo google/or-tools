@@ -418,7 +418,8 @@ TEST(ConstraintViolationTest, BasicAllDiffExample) {
       exprs { vars: 3 coeffs: 1 }
     }
   )pb");
-  CompiledAllDiffConstraint ct(ct_proto);
+  TimeLimit time_limit;
+  CompiledAllDiffConstraint ct(ct_proto, &time_limit);
   EXPECT_EQ(3, ct.ComputeViolation({2, 1, 2, 2}));
   EXPECT_EQ(6, ct.ComputeViolation({2, 2, 2, 2}));
   EXPECT_EQ(1, ct.ComputeViolation({1, 2, 3, 1}));

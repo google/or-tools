@@ -680,6 +680,10 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
 
   bool has_no_overlap_2d = false;
   bool unsat_during_copy = false;
+  // This must be done before the model copy, since it resets the elapsed
+  // deterministic time of time_limit.
+  auto* time_limit = local_model->GetOrCreate<TimeLimit>();
+  shared_->time_limit->UpdateLocalLimit(time_limit);
   {
     absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
@@ -708,8 +712,6 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     }
   }
 
-  auto* time_limit = local_model->GetOrCreate<TimeLimit>();
-  shared_->time_limit->UpdateLocalLimit(time_limit);
   local_model->GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
   time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
   time_limit->ChangeDeterministicLimit(

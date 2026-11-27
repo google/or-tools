@@ -14,6 +14,7 @@
 #include "ortools/sat/constraint_violation.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
@@ -28,6 +29,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
@@ -225,45 +227,58 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
     absl::Span<const int64_t> solution) {
   DCHECK(!creation_phase_);
 
-  // Resets the activity as the offset and the number of false enforcement to 0.
-  activities_ = offsets_;
-  last_affected_variables_.ClearAndResize(columns_.size());
-  num_false_enforcement_.assign(num_constraints_, 0);
+  {
+    DeterministicTimer<{.scale = 6.8e-09, .offset = 1.4e-08}> timer(&dtime_);
+    // Resets the activity as the offset and the number of false enforcement to
+    // 0.
+    activities_ = offsets_;
+    last_affected_variables_.ClearAndResize(columns_.size());
+    num_false_enforcement_.assign(num_constraints_, 0);
 
-  // Update these numbers for all columns.
-  const int num_vars = columns_.size();
-  for (int var = 0; var < num_vars; ++var) {
-    const SpanData& data = columns_[var];
-    const int64_t value = solution[var];
+    // Update these numbers for all columns.
+    const int num_vars = columns_.size();
+    uint64_t num_entries = 0;
+    for (int var = 0; var < num_vars; ++var) {
+      const SpanData& data = columns_[var];
+      const int64_t value = solution[var];
 
-    if (value == 0 && data.num_pos_literal > 0) {
-      const int* ct_indices = &ct_buffer_[data.start];
-      for (int k = 0; k < data.num_pos_literal; ++k) {
-        num_false_enforcement_[ct_indices[k]]++;
+      if (value == 0 && data.num_pos_literal > 0) {
+        num_entries += data.num_pos_literal;
+        const int* ct_indices = &ct_buffer_[data.start];
+        for (int k = 0; k < data.num_pos_literal; ++k) {
+          num_false_enforcement_[ct_indices[k]]++;
+        }
+      }
+
+      if (value == 1 && data.num_neg_literal > 0) {
+        num_entries += data.num_neg_literal;
+        const int* ct_indices = &ct_buffer_[data.start + data.num_pos_literal];
+        for (int k = 0; k < data.num_neg_literal; ++k) {
+          num_false_enforcement_[ct_indices[k]]++;
+        }
+      }
+
+      if (value != 0 && data.num_linear_entries > 0) {
+        num_entries += data.num_linear_entries;
+        const int* ct_indices = &ct_buffer_[data.start + data.num_pos_literal +
+                                            data.num_neg_literal];
+        const int64_t* coeffs = &coeff_buffer_[data.linear_start];
+        for (int k = 0; k < data.num_linear_entries; ++k) {
+          activities_[ct_indices[k]] += coeffs[k] * value;
+        }
       }
     }
-
-    if (value == 1 && data.num_neg_literal > 0) {
-      const int* ct_indices = &ct_buffer_[data.start + data.num_pos_literal];
-      for (int k = 0; k < data.num_neg_literal; ++k) {
-        num_false_enforcement_[ct_indices[k]]++;
-      }
-    }
-
-    if (value != 0 && data.num_linear_entries > 0) {
-      const int* ct_indices =
-          &ct_buffer_[data.start + data.num_pos_literal + data.num_neg_literal];
-      const int64_t* coeffs = &coeff_buffer_[data.linear_start];
-      for (int k = 0; k < data.num_linear_entries; ++k) {
-        activities_[ct_indices[k]] += coeffs[k] * value;
-      }
-    }
+    timer.Advance(num_entries);
   }
 
   // Cache violations (not counting enforcement).
-  for (int c = 0; c < num_constraints_; ++c) {
-    distances_[c] = domains_[c].Distance(activities_[c]);
-    is_violated_[c] = Violation(c) > 0;
+  {
+    DeterministicTimer<{.scale = 8.8e-09, .offset = 8.6e-08}> timer(
+        &dtime_, num_constraints_);
+    for (int c = 0; c < num_constraints_; ++c) {
+      distances_[c] = domains_[c].Distance(activities_[c]);
+      is_violated_[c] = Violation(c) > 0;
+    }
   }
 }
 
@@ -281,7 +296,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
 
   DCHECK_EQ(num_false_enforcement_[c], 0);
   const SpanData& data = rows_[c];
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 6.7e-09, .offset = 9.9e-08}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   // Update enforcement part. Because we only update weight of currently
@@ -348,7 +363,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
 void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
     int c, double weight, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 1.3e-08, .offset = 1.0e-07}> timer(&dtime_);
   uint64_t num_ops = 0;
   const SpanData& data = rows_[c];
 
@@ -390,7 +405,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
     int c, double weight, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
   const SpanData& data = rows_[c];
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 1.1e-08, .offset = 2.5e-08}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   // Everyone else had an enforced -> unenforced transition that now becomes
@@ -433,7 +448,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     int c, double score_change, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
   if (score_change == 0.0) return;
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 3.5e-09, .offset = 7.4e-08}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   const SpanData& data = rows_[c];
@@ -491,7 +506,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   // If the violation delta was zero and will still always be zero, we can skip.
   if (Domain(min_range, max_range).IsIncludedIn(domains_[c])) return;
 
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 3.3e-09}> timer(&dtime_);
   uint64_t num_ops = 0;
   auto cleanup =
       absl::MakeCleanup([&timer, &num_ops] { timer.Advance(num_ops); });
@@ -606,7 +621,7 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
   DCHECK(!creation_phase_);
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return;
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 1.3e-08, .offset = 5.2e-07}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   const SpanData& data = columns_[var];
@@ -758,7 +773,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return 0.0;
   const SpanData& data = columns_[var];
-  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  DeterministicTimer<{.scale = 3.6e-09, .offset = 1.7e-07}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   int i = data.start;
@@ -857,7 +872,12 @@ std::vector<int64_t> LinearIncrementalEvaluator::SlopeBreakpoints(
     }
   }
 
-  gtl::STLSortAndRemoveDuplicates(&result);
+  {
+    const uint64_t n = result.size();
+    DeterministicTimer<{.scale = 1.9e-09, .offset = 6.2e-08}> timer(
+        &dtime_, n * absl::bit_width(n));
+    gtl::STLSortAndRemoveDuplicates(&result);
+  }
   return result;
 }
 
@@ -870,126 +890,150 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
   // Note that at this point the constraint indices are not "encoded" yet.
   int total_size = 0;
   int total_linear_size = 0;
-  tmp_row_sizes_.assign(num_constraints_, 0);
-  tmp_row_num_positive_literals_.assign(num_constraints_, 0);
-  tmp_row_num_negative_literals_.assign(num_constraints_, 0);
-  tmp_row_num_linear_entries_.assign(num_constraints_, 0);
-  for (const auto& column : literal_entries_) {
-    total_size += column.size();
-    for (const auto [c, is_positive] : column) {
-      tmp_row_sizes_[c]++;
-      if (is_positive) {
-        tmp_row_num_positive_literals_[c]++;
-      } else {
-        tmp_row_num_negative_literals_[c]++;
+  {
+    DeterministicTimer2<{
+        .scale1 = 1.8e-08, .scale2 = 1.2e-08, .offset = 2.2e-08}>
+        timer(&dtime_);
+    tmp_row_sizes_.assign(num_constraints_, 0);
+    tmp_row_num_positive_literals_.assign(num_constraints_, 0);
+    tmp_row_num_negative_literals_.assign(num_constraints_, 0);
+    tmp_row_num_linear_entries_.assign(num_constraints_, 0);
+    for (const auto& column : literal_entries_) {
+      total_size += column.size();
+      for (const auto [c, is_positive] : column) {
+        tmp_row_sizes_[c]++;
+        if (is_positive) {
+          tmp_row_num_positive_literals_[c]++;
+        } else {
+          tmp_row_num_negative_literals_[c]++;
+        }
       }
     }
+    timer.Advance(literal_entries_.size(), total_size);
   }
 
-  row_max_variations_.assign(num_constraints_, 0);
-  for (int var = 0; var < var_entries_.size(); ++var) {
-    const int64_t range = var_max_variation[var];
-    const auto& column = var_entries_[var];
-    total_size += column.size();
-    total_linear_size += column.size();
-    for (const auto [c, coeff] : column) {
-      tmp_row_sizes_[c]++;
-      tmp_row_num_linear_entries_[c]++;
-      row_max_variations_[c] =
-          std::max(row_max_variations_[c], range * std::abs(coeff));
+  {
+    DeterministicTimer2<{.scale1 = 5.5e-08, .scale2 = 1.3e-08}> timer(&dtime_);
+    row_max_variations_.assign(num_constraints_, 0);
+    for (int var = 0; var < var_entries_.size(); ++var) {
+      const int64_t range = var_max_variation[var];
+      const auto& column = var_entries_[var];
+      total_size += column.size();
+      total_linear_size += column.size();
+      for (const auto [c, coeff] : column) {
+        tmp_row_sizes_[c]++;
+        tmp_row_num_linear_entries_[c]++;
+        row_max_variations_[c] =
+            std::max(row_max_variations_[c], range * std::abs(coeff));
+      }
     }
+    timer.Advance(var_entries_.size(), total_linear_size);
   }
 
   // Compactify for faster WeightedViolationDelta().
-  ct_buffer_.reserve(total_size);
-  coeff_buffer_.reserve(total_linear_size);
-  columns_.resize(std::max(literal_entries_.size(), var_entries_.size()));
-  for (int var = 0; var < columns_.size(); ++var) {
-    columns_[var].start = static_cast<int>(ct_buffer_.size());
-    columns_[var].linear_start = static_cast<int>(coeff_buffer_.size());
-    if (var < literal_entries_.size()) {
-      for (const auto [c, is_positive] : literal_entries_[var]) {
-        if (is_positive) {
-          columns_[var].num_pos_literal++;
-          ct_buffer_.push_back(c);
+  {
+    const uint64_t num_cols =
+        std::max(literal_entries_.size(), var_entries_.size());
+    DeterministicTimer2<{
+        .scale1 = 1.8e-07, .scale2 = 4.3e-09, .offset = 1.4e-08}>
+        timer(&dtime_, num_cols, 2 * total_size - total_linear_size);
+    ct_buffer_.reserve(total_size);
+    coeff_buffer_.reserve(total_linear_size);
+    columns_.resize(num_cols);
+    for (int var = 0; var < columns_.size(); ++var) {
+      columns_[var].start = static_cast<int>(ct_buffer_.size());
+      columns_[var].linear_start = static_cast<int>(coeff_buffer_.size());
+      if (var < literal_entries_.size()) {
+        for (const auto [c, is_positive] : literal_entries_[var]) {
+          if (is_positive) {
+            columns_[var].num_pos_literal++;
+            ct_buffer_.push_back(c);
+          }
+        }
+        for (const auto [c, is_positive] : literal_entries_[var]) {
+          if (!is_positive) {
+            columns_[var].num_neg_literal++;
+            ct_buffer_.push_back(c);
+          }
         }
       }
-      for (const auto [c, is_positive] : literal_entries_[var]) {
-        if (!is_positive) {
-          columns_[var].num_neg_literal++;
+      if (var < var_entries_.size()) {
+        for (const auto [c, coeff] : var_entries_[var]) {
+          columns_[var].num_linear_entries++;
           ct_buffer_.push_back(c);
+          coeff_buffer_.push_back(coeff);
         }
       }
     }
-    if (var < var_entries_.size()) {
-      for (const auto [c, coeff] : var_entries_[var]) {
-        columns_[var].num_linear_entries++;
-        ct_buffer_.push_back(c);
-        coeff_buffer_.push_back(coeff);
-      }
-    }
-  }
 
-  // We do not need var_entries_ or literal_entries_ anymore.
-  //
-  // TODO(user): We could delete them before. But at the time of this
-  // optimization, I didn't want to change the behavior of the algorithm at all.
-  gtl::STLClearObject(&var_entries_);
-  gtl::STLClearObject(&literal_entries_);
+    // We do not need var_entries_ or literal_entries_ anymore.
+    //
+    // TODO(user): We could delete them before. But at the time of this
+    // optimization, I didn't want to change the behavior of the algorithm at
+    // all.
+    gtl::STLClearObject(&var_entries_);
+    gtl::STLClearObject(&literal_entries_);
+  }
 
   // Initialize the SpanData.
   // Transform tmp_row_sizes_ to starts in the row_var_buffer_.
   // Transform tmp_row_num_linear_entries_ to starts in the row_coeff_buffer_.
-  int offset = 0;
-  int linear_offset = 0;
-  rows_.resize(num_constraints_);
-  for (int c = 0; c < num_constraints_; ++c) {
-    rows_[c].num_pos_literal = tmp_row_num_positive_literals_[c];
-    rows_[c].num_neg_literal = tmp_row_num_negative_literals_[c];
-    rows_[c].num_linear_entries = tmp_row_num_linear_entries_[c];
+  {
+    DeterministicTimer<{.scale = 1.7e-08}> timer(&dtime_, num_constraints_);
+    int offset = 0;
+    int linear_offset = 0;
+    rows_.resize(num_constraints_);
+    for (int c = 0; c < num_constraints_; ++c) {
+      rows_[c].num_pos_literal = tmp_row_num_positive_literals_[c];
+      rows_[c].num_neg_literal = tmp_row_num_negative_literals_[c];
+      rows_[c].num_linear_entries = tmp_row_num_linear_entries_[c];
 
-    rows_[c].start = offset;
-    offset += tmp_row_sizes_[c];
-    tmp_row_sizes_[c] = rows_[c].start;
+      rows_[c].start = offset;
+      offset += tmp_row_sizes_[c];
+      tmp_row_sizes_[c] = rows_[c].start;
 
-    rows_[c].linear_start = linear_offset;
-    linear_offset += tmp_row_num_linear_entries_[c];
-    tmp_row_num_linear_entries_[c] = rows_[c].linear_start;
+      rows_[c].linear_start = linear_offset;
+      linear_offset += tmp_row_num_linear_entries_[c];
+      tmp_row_num_linear_entries_[c] = rows_[c].linear_start;
+    }
+    DCHECK_EQ(offset, total_size);
+    DCHECK_EQ(linear_offset, total_linear_size);
   }
-  DCHECK_EQ(offset, total_size);
-  DCHECK_EQ(linear_offset, total_linear_size);
 
   // Copy data.
-  row_var_buffer_.resize(total_size);
-  row_coeff_buffer_.resize(total_linear_size);
-  for (int var = 0; var < columns_.size(); ++var) {
-    const SpanData& data = columns_[var];
-    int i = data.start;
-    for (int k = 0; k < data.num_pos_literal; ++i, ++k) {
-      const int c = ct_buffer_[i];
-      row_var_buffer_[tmp_row_sizes_[c]++] = var;
+  {
+    DeterministicTimer<{.scale = 2.1e-08}> timer(&dtime_, total_size);
+    row_var_buffer_.resize(total_size);
+    row_coeff_buffer_.resize(total_linear_size);
+    for (int var = 0; var < columns_.size(); ++var) {
+      const SpanData& data = columns_[var];
+      int i = data.start;
+      for (int k = 0; k < data.num_pos_literal; ++i, ++k) {
+        const int c = ct_buffer_[i];
+        row_var_buffer_[tmp_row_sizes_[c]++] = var;
+      }
     }
-  }
-  for (int var = 0; var < columns_.size(); ++var) {
-    const SpanData& data = columns_[var];
-    int i = data.start + data.num_pos_literal;
-    for (int k = 0; k < data.num_neg_literal; ++i, ++k) {
-      const int c = ct_buffer_[i];
-      row_var_buffer_[tmp_row_sizes_[c]++] = var;
+    for (int var = 0; var < columns_.size(); ++var) {
+      const SpanData& data = columns_[var];
+      int i = data.start + data.num_pos_literal;
+      for (int k = 0; k < data.num_neg_literal; ++i, ++k) {
+        const int c = ct_buffer_[i];
+        row_var_buffer_[tmp_row_sizes_[c]++] = var;
+      }
     }
-  }
-  for (int var = 0; var < columns_.size(); ++var) {
-    const SpanData& data = columns_[var];
-    int i = data.start + data.num_pos_literal + data.num_neg_literal;
-    int j = data.linear_start;
-    for (int k = 0; k < data.num_linear_entries; ++i, ++j, ++k) {
-      const int c = ct_buffer_[i];
-      row_var_buffer_[tmp_row_sizes_[c]++] = var;
-      row_coeff_buffer_[tmp_row_num_linear_entries_[c]++] = coeff_buffer_[j];
+    for (int var = 0; var < columns_.size(); ++var) {
+      const SpanData& data = columns_[var];
+      int i = data.start + data.num_pos_literal + data.num_neg_literal;
+      int j = data.linear_start;
+      for (int k = 0; k < data.num_linear_entries; ++i, ++j, ++k) {
+        const int c = ct_buffer_[i];
+        row_var_buffer_[tmp_row_sizes_[c]++] = var;
+        row_coeff_buffer_[tmp_row_num_linear_entries_[c]++] = coeff_buffer_[j];
+      }
     }
-  }
 
-  last_affected_variables_.ClearAndResize(columns_.size());
+    last_affected_variables_.ClearAndResize(columns_.size());
+  }
 }
 
 bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
@@ -1186,8 +1230,8 @@ int64_t CompiledIntModConstraint::ComputeViolationWhenEnforced(
 // ----- CompiledAllDiffConstraint -----
 
 CompiledAllDiffConstraint::CompiledAllDiffConstraint(
-    const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    const ConstraintProto& ct_proto, TimeLimit* time_limit)
+    : CompiledConstraintWithProto(ct_proto), time_limit_(time_limit) {}
 
 int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
@@ -1195,7 +1239,13 @@ int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
   for (const LinearExpressionProto& expr : ct_proto().all_diff().exprs()) {
     values_.push_back(ExprValue(expr, solution));
   }
-  std::sort(values_.begin(), values_.end());
+  if (values_.empty()) return 0;
+  {
+    const uint64_t n = values_.size();
+    DeterministicTimer<{.scale = 2.6e-10}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    std::sort(values_.begin(), values_.end());
+  }
 
   int64_t value = values_[0];
   int counter = 1;
@@ -1872,6 +1922,8 @@ void LsEvaluator::BuildVarConstraintGraph() {
 
   // Scan the model to decide if a variable is linked to a convex evaluation.
   jump_value_optimal_.resize(cp_model_.variables_size());
+  DeterministicTimer<{.scale = 2.2e-08, .offset = 4.9e-08}> timer(
+      &dtime_, cp_model_.variables_size());
   for (int i = 0; i < cp_model_.variables_size(); ++i) {
     if (!var_to_constraints_[i].empty()) {
       jump_value_optimal_[i] = false;
@@ -1894,6 +1946,9 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr: {
       // Encoding using enforcement literal is slightly more efficient.
+      DeterministicTimer<{.scale = 9.5e-08}> timer(
+          &dtime_,
+          ct.enforcement_literal_size() + ct.bool_or().literals_size());
       const int ct_index = linear_evaluator_.NewConstraint(Domain(1, 1));
       for (const int lit : ct.enforcement_literal()) {
         linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
@@ -1905,6 +1960,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kBoolAnd: {
       const int num_literals = ct.bool_and().literals_size();
+      DeterministicTimer<{.scale = 1.1e-07, .offset = 1.2e-08}> timer(
+          &dtime_, ct.enforcement_literal_size() + num_literals);
       const int ct_index =
           linear_evaluator_.NewConstraint(Domain(num_literals));
       for (const int lit : ct.enforcement_literal()) {
@@ -1917,6 +1974,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kAtMostOne: {
       DCHECK(ct.enforcement_literal().empty());
+      DeterministicTimer<{.scale = 2.0e-07}> timer(
+          &dtime_, ct.at_most_one().literals_size());
       const int ct_index = linear_evaluator_.NewConstraint({0, 1});
       for (const int lit : ct.at_most_one().literals()) {
         linear_evaluator_.AddLiteral(ct_index, lit);
@@ -1925,6 +1984,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kExactlyOne: {
       DCHECK(ct.enforcement_literal().empty());
+      DeterministicTimer<{.scale = 8.2e-08, .offset = 2.8e-07}> timer(
+          &dtime_, ct.exactly_one().literals_size());
       const int ct_index = linear_evaluator_.NewConstraint({1, 1});
       for (const int lit : ct.exactly_one().literals()) {
         linear_evaluator_.AddLiteral(ct_index, lit);
@@ -1936,7 +1997,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       break;
     }
     case ConstraintProto::ConstraintCase::kAllDiff: {
-      constraints_.emplace_back(new CompiledAllDiffConstraint(ct));
+      constraints_.emplace_back(new CompiledAllDiffConstraint(ct, &dtime_));
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1977,6 +2038,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       break;
     }
     case ConstraintProto::ConstraintCase::kLinear: {
+      DeterministicTimer<{.scale = 8.3e-08, .offset = 4.3e-07}> timer(
+          &dtime_, ct.enforcement_literal_size() + ct.linear().vars_size());
       const Domain domain = ReadDomainFromProto(ct.linear());
       if (domain.IsEmpty()) {
         const int ct_index = linear_evaluator_.NewConstraint(Domain(1, 1));
@@ -2032,7 +2095,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
             std::move(enforcement_literals), std::move(one),
-            std::move(is_active), std::move(times), std::move(demands)));
+            std::move(is_active), std::move(times), std::move(demands),
+            &dtime_));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
@@ -2118,7 +2182,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
 
       constraints_.emplace_back(new CompiledReservoirConstraint(
           std::move(enforcement_literals), std::move(capacity),
-          std::move(is_active), std::move(times), std::move(demands)));
+          std::move(is_active), std::move(times), std::move(demands), &dtime_));
       break;
     }
     case ConstraintProto::ConstraintCase::kReservoir: {
@@ -2156,7 +2220,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
             enforcement_literals, max_capacity, is_active, times,
-            std::move(demands)));
+            std::move(demands), &dtime_));
       }
 
       // Lower bound capacity side: -level <= -min_level
@@ -2170,7 +2234,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
             enforcement_literals, min_capacity, is_active, times,
-            std::move(demands)));
+            std::move(demands), &dtime_));
       }
 
       // Final level constraint: min_level <= final_level <= max_level.
@@ -2314,6 +2378,8 @@ void LsEvaluator::CompileConstraintsAndObjective(
 
   // The first compiled constraint is always the objective if present.
   if (cp_model_.has_objective()) {
+    DeterministicTimer<{.scale = 8.1e-08, .offset = 1.9e-07}> timer(
+        &dtime_, cp_model_.objective().vars_size());
     const int ct_index = linear_evaluator_.NewConstraint(
         cp_model_.objective().domain().empty()
             ? Domain::AllValues()
@@ -2326,15 +2392,19 @@ void LsEvaluator::CompileConstraintsAndObjective(
     }
   }
 
-  TimeLimitCheckEveryNCalls checker(1000, time_limit_);
-  for (int c = 0; c < cp_model_.constraints_size(); ++c) {
-    if (ignored_constraints[c]) continue;
-    CompileOneConstraint(cp_model_.constraints(c));
-    if (checker.LimitReached()) break;
-  }
+  {
+    DeterministicTimer<{.scale = 3.0e-08, .offset = 1.7e-07}> timer(
+        &dtime_, cp_model_.constraints_size() + additional_constraints.size());
+    TimeLimitCheckEveryNCalls checker(1000, time_limit_);
+    for (int c = 0; c < cp_model_.constraints_size(); ++c) {
+      if (ignored_constraints[c]) continue;
+      CompileOneConstraint(cp_model_.constraints(c));
+      if (checker.LimitReached()) break;
+    }
 
-  for (const ConstraintProto& ct : additional_constraints) {
-    CompileOneConstraint(ct);
+    for (const ConstraintProto& ct : additional_constraints) {
+      CompileOneConstraint(ct);
+    }
   }
 
   // Make sure we have access to the data in an efficient way.
@@ -2380,6 +2450,8 @@ void LsEvaluator::ComputeAllNonLinearViolations(
 
 void LsEvaluator::UpdateNonLinearViolations(
     int var, int64_t old_value, absl::Span<const int64_t> new_solution) {
+  DeterministicTimer<{.scale = 1.9e-07, .offset = 5.2e-09}> timer(
+      &dtime_, var_to_constraints_[var].size());
   for (const int general_ct_index : var_to_constraints_[var]) {
     const int c = general_ct_index + linear_evaluator_.num_constraints();
     const int64_t v0 = constraints_[general_ct_index]->violation();
@@ -2408,7 +2480,7 @@ void LsEvaluator::UpdateLinearScores(int var, int64_t old_value,
 
 void LsEvaluator::UpdateViolatedList() {
   // Maintain the list of violated constraints.
-  DeterministicTimer<{.scale = 1e-8}> timer(
+  DeterministicTimer<{.scale = 3.2e-08, .offset = 3.3e-08}> timer(
       &dtime_, last_update_violation_changes_.size());
   for (const int c : last_update_violation_changes_) {
     UpdateViolatedList(c);
@@ -2514,7 +2586,7 @@ double LsEvaluator::WeightedViolationDelta(
 
   // We assume linear time delta computation in number of variables.
   // TODO(user): refine on a per constraint basis.
-  DeterministicTimer<{.scale = 1e-8}> timer(
+  DeterministicTimer<{.scale = 4.3e-09}> timer(
       &dtime_, var_to_violation_delta_work_estimate_[var]);
 
   const int num_linear_constraints = linear_evaluator_.num_constraints();
@@ -2543,6 +2615,8 @@ void LsEvaluator::RecomputeViolatedList(bool linear_only) {
   violated_constraints_.clear();
   const int num_constraints =
       linear_only ? NumLinearConstraints() : NumEvaluatorConstraints();
+  DeterministicTimer<{.scale = 5.6e-09}> timer(
+      &dtime_, cp_model_.variables_size() + num_constraints);
   for (int c = 0; c < num_constraints; ++c) {
     UpdateViolatedList(c);
   }
@@ -2554,8 +2628,8 @@ void LsEvaluator::UpdateViolatedList(const int c) {
     // The constraint is violated. Add if needed.
     if (!inserted) return;
     if (IsObjectiveConstraint(c)) return;
-    DeterministicTimer<{.scale = 1e-8}> timer(&dtime_,
-                                              ConstraintToVars(c).size());
+    DeterministicTimer<{.scale = 2.5e-09, .offset = 2.0e-08}> timer(
+        &dtime_, ConstraintToVars(c).size());
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] += 1;
     }
@@ -2563,8 +2637,8 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
   if (violated_constraints_.erase(c) == 1) {
     if (IsObjectiveConstraint(c)) return;
-    DeterministicTimer<{.scale = 1e-8}> timer(&dtime_,
-                                              ConstraintToVars(c).size());
+    DeterministicTimer<{.scale = 2.5e-09, .offset = 2.0e-08}> timer(
+        &dtime_, ConstraintToVars(c).size());
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] -= 1;
     }
@@ -2681,6 +2755,8 @@ int64_t CompiledReservoirConstraint::IncrementalViolation(
   }
   absl::c_sort(profile_delta_);
 
+  DeterministicTimer<{.scale = 6.6e-09, .offset = 1.6e-07}> scan_timer(
+      time_limit_, profile_.size() + profile_delta_.size());
   // Similar algo, but we scan the two vectors at once.
   int64_t overload = 0;
   int64_t current_load = 0;

@@ -14,212 +14,181 @@
 #ifndef ORTOOLS_SAT_MP_MODEL_WRAPPER_H_
 #define ORTOOLS_SAT_MP_MODEL_WRAPPER_H_
 
-#include <stdint.h>
-
+#include <cmath>
+#include <cstdint>
 #include <limits>
-#include <string>
-#include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
-#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/mip_model.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace sat {
 
-class MPModelProtoWrapper;
+// Appends the enforcement literal `var == value` to `ct`. Currently this should
+// only be called with `value` equal to a current bound of `var`.
+inline void AddEnforcement(int var, int64_t value,
+                           EnforcedLinearConstraintProto* ct) {
+  ct->add_enforcement_vars(var);
+  ct->add_enforcement_values(value);
+}
 
-// This wrapper expose a single type of constraint:
-//      enforcement => linear_constraint
-// Where enforcement is a conjunction of integer literals, each of the form
-//    integer_variable == value.
+// Truncates `ct`'s linear terms to `new_num_terms`.
+inline void ResizeConstraintTerms(int new_num_terms,
+                                  EnforcedLinearConstraintProto* ct) {
+  CHECK_GE(new_num_terms, 0);
+  CHECK_LE(new_num_terms, ct->vars().size());
+  CHECK_EQ(ct->vars().size(), ct->coeffs().size());
+  ct->mutable_vars()->Truncate(new_num_terms);
+  ct->mutable_coeffs()->Truncate(new_num_terms);
+}
+
+// Resets `ct` to the always-true constraint `-inf <= 0 <= +inf` with no
+// enforcement, preserving metadata fields such as `name` and `tolerance`.
+inline void ClearConstraintToAlwaysTrue(EnforcedLinearConstraintProto* ct) {
+  ct->set_lower_bound(-std::numeric_limits<double>::infinity());
+  ct->set_upper_bound(std::numeric_limits<double>::infinity());
+  ct->clear_vars();
+  ct->clear_coeffs();
+  ct->clear_enforcement_vars();
+  ct->clear_enforcement_values();
+}
+
+// A thin wrapper around a MipModelProto converted from an MPModelProto. The
+// idea is to simplify presolve code and to eventually just use MipModelProto in
+// all our presolve stack.
 //
-// Having just a single type should simplify the presolve code. And extracting
-// enforcement helps for both presolve algorithm and the final scaling to
-// integer.
-//
-// Note that currently we really only handle either value == var_lb or value ==
-// var_ub, or value outside the bounds (enforcement trivially false). We could
-// handle more general enforcement, but then we cannot easily encode them via
-// big-M and would need to create extra Booleans when converting to a
-// CpModelProto.
-class EnforcedLinearConstraint {
- public:
-  // Accessors.
-  int64_t num_terms() const { return constraint_->var_index().size(); }
-  int vars(int i) const { return constraint_->var_index(i); }
-  absl::Span<const int> vars() const {
-    return absl::MakeConstSpan(constraint_->var_index());
-  }
-
-  // Since this is only constructed out of a validated MPModelProto. All
-  // coefficients are guaranteed be finite and with magnitude <= to the
-  // mip_max_valid_magnitude() parameter.
-  double coeffs(int i) const { return constraint_->coefficient(i); }
-  absl::Span<const double> coeffs() const {
-    return absl::MakeConstSpan(constraint_->coefficient());
-  }
-
-  // Note that the bounds could be +/- infinity() to mean unconstrained in one
-  // direction. We usually relax large enough bound to this.
-  double lower_bound() const { return constraint_->lower_bound(); }
-  double upper_bound() const { return constraint_->upper_bound(); }
-
-  absl::string_view name() const { return constraint_->name(); }
-
-  // Human-readable representation of the constraint, for logging and errors.
-  std::string DebugString() const;
-
-  // Mutable API is kept minimal and proto like.
-  void set_vars(int i, int value) { constraint_->set_var_index(i, value); }
-  void set_coeffs(int i, double value) {
-    constraint_->set_coefficient(i, value);
-  }
-  void set_lower_bound(double value) { constraint_->set_lower_bound(value); }
-  void set_upper_bound(double value) { constraint_->set_upper_bound(value); }
-  void resize(int new_num_terms) {
-    CHECK_LE(new_num_terms, num_terms());
-    constraint_->mutable_var_index()->Truncate(new_num_terms);
-    constraint_->mutable_coefficient()->Truncate(new_num_terms);
-  }
-  void Clear() {
-    constraint_->set_lower_bound(-std::numeric_limits<double>::infinity());
-    constraint_->set_upper_bound(std::numeric_limits<double>::infinity());
-    constraint_->clear_var_index();
-    constraint_->clear_coefficient();
-    enforcement_vars_.clear();
-    enforcement_values_.clear();
-  }
-
-  // And for the enforcement.
-  bool IsEnforced() const { return !enforcement_vars_.empty(); }
-  absl::Span<const int> enforcement_vars() const { return enforcement_vars_; }
-  absl::Span<const int64_t> enforcement_values() const {
-    return enforcement_values_;
-  }
-  void set_enforcement_values(int i, int64_t value) {
-    enforcement_values_[i] = value;
-  }
-
-  // Note that currently this should only be called with value == current_var_lb
-  // or value == current_var_ub.
-  void AddEnforcement(int var, int64_t value) {
-    enforcement_vars_.push_back(var);
-    enforcement_values_.push_back(value);
-  }
-
- private:
-  friend MPModelProtoWrapper;
-  EnforcedLinearConstraint(int c, MPModelProto* mp_model)
-      : constraint_(mp_model->mutable_constraint(c)) {}
-
-  // Enforcement.
-  std::vector<int> enforcement_vars_;
-  std::vector<int64_t> enforcement_values_;
-
-  // The linear part is stored in the underlying MPModelProto constraint.
-  MPConstraintProto* constraint_;
-};
-
-// A non-owning view of the linear part of a constraint:
-//   lower_bound <= sum_i coeffs[i] * x[vars[i]] <= upper_bound.
-// It is implicitly constructible from both an MPConstraintProto and an
-// EnforcedLinearConstraint (whose enforcement is ignored), so that helpers
-// working on the linear part only can take either. The viewed constraint must
-// outlive the view and not be modified while the view is in use.
-struct LinearConstraintView {
-  LinearConstraintView(const MPConstraintProto& ct)  // NOLINT
-      : vars(ct.var_index()),
-        coeffs(ct.coefficient()),
-        lower_bound(ct.lower_bound()),
-        upper_bound(ct.upper_bound()),
-        name(ct.name()) {}
-  LinearConstraintView(const EnforcedLinearConstraint& ct)  // NOLINT
-      : vars(ct.vars()),
-        coeffs(ct.coeffs()),
-        lower_bound(ct.lower_bound()),
-        upper_bound(ct.upper_bound()),
-        name(ct.name()) {}
-
-  int num_terms() const { return vars.size(); }
-
-  absl::Span<const int> vars;
-  absl::Span<const double> coeffs;
-  double lower_bound;
-  double upper_bound;
-  absl::string_view name;
-};
-
-// A simple wrapper that see a MPModelProto as an uniform list of
-// EnforcedLinearConstraint. The idea is to simplify presolve code and to
-// eventually just use a new proto corresponding to this in all our presolve
-// stack.
+// The objective is always a minimization: the "original" objective is
+// (inner_objective + objective_offset()) * objective_scaling(), see
+// MipModelProto.
 class MPModelProtoWrapper {
  public:
-  // Note that the given MPModelProto must pass
-  // MPModelProtoValidationBeforeConversion(). This might crash if this is not
-  // the case.
+  // Converts `mp_model` to a MipModelProto: the maximization objective (if
+  // any) is negated, the general constraints become enforced linear
+  // constraints, and the always true constraints are dropped.
   //
-  // The wrapper will take ownership of the MPModelProto taken by value. So the
-  // construction should be
+  // Note that the given MPModelProto must pass CanWrap(). This might crash if
+  // this is not the case.
+  //
+  // The construction should be
   //   MPModelProtoWrapper wrapper(std::move(mp_model), logger);
-  // in the usual case where we don't need the original MPModelProto anymore.
-  // Note that the (slightly modified) input model is still accessible via
-  // `mutable_underlying_model()`.
+  // in the usual case where we don't need the original MPModelProto anymore,
+  // so that the memory of its constraints can be reused.
   explicit MPModelProtoWrapper(MPModelProto mp_model,
                                SolverLogger* logger = nullptr);
 
-  absl::string_view name() const { return mp_model_.name(); }
+  // Wraps `model` as is. It must be a valid MipModelProto. Note that this is
+  // not a constructor, since a constructor taking a MipModelProto would make
+  // the construction from the result of ParseTestProto() ambiguous.
+  static MPModelProtoWrapper FromMipModelProto(MipModelProto model);
 
-  // Variable. Same API for now, with the objective embedded.
-  int num_variables() const { return mp_model_.variable().size(); }
-  const MPVariableProto& variables(int v) const {
-    return mp_model_.variable(v);
-  }
-  MPVariableProto* mutable_variables(int v) {
-    return mp_model_.mutable_variable(v);
+  // Returns false (and logs the reason) if `mp_model` contains general
+  // constraints that cannot be wrapped.
+  static bool CanWrap(const MPModelProto& mp_model, SolverLogger* logger);
+
+  absl::string_view name() const { return model_.name(); }
+
+  // Variables, with the objective embedded.
+  int num_variables() const { return model_.variables().size(); }
+  const MipVariableProto& variables(int v) const { return model_.variables(v); }
+  MipVariableProto* mutable_variables(int v) {
+    return model_.mutable_variables(v);
   }
 
   // Constraints.
-  int num_constraints() const { return constraints_.size(); }
-  const EnforcedLinearConstraint& constraints(int c) const {
-    return constraints_[c];
+  int num_constraints() const { return model_.constraints().size(); }
+  const EnforcedLinearConstraintProto& constraints(int c) const {
+    return model_.constraints(c);
   }
-  EnforcedLinearConstraint* mutable_constraints(int c) {
-    return &constraints_[c];
+  EnforcedLinearConstraintProto* mutable_constraints(int c) {
+    return model_.mutable_constraints(c);
+  }
+
+  // Relaxes every constraint's bounds in `model_` outward by `tight_precision`
+  // (which must be finite and non-negative), rounding inward so the relaxed
+  // region never exceeds `tight_precision` and finite bounds stay finite even
+  // at +/-DBL_MAX:
+  // - Each lower bound `lb` becomes `ExactSumUb(lb, -tight_precision)`.
+  // - Each upper bound `ub` becomes `ExactSumLb(ub, tight_precision)`.
+  // Infinite bounds are left unchanged. This affects constraint bounds only
+  // (including rows converted from `And`/`Or` general constraints); variable
+  // bounds are untouched.
+  void RelaxAllConstraintBounds(double tight_precision);
+
+  // Sets `tolerance` on every constraint in `model_` (which must be finite and
+  // non-negative), clearing the field when `tolerance == 0.0`. This applies
+  // uniformly to all constraints (including rows converted from `And`/`Or`
+  // general constraints); variable fields (including
+  // `maximum_distance_to_integer`) are untouched.
+  void SetAllConstraintToleranceBudget(double tolerance);
+
+  // Appends an empty constraint to the underlying model and returns a pointer
+  // to its wrapper. Must only be paired with `pop_constraint()` if the caller
+  // removes it.
+  EnforcedLinearConstraintProto* add_constraints() {
+    return model_.add_constraints();
+  }
+
+  // Removes the last constraint (intended to undo `add_constraint()`).
+  // CHECK-fails if the underlying model has no constraints.
+  void pop_constraints() {
+    CHECK(!model_.constraints().empty());
+    model_.mutable_constraints()->RemoveLast();
   }
 
   // Returns whether the underlying model has a non-constant objective. The
   // possibly non-zero objective_offset() is not taken into account.
   bool has_non_constant_objective() const {
-    return has_non_constant_objective_;
+    return absl::c_any_of(model_.variables(), [](const MipVariableProto& v) {
+      return v.objective_coefficient() != 0.0;
+    });
   }
 
   // Returns whether the original model was a maximization problem.
-  bool is_original_model_maximize() const { return objective_scaling_ < 0.0; }
-
-  // We change the objective to minimization. The "original" objective will
-  // always be (inner_objective + objective_offset()) * objective_scaling().
-  // If it was a maximization, we will have scaling set to -1.
-  double objective_offset() const { return mp_model_.objective_offset(); }
-  void set_objective_offset(double value) {
-    mp_model_.set_objective_offset(value);
+  bool is_original_model_maximize() const {
+    return model_.objective_scaling() < 0.0;
   }
-  double objective_scaling() const { return objective_scaling_; }
 
-  // WARNING: This do not see "enforcement" and the model should be manipulated
-  // with care. It is forbidden to change the number of variable or constraint.
-  MPModelProto* mutable_underlying_model() { return &mp_model_; }
-  const MPModelProto& underlying_model() const { return mp_model_; }
+  // The "original" objective is always
+  // (inner_objective + objective_offset()) * objective_scaling(). If it was a
+  // maximization, the scaling is -1.
+  double objective_offset() const { return model_.objective_offset(); }
+  void set_objective_offset(double value) {
+    model_.set_objective_offset(value);
+  }
+  double objective_scaling() const { return model_.objective_scaling(); }
+
+  // Upper bound on the absolute objective error incurred so far by the
+  // presolve, in inner objective units, see MipModelProto. It is always finite
+  // and non-negative.
+  double objective_max_rounding_error() const {
+    return model_.objective_max_rounding_error();
+  }
+  void set_objective_max_rounding_error(double value) {
+    DCHECK(std::isfinite(value));
+    DCHECK_GE(value, 0.0);
+    model_.set_objective_max_rounding_error(value);
+  }
+
+  // Solution hint, in the same space as the variables.
+  bool has_solution_hint() const { return model_.has_solution_hint(); }
+  const MipPartialVariableAssignment& solution_hint() const {
+    return model_.solution_hint();
+  }
+  MipPartialVariableAssignment* mutable_solution_hint() {
+    return model_.mutable_solution_hint();
+  }
+
+  // The wrapped model.
+  const MipModelProto& proto() const { return model_; }
 
  private:
-  double objective_scaling_;
-  bool has_non_constant_objective_;
-  MPModelProto mp_model_;
-  std::vector<EnforcedLinearConstraint> constraints_;
+  MPModelProtoWrapper() = default;
+
+  MipModelProto model_;
 };
 
 }  // namespace sat

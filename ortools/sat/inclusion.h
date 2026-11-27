@@ -25,10 +25,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -296,7 +298,12 @@ inline void InclusionDetector<Storage>::DetectInclusions(
 
   // Main algo.
   work_done_ = 0;
-  std::stable_sort(candidates_.begin(), candidates_.end());
+  {
+    const size_t n = candidates_.size();
+    DeterministicTimer<{.scale = 3.5e-09}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    std::stable_sort(candidates_.begin(), candidates_.end());
+  }
   for (const Candidate& candidate : candidates_) {
     const auto& candidate_elements = storage_[candidate.index];
     const int candidate_index = signatures_.size();
@@ -430,6 +437,7 @@ inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
   std::vector<int> element_to_num_watched;
 
   work_done_ = 0;
+  DeterministicTimer<{.scale = 7.9e-08, .offset = 2.4e-06}> timer(time_limit_);
   for (int index = 0; index < storage_.size(); ++index) {
     const auto& subset = storage_[index];
     CHECK_GE(subset.size(), 2);
@@ -448,7 +456,10 @@ inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
     int second_choice = -1;
     int second_value = -1;
     work_done_ += subset.size();
-    if (work_done_ > work_limit_) return Stop();
+    if (work_done_ > work_limit_) {
+      timer.Advance(index + 1);
+      return Stop();
+    }
     for (const int e : subset) {
       DCHECK_GE(e, 0);
       DCHECK_LT(e, element_to_num_watched.size());
@@ -470,6 +481,7 @@ inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
     element_to_num_watched[best_choice]++;
     one_watcher_builder.Add(best_choice, {index, second_choice, signature});
   }
+  timer.Advance(storage_.size());
 
   one_watcher_.ResetFromBuilder(one_watcher_builder);
 }
@@ -531,9 +543,13 @@ inline void SubsetsDetector<Storage>::FindSubsets(
       // check.
       bool is_included = true;
       work_done_ += subset.size();
-      if (work_done_ > work_limit_) return Stop();
+      if (work_done_ > work_limit_) {
+        return Stop();
+      }
       if (work_done_ > next_time_limit_check) {
-        if (time_limit_->LimitReached()) return Stop();
+        if (time_limit_->LimitReached()) {
+          return Stop();
+        }
         next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
       }
       for (const int subset_e : subset) {
@@ -549,10 +565,16 @@ inline void SubsetsDetector<Storage>::FindSubsets(
 
       // TODO(user): Remove this and the more complex API need once we move
       // class.
-      if (stop_) return;
-      if (work_done_ > work_limit_) return Stop();
+      if (stop_) {
+        return;
+      }
+      if (work_done_ > work_limit_) {
+        return Stop();
+      }
       if (work_done_ > next_time_limit_check) {
-        if (time_limit_->LimitReached()) return Stop();
+        if (time_limit_->LimitReached()) {
+          return Stop();
+        }
         next_time_limit_check = work_done_ + kCheckTimeLimitInterval;
       }
 

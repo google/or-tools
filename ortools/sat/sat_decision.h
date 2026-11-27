@@ -30,6 +30,7 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -163,6 +164,7 @@ class SatDecisionPolicy {
   // Singleton model objects.
   const SatParameters& parameters_;
   const Trail& trail_;
+  TimeLimit* time_limit_;
   absl::BitGenRef random_;
 
   // TODO(user): This is in terms of proto indices. Ideally we would need

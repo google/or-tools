@@ -14,7 +14,9 @@
 #include "ortools/sat/cp_model_checker.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -337,11 +339,17 @@ TEST(ValidateCpModelTest, VariableDomainOverflow) {
   const CpModelProto model_ok = ParseTestProto(R"pb(
     variables {
       name: 'a'
-      domain: -4611686018427387903
-      domain: 4611686018427387903
+      domain: -2305843009213693951
+      domain: 2305843009213693952
     }
   )pb");
   EXPECT_TRUE(ValidateCpModel(model_ok).empty());
+
+  // max(0, UB) - min(0, LB) > kint64max / 2.
+  const CpModelProto model_too_large = ParseTestProto(R"pb(
+    variables { name: 'a' domain: -1 domain: 4611686018427387903 }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_too_large), HasSubstr("too large"));
 
   const CpModelProto model_bad0 = ParseTestProto(R"pb(
     variables { name: 'a' domain: 0 domain: 4611686018427387904 }
@@ -358,6 +366,148 @@ TEST(ValidateCpModelTest, VariableDomainOverflow) {
     variables { name: 'a' domain: -9223372036854775806 domain: 2 }
   )pb");
   EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("does not fall in"));
+}
+
+TEST(ValidateCpModelTest, LinearActivityRangeOverflow) {
+  // The activity of x + w is in [-kint64max / 2, 1]. Both bounds are within
+  // [-kint64max / 2, kint64max / 2], but their difference is not.
+  const CpModelProto model_bad = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -4611686018427387903, 0 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -4611686018427387903, 0 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_bad), HasSubstr("overflow"));
+
+  // The activity of x + w is in [1 - kint64max / 2, 1].
+  const CpModelProto model_ok = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -4611686018427387902, 0 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ -4611686018427387902, 0 ]
+      }
+    }
+  )pb");
+  EXPECT_EQ(ValidateCpModel(model_ok), "");
+}
+
+TEST(ValidateCpModelTest, LinearExpressionOffsetOverflow) {
+  // The partial sums of y - 2e18 with y in [0, 2.7e18] are in [-2e18, 2.7e18],
+  // which is included in [-kint64max / 2, kint64max / 2] (although its width
+  // 4.7e18 is larger than kint64max / 2).
+  const CpModelProto model_ok = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2700000000000000000 ] }
+    constraints {
+      all_diff {
+        exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: -2000000000000000000
+        }
+      }
+    }
+  )pb");
+  EXPECT_EQ(ValidateCpModel(model_ok), "");
+
+  // y - 6e18 with y in [2e18, 4e18] has values in [-4e18, -2e18], but its
+  // offset is not in [-kint64max / 2, kint64max / 2].
+  const CpModelProto model_bad_offset = ParseTestProto(R"pb(
+    variables { domain: [ 2000000000000000000, 4000000000000000000 ] }
+    constraints {
+      all_diff {
+        exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: -6000000000000000000
+        }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_bad_offset), HasSubstr("overflow"));
+
+  // y + 3e18 with y in [0, 2e18] has values in [3e18, 5e18].
+  const CpModelProto model_bad_max = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2000000000000000000 ] }
+    constraints {
+      all_diff {
+        exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 3000000000000000000
+        }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_bad_max), HasSubstr("overflow"));
+
+  // In an interval, start + size - end combines three offsets: 3e18 + 3e18
+  // exceeds kint64max / 2, but subtracting end's 3e18 offset brings the
+  // combined offset back to 3e18 <= kint64max / 2.
+  const CpModelProto interval_ok = ParseTestProto(R"pb(
+    variables { domain: [ -2000000000000000000, 0 ] }
+    variables { domain: [ -2000000000000000000, 0 ] }
+    constraints {
+      interval {
+        start {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 3000000000000000000
+        }
+        size {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+          offset: 3000000000000000000
+        }
+        end { offset: 3000000000000000000 }
+      }
+    }
+  )pb");
+  EXPECT_EQ(ValidateCpModel(interval_ok), "");
+
+  // When start.offset + size.offset - end.offset overflows int64_t (4e18 +
+  // 4e18 - (-4e18) = 12e18), the interval must be rejected rather than wrapping
+  // around.
+  const CpModelProto interval_bad = ParseTestProto(R"pb(
+    constraints {
+      interval {
+        start { offset: 4000000000000000000 }
+        size { offset: 4000000000000000000 }
+        end { offset: -4000000000000000000 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(interval_bad), HasSubstr("overflow"));
+}
+
+TEST(LinearOverflowCheckerTest, TermContributions) {
+  using Pair = std::pair<int64_t, int64_t>;
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(3, 2, 5), Pair(0, 15));
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(-3, 2, 5), Pair(-15, 0));
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(2, -4, 5), Pair(-8, 10));
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(-2, -4, 5), Pair(-10, 8));
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(0, -4, 5), Pair(0, 0));
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(kint64min, 0, 1),
+            std::nullopt);
+  EXPECT_EQ(LinearOverflowChecker::TermContributions(2, 0, kint64max / 2 + 1),
+            std::nullopt);
+}
+
+TEST(LinearOverflowCheckerTest, SumsAreValid) {
+  const int64_t kHalfMax = kint64max / 2;
+  EXPECT_TRUE(LinearOverflowChecker::SumsAreValid(0, kHalfMax));
+  EXPECT_TRUE(LinearOverflowChecker::SumsAreValid(-kHalfMax, 0));
+  EXPECT_TRUE(LinearOverflowChecker::SumsAreValid(-1, kHalfMax - 1));
+  EXPECT_FALSE(LinearOverflowChecker::SumsAreValid(0, kHalfMax + 1));
+  EXPECT_FALSE(LinearOverflowChecker::SumsAreValid(-kHalfMax - 1, 0));
+  EXPECT_FALSE(LinearOverflowChecker::SumsAreValid(-1, kHalfMax));
 }
 
 TEST(ValidateCpModelTest, ObjectiveOverflow) {
@@ -916,6 +1066,46 @@ TEST(ValidateCpModelTest, ReservoirLevelChangesOverflow) {
   )pb");
   EXPECT_THAT(ValidateCpModel(model_overflow),
               HasSubstr("Possible integer overflow in constraint"));
+}
+
+TEST(ValidateCpModelTest, ReservoirTimeExprsOverflow) {
+  CHECK_EQ(kint64max / 4, int64_t{2305843009213693951});
+  // The range of each time expression is 2e18 < kint64max / 4, so the range
+  // of time_exprs[i] - time_exprs[j] is less than kint64max / 2.
+  const CpModelProto model_ok = ParseTestProto(R"pb(
+    variables { domain: [ -1000000000000000000, 1000000000000000000 ] }
+    variables { domain: [ -1000000000000000000, 1000000000000000000 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 1
+        time_exprs { vars: 0 coeffs: 1 }
+        time_exprs { vars: 1 coeffs: 1 }
+        level_changes { offset: 1 }
+        level_changes { offset: -1 }
+      }
+    }
+  )pb");
+  EXPECT_EQ(ValidateCpModel(model_ok), "");
+
+  // The values of each time expression are in (-kint64max / 4,
+  // kint64max / 4), but its range is 4e18 >= kint64max / 4.
+  const CpModelProto model_overflow = ParseTestProto(R"pb(
+    variables { domain: [ -2000000000000000000, 2000000000000000000 ] }
+    variables { domain: [ -2000000000000000000, 2000000000000000000 ] }
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 1
+        time_exprs { vars: 0 coeffs: 1 }
+        time_exprs { vars: 1 coeffs: 1 }
+        level_changes { offset: 1 }
+        level_changes { offset: -1 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model_overflow),
+              HasSubstr("Potential integer overflow on time_expr"));
 }
 
 }  // namespace

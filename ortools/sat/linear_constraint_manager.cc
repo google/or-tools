@@ -30,6 +30,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -351,10 +352,11 @@ namespace {
 
 const LinearConstraintManager::ConstraintIndex kInvalidConstraintIndex(-1);
 
-size_t ComputeHashOfTerms(const LinearConstraint& ct) {
+size_t ComputeHashOfTerms(const LinearConstraint& ct, TimeLimit* time_limit) {
   DCHECK(std::is_sorted(ct.vars.get(), ct.vars.get() + ct.num_terms));
   size_t hash = 0;
   const int num_terms = ct.num_terms;
+  DeterministicTimer<{.scale = 6.4e-09}> timer(time_limit, num_terms);
   for (int i = 0; i < num_terms; ++i) {
     hash = util_hash::Hash(ct.vars[i].value(), hash);
     hash = util_hash::Hash(ct.coeffs[i].value(), hash);
@@ -383,8 +385,12 @@ LinearConstraintManager::~LinearConstraintManager() {
 }
 
 void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
-  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-    constraint_infos_[i].active_count *= scaling_factor;
+  {
+    DeterministicTimer<{.scale = 1.2e-08}> timer(time_limit_,
+                                                 constraint_infos_.size());
+    for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+      constraint_infos_[i].active_count *= scaling_factor;
+    }
   }
   constraint_active_count_increase_ *= scaling_factor;
   VLOG(3) << "Rescaled active counts by " << scaling_factor;
@@ -397,42 +403,47 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   const glop::ColIndex num_cols =
       solution_state->statuses.size() - RowToColIndex(num_rows);
   int new_size = 0;
-  for (int i = 0; i < num_rows; ++i) {
-    const ConstraintIndex constraint_index = lp_constraints_[i];
-    if (constraint_infos_[constraint_index].constraint.num_terms == 0) {
-      // Remove empty constraint.
-      //
-      // TODO(user): If the constraint is infeasible we could detect unsat
-      // right away, but hopefully this is a case where the propagation part
-      // of the solver can detect that too.
-      constraint_infos_[constraint_index].is_in_lp = false;
-      continue;
-    }
-
-    // Constraints that are not tight in the current solution have a basic
-    // status. We remove the ones that have been inactive in the last recent
-    // solves.
-    //
-    // TODO(user): More advanced heuristics might perform better, I didn't do
-    // a lot of tuning experiments yet.
-    const glop::VariableStatus row_status =
-        solution_state->statuses[num_cols + glop::ColIndex(i)];
-    if (row_status == glop::VariableStatus::BASIC) {
-      constraint_infos_[constraint_index].inactive_count++;
-      if (constraint_infos_[constraint_index].inactive_count >
-          sat_parameters_.max_consecutive_inactive_count()) {
+  {
+    DeterministicTimer<{.scale = 2.1e-08, .offset = 1.7e-06}> timer(
+        time_limit_, num_rows.value());
+    for (int i = 0; i < num_rows; ++i) {
+      const ConstraintIndex constraint_index = lp_constraints_[i];
+      if (constraint_infos_[constraint_index].constraint.num_terms == 0) {
+        // Remove empty constraint.
+        //
+        // TODO(user): If the constraint is infeasible we could detect unsat
+        // right away, but hopefully this is a case where the propagation part
+        // of the solver can detect that too.
         constraint_infos_[constraint_index].is_in_lp = false;
-        continue;  // Remove it.
+        continue;
       }
-    } else {
-      // Only count consecutive inactivities.
-      constraint_infos_[constraint_index].inactive_count = 0;
-    }
 
-    lp_constraints_[new_size] = constraint_index;
-    old_lp_row_of_lp_row_[new_size] = old_lp_row_of_lp_row_[i];
-    solution_state->statuses[num_cols + glop::ColIndex(new_size)] = row_status;
-    new_size++;
+      // Constraints that are not tight in the current solution have a basic
+      // status. We remove the ones that have been inactive in the last recent
+      // solves.
+      //
+      // TODO(user): More advanced heuristics might perform better, I didn't do
+      // a lot of tuning experiments yet.
+      const glop::VariableStatus row_status =
+          solution_state->statuses[num_cols + glop::ColIndex(i)];
+      if (row_status == glop::VariableStatus::BASIC) {
+        constraint_infos_[constraint_index].inactive_count++;
+        if (constraint_infos_[constraint_index].inactive_count >
+            sat_parameters_.max_consecutive_inactive_count()) {
+          constraint_infos_[constraint_index].is_in_lp = false;
+          continue;  // Remove it.
+        }
+      } else {
+        // Only count consecutive inactivities.
+        constraint_infos_[constraint_index].inactive_count = 0;
+      }
+
+      lp_constraints_[new_size] = constraint_index;
+      old_lp_row_of_lp_row_[new_size] = old_lp_row_of_lp_row_[i];
+      solution_state->statuses[num_cols + glop::ColIndex(new_size)] =
+          row_status;
+      new_size++;
+    }
   }
   const int num_removed_constraints = lp_constraints_.size() - new_size;
   lp_constraints_.resize(new_size);
@@ -480,7 +491,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));
 
   // If an identical constraint exists, only update its bounds.
-  const size_t key = ComputeHashOfTerms(ct);
+  const size_t key = ComputeHashOfTerms(ct, time_limit_);
   if (equiv_constraints_.contains(key)) {
     const ConstraintIndex ct_index = equiv_constraints_[key];
     if (constraint_infos_[ct_index].constraint.IsEqualIgnoringBounds(ct)) {
@@ -655,22 +666,27 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   util_intops::StrongVector<ConstraintIndex, ConstraintIndex> index_mapping(
       constraint_infos_.size());
   int num_deleted_constraints = 0;
-  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-    if (constraint_infos_[i].is_deletable && !constraint_infos_[i].is_in_lp &&
-        constraint_infos_[i].active_count <= active_count_threshold &&
-        num_deleted_constraints < sat_parameters_.cut_cleanup_target()) {
-      ++num_deleted_constraints;
-      continue;
-    }
+  {
+    DeterministicTimer2<{.scale1 = 4.0e-08, .scale2 = 5.9e-08}> timer(
+        time_limit_);
+    for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+      if (constraint_infos_[i].is_deletable && !constraint_infos_[i].is_in_lp &&
+          constraint_infos_[i].active_count <= active_count_threshold &&
+          num_deleted_constraints < sat_parameters_.cut_cleanup_target()) {
+        ++num_deleted_constraints;
+        continue;
+      }
 
-    if (i != new_size) {
-      constraint_infos_[new_size] = std::move(constraint_infos_[i]);
-    }
-    index_mapping[i] = new_size;
+      if (i != new_size) {
+        constraint_infos_[new_size] = std::move(constraint_infos_[i]);
+      }
+      index_mapping[i] = new_size;
 
-    // Make sure we recompute the hash_map of identical constraints.
-    equiv_constraints_[constraint_infos_[new_size].hash] = new_size;
-    new_size++;
+      // Make sure we recompute the hash_map of identical constraints.
+      equiv_constraints_[constraint_infos_[new_size].hash] = new_size;
+      new_size++;
+    }
+    timer.Advance(constraint_infos_.size(), new_size.value());
   }
   constraint_infos_.resize(new_size.value());
 
@@ -824,30 +840,35 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct,
   IntegerValue min_magnitude = kMaxIntegerValue;
   int new_size = 0;
   const int num_terms = ct->num_terms;
-  for (int i = 0; i < num_terms; ++i) {
-    const IntegerVariable var = ct->vars[i];
-    const IntegerValue coeff = ct->coeffs[i];
-    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+  {
+    DeterministicTimer<{.scale = 1.4e-08, .offset = 1.0e-09}> timer(
+        time_limit_);
+    for (int i = 0; i < num_terms; ++i) {
+      const IntegerVariable var = ct->vars[i];
+      const IntegerValue coeff = ct->coeffs[i];
+      const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
 
-    // For now we do not change ct, but just compute its new_size if we were
-    // to remove a fixed term.
-    if (lb == ub) {
-      fixed_part += coeff * lb;
-      continue;
-    }
-    ++new_size;
+      // For now we do not change ct, but just compute its new_size if we were
+      // to remove a fixed term.
+      if (lb == ub) {
+        fixed_part += coeff * lb;
+        continue;
+      }
+      ++new_size;
 
-    const IntegerValue magnitude = IntTypeAbs(coeff);
-    max_magnitude = std::max(max_magnitude, magnitude);
-    min_magnitude = std::min(min_magnitude, magnitude);
-    if (coeff > 0.0) {
-      min_sum += coeff * lb;
-      max_sum += coeff * ub;
-    } else {
-      min_sum += coeff * ub;
-      max_sum += coeff * lb;
+      const IntegerValue magnitude = IntTypeAbs(coeff);
+      max_magnitude = std::max(max_magnitude, magnitude);
+      min_magnitude = std::min(min_magnitude, magnitude);
+      if (coeff > 0.0) {
+        min_sum += coeff * lb;
+        max_sum += coeff * ub;
+      } else {
+        min_sum += coeff * ub;
+        max_sum += coeff * lb;
+      }
     }
+    timer.Advance(new_size);
   }
 
   // Clear constraints that are always true.
@@ -975,17 +996,20 @@ void LinearConstraintManager::FillDerivedFields(ConstraintInfo* info) {
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
   const int num_terms = info->constraint.num_terms;
-  for (int i = 0; i < num_terms; ++i) {
-    const IntegerVariable var = info->constraint.vars[i];
-    const IntegerValue coeff = info->constraint.coeffs[i];
-    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-    if (coeff > 0.0) {
-      min_sum += coeff * lb;
-      max_sum += coeff * ub;
-    } else {
-      min_sum += coeff * ub;
-      max_sum += coeff * lb;
+  {
+    DeterministicTimer<{.scale = 1.1e-08}> timer(time_limit_, num_terms);
+    for (int i = 0; i < num_terms; ++i) {
+      const IntegerVariable var = info->constraint.vars[i];
+      const IntegerValue coeff = info->constraint.coeffs[i];
+      const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+      if (coeff > 0.0) {
+        min_sum += coeff * lb;
+        max_sum += coeff * ub;
+      } else {
+        min_sum += coeff * ub;
+        max_sum += coeff * lb;
+      }
     }
   }
   info->constraint.lb = std::max(min_sum, info->constraint.lb);
@@ -1019,7 +1043,7 @@ void LinearConstraintManager::OnConstraintSimplified(ConstraintIndex i) {
   }
   equiv_constraints_.erase(constraint_infos_[i].hash);
   constraint_infos_[i].hash =
-      ComputeHashOfTerms(constraint_infos_[i].constraint);
+      ComputeHashOfTerms(constraint_infos_[i].constraint, time_limit_);
 
   // Because we simplified this constraint, it is possible that it is now a
   // duplicate of another one. This is in particular common after the
@@ -1084,7 +1108,7 @@ void LinearConstraintManager::OnConstraintSimplified(ConstraintIndex i) {
   drop_info.constraint.lb = 0;
   drop_info.constraint.ub = 0;
   drop_info.l2_norm = 0.0;
-  drop_info.hash = ComputeHashOfTerms(drop_info.constraint);
+  drop_info.hash = ComputeHashOfTerms(drop_info.constraint, time_limit_);
   FillDerivedFields(&drop_info);
 }
 
@@ -1159,7 +1183,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   const double tolerance = 1e-6;
   simplified_in_lp_constraints_.clear();
   {
-    DeterministicTimer<{.scale = 1.7e-9}> timer(time_limit_);
+    DeterministicTimer<{.scale = 8.8e-09}> timer(time_limit_);
     uint64_t work_done = 0;
     for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
       // Inprocessing of the constraint. Note that this might add new
@@ -1224,6 +1248,8 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     const glop::ColIndex num_cols =
         solution_state->statuses.size() - RowToColIndex(num_rows);
 
+    DeterministicTimer<{.scale = 9.7e-09, .offset = 1.0e-09}> timer(
+        time_limit_, num_rows.value());
     for (int i = 0; i < num_rows; ++i) {
       const ConstraintIndex constraint_index = lp_constraints_[i];
       const glop::VariableStatus row_status =
@@ -1275,11 +1301,16 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   }
   VLOG(3) << "   - size = " << current_size << ", limit = " << constraint_limit;
 
-  absl::c_stable_sort(new_constraints_by_score,
-                      [&](std::pair<ConstraintIndex, double> a,
-                          std::pair<ConstraintIndex, double> b) {
-                        return a.second > b.second;
-                      });
+  {
+    const uint64_t n = new_constraints_by_score.size();
+    DeterministicTimer<{.scale = 2.3e-09, .offset = 1.0e-07}> timer(
+        time_limit_, n * absl::bit_width(n));
+    absl::c_stable_sort(new_constraints_by_score,
+                        [&](std::pair<ConstraintIndex, double> a,
+                            std::pair<ConstraintIndex, double> b) {
+                          return a.second > b.second;
+                        });
+  }
   if (new_constraints_by_score.size() > kBlowupFactor * constraint_limit) {
     VLOG(3) << "Resize candidate constraints from "
             << new_constraints_by_score.size() << " down to "
@@ -1304,6 +1335,8 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   CompactVectorVector<IntegerVariable, std::pair<int, double>>
       constraint_terms_by_var;
   {
+    DeterministicTimer<{.scale = 9.2e-08, .offset = 9.7e-07}> timer(
+        time_limit_);
     FixedCapacityVector<std::pair<IntegerVariable, std::pair<int, double>>>
         constraint_terms;
     constraint_terms.ClearAndReserve(absl::c_accumulate(
@@ -1323,85 +1356,96 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       }
     }
     constraint_terms_by_var.ResetFromPairs(constraint_terms);
+    timer.Advance(constraint_terms.size());
   }
   std::vector<double> products;
   products.reserve(new_constraints_by_score.size());
-  for (int i = 0; i < constraint_limit; ++i) {
-    // Compute the scalar product between the last added constraint and the new
-    // constraints.
-    if (last_added_candidate != kInvalidConstraintIndex) {
-      products.clear();
-      products.resize(new_constraints_by_score.size(), 0.0);
-      const LinearConstraint& constraint =
-          constraint_infos_[last_added_candidate].constraint;
-      // products[j] holds the scalar product between `constraint` and
-      // `constraint_infos_[new_constraints_by_score[j].first].constraint`.
-      for (int j = 0; j < constraint.num_terms; ++j) {
-        const IntegerVariable var = constraint.vars[j];
-        const double cur_coeff =
-            static_cast<double>(constraint.coeffs[j].value());
-        for (const auto& [index, coeff] : constraint_terms_by_var[var]) {
-          products[index] += coeff * cur_coeff;
+  {
+    DeterministicTimer<{.scale = 4.0e-09, .offset = 3.0e-08}> timer(
+        time_limit_);
+    uint64_t prod_entries = 0;
+    for (int i = 0; i < constraint_limit; ++i) {
+      // Compute the scalar product between the last added constraint and the
+      // new constraints.
+      if (last_added_candidate != kInvalidConstraintIndex) {
+        products.clear();
+        products.resize(new_constraints_by_score.size(), 0.0);
+        const LinearConstraint& constraint =
+            constraint_infos_[last_added_candidate].constraint;
+        // products[j] holds the scalar product between `constraint` and
+        // `constraint_infos_[new_constraints_by_score[j].first].constraint`.
+        for (int j = 0; j < constraint.num_terms; ++j) {
+          const IntegerVariable var = constraint.vars[j];
+          const double cur_coeff =
+              static_cast<double>(constraint.coeffs[j].value());
+          prod_entries += constraint_terms_by_var[var].size();
+          for (const auto& [index, coeff] : constraint_terms_by_var[var]) {
+            products[index] += coeff * cur_coeff;
+          }
         }
       }
-    }
-    // Iterate through all new constraints and select the one with the best
-    // score.
-    double best_score = 0.0;
-    ConstraintIndex best_candidate = kInvalidConstraintIndex;
-    for (int j = 0; j < new_constraints_by_score.size(); ++j) {
-      // Checks the time limit, and returns if the lp has changed.
-      if (time_limit_check.LimitReached()) return current_lp_is_changed_;
+      // Iterate through all new constraints and select the one with the best
+      // score.
+      double best_score = 0.0;
+      ConstraintIndex best_candidate = kInvalidConstraintIndex;
+      for (int j = 0; j < new_constraints_by_score.size(); ++j) {
+        // Checks the time limit, and returns if the lp has changed.
+        if (time_limit_check.LimitReached()) {
+          timer.Advance(prod_entries);
+          return current_lp_is_changed_;
+        }
 
-      const ConstraintIndex new_index = new_constraints_by_score[j].first;
-      if (constraint_infos_[new_index].is_in_lp) continue;
+        const ConstraintIndex new_index = new_constraints_by_score[j].first;
+        if (constraint_infos_[new_index].is_in_lp) continue;
 
-      if (last_added_candidate != kInvalidConstraintIndex) {
-        const double product = products[j];
-        const double current_orthogonality =
-            1.0 - (std::abs(product) /
-                   (constraint_infos_[last_added_candidate].l2_norm *
-                    constraint_infos_[new_index].l2_norm));
-        orthogonality_score[j] =
-            std::min(orthogonality_score[j], current_orthogonality);
+        if (last_added_candidate != kInvalidConstraintIndex) {
+          const double product = products[j];
+          const double current_orthogonality =
+              1.0 - (std::abs(product) /
+                     (constraint_infos_[last_added_candidate].l2_norm *
+                      constraint_infos_[new_index].l2_norm));
+          orthogonality_score[j] =
+              std::min(orthogonality_score[j], current_orthogonality);
+        }
+
+        // NOTE(user): It is safe to not add this constraint as the
+        // constraint that is almost parallel to this constraint is present in
+        // the LP or is inactive for a long time and is removed from the LP. In
+        // either case, this constraint is not adding significant value and is
+        // only making the LP larger.
+        if (orthogonality_score[j] <
+            sat_parameters_.min_orthogonality_for_lp_constraints()) {
+          continue;
+        }
+
+        // TODO(user): Experiment with different weights or different
+        // functions for computing score.
+        const double score =
+            orthogonality_score[j] + new_constraints_by_score[j].second;
+        CHECK_GE(score, 0.0);
+        if (score > best_score || best_candidate == kInvalidConstraintIndex) {
+          best_score = score;
+          best_candidate = new_index;
+        }
       }
 
-      // NOTE(user): It is safe to not add this constraint as the constraint
-      // that is almost parallel to this constraint is present in the LP or is
-      // inactive for a long time and is removed from the LP. In either case,
-      // this constraint is not adding significant value and is only making the
-      // LP larger.
-      if (orthogonality_score[j] <
-          sat_parameters_.min_orthogonality_for_lp_constraints()) {
-        continue;
-      }
-
-      // TODO(user): Experiment with different weights or different
-      // functions for computing score.
-      const double score =
-          orthogonality_score[j] + new_constraints_by_score[j].second;
-      CHECK_GE(score, 0.0);
-      if (score > best_score || best_candidate == kInvalidConstraintIndex) {
-        best_score = score;
-        best_candidate = new_index;
+      if (best_candidate != kInvalidConstraintIndex) {
+        // Add the best constraint in the LP.
+        constraint_infos_[best_candidate].is_in_lp = true;
+        // Note that it is important for LP incremental solving that the old
+        // constraints stay at the same position in this list (and thus in the
+        // returned GetLp()).
+        ++num_added;
+        current_lp_is_changed_ = true;
+        lp_constraints_.push_back(best_candidate);
+        old_lp_row_of_lp_row_.push_back(glop::kInvalidRow);
+        last_added_candidate = best_candidate;
+      } else {
+        // Abort the addition loop.
+        break;
       }
     }
-
-    if (best_candidate != kInvalidConstraintIndex) {
-      // Add the best constraint in the LP.
-      constraint_infos_[best_candidate].is_in_lp = true;
-      // Note that it is important for LP incremental solving that the old
-      // constraints stay at the same position in this list (and thus in the
-      // returned GetLp()).
-      ++num_added;
-      current_lp_is_changed_ = true;
-      lp_constraints_.push_back(best_candidate);
-      old_lp_row_of_lp_row_.push_back(glop::kInvalidRow);
-      last_added_candidate = best_candidate;
-    } else {
-      // Abort the addition loop.
-      break;
-    }
+    timer.Advance(prod_entries);
   }
 
   if (num_new_constraints != nullptr) {

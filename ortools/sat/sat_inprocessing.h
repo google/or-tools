@@ -267,7 +267,7 @@ class StampingSimplifier {
   bool stamps_are_already_computed_ = false;
 
   // Reset at each round.
-  double work_done_ = 0.0;
+  uint64_t work_done_ = 0;
   int64_t num_subsumed_clauses_ = 0;
   int64_t num_removed_literals_ = 0;
   int64_t num_fixed_ = 0;
@@ -314,6 +314,10 @@ class BlockedClauseSimplifier {
   bool ClauseIsBlocked(Literal current_literal,
                        absl::Span<const Literal> clause);
 
+  bool DtimeBudgetExhausted() const {
+    return time_limit_->GetElapsedDeterministicTime() > dtime_limit_;
+  }
+
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
@@ -321,7 +325,13 @@ class BlockedClauseSimplifier {
   TimeLimit* time_limit_;
 
   int32_t num_blocked_clauses_ = 0;
+
+  // The work done in ProcessLiteral() that is not yet accounted in the dtime.
   int64_t num_inspected_literals_ = 0;
+  int64_t num_inspected_clauses_ = 0;
+
+  // We stop processing literals once the elapsed dtime exceeds this.
+  double dtime_limit_ = 0.0;
 
   // Temporary vector to mark literals of a clause.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
@@ -387,7 +397,6 @@ class BoundedVariableElimination {
 
   LratProofHandler* lrat_proof_handler_;
 
-  uint64_t work_done_ = 0;
   int64_t num_inspected_literals_ = 0;
   int64_t num_simplifications_ = 0;
   int64_t num_blocked_clauses_ = 0;

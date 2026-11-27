@@ -1168,7 +1168,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
     // This allows us to replace obviously bad subtrees quickly, and not replace
     // too frequently overall.
     earliest_replacement_dtime_ =
-        time_limit_->GetElapsedDeterministicTime() + 1;
+        time_limit_->GetElapsedDeterministicTime() + 3;
     UpdateLeafScore();
   }
   DCHECK(tree_.CheckInvariants());

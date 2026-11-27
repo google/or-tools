@@ -33,6 +33,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -100,6 +101,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/sat/violation_ls.h"
 #include "ortools/sat/work_assignment.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/sigint.h"
@@ -942,7 +944,8 @@ bool VarIsFixed(const CpModelProto& model_proto, int i) {
 // Note that we restrict the objective to be <= so that the hint is still
 // feasible. Alternatively, we could look for < hint value if we only want
 // better solutions.
-bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
+bool RestrictObjectiveUsingHint(CpModelProto* model_proto,
+                                TimeLimit* time_limit) {
   if (!model_proto->has_objective()) return true;
   if (!model_proto->has_solution_hint()) return true;
 
@@ -951,11 +954,14 @@ bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
   int num_filled = 0;
   std::vector<bool> filled(num_vars, false);
   std::vector<int64_t> solution(num_vars, 0);
-  for (int var = 0; var < num_vars; ++var) {
-    if (VarIsFixed(*model_proto, var)) {
-      solution[var] = model_proto->variables(var).domain(0);
-      filled[var] = true;
-      ++num_filled;
+  {
+    DeterministicTimer<{.scale = 2.0e-08}> timer(time_limit, num_vars);
+    for (int var = 0; var < num_vars; ++var) {
+      if (VarIsFixed(*model_proto, var)) {
+        solution[var] = model_proto->variables(var).domain(0);
+        filled[var] = true;
+        ++num_filled;
+      }
     }
   }
   const auto& hint_proto = model_proto->solution_hint();
@@ -1280,7 +1286,7 @@ class FullProblemSolver : public SubSolver {
         // Configure time limit for chunk solving. Note that we do not want
         // to do that for the hint search for now.
         auto* params = local_model_.GetOrCreate<SatParameters>();
-        params->set_max_deterministic_time(1);
+        params->set_max_deterministic_time(3);
         time_limit->ResetLimitFromParameters(*params);
         shared_->time_limit->UpdateLocalLimit(time_limit);
       }
@@ -1358,7 +1364,12 @@ class FeasibilityPumpSolver : public SubSolver {
       {
         absl::MutexLock mutex_lock(mutex_);
         if (solving_first_chunk_) {
+          // Count the deterministic time of the model loading.
+          auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
+          const double init_dtime = time_limit->GetElapsedDeterministicTime();
           LoadFeasibilityPump(shared_->model_proto, local_model_.get());
+          dtime_since_last_sync_ += std::max(
+              0.0, time_limit->GetElapsedDeterministicTime() - init_dtime);
           // No new task will be scheduled for this worker if there is no
           // linear relaxation.
           if (local_model_->Get<FeasibilityPump>() == nullptr) return;
@@ -1490,7 +1501,12 @@ class LnsSolver : public SubSolver {
       Neighborhood neighborhood =
           generator_->Generate(base_response, data, random);
 
-      if (!neighborhood.is_generated) return;
+      if (!neighborhood.is_generated) {
+        // The generator might have done some work (e.g., solved an LP) which
+        // was not recorded with AddSolveData().
+        AddUnrecordedDeterministicTime(data.deterministic_time);
+        return;
+      }
 
       SatParameters local_params;
 
@@ -1533,6 +1549,41 @@ class LnsSolver : public SubSolver {
       // Don't let our LNS model stop the main solve.
       local_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
 
+      // Make sure that the deterministic time of this task is counted, even if
+      // we return before recording it with AddSolveData().
+      bool dtime_recorded = false;
+      absl::Cleanup record_dtime = [&] {
+        if (dtime_recorded) return;
+        AddUnrecordedDeterministicTime(
+            data.deterministic_time +
+            local_time_limit->GetElapsedDeterministicTime());
+      };
+
+      bool use_hint = true;
+      if (generator_->num_consecutive_non_improving_calls() > 10 &&
+          absl::Bernoulli(random, 0.5)) {
+        // If we seem to be stalling, let's try to solve without the hint in
+        // order to diversify our solution pool. Otherwise non-improving
+        // neighborhood will just return the base solution always.
+        use_hint = false;
+      }
+      if (neighborhood.is_simple &&
+          neighborhood.num_relaxed_variables_in_objective == 0) {
+        // If we didn't relax the objective, there can be no improving
+        // solution. However, we might have some diversity if there are
+        // multiple feasible solutions.
+        //
+        // TODO(user): How can we tweak the search to favor diversity.
+        if (generator_->num_consecutive_non_improving_calls() > 10) {
+          // We have been stalling, try to find diverse solutions?
+          use_hint = false;
+        } else {
+          // Just regenerate.
+          // Note that we do not change the difficulty.
+          return;
+        }
+      }
+
       // Presolve and solve the LNS fragment.
       size_t buffer_size;
       {
@@ -1548,149 +1599,70 @@ class LnsSolver : public SubSolver {
 
       std::vector<int> variable_mapping;
       std::vector<int64_t> fixed_values;
-      {
-        bool use_hint = true;
-        if (generator_->num_consecutive_non_improving_calls() > 10 &&
-            absl::Bernoulli(random, 0.5)) {
-          // If we seem to be stalling, let's try to solve without the hint in
-          // order to diversify our solution pool. Otherwise non-improving
-          // neighborhood will just return the base solution always.
-          use_hint = false;
-        }
-        if (neighborhood.is_simple &&
-            neighborhood.num_relaxed_variables_in_objective == 0) {
-          // If we didn't relax the objective, there can be no improving
-          // solution. However, we might have some diversity if there are
-          // multiple feasible solutions.
-          //
-          // TODO(user): How can we tweak the search to favor diversity.
-          if (generator_->num_consecutive_non_improving_calls() > 10) {
-            // We have been stalling, try to find diverse solutions?
-            use_hint = false;
-          } else {
-            // Just regenerate.
-            // Note that we do not change the difficulty.
-            return;
-          }
-        }
+      const CopyStatus copy_status =
+          CopyLnsFragment(neighborhood, use_hint, local_params, &local_model,
+                          &lns_fragment, variable_mapping, fixed_values);
 
-        // TODO(user): the mapping removes fixed variables but the model
-        // copy can fix new ones. Should we update the mapping and do a new
-        // copy, and so on until a fixed point?
-        if (!GenerateMapping(neighborhood.delta, variable_mapping,
-                             fixed_values)) {
-          return;
-        }
-        absl::flat_hash_set<int> ignored_constraints;
-        if (local_params.lns_ignore_redundant_constraints() &&
-            helper_->scheduling_relaxation() != nullptr) {
-          for (const auto& problem :
-               helper_->scheduling_relaxation()->problems) {
-            ignored_constraints.insert(problem.redundant_cumulative.begin(),
-                                       problem.redundant_cumulative.end());
-          }
-        }
-        ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
-        if (copier.ImportVariables(neighborhood.delta).unsat()) return;
-
-        if (use_hint) {
-          if (neighborhood.delta.has_solution_hint()) {
-            copier.ImportSolutionHint(neighborhood.delta);
-          } else {
-            copier.ImportSolutionHint(helper_->ModelProto());
-          }
-        }
-
-        // Copy and simplify the constraints from the initial model.
-        if (!ignored_constraints.empty()) {
-          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())
-                   .ok()) {
-            return;
-          }
-        } else {
-          auto active_constraints = [&ignored_constraints](int c) {
-            return !ignored_constraints.contains(c);
-          };
-          if (!copier
-                   .ImportAndSimplifyConstraints(helper_->ModelProto(),
-                                                 /*first_copy=*/false,
-                                                 active_constraints)
-                   .ok()) {
-            return;
-          }
-        }
-
-        // Copy and simplify the constraints from the delta model.
-        if (!neighborhood.delta.constraints().empty() &&
-            !copier.ImportAndSimplifyConstraints(neighborhood.delta).ok()) {
-          return;
-        }
-
-        // Copy the rest of the model, except symmetries (we don't want to use
-        // the symmetry of the main problem in the LNS presolved problem).
-        if (copier
-                .ImportEverythingExceptVariablesConstraintsAndHint(
-                    helper_->ModelProto(), /*clear_internal_fields=*/false,
-                    /*copy_symmetry=*/false)
-                .unsat()) {
-          return;
-        }
-
-        if (copier.FinishCopy(neighborhood.delta).unsat()) return;
-      }
-
-      lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
-
-      bool hint_feasible_before_presolve = false;
-      if (lns_parameters_base_.debug_crash_if_presolve_breaks_hint()) {
-        hint_feasible_before_presolve =
-            SolutionHintIsCompleteAndFeasible(lns_fragment, /*logger=*/nullptr);
-      }
-
-      // If we use a hint, we will restrict the objective to be <= to the one
-      // of the hint. This is helpful on some models where doing so can cause
-      // the presolve to restrict the domain of many variables. Note that the
-      // hint will still be feasible as we use <= and not <.
-      if (!RestrictObjectiveUsingHint(&lns_fragment)) {
-        return;
-      }
-
-      CpModelProto debug_copy;
-      if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
-        // We need to make a copy because the presolve is destructive.
-        // That is why we do not do that by default.
-        debug_copy = lns_fragment;
-      }
-
-      if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
-        // TODO(user): export the delta too if needed.
-        const std::string lns_name =
-            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         lns_fragment.name(), ".pb.txt");
-        LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
-        CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
-      }
-
-      DCHECK_EQ(ValidateCpModel(lns_fragment), "");
-
-      const int num_vars_before_presolve = lns_fragment.variables_size();
+      CpSolverStatus presolve_status = CpSolverStatus::UNKNOWN;
+      int num_vars_before_presolve = 0;
       std::vector<int> postsolve_mapping;
+      bool hint_feasible_before_presolve = false;
+      CpModelProto debug_copy;
+      if (copy_status.ok()) {
+        lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
 
-      auto context = std::make_unique<PresolveContext>(
-          &local_model, &lns_fragment, &mapping_proto);
-      const CpSolverStatus presolve_status =
-          local_time_limit->LimitReached()
-              ? CpSolverStatus::UNKNOWN
-              : PresolveCpModel(context.get(), &postsolve_mapping);
+        if (lns_parameters_base_.debug_crash_if_presolve_breaks_hint()) {
+          hint_feasible_before_presolve =
+              SolutionHintIsCompleteAndFeasible(lns_fragment);
+        }
 
-      // It is important to stop here to avoid using a model for which the
-      // presolve was interrupted in the middle.
-      if (local_time_limit->LimitReached()) {
+        // If we use a hint, we will restrict the objective to be <= to the one
+        // of the hint. This is helpful on some models where doing so can cause
+        // the presolve to restrict the domain of many variables. Note that the
+        // hint will still be feasible as we use <= and not <.
+        if (!RestrictObjectiveUsingHint(&lns_fragment, local_time_limit)) {
+          return;
+        }
+
+        if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
+          // We need to make a copy because the presolve is destructive.
+          // That is why we do not do that by default.
+          debug_copy = lns_fragment;
+        }
+      }
+
+      if (copy_status.unsat()) {
+        presolve_status = CpSolverStatus::INFEASIBLE;
+      } else if (copy_status.ok()) {
+        if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
+          // TODO(user): export the delta too if needed.
+          const std::string lns_name =
+              absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                           lns_fragment.name(), ".pb.txt");
+          LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
+          CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
+        }
+
+        DCHECK_EQ(ValidateCpModel(lns_fragment), "");
+
+        num_vars_before_presolve = lns_fragment.variables_size();
+        auto context = std::make_unique<PresolveContext>(
+            &local_model, &lns_fragment, &mapping_proto);
+        if (!local_time_limit->LimitReached()) {
+          presolve_status = PresolveCpModel(context.get(), &postsolve_mapping);
+        }
+      }
+
+      // It is important to stop here to avoid using a model for which the copy
+      // or presolve was interrupted in the middle.
+      if (!copy_status.unsat() && (copy_status.time_limit_reached() ||
+                                   local_time_limit->LimitReached())) {
         data.status = CpSolverStatus::UNKNOWN;
         data.presolve_deterministic_time =
             local_time_limit->GetElapsedDeterministicTime();
         data.deterministic_time += data.presolve_deterministic_time;
         data.presolve_limit_reached = true;
+        dtime_recorded = true;
         generator_->AddSolveData(data);
         return;
       }
@@ -1704,17 +1676,16 @@ class LnsSolver : public SubSolver {
       local_params.set_max_deterministic_time(data.deterministic_limit);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
 
-      // Release the context.
-      context.reset(nullptr);
       neighborhood.delta.Clear();
 
       if (lns_parameters_base_.debug_crash_if_presolve_breaks_hint() &&
-          hint_feasible_before_presolve &&
-          !SolutionHintIsCompleteAndFeasible(lns_fragment,
-                                             /*logger=*/nullptr)) {
-        LOG(FATAL) << "Presolve broke a feasible LNS hint. The model name is '"
-                   << lns_fragment.name()
-                   << "' (use the --cp_model_dump_submodels flag to dump it).";
+          hint_feasible_before_presolve) {
+        if (!SolutionHintIsCompleteAndFeasible(lns_fragment)) {
+          LOG(FATAL)
+              << "Presolve broke a feasible LNS hint. The model name is '"
+              << lns_fragment.name()
+              << "' (use the --cp_model_dump_submodels flag to dump it).";
+        }
       }
 
       // TODO(user): Depending on the problem, we should probably use the
@@ -1733,6 +1704,7 @@ class LnsSolver : public SubSolver {
           data.status = CpSolverStatus::UNKNOWN;
           data.deterministic_time +=
               local_time_limit->GetElapsedDeterministicTime();
+          dtime_recorded = true;
           generator_->AddSolveData(data);
           return;
         }
@@ -1755,7 +1727,7 @@ class LnsSolver : public SubSolver {
         // for LNS, we don't really need it.
         if (presolve_status == CpSolverStatus::INFEASIBLE) {
           local_response_manager->NotifyThatImprovingProblemIsInfeasible(
-              "presolve");
+              copy_status.unsat() ? "copy" : "presolve");
         }
         local_response = local_response_manager->GetResponse();
         local_response.set_status(presolve_status);
@@ -1911,6 +1883,7 @@ class LnsSolver : public SubSolver {
         }
       }
 
+      dtime_recorded = true;
       generator_->AddSolveData(data);
 
       if (VLOG_IS_ON(2) && display_lns_info) {
@@ -1945,7 +1918,7 @@ class LnsSolver : public SubSolver {
             ", #calls:", generator_->num_calls(),
             ", p:", fully_solved_proportion, "]");
       }
-      {
+      if (copy_status.ok()) {
         absl::MutexLock l(next_arena_size_mutex_);
         next_arena_size_ = arena.SpaceUsed();
       }
@@ -1961,15 +1934,99 @@ class LnsSolver : public SubSolver {
       sum += dtime;
       AddTaskDeterministicDuration(dtime);
     }
+    {
+      absl::MutexLock l(unrecorded_dtime_mutex_);
+      sum += unrecorded_dtime_;
+      AddTaskDeterministicDuration(unrecorded_dtime_);
+      unrecorded_dtime_ = 0.0;
+    }
     shared_->time_limit->AdvanceDeterministicTime(sum);
   }
 
  private:
+  // Copies and simplifies the LNS fragment from `helper_->ModelProto()` and
+  // `neighborhood.delta`, returning `kUnsat` if infeasibility is proven during
+  // mapping or copying, or `kCopyTimeLimitReached` if the presolve time limit
+  // is reached during constraint copying.
+  CopyStatus CopyLnsFragment(Neighborhood& neighborhood, bool use_hint,
+                             const SatParameters& local_params,
+                             Model* local_model, CpModelProto* lns_fragment,
+                             std::vector<int>& variable_mapping,
+                             std::vector<int64_t>& fixed_values) {
+    // TODO(user): the mapping removes fixed variables but the model copy
+    // can fix new ones. Should we update the mapping and do a new copy, and so
+    // on until a fixed point?
+    if (GenerateMapping(neighborhood.delta, variable_mapping, fixed_values,
+                        local_model->GetOrCreate<TimeLimit>())
+            .unsat()) {
+      return kUnsat;
+    }
+    absl::flat_hash_set<int> ignored_constraints;
+    if (local_params.lns_ignore_redundant_constraints() &&
+        helper_->scheduling_relaxation() != nullptr) {
+      for (const auto& problem : helper_->scheduling_relaxation()->problems) {
+        ignored_constraints.insert(problem.redundant_cumulative.begin(),
+                                   problem.redundant_cumulative.end());
+      }
+    }
+    ModelCopy copier(lns_fragment, local_model, variable_mapping);
+    if (copier.ImportVariables(neighborhood.delta).unsat()) return kUnsat;
+
+    if (use_hint) {
+      if (neighborhood.delta.has_solution_hint()) {
+        copier.ImportSolutionHint(neighborhood.delta);
+      } else {
+        copier.ImportSolutionHint(helper_->ModelProto());
+      }
+    }
+
+    // Copy and simplify the constraints from the initial model.
+    if (!ignored_constraints.empty()) {
+      if (const CopyStatus status =
+              copier.ImportAndSimplifyConstraints(helper_->ModelProto());
+          !status.ok()) {
+        return status;
+      }
+    } else {
+      auto active_constraints = [&ignored_constraints](int c) {
+        return !ignored_constraints.contains(c);
+      };
+      if (const CopyStatus status = copier.ImportAndSimplifyConstraints(
+              helper_->ModelProto(), /*first_copy=*/false, active_constraints);
+          !status.ok()) {
+        return status;
+      }
+    }
+
+    // Copy and simplify the constraints from the delta model.
+    if (!neighborhood.delta.constraints().empty()) {
+      if (const CopyStatus status =
+              copier.ImportAndSimplifyConstraints(neighborhood.delta);
+          !status.ok()) {
+        return status;
+      }
+    }
+
+    // Copy the rest of the model, except symmetries (we don't want to use the
+    // symmetry of the main problem in the LNS presolved problem).
+    if (copier
+            .ImportEverythingExceptVariablesConstraintsAndHint(
+                helper_->ModelProto(), /*clear_internal_fields=*/false,
+                /*copy_symmetry=*/false)
+            .unsat()) {
+      return kUnsat;
+    }
+
+    return copier.FinishCopy(neighborhood.delta);
+  }
+
   // Generates a mapping which removes fixed variables (except one fixed
-  // literal).
-  bool GenerateMapping(CpModelProto& proto_with_variables,
-                       std::vector<int>& variable_mapping,
-                       std::vector<int64_t>& fixed_values) {
+  // literal), or returns kUnsat if a variable domain is empty or equivalent
+  // literals are fixed to conflicting values.
+  FeasibilityStatus GenerateMapping(CpModelProto& proto_with_variables,
+                                    std::vector<int>& variable_mapping,
+                                    std::vector<int64_t>& fixed_values,
+                                    TimeLimit* time_limit) {
     int new_var_index = 0;
     std::vector<int> representatives;
     if (shared_->clauses != nullptr) {
@@ -1993,69 +2050,75 @@ class LnsSolver : public SubSolver {
       const int value = proto_with_variables.variables(var).domain(0);
       return RefIsPositive(ref) ? value : 1 - value;
     };
-    auto fix_literal = [&](int literal, int value) {
+    auto fix_literal = [&](int literal, int value) -> FeasibilityStatus {
       if (!RefIsPositive(literal)) {
         literal = PositiveRef(literal);
         value = 1 - value;
       }
       if (is_fixed(literal) && fixed_literal_value(literal) != value) {
-        return false;
+        return kUnsat;
       }
       auto* domain =
           proto_with_variables.mutable_variables(literal)->mutable_domain();
       domain->Clear();
       domain->Add(value);
       domain->Add(value);
-      return true;
+      return kOk;
     };
-    for (int i = 0; i < num_vars; ++i) {
-      if (proto_with_variables.variables(i).domain().empty()) return false;
-      if (is_fixed(i)) {
-        const int rep = get_representative(i);
-        if (rep != i) {
-          if (!fix_literal(rep, fixed_literal_value(i))) return false;
+    {
+      DeterministicTimer<{.scale = 1.6e-08}> timer(time_limit, num_vars);
+      for (int i = 0; i < num_vars; ++i) {
+        if (proto_with_variables.variables(i).domain().empty()) return kUnsat;
+        if (is_fixed(i)) {
+          const int rep = get_representative(i);
+          if (rep != i) {
+            if (fix_literal(rep, fixed_literal_value(i)).unsat()) return kUnsat;
+          }
         }
       }
     }
     for (int i = 0; i < num_vars; ++i) {
       const int rep = get_representative(i);
       if (rep != i && is_fixed(rep)) {
-        if (!fix_literal(i, fixed_literal_value(rep))) return false;
+        if (fix_literal(i, fixed_literal_value(rep)).unsat()) return kUnsat;
       }
     }
 
     int first_fixed_literal = -1;
     variable_mapping.assign(num_vars, kNoVariableMapping);
     fixed_values.reserve(num_vars);
-    for (int i = 0; i < num_vars; ++i) {
-      bool add_to_mapping = true;
-      if (is_fixed(i)) {
-        const int64_t value = proto_with_variables.variables(i).domain(0);
-        fixed_values.push_back(value);
-        add_to_mapping = false;
-        if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
-          first_fixed_literal = i;
-          add_to_mapping = true;
-        }
-      } else {
-        fixed_values.push_back(kint64min);
-      }
-      if (add_to_mapping && variable_mapping[i] == kNoVariableMapping) {
-        const int rep = get_representative(i);
-        const int rep_var = PositiveRef(rep);
-        if (variable_mapping[rep_var] == kNoVariableMapping) {
-          variable_mapping[i] = new_var_index++;
-          variable_mapping[rep_var] = RefIsPositive(rep)
-                                          ? variable_mapping[i]
-                                          : NegatedRef(variable_mapping[i]);
+    {
+      DeterministicTimer<{.scale = 2.1e-08}> timer(time_limit, num_vars);
+      for (int i = 0; i < num_vars; ++i) {
+        bool add_to_mapping = true;
+        if (is_fixed(i)) {
+          const int64_t value = proto_with_variables.variables(i).domain(0);
+          fixed_values.push_back(value);
+          add_to_mapping = false;
+          if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
+            first_fixed_literal = i;
+            add_to_mapping = true;
+          }
         } else {
-          variable_mapping[i] = RefIsPositive(rep)
-                                    ? variable_mapping[rep_var]
-                                    : NegatedRef(variable_mapping[rep_var]);
+          fixed_values.push_back(kint64min);
+        }
+        if (add_to_mapping && variable_mapping[i] == kNoVariableMapping) {
+          const int rep = get_representative(i);
+          const int rep_var = PositiveRef(rep);
+          if (variable_mapping[rep_var] == kNoVariableMapping) {
+            variable_mapping[i] = new_var_index++;
+            variable_mapping[rep_var] = RefIsPositive(rep)
+                                            ? variable_mapping[i]
+                                            : NegatedRef(variable_mapping[i]);
+          } else {
+            variable_mapping[i] = RefIsPositive(rep)
+                                      ? variable_mapping[rep_var]
+                                      : NegatedRef(variable_mapping[rep_var]);
+          }
         }
       }
     }
-    return true;
+    return kOk;
   }
 
   std::unique_ptr<NeighborhoodGenerator> generator_;
@@ -2067,6 +2130,18 @@ class LnsSolver : public SubSolver {
   // at roughly the right size. We will update it with the last size of the
   // latest LNS fragment.
   absl::Mutex next_arena_size_mutex_;
+
+  // The deterministic time of the tasks which was not recorded with
+  // AddSolveData() (e.g., because of an early return), since the last call to
+  // Synchronize().
+  absl::Mutex unrecorded_dtime_mutex_;
+  double unrecorded_dtime_ ABSL_GUARDED_BY(unrecorded_dtime_mutex_) = 0.0;
+
+  void AddUnrecordedDeterministicTime(double dtime) {
+    if (dtime <= 0.0) return;
+    absl::MutexLock l(unrecorded_dtime_mutex_);
+    unrecorded_dtime_ += dtime;
+  }
   int64_t next_arena_size_ ABSL_GUARDED_BY(next_arena_size_mutex_) =
       helper_->ModelProto().GetArena() == nullptr
           ? Neighborhood::kDefaultArenaSizePerVariable
@@ -3334,6 +3409,9 @@ void CpModelSolver::DetectPresolvedModelSymmetry() {
     } else {
       TimeLimit time_limit;
       shared_time_limit_->UpdateLocalLimit(&time_limit);
+      // Count the deterministic time of the symmetry detection.
+      ScopedDeterministicTimeAccounting dtime_accounting(shared_time_limit_,
+                                                         &time_limit);
       DetectAndAddSymmetryToProto(params_, *presolved_model_proto_,
                                   presolved_model_proto_->mutable_symmetry(),
                                   logger_, &time_limit);
@@ -3845,6 +3923,14 @@ class DefaultCpModelSolver : public CpModelSolver {
       direct_solver_->GetVariableBounds(&direct_solver_lower_bounds_,
                                         &direct_solver_upper_bounds_);
       direct_solver_objective_bounds_ = direct_solver_->GetObjectiveBounds();
+      // Count the deterministic time of the direct solver.
+      shared_time_limit_->AdvanceDeterministicTime(
+          direct_solver_model_->GetOrCreate<TimeLimit>()
+              ->GetElapsedDeterministicTime());
+      if (response_.has_value()) {
+        response_->set_deterministic_time(
+            shared_time_limit_->GetElapsedDeterministicTime());
+      }
       direct_solver_.reset();
       direct_solver_model_.reset();
       if (response_.has_value()) {

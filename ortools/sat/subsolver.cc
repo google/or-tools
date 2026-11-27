@@ -80,6 +80,10 @@ void ClearSubsolversThatAreDone(
     if (subsolvers[i] == nullptr) continue;
     if (num_in_flight_per_subsolvers[i] > 0) continue;
     if (subsolvers[i]->IsDone()) {
+      // Synchronize one last time, so that the deterministic time (and any
+      // other information) of tasks that finished since the last
+      // synchronization is not lost.
+      subsolvers[i]->Synchronize();
       // We can free the memory used by this solver for good.
       VLOG(1) << "Deleting " << subsolvers[i]->name();
       subsolvers[i].reset();

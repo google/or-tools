@@ -36,6 +36,7 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -470,6 +471,7 @@ class UpperBoundedLinearConstraint {
   // This is used to get statistics of the number of literals inspected by
   // a Propagate() call.
   int already_propagated_end() const { return already_propagated_end_; }
+  int size() const { return literals_.size(); }
 
  private:
   Coefficient GetSlackFromThreshold(Coefficient threshold) const {
@@ -518,6 +520,7 @@ class PbConstraints : public SatPropagator {
         num_learned_constraint_before_cleanup_(0),
         constraint_activity_increment_(1.0),
         parameters_(model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         stats_("PbConstraints"),
         num_constraint_lookups_(0),
         num_inspected_constraint_literals_(0),
@@ -686,6 +689,7 @@ class PbConstraints : public SatPropagator {
 
   // Algorithm parameters.
   SatParameters* parameters_;
+  TimeLimit* time_limit_;
 
   // Some statistics.
   mutable StatsGroup stats_;

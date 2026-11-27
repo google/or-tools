@@ -130,10 +130,12 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 
   // We do compute ub - lb in some places in the code and do not want to deal
   // with overflow everywhere. This seems like a reasonable precondition anyway.
-  if (lb < 0 && lb + kint64max < ub) {
+  // Moreover, with this precondition, any linear expression with a single term
+  // of coefficient +/-1 passes PossibleIntegerOverflow().
+  if (std::max(int64_t{0}, ub) - std::min(int64_t{0}, lb) > kint64max / 2) {
     return absl::StrCat("var #", v,
-                        " has a domain that is too large, i.e. |UB - LB| "
-                        "overflows an int64_t: ",
+                        " has a domain that is too large, i.e. max(0, UB) - "
+                        "min(0, LB) > kint64max / 2: ",
                         ProtobufShortDebugString(proto));
   }
 
@@ -464,18 +466,31 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   return "";
 }
 
-void AppendToOverflowValidator(const LinearExpressionProto& input,
+bool AppendToOverflowValidator(const LinearExpressionProto& input,
                                LinearExpressionProto* output,
                                int64_t prod = 1) {
   output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
   for (const int64_t coeff : input.coeffs()) {
-    output->add_coeffs(coeff * prod);
+    int64_t scaled_coeff;
+    if (operations_research::MulIntoOverflow(coeff, prod, &scaled_coeff)) {
+      return false;
+    }
+    output->add_coeffs(scaled_coeff);
   }
 
-  // We add the absolute value to be sure that future computations will not
-  // overflow depending on the order they are performed in.
-  output->set_offset(
-      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
+  // We add the offsets with their sign. Since the offset of each validated
+  // input is in [-kint64max / 2, kint64max / 2], the sum of two offsets cannot
+  // overflow, and an overflow on a third offset implies that the final offset
+  // cannot be in [-kint64max / 2, kint64max / 2] anyway.
+  int64_t scaled_offset;
+  int64_t new_offset = output->offset();
+  if (operations_research::MulIntoOverflow(prod, input.offset(),
+                                           &scaled_offset) ||
+      AddIntoOverflow(scaled_offset, &new_offset)) {
+    return false;
+  }
+  output->set_offset(new_offset);
+  return true;
 }
 
 std::string ValidateElementConstraint(const CpModelProto& model,
@@ -539,10 +554,8 @@ std::string ValidateElementConstraint(const CpModelProto& model,
     for (const LinearExpressionProto& expr : element.exprs()) {
       RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
       LinearExpressionProto overflow_detection = ct.element().linear_target();
-      AppendToOverflowValidator(expr, &overflow_detection, -1);
-      const int64_t offset = CapSub(overflow_detection.offset(), expr.offset());
-      overflow_detection.set_offset(offset);
-      if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+      if (!AppendToOverflowValidator(expr, &overflow_detection, -1) ||
+          PossibleIntegerOverflow(model, overflow_detection.vars(),
                                   overflow_detection.coeffs(),
                                   overflow_detection.offset())) {
         return absl::StrCat(
@@ -763,13 +776,11 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  LinearExpressionProto for_overflow_validation;
   if (arg.start().vars_size() > 1) {
     return "Intervals with a start expression containing more than one "
            "variable are currently not supported.";
   }
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start()));
-  AppendToOverflowValidator(arg.start(), &for_overflow_validation);
   if (arg.size().vars_size() > 1) {
     return "Intervals with a size expression containing more than one "
            "variable are currently not supported.";
@@ -781,15 +792,17 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
         "The size of a performed interval must be >= 0 in constraint: ",
         ProtobufDebugString(ct));
   }
-  AppendToOverflowValidator(arg.size(), &for_overflow_validation);
   if (arg.end().vars_size() > 1) {
     return "Intervals with an end expression containing more than one "
            "variable are currently not supported.";
   }
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
-  AppendToOverflowValidator(arg.end(), &for_overflow_validation, -1);
 
-  if (PossibleIntegerOverflow(model, for_overflow_validation.vars(),
+  LinearExpressionProto for_overflow_validation;
+  if (!AppendToOverflowValidator(arg.start(), &for_overflow_validation) ||
+      !AppendToOverflowValidator(arg.size(), &for_overflow_validation) ||
+      !AppendToOverflowValidator(arg.end(), &for_overflow_validation, -1) ||
+      PossibleIntegerOverflow(model, for_overflow_validation.vars(),
                               for_overflow_validation.coeffs(),
                               for_overflow_validation.offset())) {
     return absl::StrCat("Possible overflow in interval: ",
@@ -882,8 +895,14 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
     // We want to be able to safely put time_exprs[i]-time_exprs[j] in a linear.
+    // This requires the sum_max - sum_min value of PossibleIntegerOverflow() to
+    // be less than kint64max / 4 for the terms of each expression.
+    std::pair<int64_t, int64_t> terms_bounds;
     if (MinOfExpression(model, expr) <= -kint64max / 4 ||
-        MaxOfExpression(model, expr) >= kint64max / 4) {
+        MaxOfExpression(model, expr) >= kint64max / 4 ||
+        PossibleIntegerOverflow(model, expr.vars(), expr.coeffs(), 0,
+                                &terms_bounds) ||
+        terms_bounds.second - terms_bounds.first >= kint64max / 4) {
       return absl::StrCat(
           "Potential integer overflow on time_expr of a reservoir: ",
           ProtobufShortDebugString(ct));
@@ -1126,40 +1145,57 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 
 }  // namespace
 
-bool LinearOverflowChecker::AddTerm(int64_t coeff, int64_t min_domain,
-                                    int64_t max_domain) {
-  if (coeff == kint64min) return false;
+std::optional<std::pair<int64_t, int64_t>>
+LinearOverflowChecker::TermContributions(int64_t coeff, int64_t min_domain,
+                                         int64_t max_domain) {
+  if (coeff == kint64min) return std::nullopt;
   const int64_t prod1 = CapProd(min_domain, coeff);
   const int64_t prod2 = CapProd(max_domain, coeff);
-  if (AtMinOrMaxInt64(prod1)) return false;
-  if (AtMinOrMaxInt64(prod2)) return false;
+  if (AtMinOrMaxInt64(prod1)) return std::nullopt;
+  if (AtMinOrMaxInt64(prod2)) return std::nullopt;
 
   // Note that we use min/max with zero to disallow "alternative" terms and
   // be sure that we cannot have an overflow if we do the computation in a
   // different order.
-  sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
-  sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
+  return std::make_pair(std::min(int64_t{0}, std::min(prod1, prod2)),
+                        std::max(int64_t{0}, std::max(prod1, prod2)));
+}
 
+bool LinearOverflowChecker::SumsAreValid(int64_t sum_min, int64_t sum_max) {
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
   // We might also create an intermediate variable to represent the sum.
   //
   // Note that it is important to be symmetric here, as we do not want expr to
   // pass but not -expr!
-  return sum_min >= -kint64max / 2 && sum_max <= kint64max / 2;
+  return sum_min >= -kint64max / 2 && sum_max <= kint64max / 2 &&
+         sum_max - sum_min <= kint64max / 2;
+}
+
+bool LinearOverflowChecker::AddTerm(int64_t coeff, int64_t min_domain,
+                                    int64_t max_domain) {
+  const auto contributions = TermContributions(coeff, min_domain, max_domain);
+  if (!contributions.has_value()) return false;
+  sum_min = CapAdd(sum_min, contributions->first);
+  sum_max = CapAdd(sum_max, contributions->second);
+  return SumsAreValid(sum_min, sum_max);
 }
 
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              absl::Span<const int> vars,
                              absl::Span<const int64_t> coeffs, int64_t offset,
                              std::pair<int64_t, int64_t>* implied_domain) {
-  if (offset < kint64min / 2) return true;
-  if (offset > kint64max / 2) return true;
-  offset = std::abs(offset);
-
+  // The terms, without the offset, must satisfy the same preconditions as the
+  // terms of a linear constraint. In addition, the sum of the offset and of any
+  // subset of the terms must be in [-kint64max / 2, kint64max / 2]. Note that
+  // the width of this range of partial sums is not bounded by kint64max / 2,
+  // unlike the width of the range of partial sums of the terms.
+  //
+  // Unlike a bound on this width, these preconditions are preserved when a term
+  // is replaced with an affine relation, provided that the representative is
+  // chosen as in PresolveContext::StoreAffineRelation(). They are also
+  // preserved when a fixed term is moved to the offset.
   LinearOverflowChecker checker;
-  checker.sum_min = -std::abs(offset);
-  checker.sum_max = std::abs(offset);
   for (int i = 0; i < vars.size(); ++i) {
     const int ref = vars[i];
     CHECK(RefIsPositive(ref));
@@ -1170,8 +1206,20 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
     if (!checker.AddTerm(coeffs[i], min_domain, max_domain)) return true;
   }
 
+  int64_t sum_min = checker.sum_min;
+  int64_t sum_max = checker.sum_max;
+  if (offset > 0) {
+    if (AddIntoOverflow(offset, &sum_max) || sum_max > kint64max / 2) {
+      return true;
+    }
+  } else {
+    if (AddIntoOverflow(offset, &sum_min) || sum_min < -kint64max / 2) {
+      return true;
+    }
+  }
+
   if (implied_domain) {
-    *implied_domain = {checker.sum_min, checker.sum_max};
+    *implied_domain = {sum_min, sum_max};
   }
   return false;
 }

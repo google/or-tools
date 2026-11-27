@@ -733,49 +733,6 @@ TEST(Percentile, RandomNumbers) {
   }
 }
 
-TEST(SafeDoubleToInt64Test, BasicCases) {
-  const double kInfinity = std::numeric_limits<double>::infinity();
-  const int64_t kMax = kint64max;
-  const int64_t kMin = kint64min;
-  const int64_t max53 = (int64_t{1} << 53) - 1;
-
-  // Arbitrary behavior for nans.
-  EXPECT_EQ(SafeDoubleToInt64(std::numeric_limits<double>::quiet_NaN()), 0);
-  EXPECT_EQ(SafeDoubleToInt64(std::numeric_limits<double>::signaling_NaN()), 0);
-
-  EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(kMax)), kMax);
-  EXPECT_EQ(SafeDoubleToInt64(kInfinity), kMax);
-
-  // Transition for max.
-  for (int i = 0; i < 512; ++i) {
-    ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - i)), kMax);
-  }
-  for (int i = 512; i < 1024 + 511; ++i) {
-    ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - i)), kMax - 1023);
-  }
-  ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - 1024 - 511)),
-            kMax - 2047);
-
-  // Transition for max precision.
-  for (int i = 0; i < 10; ++i) {
-    EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(max53 - i)), max53 - i);
-  }
-  int num_error = 0;
-  for (int i = 0; i < 10; ++i) {
-    if (SafeDoubleToInt64(static_cast<double>(max53 + i)) != max53 + i) {
-      ++num_error;
-    }
-  }
-  EXPECT_EQ(num_error, 4);
-
-  // static_cast just truncate the number...
-  EXPECT_EQ(SafeDoubleToInt64(0.1), 0);
-  EXPECT_EQ(SafeDoubleToInt64(0.9), 0);
-
-  EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(kMin)), kMin);
-  EXPECT_EQ(SafeDoubleToInt64(-kInfinity), kMin);
-}
-
 TEST(MaxBoundedSubsetSumTest, LowMaxValue) {
   const int bound = 49;
   MaxBoundedSubsetSum bounded_subset_sum(bound);

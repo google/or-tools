@@ -35,8 +35,10 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -51,6 +53,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
@@ -95,6 +98,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
       assignment_(sat_solver_->Assignment()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
@@ -344,8 +348,12 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   }
 
   if (recompute_all_cache_) {
-    for (const int t : non_fixed_intervals_) {
-      if (!UpdateCachedValues(t)) return false;
+    {
+      DeterministicTimer<{.scale = 2.9e-08, .offset = 2.8e-07}> timer(
+          time_limit_, non_fixed_intervals_.size());
+      for (const int t : non_fixed_intervals_) {
+        if (!UpdateCachedValues(t)) return false;
+      }
     }
 
     // We also update non_fixed_intervals_ at level zero so that we will never
@@ -425,6 +433,8 @@ bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
 
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingStartMin() {
+  DeterministicTimer<{.scale = 3.3e-09, .offset = 9.8e-08}> timer(
+      time_limit_, task_by_increasing_start_min_.size());
   for (TaskTime& ref : task_by_increasing_start_min_) {
     ref.time = StartMin(ref.task_index);
   }
@@ -436,6 +446,8 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   if (!recompute_by_end_min_) return task_by_increasing_end_min_;
+  DeterministicTimer<{.scale = 3.7e-09, .offset = 1.4e-07}> timer(
+      time_limit_, task_by_increasing_end_min_.size());
   for (TaskTime& ref : task_by_increasing_end_min_) {
     ref.time = EndMin(ref.task_index);
   }
@@ -448,6 +460,8 @@ SchedulingConstraintHelper::TaskByIncreasingEndMin() {
 absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingNegatedStartMax() {
   if (!recompute_by_start_max_) return task_by_increasing_negated_start_max_;
+  DeterministicTimer<{.scale = 4.0e-09, .offset = 1.4e-07}> timer(
+      time_limit_, task_by_increasing_negated_start_max_.size());
   for (TaskTime& ref : task_by_increasing_negated_start_max_) {
     ref.time = cached_negated_start_max_[ref.task_index];
   }
@@ -506,6 +520,9 @@ SchedulingConstraintHelper::TaskByIncreasingNegatedShiftedEndMax() {
 // TODO(user): Avoid recomputing it if nothing changed.
 const std::vector<SchedulingConstraintHelper::ProfileEvent>&
 SchedulingConstraintHelper::GetEnergyProfile() {
+  if (!energy_profile_.empty() && !recompute_energy_profile_) {
+    return energy_profile_;
+  }
   if (energy_profile_.empty()) {
     const int num_tasks = NumTasks();
     for (int t = 0; t < num_tasks; ++t) {
@@ -514,7 +531,6 @@ SchedulingConstraintHelper::GetEnergyProfile() {
       energy_profile_.push_back({cached_end_min_[t], t, /*is_first=*/false});
     }
   } else {
-    if (!recompute_energy_profile_) return energy_profile_;
     for (ProfileEvent& ref : energy_profile_) {
       const int t = ref.task;
       if (ref.is_first) {
@@ -584,14 +600,18 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
   // end_after) and (start_after, start_before). Or maybe keep an index of pairs
   // of intervals that have non-trivial linear2 bounds and use that instead.
   {
-    const auto [expr, ub] = EncodeDifferenceLowerThan(
-        ends_[before], starts_[after], SizeMin(before) + SizeMin(after) - 1);
-    if (linear2_bounds_->UpperBound(expr) <= ub) {
-      AddSizeMinReason(before);
-      AddSizeMinReason(after);
-      linear2_bounds_->AddReasonForUpperBoundLowerThan(
-          expr, ub, &literal_reason_, &integer_reason_);
-      return;
+    IntegerValue rhs = starts_[after].constant - ends_[before].constant;
+    const IntegerValue size_ub = SizeMin(before) + SizeMin(after) - 1;
+    if (AddTo(size_ub, &rhs) && rhs < kMaxIntegerValue) {
+      const auto [expr, ub] =
+          EncodeDifferenceLowerThan(ends_[before], starts_[after], size_ub);
+      if (linear2_bounds_->UpperBound(expr) <= ub) {
+        AddSizeMinReason(before);
+        AddSizeMinReason(after);
+        linear2_bounds_->AddReasonForUpperBoundLowerThan(
+            expr, ub, &literal_reason_, &integer_reason_);
+        return;
+      }
     }
   }
 
@@ -1019,7 +1039,6 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
         std::min(simple_energy_max, DecomposedEnergyMax(t));
     if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
-
   return true;
 }
 

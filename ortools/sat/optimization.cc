@@ -123,12 +123,12 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
   const int old_size = core->size();
   std::vector<Literal> assumptions;
   const double original_dtime_limit = limit->GetDeterministicLimit();
-  constexpr double kMaxDTimePerCore = 3.5;
+  constexpr double kMaxDTimePerCore = 10.5;
   const double deterministic_limit =
       std::min(original_dtime_limit,
                limit->GetElapsedDeterministicTime() + kMaxDTimePerCore);
   const double phase1_deterministic_limit =
-      std::min(deterministic_limit, limit->GetElapsedDeterministicTime() + 1.8);
+      std::min(deterministic_limit, limit->GetElapsedDeterministicTime() + 5.4);
 
   // Phase 1: If the core contains multiple literals from the same AtMostOne
   // constraint, try removing an entire AMO group at a time first.
@@ -164,7 +164,7 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
 
       limit->ChangeDeterministicLimit(
           std::min(phase1_deterministic_limit,
-                   limit->GetElapsedDeterministicTime() + 0.6));
+                   limit->GetElapsedDeterministicTime() + 1.8));
       const auto status = solver->ResetAndSolveWithGivenAssumptions(
           assumptions, /*max_number_of_conflicts=*/500);
       if (status == SatSolver::ASSUMPTIONS_UNSAT) {
@@ -652,7 +652,7 @@ bool CoreBasedOptimizer::CoverOptimization() {
 
   // We set a fixed deterministic time limit for all sub-solves and skip to the
   // next core if the sum of the sub-solves is also over this limit.
-  constexpr double max_dtime_per_core = 0.5;
+  constexpr double max_dtime_per_core = 1.5;
   const double old_time_limit = parameters_->max_deterministic_time();
   parameters_->set_max_deterministic_time(max_dtime_per_core);
   auto cleanup = ::absl::MakeCleanup([old_time_limit, this]() {
@@ -717,6 +717,22 @@ bool CoreBasedOptimizer::CoverOptimization() {
 
   return PropagateObjectiveBounds();
 }
+
+namespace {
+
+bool AllCoreNodesHaveZeroDepth(absl::Span<EncodingNode* const> nodes,
+                               absl::Span<const Literal> core) {
+  int index = 0;
+  for (const Literal lit : core) {
+    while (index < nodes.size() && !nodes[index]->AssumptionIs(lit)) {
+      ++index;
+    }
+    if (index >= nodes.size() || nodes[index]->depth() != 0) return false;
+  }
+  return true;
+}
+
+}  // namespace
 
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     absl::Span<const Literal> literals, absl::Span<const IntegerVariable> vars,
@@ -906,6 +922,22 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     const Coefficient min_weight = ComputeCoreMinWeight(encoder.nodes(), core);
     previous_core_info =
         absl::StrFormat("size:%u mw:%d", core.size(), min_weight.value());
+
+    // Export small shareable cores (all literals from depth-0 original nodes)
+    // through ClauseManager's export callback so other workers can use them
+    // without adding redundant clauses to this worker's totalizer encoding.
+    // Size 1 and 2 cores are already added as unit/binary clauses by
+    // ObjectiveEncoder::ProcessCore().
+    if (core.size() >= UniqueClauseStream::kMinClauseSize &&
+        core.size() <= UniqueClauseStream::kMaxClauseSize &&
+        AllCoreNodesHaveZeroDepth(encoder.nodes(), core)) {
+      std::vector<Literal> core_clause;
+      core_clause.reserve(core.size());
+      for (const Literal lit : core) {
+        core_clause.push_back(lit.Negated());
+      }
+      clauses_->ExportClause(core_clause);
+    }
 
     // We only count an iter when we find a core.
     ++iter;
@@ -1456,6 +1488,18 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
   // Start the algorithm.
   stop_ = false;
   while (true) {
+    // Import shared bounds and clauses at level zero before propagating
+    // objective bounds so `term.old_var_lb` and hardening see imported bounds.
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
+    }
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
     // TODO(user): This always resets the solver to level zero.
     // Because of that we don't resume a solve in "chunks" perfectly. Fix.
     if (!PropagateObjectiveBounds()) return SatSolver::INFEASIBLE;
@@ -1601,6 +1645,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // Process the cores by creating new variables and transferring the minimum
     // weight of each core to it.
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+    std::vector<std::pair<Literal, Literal>> binary_clauses_to_add;
     for (const std::vector<Literal>& core : cores) {
       // This just increases the lower-bound of the corresponding node.
       // TODO(user): Maybe the solver should do it right away.
@@ -1645,6 +1690,11 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
           min_weight.value(), max_weight.value(), new_var_lb.value(),
           new_var_ub.value(), new_depth);
 
+      if (new_var_lb > new_var_ub) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
+
       // We will "transfer" min_weight from all the variables of the core
       // to a new variable.
       const IntegerVariable new_var =
@@ -1667,6 +1717,32 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         AddWeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0,
                                    model_);
       }
+
+      // Export small cores whose assumptions all come from depth-0 original
+      // objective variables so other workers receive them via clause sharing.
+      // Defer AddBinaryClause() until after all cores are processed so
+      // propagation cannot tighten upper bounds mid-loop.
+      if (new_depth == 1 && core.size() == 2) {
+        binary_clauses_to_add.push_back({core[0].Negated(), core[1].Negated()});
+      } else if (new_depth == 1 &&
+                 core.size() >= UniqueClauseStream::kMinClauseSize &&
+                 core.size() <= UniqueClauseStream::kMaxClauseSize) {
+        std::vector<Literal> core_clause;
+        core_clause.reserve(core.size());
+        for (const Literal lit : core) {
+          core_clause.push_back(lit.Negated());
+        }
+        clauses_->ExportClause(core_clause);
+      }
+    }
+    // Binary (size 2) cores are below UniqueClauseStream::kMinClauseSize (3)
+    // and are shared across workers through BinaryImplicationGraph's addition
+    // callback. Adding them directly to the solver also matches what
+    // ObjectiveEncoder::ProcessCore() already does in the Boolean encoding
+    // version.
+    for (const auto& [a, b] : binary_clauses_to_add) {
+      sat_solver_->AddBinaryClause(a, b);
+      if (sat_solver_->ModelIsUnsat()) return SatSolver::INFEASIBLE;
     }
 
     // Abort if we reached the time limit. Note that we still add any cores we

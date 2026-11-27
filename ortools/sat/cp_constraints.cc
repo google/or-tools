@@ -26,7 +26,9 @@
 #include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_trail.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -119,6 +121,7 @@ GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
       enforcements_(enforcements.begin(), enforcements.end()),
       selectors_(selectors.begin(), selectors.end()),
       exprs_(exprs.begin(), exprs.end()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
 
@@ -167,8 +170,16 @@ void GreaterThanAtLeastOneOfPropagator::Explain(int id,
 bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   // TODO(user): In case of a conflict, we could push one of them to false if
   // it is the only one.
-  for (const Literal l : enforcements_) {
-    if (!trail_->Assignment().LiteralIsTrue(l)) return true;
+  {
+    DeterministicTimer<{.scale = 1.5e-08, .offset = 2.0e-08}> timer(
+        time_limit_);
+    for (int i = 0; i < enforcements_.size(); ++i) {
+      if (!trail_->Assignment().LiteralIsTrue(enforcements_[i])) {
+        timer.Advance(i + 1);
+        return true;
+      }
+    }
+    timer.Advance(enforcements_.size());
   }
 
   // Compute the min of the lower-bound for the still possible variables.

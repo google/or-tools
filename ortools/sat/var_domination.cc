@@ -16,6 +16,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
@@ -28,6 +29,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -48,15 +50,18 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
 void VarDomination::Reset(int num_variables) {
+  DeterministicTimer<{.scale = 1.1e-08}> timer(time_limit_);
   phase_ = 0;
   num_vars_with_negation_ = 2 * num_variables;
   partition_ =
@@ -73,10 +78,13 @@ void VarDomination::Reset(int num_variables) {
 
   ct_index_for_signature_ = 0;
   block_down_signatures_.assign(num_vars_with_negation_, 0);
+  timer.Advance(num_vars_with_negation_);
 }
 
 void VarDomination::RefinePartition(std::vector<int>* vars) {
   if (vars->empty()) return;
+  DeterministicTimer<{.scale = 4.1e-08, .offset = 8.1e-08}> timer(time_limit_,
+                                                                  vars->size());
   partition_->Refine(*vars);
   for (int& var : *vars) {
     const IntegerVariable wrapped(var);
@@ -90,8 +98,12 @@ void VarDomination::RefinePartition(std::vector<int>* vars) {
 void VarDomination::CanOnlyDominateEachOther(absl::Span<const int> refs) {
   if (phase_ != 0) return;
   tmp_vars_.clear();
-  for (const int ref : refs) {
-    tmp_vars_.push_back(RefToIntegerVariable(ref).value());
+  {
+    DeterministicTimer<{.scale = 8.1e-09, .offset = 8.1e-09}> timer(
+        time_limit_, refs.size());
+    for (const int ref : refs) {
+      tmp_vars_.push_back(RefToIntegerVariable(ref).value());
+    }
   }
   RefinePartition(&tmp_vars_);
   tmp_vars_.clear();
@@ -103,12 +115,16 @@ void VarDomination::ActivityShouldNotChange(absl::Span<const int> refs,
   FillTempRanks(/*reverse_references=*/false, /*enforcements=*/{}, refs,
                 coeffs);
   tmp_vars_.clear();
-  for (int i = 0; i < tmp_ranks_.size(); ++i) {
-    if (i > 0 && tmp_ranks_[i].rank != tmp_ranks_[i - 1].rank) {
-      RefinePartition(&tmp_vars_);
-      tmp_vars_.clear();
+  {
+    DeterministicTimer<{.scale = 8.3e-09, .offset = 2.3e-08}> timer(
+        time_limit_, tmp_ranks_.size());
+    for (int i = 0; i < tmp_ranks_.size(); ++i) {
+      if (i > 0 && tmp_ranks_[i].rank != tmp_ranks_[i - 1].rank) {
+        RefinePartition(&tmp_vars_);
+        tmp_vars_.clear();
+      }
+      tmp_vars_.push_back(tmp_ranks_[i].var.value());
     }
-    tmp_vars_.push_back(tmp_ranks_[i].var.value());
   }
   RefinePartition(&tmp_vars_);
   tmp_vars_.clear();
@@ -120,26 +136,38 @@ void VarDomination::ProcessTempRanks() {
     // We actually "split" tmp_ranks_ according to the current partition and
     // process each resulting list independently for a faster algo.
     ++ct_index_for_signature_;
-    for (IntegerVariableWithRank& entry : tmp_ranks_) {
-      can_freely_decrease_[entry.var] = false;
-      block_down_signatures_[entry.var] |= uint64_t{1}
-                                           << (ct_index_for_signature_ % 64);
-      entry.part = partition_->PartOf(entry.var.value());
-    }
-    std::stable_sort(
-        tmp_ranks_.begin(), tmp_ranks_.end(),
-        [](const IntegerVariableWithRank& a, const IntegerVariableWithRank& b) {
-          return a.part < b.part;
-        });
-    int start = 0;
-    for (int i = 1; i < tmp_ranks_.size(); ++i) {
-      if (tmp_ranks_[i].part != tmp_ranks_[start].part) {
-        Initialize({&tmp_ranks_[start], static_cast<size_t>(i - start)});
-        start = i;
+    {
+      DeterministicTimer<{.scale = 3.1e-08}> timer(time_limit_,
+                                                   tmp_ranks_.size());
+      for (IntegerVariableWithRank& entry : tmp_ranks_) {
+        can_freely_decrease_[entry.var] = false;
+        block_down_signatures_[entry.var] |= uint64_t{1}
+                                             << (ct_index_for_signature_ % 64);
+        entry.part = partition_->PartOf(entry.var.value());
       }
     }
-    if (start < tmp_ranks_.size()) {
-      Initialize({&tmp_ranks_[start], tmp_ranks_.size() - start});
+    {
+      const size_t n = tmp_ranks_.size();
+      DeterministicTimer<{.scale = 3.1e-09}> timer(time_limit_,
+                                                   n * absl::bit_width(n));
+      std::stable_sort(
+          tmp_ranks_.begin(), tmp_ranks_.end(),
+          [](const IntegerVariableWithRank& a,
+             const IntegerVariableWithRank& b) { return a.part < b.part; });
+    }
+    int start = 0;
+    {
+      DeterministicTimer<{.scale = 1.3e-08, .offset = 3.4e-08}> timer(
+          time_limit_, tmp_ranks_.size());
+      for (int i = 1; i < tmp_ranks_.size(); ++i) {
+        if (tmp_ranks_[i].part != tmp_ranks_[start].part) {
+          Initialize({&tmp_ranks_[start], static_cast<size_t>(i - start)});
+          start = i;
+        }
+      }
+      if (start < tmp_ranks_.size()) {
+        Initialize({&tmp_ranks_[start], tmp_ranks_.size() - start});
+      }
     }
   } else if (phase_ == 1) {
     FilterUsingTempRanks();
@@ -168,6 +196,7 @@ void VarDomination::MakeRankEqualToStartOfPart(
   const int size = span.size();
   int start = 0;
   int previous_value = 0;
+  DeterministicTimer<{.scale = 2.8e-09, .offset = 7.1e-09}> timer(time_limit_);
   for (int i = 0; i < size; ++i) {
     const int64_t value = span[i].rank;
     if (value != previous_value) {
@@ -176,6 +205,7 @@ void VarDomination::MakeRankEqualToStartOfPart(
     }
     span[i].rank = start;
   }
+  timer.Advance(size);
 }
 
 void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
@@ -195,6 +225,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
   const int64_t future_start = shared_buffer_.size();
   int first_start = -1;
   const int size = span.size();
+  DeterministicTimer<{.scale = 2.4e-08}> timer(time_limit_);
   for (int i = 0; i < size; ++i) {
     const IntegerVariableWithRank entry = span[i];
     const int num_candidates = size - entry.rank;
@@ -213,10 +244,14 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
 
   // Only store what is necessary.
   // Note that since we share, we will never store more than the problem size.
-  if (first_start == -1) return;
+  if (first_start == -1) {
+    timer.Advance(size);
+    return;
+  }
   for (int i = first_start; i < size; ++i) {
     shared_buffer_.push_back(span[i].var);
   }
+  timer.Advance(size + (size - first_start));
 }
 
 // TODO(user): Use more heuristics to not miss as much dominance relation when
@@ -241,52 +276,60 @@ bool VarDomination::EndFirstPhase() {
   std::vector<IntegerVariable> partition_data;
   const std::vector<absl::Span<const IntegerVariable>> elements_by_part =
       partition_->GetParts(&partition_data);
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    if (can_freely_decrease_[var]) continue;
+  {
+    DeterministicTimer<{.scale = 7.3e-09, .offset = 5.0e-09}> timer(
+        time_limit_);
+    int64_t inner_iters = 0;
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      if (can_freely_decrease_[var]) continue;
 
-    const int part = partition_->PartOf(var.value());
-    const int64_t start = buffer_.size();
-    const uint64_t var_sig = block_down_signatures_[var];
-    const uint64_t not_var_sig = block_down_signatures_[NegationOf(var)];
-    absl::Span<const IntegerVariable> to_scan =
-        has_initial_candidates_[var] ? InitialDominatingCandidates(var)
-                                     : elements_by_part[part];
+      const int part = partition_->PartOf(var.value());
+      const int64_t start = buffer_.size();
+      const uint64_t var_sig = block_down_signatures_[var];
+      const uint64_t not_var_sig = block_down_signatures_[NegationOf(var)];
+      absl::Span<const IntegerVariable> to_scan =
+          has_initial_candidates_[var] ? InitialDominatingCandidates(var)
+                                       : elements_by_part[part];
 
-    // Two modes, either we scan the full list, or a small subset of it.
-    // Note that low variable indices should appear first, so it is better not
-    // to randomize.
-    int new_size = 0;
-    if (to_scan.size() <= 1'000) {
-      for (const IntegerVariable x : to_scan) {
-        if (var_sig & ~block_down_signatures_[x]) continue;  // !included.
-        if (block_down_signatures_[NegationOf(x)] & ~not_var_sig) continue;
-        if (PositiveVariable(x) == PositiveVariable(var)) continue;
-        if (can_freely_decrease_[NegationOf(x)]) continue;
-        ++new_size;
-        buffer_.push_back(x);
-        if (new_size >= kMaxInitialSize) {
-          is_cropped[var] = true;
-          cropped_vars.insert(var);
-          break;
+      // Two modes, either we scan the full list, or a small subset of it.
+      // Note that low variable indices should appear first, so it is better not
+      // to randomize.
+      int new_size = 0;
+      if (to_scan.size() <= 1'000) {
+        for (const IntegerVariable x : to_scan) {
+          ++inner_iters;
+          if (var_sig & ~block_down_signatures_[x]) continue;  // !included.
+          if (block_down_signatures_[NegationOf(x)] & ~not_var_sig) continue;
+          if (PositiveVariable(x) == PositiveVariable(var)) continue;
+          if (can_freely_decrease_[NegationOf(x)]) continue;
+          ++new_size;
+          buffer_.push_back(x);
+          if (new_size >= kMaxInitialSize) {
+            is_cropped[var] = true;
+            cropped_vars.insert(var);
+            break;
+          }
+        }
+      } else {
+        is_cropped[var] = true;
+        cropped_vars.insert(var);
+        for (int i = 0; i < 200; ++i) {
+          ++inner_iters;
+          const IntegerVariable x = to_scan[i];
+          if (var_sig & ~block_down_signatures_[x]) continue;  // !included.
+          if (block_down_signatures_[NegationOf(x)] & ~not_var_sig) continue;
+          if (PositiveVariable(x) == PositiveVariable(var)) continue;
+          if (can_freely_decrease_[NegationOf(x)]) continue;
+          ++new_size;
+          buffer_.push_back(x);
+          if (new_size >= kMaxInitialSize) break;
         }
       }
-    } else {
-      is_cropped[var] = true;
-      cropped_vars.insert(var);
-      for (int i = 0; i < 200; ++i) {
-        const IntegerVariable x = to_scan[i];
-        if (var_sig & ~block_down_signatures_[x]) continue;  // !included.
-        if (block_down_signatures_[NegationOf(x)] & ~not_var_sig) continue;
-        if (PositiveVariable(x) == PositiveVariable(var)) continue;
-        if (can_freely_decrease_[NegationOf(x)]) continue;
-        ++new_size;
-        buffer_.push_back(x);
-        if (new_size >= kMaxInitialSize) break;
-      }
-    }
 
-    if (!is_cropped[var]) non_cropped_size += new_size;
-    dominating_vars_[var] = {start, new_size};
+      if (!is_cropped[var]) non_cropped_size += new_size;
+      dominating_vars_[var] = {start, new_size};
+    }
+    timer.Advance(inner_iters);
   }
 
   // Heuristic: To try not to remove dominance relations corresponding to short
@@ -299,25 +342,35 @@ bool VarDomination::EndFirstPhase() {
   int64_t total_extra_space = 0;
   util_intops::StrongVector<IntegerVariable, int> extra_space(
       num_vars_with_negation_, 0);
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    for (const IntegerVariable dom : DominatingVariables(var)) {
-      if (!is_cropped[NegationOf(dom)]) continue;
-      ++total_extra_space;
-      extra_space[NegationOf(dom)]++;
+  {
+    DeterministicTimer2<{
+        .scale1 = 2.1e-09, .scale2 = 2.1e-09, .offset = 3.2e-07}>
+        timer(time_limit_, num_vars_with_negation_, buffer_.size());
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      for (const IntegerVariable dom : DominatingVariables(var)) {
+        if (!is_cropped[NegationOf(dom)]) continue;
+        ++total_extra_space;
+        extra_space[NegationOf(dom)]++;
+      }
     }
   }
 
   // Copy into a new buffer.
   int64_t copy_index = 0;
   other_buffer_.resize(buffer_.size() + total_extra_space);
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    IntegerVariableSpan& s = dominating_vars_[var];
-    for (int i = 0; i < s.size; ++i) {
-      other_buffer_[copy_index + i] = buffer_[s.start + i];
+  {
+    DeterministicTimer<{.scale = 3.1e-09, .offset = 2.7e-07}> timer(
+        time_limit_);
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      IntegerVariableSpan& s = dominating_vars_[var];
+      for (int i = 0; i < s.size; ++i) {
+        other_buffer_[copy_index + i] = buffer_[s.start + i];
+      }
+      s.start = copy_index;
+      copy_index += s.size + extra_space[var];
+      extra_space[var] = s.size;  // Used below.
     }
-    s.start = copy_index;
-    copy_index += s.size + extra_space[var];
-    extra_space[var] = s.size;  // Used below.
+    timer.Advance(num_vars_with_negation_);
   }
   DCHECK_EQ(copy_index, other_buffer_.size());
   std::swap(buffer_, other_buffer_);
@@ -325,14 +378,20 @@ bool VarDomination::EndFirstPhase() {
 
   // Fill the free spaces with transposed values.
   // But do not use new values !
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    const int64_t start = dominating_vars_[var].start;
-    const int size = extra_space[var];
-    for (int i = 0; i < size; ++i) {
-      const IntegerVariable dom = buffer_[start + i];
-      if (!is_cropped[NegationOf(dom)]) continue;
-      IntegerVariableSpan& s = dominating_vars_[NegationOf(dom)];
-      buffer_[s.start + s.size++] = NegationOf(var);
+  {
+    DeterministicTimer2<{
+        .scale1 = 1.2e-09, .scale2 = 5.4e-09, .offset = 5.5e-07}>
+        timer(time_limit_, num_vars_with_negation_,
+              buffer_.size() - total_extra_space);
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      const int64_t start = dominating_vars_[var].start;
+      const int size = extra_space[var];
+      for (int i = 0; i < size; ++i) {
+        const IntegerVariable dom = buffer_[start + i];
+        if (!is_cropped[NegationOf(dom)]) continue;
+        IntegerVariableSpan& s = dominating_vars_[NegationOf(dom)];
+        buffer_[s.start + s.size++] = NegationOf(var);
+      }
     }
   }
 
@@ -368,51 +427,62 @@ void VarDomination::EndSecondPhase() {
   shared_buffer_.clear();
   initial_candidates_.assign(num_vars_with_negation_, IntegerVariableSpan());
 
-  // Pass 1: count.
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    for (const IntegerVariable dom : DominatingVariables(var)) {
-      ++initial_candidates_[NegationOf(dom)].size;
+  {
+    DeterministicTimer2<{.scale1 = 7.1e-09, .scale2 = 1.8e-08}> timer(
+        time_limit_);
+    // Pass 1: count.
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      for (const IntegerVariable dom : DominatingVariables(var)) {
+        ++initial_candidates_[NegationOf(dom)].size;
+      }
     }
-  }
 
-  // Pass 2: compute starts.
-  int start = 0;
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    initial_candidates_[var].start = start;
-    start += initial_candidates_[var].size;
-    initial_candidates_[var].size = 0;
-  }
-  shared_buffer_.resize(start);
-
-  // Pass 3: transpose.
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    for (const IntegerVariable dom : DominatingVariables(var)) {
-      IntegerVariableSpan& span = initial_candidates_[NegationOf(dom)];
-      shared_buffer_[span.start + span.size++] = NegationOf(var);
+    // Pass 2: compute starts.
+    int start = 0;
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      initial_candidates_[var].start = start;
+      start += initial_candidates_[var].size;
+      initial_candidates_[var].size = 0;
     }
+    shared_buffer_.resize(start);
+
+    // Pass 3: transpose.
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      for (const IntegerVariable dom : DominatingVariables(var)) {
+        IntegerVariableSpan& span = initial_candidates_[NegationOf(dom)];
+        shared_buffer_[span.start + span.size++] = NegationOf(var);
+      }
+    }
+    timer.Advance(num_vars_with_negation_, start);
   }
 
   // Pass 4: intersect.
   int num_removed = 0;
   tmp_var_to_rank_.resize(num_vars_with_negation_, -1);
-  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    for (const IntegerVariable dom : InitialDominatingCandidates(var)) {
-      tmp_var_to_rank_[dom] = 1;
-    }
-
-    int new_size = 0;
-    IntegerVariableSpan& span = dominating_vars_[var];
-    for (const IntegerVariable dom : DominatingVariables(var)) {
-      if (tmp_var_to_rank_[dom] != 1) {
-        ++num_removed;
-        continue;
+  {
+    DeterministicTimer2<{
+        .scale1 = 4.6e-09, .scale2 = 1.9e-09, .offset = 3.6e-07}>
+        timer(time_limit_, num_vars_with_negation_, 3 * shared_buffer_.size());
+    for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
+      const auto init_cands = InitialDominatingCandidates(var);
+      for (const IntegerVariable dom : init_cands) {
+        tmp_var_to_rank_[dom] = 1;
       }
-      buffer_[span.start + new_size++] = dom;
-    }
-    span.size = new_size;
 
-    for (const IntegerVariable dom : InitialDominatingCandidates(var)) {
-      tmp_var_to_rank_[dom] = -1;
+      int new_size = 0;
+      IntegerVariableSpan& span = dominating_vars_[var];
+      for (const IntegerVariable dom : DominatingVariables(var)) {
+        if (tmp_var_to_rank_[dom] != 1) {
+          ++num_removed;
+          continue;
+        }
+        buffer_[span.start + new_size++] = dom;
+      }
+      span.size = new_size;
+
+      for (const IntegerVariable dom : init_cands) {
+        tmp_var_to_rank_[dom] = -1;
+      }
     }
   }
 
@@ -428,6 +498,7 @@ void VarDomination::FillTempRanks(bool reverse_references,
   tmp_ranks_.clear();
   if (coeffs.empty()) {
     // Simple case: all coefficients are assumed to be the same.
+    DeterministicTimer<{.scale = 1.2e-08}> timer(time_limit_, refs.size());
     for (const int ref : refs) {
       const IntegerVariable var =
           RefToIntegerVariable(reverse_references ? NegatedRef(ref) : ref);
@@ -435,17 +506,25 @@ void VarDomination::FillTempRanks(bool reverse_references,
     }
   } else {
     // Complex case: different coefficients.
-    for (int i = 0; i < refs.size(); ++i) {
-      if (coeffs[i] == 0) continue;
-      const IntegerVariable var = RefToIntegerVariable(
-          reverse_references ? NegatedRef(refs[i]) : refs[i]);
-      if (coeffs[i] > 0) {
-        tmp_ranks_.push_back({var, 0, coeffs[i]});
-      } else {
-        tmp_ranks_.push_back({NegationOf(var), 0, -coeffs[i]});
+    {
+      DeterministicTimer<{.scale = 1.8e-08}> timer(time_limit_, refs.size());
+      for (int i = 0; i < refs.size(); ++i) {
+        if (coeffs[i] == 0) continue;
+        const IntegerVariable var = RefToIntegerVariable(
+            reverse_references ? NegatedRef(refs[i]) : refs[i]);
+        if (coeffs[i] > 0) {
+          tmp_ranks_.push_back({var, 0, coeffs[i]});
+        } else {
+          tmp_ranks_.push_back({NegationOf(var), 0, -coeffs[i]});
+        }
       }
     }
-    std::sort(tmp_ranks_.begin(), tmp_ranks_.end());
+    {
+      const size_t n = tmp_ranks_.size();
+      DeterministicTimer<{.scale = 3.5e-09}> timer(time_limit_,
+                                                   n * absl::bit_width(n));
+      std::sort(tmp_ranks_.begin(), tmp_ranks_.end());
+    }
     MakeRankEqualToStartOfPart({&tmp_ranks_[0], tmp_ranks_.size()});
   }
 
@@ -453,15 +532,20 @@ void VarDomination::FillTempRanks(bool reverse_references,
   // we want the activity to not decrease, and we want to allow any
   // enforcement-- to dominate a variable in the constraint.
   const int enforcement_rank = tmp_ranks_.size();
-  for (const int ref : enforcements) {
-    tmp_ranks_.push_back(
-        {RefToIntegerVariable(NegatedRef(ref)), 0, enforcement_rank});
+  {
+    DeterministicTimer<{.scale = 1.2e-08, .offset = 5.3e-09}> timer(
+        time_limit_, enforcements.size());
+    for (const int ref : enforcements) {
+      tmp_ranks_.push_back(
+          {RefToIntegerVariable(NegatedRef(ref)), 0, enforcement_rank});
+    }
   }
 }
 
 // We take the intersection of the current dominating candidate with the
 // restriction imposed by the current content of tmp_ranks_.
 void VarDomination::FilterUsingTempRanks() {
+  DeterministicTimer<{.scale = 4.8e-08}> timer(time_limit_, tmp_ranks_.size());
   // Expand ranks in temp vector.
   tmp_var_to_rank_.resize(num_vars_with_negation_, -1);
   for (const IntegerVariableWithRank entry : tmp_ranks_) {
@@ -563,6 +647,7 @@ std::string VarDomination::DominationDebugString(IntegerVariable var) const {
 // TODO(user): No need to set locking_ct_index_[var] if num_locks_[var] > 1
 void DualBoundStrengthening::CannotDecrease(absl::Span<const int> refs,
                                             int ct_index) {
+  DeterministicTimer<{.scale = 8.0e-09}> timer(time_limit_, refs.size());
   // Optim: We cache pointers to avoid refetching them in the loop.
   IntegerValue* bounds = can_freely_decrease_until_.data();
   int* locks = num_locks_.data();
@@ -577,6 +662,8 @@ void DualBoundStrengthening::CannotDecrease(absl::Span<const int> refs,
 
 void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs,
                                             int ct_index) {
+  DeterministicTimer<{.scale = 1.5e-08, .offset = 4.8e-09}> timer(time_limit_,
+                                                                  refs.size());
   // Optim: We cache pointers to avoid refetching them in the loop.
   IntegerValue* bounds = can_freely_decrease_until_.data();
   int* locks = num_locks_.data();
@@ -591,6 +678,8 @@ void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs,
 
 void DualBoundStrengthening::CannotMove(absl::Span<const int> refs,
                                         int ct_index) {
+  DeterministicTimer<{.scale = 1.8e-08, .offset = 1.0e-09}> timer(time_limit_,
+                                                                  refs.size());
   // Optim: We cache pointers to avoid refetching them in the loop.
   IntegerValue* bounds = can_freely_decrease_until_.data();
   int* locks = num_locks_.data();
@@ -615,6 +704,8 @@ void DualBoundStrengthening::ProcessLinearConstraint(
   const int64_t lb_limit = linear.domain(linear.domain_size() - 2);
   const int64_t ub_limit = linear.domain(1);
   const int num_terms = linear.vars_size();
+  DeterministicTimer<{.scale = 1.8e-08, .offset = 8.7e-08}> timer(
+      context.time_limit(), num_terms);
   for (int i = 0; i < num_terms; ++i) {
     int ref = linear.vars(i);
     int64_t coeff = linear.coeffs(i);
@@ -676,9 +767,11 @@ namespace {
 // literal ref is mapped to another value. We fill a vector that will only be
 // equal to another such vector if the two constraints differ only there.
 void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
+                                       TimeLimit* time_limit,
                                        std::vector<int64_t>* output) {
   DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
   output->clear();
+  DeterministicTimer<{.scale = 2.3e-08, .offset = 3.8e-08}> timer(time_limit);
 
   // Deal with enforcement.
   // We only detect NegatedRef() here.
@@ -718,6 +811,8 @@ void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
   for (const int64_t value : ct.linear().domain()) {
     output->push_back(CapSub(value, offset));
   }
+  timer.Advance(ct.enforcement_literal().size() + ct.linear().vars().size() +
+                ct.linear().domain().size());
 }
 
 }  // namespace
@@ -728,63 +823,70 @@ FeasibilityStatus DualBoundStrengthening::Strengthen(PresolveContext* context) {
   const CpModelProto& cp_model = context->WorkingModel();
   const int num_vars = cp_model.variables_size();
   int64_t num_fixed_vars = 0;
-  for (int var = 0; var < num_vars; ++var) {
-    if (context->IsFixed(var)) continue;
+  {
+    DeterministicTimer<{.scale = 1.3e-08, .offset = 1.2e-07}> timer(
+        context->time_limit());
+    for (int var = 0; var < num_vars; ++var) {
+      if (context->IsFixed(var)) continue;
 
-    // Fix to lb?
-    const int64_t lb = context->MinOf(var);
-    const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
-    if (ub_limit == lb) {
-      ++num_fixed_vars;
-      CHECK_EQ(context->IntersectDomainWith(var, Domain(lb)), kOk);
-      continue;
-    }
-
-    // Fix to ub?
-    const int64_t ub = context->MaxOf(var);
-    const int64_t lb_limit =
-        std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
-    if (lb_limit == ub) {
-      ++num_fixed_vars;
-      CHECK_EQ(context->IntersectDomainWith(var, Domain(ub)), kOk);
-      continue;
-    }
-
-    // Here we can fix to any value in [ub_limit, lb_limit] that is compatible
-    // with the current domain. We prefer zero or the lowest possible magnitude.
-    if (lb_limit > ub_limit) {
-      const Domain domain =
-          context->DomainOf(var).IntersectionWith(Domain(ub_limit, lb_limit));
-      if (!domain.IsEmpty()) {
-        int64_t value = domain.Contains(0) ? 0 : domain.Min();
-        if (value != 0) {
-          for (const int64_t bound : domain.FlattenedIntervals()) {
-            if (std::abs(bound) < std::abs(value)) value = bound;
-          }
-        }
+      // Fix to lb?
+      const int64_t lb = context->MinOf(var);
+      const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
+      if (ub_limit == lb) {
         ++num_fixed_vars;
-        context->UpdateRuleStats("dual: fix variable with multiple choices");
-        CHECK_EQ(context->IntersectDomainWith(var, Domain(value)), kOk);
+        CHECK_EQ(context->IntersectDomainWith(var, Domain(lb)), kOk);
         continue;
       }
-    }
 
-    // Here we can reduce the domain, but we must be careful when the domain
-    // has holes.
-    if (lb_limit > lb || ub_limit < ub) {
-      const int64_t new_ub =
-          ub_limit < ub ? context->DomainOf(var)
-                              .IntersectionWith(Domain(ub_limit, kint64max))
-                              .Min()
-                        : ub;
-      const int64_t new_lb =
-          lb_limit > lb ? context->DomainOf(var)
-                              .IntersectionWith(Domain(kint64min, lb_limit))
-                              .Max()
-                        : lb;
-      context->UpdateRuleStats("dual: reduced domain");
-      CHECK_EQ(context->IntersectDomainWith(var, Domain(new_lb, new_ub)), kOk);
+      // Fix to ub?
+      const int64_t ub = context->MaxOf(var);
+      const int64_t lb_limit =
+          std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
+      if (lb_limit == ub) {
+        ++num_fixed_vars;
+        CHECK_EQ(context->IntersectDomainWith(var, Domain(ub)), kOk);
+        continue;
+      }
+
+      // Here we can fix to any value in [ub_limit, lb_limit] that is compatible
+      // with the current domain. We prefer zero or the lowest possible
+      // magnitude.
+      if (lb_limit > ub_limit) {
+        const Domain domain =
+            context->DomainOf(var).IntersectionWith(Domain(ub_limit, lb_limit));
+        if (!domain.IsEmpty()) {
+          int64_t value = domain.Contains(0) ? 0 : domain.Min();
+          if (value != 0) {
+            for (const int64_t bound : domain.FlattenedIntervals()) {
+              if (std::abs(bound) < std::abs(value)) value = bound;
+            }
+          }
+          ++num_fixed_vars;
+          context->UpdateRuleStats("dual: fix variable with multiple choices");
+          CHECK_EQ(context->IntersectDomainWith(var, Domain(value)), kOk);
+          continue;
+        }
+      }
+
+      // Here we can reduce the domain, but we must be careful when the domain
+      // has holes.
+      if (lb_limit > lb || ub_limit < ub) {
+        const int64_t new_ub =
+            ub_limit < ub ? context->DomainOf(var)
+                                .IntersectionWith(Domain(ub_limit, kint64max))
+                                .Min()
+                          : ub;
+        const int64_t new_lb =
+            lb_limit > lb ? context->DomainOf(var)
+                                .IntersectionWith(Domain(kint64min, lb_limit))
+                                .Max()
+                          : lb;
+        context->UpdateRuleStats("dual: reduced domain");
+        CHECK_EQ(context->IntersectDomainWith(var, Domain(new_lb, new_ub)),
+                 kOk);
+      }
     }
+    timer.Advance(num_vars);
   }
   if (num_fixed_vars > 0) {
     context->UpdateRuleStats("dual: fix variable", num_fixed_vars);
@@ -802,455 +904,486 @@ FeasibilityStatus DualBoundStrengthening::Strengthen(PresolveContext* context) {
   //
   // TODO(user): Cover all the cases.
   int64_t num_bool_in_near_duplicate_ct = 0;
-  for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
-    const int ref = VarDomination::IntegerVariableToRef(var);
-    const int positive_ref = PositiveRef(ref);
-    if (context->IsFixed(positive_ref)) continue;
-    if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
-    if (context->VariableWasRemoved(positive_ref)) continue;
+  {
+    DeterministicTimer2<{
+        .scale1 = 2.3e-08, .scale2 = 2.9e-08, .offset = 2.1e-07}>
+        timer(context->time_limit());
+    int64_t inner_work = 0;
+    for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
+      const int ref = VarDomination::IntegerVariableToRef(var);
+      const int positive_ref = PositiveRef(ref);
+      if (context->IsFixed(positive_ref)) continue;
+      if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
+      if (context->VariableWasRemoved(positive_ref)) continue;
 
-    if (num_locks_[var] != 1) continue;
-    if (locking_ct_index_[var] == -1) {
-      context->UpdateRuleStats(
-          "TODO dual: only one unspecified blocking constraint?");
-      continue;
-    }
-
-    const int ct_index = locking_ct_index_[var];
-    const ConstraintProto& ct = context->Constraint(ct_index);
-    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      // TODO(user): Fix variable right away rather than waiting for next call.
-      continue;
-    }
-    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-      context->UpdateRuleStats("TODO dual: tighten at most one");
-      continue;
-    }
-
-    if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
-      // If we have an enforcement literal then we can always add the
-      // implication "not enforced" => var at its lower bound.
-      // If we also have enforced => fixed var, then var is in an affine
-      // relation with the enforced literal and we can remove one variable.
-      //
-      // TODO(user): We can also deal with more than one enforcement.
-      if (ct.enforcement_literal().size() == 1 &&
-          PositiveRef(ct.enforcement_literal(0)) != positive_ref) {
-        const int enf = ct.enforcement_literal(0);
-        const int64_t bound = RefIsPositive(ref) ? context->MinOf(positive_ref)
-                                                 : context->MaxOf(positive_ref);
-        const Domain implied =
-            context->DomainOf(positive_ref)
-                .IntersectionWith(
-                    context->deductions.ImpliedDomain(enf, positive_ref));
-        if (implied.IsEmpty()) {
-          context->UpdateRuleStats("dual: fix variable");
-          if (context->SetLiteralToFalse(enf).unsat()) return kUnsat;
-          if (context->IntersectDomainWith(positive_ref, Domain(bound))
-                  .unsat()) {
-            return kUnsat;
-          }
-          CannotMove({enf, positive_ref});
-          continue;
-        }
-        if (implied.IsFixed()) {
-          // Corner case.
-          if (implied.FixedValue() == bound) {
-            context->UpdateRuleStats("dual: fix variable");
-            if (context->IntersectDomainWith(positive_ref, implied).unsat()) {
-              return kUnsat;
-            }
-            CannotMove({positive_ref});
-            continue;
-          }
-
-          // NOTE(user): If we have enforced => var fixed, we could actually
-          // just have removed var from the constraint if it was implied by
-          // another constraint. If not, because of the new affine relation we
-          // could remove it right away.
-          CannotMove({enf, positive_ref});
-          context->UpdateRuleStats("dual: affine relation");
-          // The new affine relation added below can break the hint if hint(enf)
-          // is 0. In this case the only constraint blocking `ref` from
-          // decreasing [`ct` = enf => (var = implied)] does not apply. We can
-          // thus set the hint of `positive_ref` to `bound` to preserve the hint
-          // feasibility.
-          crush.SetVarToValueIf(positive_ref, bound, NegatedRef(enf));
-          if (RefIsPositive(enf)) {
-            // positive_ref = enf * implied + (1 - enf) * bound.
-            if (context
-                    ->StoreAffineRelation(positive_ref, enf,
-                                          implied.FixedValue() - bound, bound)
-                    .unsat()) {
-              return kUnsat;
-            }
-          } else {
-            // enf_var = PositiveRef(enf).
-            // positive_ref = (1 - enf_var) * implied + enf_var * bound.
-            if (context
-                    ->StoreAffineRelation(positive_ref, PositiveRef(enf),
-                                          bound - implied.FixedValue(),
-                                          implied.FixedValue())
-                    .unsat()) {
-              return kUnsat;
-            }
-          }
-          continue;
-        }
-
-        if (context->CanBeUsedAsLiteral(positive_ref)) {
-          // If we have a literal, we always add the implication ~enf => ~ref.
-          // Because this implication only locks `ref` against increasing rather
-          // than decreasing, `ct` remains the unique constraint locking `ref`
-          // from decreasing on later presolve passes, and SAT/clique presolve
-          // clears and rewrites bool_and constraints across passes. We
-          // deduplicate with AddNeverSeenBeforeImplication() so we do not
-          // re-add the same implication, bump num_presolve_operations, or
-          // append duplicate solution-crush steps on every pass.
-          if (context->AddNeverSeenBeforeImplication(NegatedRef(enf),
-                                                     NegatedRef(ref))) {
-            CannotMove({enf, positive_ref});
-            context->UpdateRuleStats("dual: add implication");
-            // The new implication can break the hint if hint(enf) is 0 and
-            // hint(ref) is 1. In this case the only locking constraint `ct`
-            // does not apply and thus does not prevent decreasing the hint of
-            // ref in order to preserve the hint feasibility.
-            crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
-          }
-          continue;
-        }
-
-        // We can add an implication not_enforced => var to its bound ?
-        context->UpdateRuleStats("TODO dual: add implied bound");
+      if (num_locks_[var] != 1) continue;
+      ++inner_work;
+      if (locking_ct_index_[var] == -1) {
+        context->UpdateRuleStats(
+            "TODO dual: only one unspecified blocking constraint?");
+        continue;
       }
 
-      // We can make enf equivalent to the constraint instead of just =>. This
-      // seems useful since internally we always use fully reified encoding.
-      if (ct.constraint_case() == ConstraintProto::kLinear &&
-          ct.linear().vars().size() == 1 &&
-          ct.enforcement_literal().size() == 1 &&
-          ct.enforcement_literal(0) == NegatedRef(ref)) {
-        const int var = ct.linear().vars(0);
-        const Domain var_domain = context->DomainOf(var);
-        const Domain rhs = ReadDomainFromProto(ct.linear())
-                               .InverseMultiplicationBy(ct.linear().coeffs(0))
-                               .IntersectionWith(var_domain);
-        if (rhs.IsEmpty()) {
-          context->UpdateRuleStats("linear1: infeasible");
-          if (context->SetLiteralToFalse(ct.enforcement_literal(0)).unsat()) {
-            return kUnsat;
-          }
-          CannotMove({ref, var});
-          context->ClearConstraint(ct_index);
-          continue;
-        }
-        if (rhs == var_domain) {
-          context->UpdateRuleStats("linear1: always true");
-          CannotMove({ref, var});
-          context->ClearConstraint(ct_index);
-          continue;
-        }
+      const int ct_index = locking_ct_index_[var];
+      const ConstraintProto& ct = context->Constraint(ct_index);
+      if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+        // TODO(user): Fix variable right away rather than waiting for next
+        // call.
+        continue;
+      }
+      if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+        context->UpdateRuleStats("TODO dual: tighten at most one");
+        continue;
+      }
 
-        const Domain complement = rhs.Complement().IntersectionWith(var_domain);
-        if (rhs.IsFixed() || complement.IsFixed()) {
-          context->UpdateRuleStats("dual: make encoding equiv");
-          const int64_t value =
-              rhs.IsFixed() ? rhs.FixedValue() : complement.FixedValue();
-
-          int encoding_lit;
-          bool has_encoding = false;
-          if (!context->VarCanTakeValue(var, value)) {
-            encoding_lit = context->GetFalseLiteral();
-            has_encoding = true;
-          } else {
-            has_encoding =
-                context->HasVarValueEncoding(var, value, &encoding_lit);
-          }
-
-          DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
-          if (has_encoding &&
-              !context->VariableWasRemoved(PositiveRef(encoding_lit))) {
-            // If it is different, we have an equivalence now, and we can
-            // remove the constraint.
-            if (rhs.IsFixed()) {
-              if (encoding_lit == NegatedRef(ref)) continue;
-              // Extending `ct` = "not(ref) => encoding_lit" to an equality can
-              // break the hint only if hint(ref) = hint(encoding_lit) = 1. But
-              // in this case `ct` is actually not blocking ref from decreasing.
-              // We can thus set its hint to 0 to preserve the hint feasibility.
-              crush.SetLiteralToValueIf(ref, false, encoding_lit);
-              if (context
-                      ->StoreBooleanEqualityRelation(encoding_lit,
-                                                     NegatedRef(ref))
+      if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
+        // If we have an enforcement literal then we can always add the
+        // implication "not enforced" => var at its lower bound.
+        // If we also have enforced => fixed var, then var is in an affine
+        // relation with the enforced literal and we can remove one variable.
+        //
+        // TODO(user): We can also deal with more than one enforcement.
+        if (ct.enforcement_literal().size() == 1 &&
+            PositiveRef(ct.enforcement_literal(0)) != positive_ref) {
+          const int enf =
+              context->GetLiteralRepresentative(ct.enforcement_literal(0));
+          if (PositiveRef(enf) != positive_ref) {
+            const int64_t bound = RefIsPositive(ref)
+                                      ? context->MinOf(positive_ref)
+                                      : context->MaxOf(positive_ref);
+            const Domain implied = context->DomainOf(positive_ref)
+                                       .IntersectionWith(context->ImpliedDomain(
+                                           enf, positive_ref));
+            if (implied.IsEmpty()) {
+              context->UpdateRuleStats("dual: fix variable");
+              if (context->SetLiteralToFalse(enf).unsat()) return kUnsat;
+              if (context->IntersectDomainWith(positive_ref, Domain(bound))
                       .unsat()) {
                 return kUnsat;
               }
-            } else {
-              if (encoding_lit == ref) continue;
-              // Extending `ct` = "not(ref) => not(encoding_lit)" to an equality
-              // can break the hint only if hint(encoding_lit) = 0 and hint(ref)
-              // = 1. But in this case `ct` is actually not blocking ref from
-              // decreasing. We can thus set its hint to 0 to preserve the hint
-              // feasibility.
-              crush.SetLiteralToValueIf(ref, false, NegatedRef(encoding_lit));
-              if (context->StoreBooleanEqualityRelation(encoding_lit, ref)
-                      .unsat()) {
-                return kUnsat;
-              }
+              CannotMove({enf, positive_ref});
+              continue;
             }
-            context->ClearConstraint(ct_index);
-            CannotMove({ref, var});
-            // `encoding_lit` was maybe a new variable added during this loop,
-            // so make sure we cannot go out-of-bound.
-            if (PositiveRef(encoding_lit) < num_vars) {
-              CannotMove({encoding_lit});
-            }
-            continue;
-          }
-
-          CannotMove({ref, var});
-          // The `new_ct` constraint `ref` => (`var` in `complement`) below can
-          // break the hint if hint(var) is not in `complement`. In this case,
-          // set the hint of `ref` to false. This should be safe since the only
-          // constraint blocking `ref` from decreasing is `ct` = not(ref) =>
-          // (`var` in `rhs`) -- which does not apply when `ref` is true.
-          crush.SetLiteralToValueIfLinearConstraintViolated(
-              ref, false, {{var, 1}}, complement);
-          ConstraintProto* new_ct = context->AddConstraint();
-          new_ct->add_enforcement_literal(ref);
-          new_ct->mutable_linear()->add_vars(var);
-          new_ct->mutable_linear()->add_coeffs(1);
-          FillDomainInProto(complement, new_ct->mutable_linear());
-
-          if (rhs.IsFixed()) {
-            if (context
-                    ->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value)
-                    .unsat() ||
-                context->StoreLiteralImpliesVarNeValue(ref, var, value)
-                    .unsat()) {
-              return kUnsat;
-            }
-          } else if (complement.IsFixed()) {
-            if (context
-                    ->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value)
-                    .unsat() ||
-                context->StoreLiteralImpliesVarEqValue(ref, var, value)
-                    .unsat()) {
-              return kUnsat;
-            }
-          }
-          continue;
-        }
-      }
-
-      // If we have two Booleans, each with a single blocking constraint that is
-      // the same if we "swap" the Booleans reference, then we can make the
-      // Booleans equivalent. This is because they will be forced to their bad
-      // value only if it is needed by the other part of their respective
-      // blocking constraints. This is related to the
-      // FindAlmostIdenticalLinearConstraints() except that here we can deal
-      // with non-equality or enforced constraints.
-      //
-      // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
-      // miss some possible reduction if replacing X by 1 - X makes a constraint
-      // near-duplicate of another.
-      //
-      // TODO(user): We can generalize to non-linear constraint.
-      //
-      // Optimization: Skip if this constraint was already used as a single
-      // blocking constraint of another variable. If this is the case, it cannot
-      // be equivalent to another constraint with "var" substituted, since
-      // otherwise var would have two blocking constraints. We can safely skip
-      // it. This makes sure this is in O(num_entries) and not more.
-      if (equiv_ct_index_set.insert(ct_index).second &&
-          ct.constraint_case() == ConstraintProto::kLinear &&
-          context->CanBeUsedAsLiteral(ref)) {
-        TransformLinearWithSpecialBoolean(ct, ref, &temp_data);
-        const uint64_t hash =
-            fasthash64(temp_data.data(), temp_data.size() * sizeof(int64_t),
-                       uint64_t{0xa5b85c5e198ed849});
-        const auto [it, inserted] =
-            equiv_modified_constraints.insert({hash, {ct_index, ref}});
-        if (!inserted) {
-          // Already present!
-          const auto [other_c_with_same_hash, other_ref] = it->second;
-          CHECK_NE(other_c_with_same_hash, ct_index);
-          if (num_locks_[RefToIntegerVariable(other_ref)] == 1 &&
-              !context->IsFixed(other_ref)) {
-            const auto& other_ct = context->Constraint(other_c_with_same_hash);
-            TransformLinearWithSpecialBoolean(other_ct, other_ref,
-                                              &other_temp_data);
-            if (temp_data == other_temp_data) {
-              // Corner case: We just discovered l => ct and not(l) => ct.
-              // So ct must just always be true. And since that was the only
-              // blocking constraint for l, we can just set l to an arbitrary
-              // value.
-              if (ref == NegatedRef(other_ref)) {
-                context->UpdateRuleStats(
-                    "dual: detected l => ct and not(l) => ct with unused l!");
-                if (context->IntersectDomainWith(ref, Domain(0)).unsat()) {
+            if (implied.IsFixed()) {
+              // Corner case.
+              if (implied.FixedValue() == bound) {
+                context->UpdateRuleStats("dual: fix variable");
+                if (context->IntersectDomainWith(positive_ref, implied)
+                        .unsat()) {
                   return kUnsat;
                 }
-                CannotMove({ref});
+                CannotMove({enf, positive_ref});
                 continue;
               }
 
-              // We have a true equality. The two refs can be made equivalent.
-              ++num_bool_in_near_duplicate_ct;
-              CannotMove({ref, other_ref});
-              // If the two hints are different, and since both refs have an
-              // equivalent blocking constraint, then the constraint is actually
-              // not blocking the ref at 1 from decreasing. Hence we can set its
-              // hint to false to preserve the hint feasibility despite the new
-              // Boolean equality constraint.
-              crush.UpdateLiteralsToFalseIfDifferent(ref, other_ref);
-              DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
-              DCHECK(!context->VariableWasRemoved(PositiveRef(other_ref)));
-              if (context->StoreBooleanEqualityRelation(ref, other_ref)
-                      .unsat()) {
-                return kUnsat;
+              // NOTE(user): If we have enforced => var fixed, we could actually
+              // just have removed var from the constraint if it was implied by
+              // another constraint. If not, because of the new affine relation
+              // we could remove it right away.
+              CannotMove({enf, positive_ref});
+              context->UpdateRuleStats("dual: affine relation");
+              // The new affine relation added below can break the hint if
+              // hint(enf) is 0. In this case the only constraint blocking `ref`
+              // from decreasing [`ct` = enf => (var = implied)] does not apply.
+              // We can thus set the hint of `positive_ref` to `bound` to
+              // preserve the hint feasibility.
+              crush.SetVarToValueIf(positive_ref, bound, NegatedRef(enf));
+              if (RefIsPositive(enf)) {
+                // positive_ref = enf * implied + (1 - enf) * bound.
+                if (context
+                        ->StoreAffineRelation(positive_ref, enf,
+                                              implied.FixedValue() - bound,
+                                              bound)
+                        .unsat()) {
+                  return kUnsat;
+                }
+              } else {
+                // enf_var = PositiveRef(enf).
+                // positive_ref = (1 - enf_var) * implied + enf_var * bound.
+                if (context
+                        ->StoreAffineRelation(positive_ref, PositiveRef(enf),
+                                              bound - implied.FixedValue(),
+                                              implied.FixedValue())
+                        .unsat()) {
+                  return kUnsat;
+                }
               }
-
-              // We can delete one of the constraints since they are duplicates
-              // now.
-              ++num_deleted_constraints_;
-              context->ClearConstraint(ct_index);
               continue;
             }
+
+            if (context->CanBeUsedAsLiteral(positive_ref)) {
+              // If we have a literal, we always add the implication ~enf =>
+              // ~ref. Because this implication only locks `ref` against
+              // increasing rather than decreasing, `ct` remains the unique
+              // constraint locking `ref` from decreasing on later presolve
+              // passes, and SAT/clique presolve clears and rewrites bool_and
+              // constraints across passes. We deduplicate with
+              // AddNeverSeenBeforeImplication() so we do not re-add the same
+              // implication, bump num_presolve_operations, or append duplicate
+              // solution-crush steps on every pass.
+              if (context->AddNeverSeenBeforeImplication(NegatedRef(enf),
+                                                         NegatedRef(ref))) {
+                CannotMove({enf, positive_ref});
+                context->UpdateRuleStats("dual: add implication");
+                // The new implication can break the hint if hint(enf) is 0 and
+                // hint(ref) is 1. In this case the only locking constraint `ct`
+                // does not apply and thus does not prevent decreasing the hint
+                // of ref in order to preserve the hint feasibility.
+                crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
+              }
+              continue;
+            }
+
+            // We can add an implication not_enforced => var to its bound ?
+            context->UpdateRuleStats("TODO dual: add implied bound");
           }
         }
-      }
 
-      // If a variable is only blocked by coeff * X + offset, see if we can
-      // make it equivalent to that !
-      if (ct.constraint_case() == ConstraintProto::kLinear &&
-          ct.linear().vars().size() == 2 && ct.enforcement_literal().empty()) {
-        // Canonicalize the constraint into:
-        // positive_ref + cb * b \in [min, (don't care), max].
-        int64_t min = ct.linear().domain(0);
-        int64_t max = ct.linear().domain(ct.linear().domain().size() - 1);
-        int a = ct.linear().vars(0);
-        int b = ct.linear().vars(1);
-        int64_t ca = ct.linear().coeffs(0);
-        int64_t cb = ct.linear().coeffs(1);
-        if (positive_ref == b) {
-          std::swap(a, b);
-          std::swap(ca, cb);
-        }
-        if (ca < 0) {
-          ca = -ca;
-          cb = -cb;
-          std::swap(min, max);
-          min = -min;
-          max = -max;
-        }
-
-        if (ca != 1) {
-          // TODO(user): can we handle more complex coeff ? It doesn't seems
-          // easy in general as the maximum X satisfying aX + bY <= max will
-          // not be at aX + bY == max, if max - bY is not divisible by a.
-          context->UpdateRuleStats("TODO dual: only one blocking linear2?");
-        } else {
-          bool equiv = false;
-          int64_t offset = 0;
-          const Domain da = context->DomainOf(a);
-          const Domain db = context->DomainOf(b);
-          const Domain d_rhs = db.ContinuousMultiplicationBy(-cb);
-
-          // a can freely decrease and we can always have a + cb * b == min.
-          if (ref == a && d_rhs.AdditionWith(Domain(min)).IsIncludedIn(da)) {
-            equiv = true;
-            offset = min;
-          }
-
-          // a can freely increase and we can always have a + cb * b == max.
-          if (ref == NegatedRef(a) &&
-              d_rhs.AdditionWith(Domain(max)).IsIncludedIn(da)) {
-            equiv = true;
-            offset = max;
-          }
-
-          if (equiv) {
-            context->UpdateRuleStats(
-                "dual: removed var only blocked by coeff * X + offset");
-            crush.SetVarToLinearExpression(a, {{b, -cb}}, offset);
-            if (context->StoreAffineRelation(a, b, -cb, offset).unsat())
-              return kUnsat;
-            CannotMove({a, b});
-            continue;
-          }
-        }
-      }
-
-      // Other potential cases?
-      if (!ct.enforcement_literal().empty()) {
+        // We can make enf equivalent to the constraint instead of just =>. This
+        // seems useful since internally we always use fully reified encoding.
         if (ct.constraint_case() == ConstraintProto::kLinear &&
             ct.linear().vars().size() == 1 &&
             ct.enforcement_literal().size() == 1 &&
             ct.enforcement_literal(0) == NegatedRef(ref)) {
-          context->UpdateRuleStats("TODO dual: make linear1 equiv");
-        } else {
-          context->UpdateRuleStats(
-              "TODO dual: only one blocking enforced constraint?");
-        }
-      } else {
-        context->UpdateRuleStats("TODO dual: only one blocking constraint?");
-      }
-      continue;
-    }
+          const int var = ct.linear().vars(0);
+          const Domain var_domain = context->DomainOf(var);
+          const Domain rhs = ReadDomainFromProto(ct.linear())
+                                 .InverseMultiplicationBy(ct.linear().coeffs(0))
+                                 .IntersectionWith(var_domain);
+          if (rhs.IsEmpty()) {
+            context->UpdateRuleStats("linear1: infeasible");
+            if (context->SetLiteralToFalse(ct.enforcement_literal(0)).unsat()) {
+              return kUnsat;
+            }
+            CannotMove({ref, var});
+            context->ClearConstraint(ct_index);
+            continue;
+          }
+          if (rhs == var_domain) {
+            context->UpdateRuleStats("linear1: always true");
+            CannotMove({ref, var});
+            context->ClearConstraint(ct_index);
+            continue;
+          }
 
-    // If (a => b) is the only constraint blocking a literal a in the up
-    // direction, then we can set a == b !
-    //
-    // Recover a => b where a has a unique up_lock (i.e this constraint).
-    // Note that if many implications are encoded in the same bool_and, we have
-    // to be careful that a is appearing in just one of them.
-    //
-    // TODO(user): Make sure implication graph is transitively reduced to not
-    // miss such reduction. More generally, this might only use the graph rather
-    // than the encoding into bool_and / at_most_one ? Basically if a =>
-    // all_direct_deduction, we can transform it into a <=> all_direct_deduction
-    // if that is interesting. This could always be done on a max-2sat problem
-    // in one of the two directions. Also think about max-2sat specific
-    // presolve.
-    if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
-        ct.enforcement_literal().size() == 1) {
-      CHECK_EQ(ct.constraint_case(), ConstraintProto::kBoolAnd);
-      int a = ct.enforcement_literal(0);
-      int b = 1;
-      if (PositiveRef(a) == positive_ref &&
-          num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
-        // Here, we can only add the equivalence if the literal is the only
-        // on the lhs, otherwise there are actually more locks.
-        if (ct.bool_and().literals().size() != 1) continue;
-        b = ct.bool_and().literals(0);
-      } else {
-        bool found = false;
-        b = NegatedRef(ct.enforcement_literal(0));
-        for (const int lhs : ct.bool_and().literals()) {
-          if (PositiveRef(lhs) == positive_ref &&
-              num_locks_[RefToIntegerVariable(lhs)] == 1) {
-            found = true;
-            a = NegatedRef(lhs);
-            break;
+          const Domain complement =
+              rhs.Complement().IntersectionWith(var_domain);
+          if (rhs.IsFixed() || complement.IsFixed()) {
+            context->UpdateRuleStats("dual: make encoding equiv");
+            const int64_t value =
+                rhs.IsFixed() ? rhs.FixedValue() : complement.FixedValue();
+
+            int encoding_lit;
+            bool has_encoding = false;
+            if (!context->VarCanTakeValue(var, value)) {
+              encoding_lit = context->GetFalseLiteral();
+              has_encoding = true;
+            } else {
+              has_encoding =
+                  context->HasVarValueEncoding(var, value, &encoding_lit);
+            }
+
+            DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
+            if (has_encoding &&
+                !context->VariableWasRemoved(PositiveRef(encoding_lit))) {
+              // If it is different, we have an equivalence now, and we can
+              // remove the constraint.
+              if (rhs.IsFixed()) {
+                if (encoding_lit == NegatedRef(ref)) continue;
+                // Extending `ct` = "not(ref) => encoding_lit" to an equality
+                // can break the hint only if hint(ref) = hint(encoding_lit)
+                // = 1. But in this case `ct` is actually not blocking ref from
+                // decreasing. We can thus set its hint to 0 to preserve the
+                // hint feasibility.
+                crush.SetLiteralToValueIf(ref, false, encoding_lit);
+                if (context
+                        ->StoreBooleanEqualityRelation(encoding_lit,
+                                                       NegatedRef(ref))
+                        .unsat()) {
+                  return kUnsat;
+                }
+              } else {
+                if (encoding_lit == ref) continue;
+                // Extending `ct` = "not(ref) => not(encoding_lit)" to an
+                // equality can break the hint only if hint(encoding_lit) = 0
+                // and hint(ref) = 1. But in this case `ct` is actually not
+                // blocking ref from decreasing. We can thus set its hint to 0
+                // to preserve the hint feasibility.
+                crush.SetLiteralToValueIf(ref, false, NegatedRef(encoding_lit));
+                if (context->StoreBooleanEqualityRelation(encoding_lit, ref)
+                        .unsat()) {
+                  return kUnsat;
+                }
+              }
+              context->ClearConstraint(ct_index);
+              CannotMove({ref, var});
+              // `encoding_lit` was maybe a new variable added during this loop,
+              // so make sure we cannot go out-of-bound.
+              if (PositiveRef(encoding_lit) < num_vars) {
+                CannotMove({encoding_lit});
+              }
+              continue;
+            }
+
+            CannotMove({ref, var});
+            // The `new_ct` constraint `ref` => (`var` in `complement`) below
+            // can break the hint if hint(var) is not in `complement`. In this
+            // case, set the hint of `ref` to false. This should be safe since
+            // the only constraint blocking `ref` from decreasing is `ct` =
+            // not(ref) => (`var` in `rhs`) -- which does not apply when `ref`
+            // is true.
+            crush.SetLiteralToValueIfLinearConstraintViolated(
+                ref, false, {{var, 1}}, complement);
+            context->AddConstraint([&](ConstraintProto* new_ct) {
+              new_ct->add_enforcement_literal(ref);
+              new_ct->mutable_linear()->add_vars(var);
+              new_ct->mutable_linear()->add_coeffs(1);
+              FillDomainInProto(complement, new_ct->mutable_linear());
+            });
+
+            if (rhs.IsFixed()) {
+              if (context
+                      ->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var,
+                                                      value)
+                      .unsat() ||
+                  context->StoreLiteralImpliesVarNeValue(ref, var, value)
+                      .unsat()) {
+                return kUnsat;
+              }
+            } else if (complement.IsFixed()) {
+              if (context
+                      ->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var,
+                                                      value)
+                      .unsat() ||
+                  context->StoreLiteralImpliesVarEqValue(ref, var, value)
+                      .unsat()) {
+                return kUnsat;
+              }
+            }
+            continue;
           }
         }
-        CHECK(found);
-      }
-      CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
 
-      DCHECK(!context->VariableWasRemoved(PositiveRef(a)));
-      DCHECK(!context->VariableWasRemoved(PositiveRef(b)));
-      CannotMove({a, b});
-      // If hint(a) is false we can always set it to hint(b) since this can
-      // only increase its value. If hint(a) is true then hint(b) must be true
-      // as well if the hint is feasible, due to the a => b constraint.
-      // Setting hint(a) to hint(b) is thus always safe. The opposite is true
-      // as well.
-      crush.MakeLiteralsEqual(a, b);
-      if (context->StoreBooleanEqualityRelation(a, b).unsat()) return kUnsat;
-      context->UpdateRuleStats("dual: enforced equivalence");
+        // If we have two Booleans, each with a single blocking constraint that
+        // is the same if we "swap" the Booleans reference, then we can make the
+        // Booleans equivalent. This is because they will be forced to their bad
+        // value only if it is needed by the other part of their respective
+        // blocking constraints. This is related to the
+        // FindAlmostIdenticalLinearConstraints() except that here we can deal
+        // with non-equality or enforced constraints.
+        //
+        // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
+        // miss some possible reduction if replacing X by 1 - X makes a
+        // constraint near-duplicate of another.
+        //
+        // TODO(user): We can generalize to non-linear constraint.
+        //
+        // Optimization: Skip if this constraint was already used as a single
+        // blocking constraint of another variable. If this is the case, it
+        // cannot be equivalent to another constraint with "var" substituted,
+        // since otherwise var would have two blocking constraints. We can
+        // safely skip it. This makes sure this is in O(num_entries) and not
+        // more.
+        if (equiv_ct_index_set.insert(ct_index).second &&
+            ct.constraint_case() == ConstraintProto::kLinear &&
+            context->CanBeUsedAsLiteral(ref)) {
+          inner_work += ct.linear().vars().size();
+          TransformLinearWithSpecialBoolean(ct, ref, context->time_limit(),
+                                            &temp_data);
+          const uint64_t hash =
+              fasthash64(temp_data.data(), temp_data.size() * sizeof(int64_t),
+                         uint64_t{0xa5b85c5e198ed849});
+          const auto [it, inserted] =
+              equiv_modified_constraints.insert({hash, {ct_index, ref}});
+          if (!inserted) {
+            // Already present!
+            const auto [other_c_with_same_hash, other_ref] = it->second;
+            CHECK_NE(other_c_with_same_hash, ct_index);
+            if (num_locks_[RefToIntegerVariable(other_ref)] == 1 &&
+                !context->IsFixed(other_ref)) {
+              const auto& other_ct =
+                  context->Constraint(other_c_with_same_hash);
+              inner_work += other_ct.linear().vars().size();
+              TransformLinearWithSpecialBoolean(
+                  other_ct, other_ref, context->time_limit(), &other_temp_data);
+              if (temp_data == other_temp_data) {
+                // Corner case: We just discovered l => ct and not(l) => ct.
+                // So ct must just always be true. And since that was the only
+                // blocking constraint for l, we can just set l to an arbitrary
+                // value.
+                if (ref == NegatedRef(other_ref)) {
+                  context->UpdateRuleStats(
+                      "dual: detected l => ct and not(l) => ct with unused l!");
+                  if (context->IntersectDomainWith(ref, Domain(0)).unsat()) {
+                    return kUnsat;
+                  }
+                  CannotMove({ref});
+                  continue;
+                }
+
+                // We have a true equality. The two refs can be made equivalent.
+                ++num_bool_in_near_duplicate_ct;
+                CannotMove({ref, other_ref});
+                // If the two hints are different, and since both refs have an
+                // equivalent blocking constraint, then the constraint is
+                // actually not blocking the ref at 1 from decreasing. Hence we
+                // can set its hint to false to preserve the hint feasibility
+                // despite the new Boolean equality constraint.
+                crush.UpdateLiteralsToFalseIfDifferent(ref, other_ref);
+                DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
+                DCHECK(!context->VariableWasRemoved(PositiveRef(other_ref)));
+                if (context->StoreBooleanEqualityRelation(ref, other_ref)
+                        .unsat()) {
+                  return kUnsat;
+                }
+
+                // We can delete one of the constraints since they are
+                // duplicates now.
+                ++num_deleted_constraints_;
+                context->ClearConstraint(ct_index);
+                continue;
+              }
+            }
+          }
+        }
+
+        // If a variable is only blocked by coeff * X + offset, see if we can
+        // make it equivalent to that !
+        if (ct.constraint_case() == ConstraintProto::kLinear &&
+            ct.linear().vars().size() == 2 &&
+            ct.enforcement_literal().empty()) {
+          // Canonicalize the constraint into:
+          // positive_ref + cb * b \in [min, (don't care), max].
+          int64_t min = ct.linear().domain(0);
+          int64_t max = ct.linear().domain(ct.linear().domain().size() - 1);
+          int a = ct.linear().vars(0);
+          int b = ct.linear().vars(1);
+          int64_t ca = ct.linear().coeffs(0);
+          int64_t cb = ct.linear().coeffs(1);
+          if (positive_ref == b) {
+            std::swap(a, b);
+            std::swap(ca, cb);
+          }
+          if (ca < 0) {
+            ca = -ca;
+            cb = -cb;
+            std::swap(min, max);
+            min = -min;
+            max = -max;
+          }
+
+          if (ca != 1) {
+            // TODO(user): can we handle more complex coeff ? It doesn't seems
+            // easy in general as the maximum X satisfying aX + bY <= max will
+            // not be at aX + bY == max, if max - bY is not divisible by a.
+            context->UpdateRuleStats("TODO dual: only one blocking linear2?");
+          } else {
+            bool equiv = false;
+            int64_t offset = 0;
+            const Domain da = context->DomainOf(a);
+            const Domain db = context->DomainOf(b);
+            const Domain d_rhs = db.ContinuousMultiplicationBy(-cb);
+
+            // a can freely decrease and we can always have a + cb * b == min.
+            if (ref == a && d_rhs.AdditionWith(Domain(min)).IsIncludedIn(da)) {
+              equiv = true;
+              offset = min;
+            }
+
+            // a can freely increase and we can always have a + cb * b == max.
+            if (ref == NegatedRef(a) &&
+                d_rhs.AdditionWith(Domain(max)).IsIncludedIn(da)) {
+              equiv = true;
+              offset = max;
+            }
+
+            if (equiv) {
+              context->UpdateRuleStats(
+                  "dual: removed var only blocked by coeff * X + offset");
+              crush.SetVarToLinearExpression(a, {{b, -cb}}, offset);
+              if (context->StoreAffineRelation(a, b, -cb, offset).unsat()) {
+                return kUnsat;
+              }
+              CannotMove({a, b});
+              continue;
+            }
+          }
+        }
+
+        // Other potential cases?
+        if (!ct.enforcement_literal().empty()) {
+          if (ct.constraint_case() == ConstraintProto::kLinear &&
+              ct.linear().vars().size() == 1 &&
+              ct.enforcement_literal().size() == 1 &&
+              ct.enforcement_literal(0) == NegatedRef(ref)) {
+            context->UpdateRuleStats("TODO dual: make linear1 equiv");
+          } else {
+            context->UpdateRuleStats(
+                "TODO dual: only one blocking enforced constraint?");
+          }
+        } else {
+          context->UpdateRuleStats("TODO dual: only one blocking constraint?");
+        }
+        continue;
+      }
+
+      // If (a => b) is the only constraint blocking a literal a in the up
+      // direction, then we can set a == b !
+      //
+      // Recover a => b where a has a unique up_lock (i.e this constraint).
+      // Note that if many implications are encoded in the same bool_and, we
+      // have to be careful that a is appearing in just one of them.
+      //
+      // TODO(user): Make sure implication graph is transitively reduced to not
+      // miss such reduction. More generally, this might only use the graph
+      // rather than the encoding into bool_and / at_most_one ? Basically if a
+      // => all_direct_deduction, we can transform it into a <=>
+      // all_direct_deduction if that is interesting. This could always be done
+      // on a max-2sat problem in one of the two directions. Also think about
+      // max-2sat specific presolve.
+      if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
+          ct.enforcement_literal().size() == 1) {
+        CHECK_EQ(ct.constraint_case(), ConstraintProto::kBoolAnd);
+        int a = ct.enforcement_literal(0);
+        int b = 1;
+        if (PositiveRef(a) == positive_ref &&
+            num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
+          // Here, we can only add the equivalence if the literal is the only
+          // on the lhs, otherwise there are actually more locks.
+          if (ct.bool_and().literals().size() != 1) continue;
+          b = ct.bool_and().literals(0);
+        } else {
+          bool found = false;
+          b = NegatedRef(ct.enforcement_literal(0));
+          int i = 0;
+          for (; i < ct.bool_and().literals().size(); ++i) {
+            const int lhs = ct.bool_and().literals(i);
+            if (PositiveRef(lhs) == positive_ref &&
+                num_locks_[RefToIntegerVariable(lhs)] == 1) {
+              found = true;
+              a = NegatedRef(lhs);
+              break;
+            }
+          }
+          inner_work += i + 1;
+          CHECK(found);
+        }
+        CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
+
+        DCHECK(!context->VariableWasRemoved(PositiveRef(a)));
+        DCHECK(!context->VariableWasRemoved(PositiveRef(b)));
+        CannotMove({a, b});
+        // If hint(a) is false we can always set it to hint(b) since this can
+        // only increase its value. If hint(a) is true then hint(b) must be
+        // true as well if the hint is feasible, due to the a => b constraint.
+        // Setting hint(a) to hint(b) is thus always safe. The opposite is
+        // true as well.
+        crush.MakeLiteralsEqual(a, b);
+        if (context->StoreBooleanEqualityRelation(a, b).unsat()) return kUnsat;
+        context->UpdateRuleStats("dual: enforced equivalence");
+      }
     }
+    timer.Advance(num_locks_.size(), inner_work);
   }
 
   if (num_bool_in_near_duplicate_ct) {
@@ -1269,26 +1402,30 @@ void ScanModelForDominanceDetection(PresolveContext& context,
   const int num_vars = cp_model.variables().size();
   var_domination->Reset(num_vars);
 
-  for (int var = 0; var < num_vars; ++var) {
-    // Ignore variables that have been substituted already or are unused.
-    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
-        context.VariableIsNotUsedAnymore(var)) {
-      var_domination->CanOnlyDominateEachOther({var});
-      continue;
-    }
-
-    // Deal with the affine relations that are not part of the proto.
-    // Those only need to be processed in the first pass.
-    const AffineRelation::Relation r = context.GetAffineRelation(var);
-    if (r.representative != var) {
-      if (r.coeff == 1) {
-        var_domination->CanOnlyDominateEachOther(
-            {NegatedRef(var), r.representative});
-      } else if (r.coeff == -1) {
-        var_domination->CanOnlyDominateEachOther({var, r.representative});
-      } else {
+  {
+    DeterministicTimer<{.scale = 2.8e-08, .offset = 1.4e-06}> timer(
+        context.time_limit(), num_vars);
+    for (int var = 0; var < num_vars; ++var) {
+      // Ignore variables that have been substituted already or are unused.
+      if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
+          context.VariableIsNotUsedAnymore(var)) {
         var_domination->CanOnlyDominateEachOther({var});
-        var_domination->CanOnlyDominateEachOther({r.representative});
+        continue;
+      }
+
+      // Deal with the affine relations that are not part of the proto.
+      // Those only need to be processed in the first pass.
+      const AffineRelation::Relation r = context.GetAffineRelation(var);
+      if (r.representative != var) {
+        if (r.coeff == 1) {
+          var_domination->CanOnlyDominateEachOther(
+              {NegatedRef(var), r.representative});
+        } else if (r.coeff == -1) {
+          var_domination->CanOnlyDominateEachOther({var, r.representative});
+        } else {
+          var_domination->CanOnlyDominateEachOther({var});
+          var_domination->CanOnlyDominateEachOther({r.representative});
+        }
       }
     }
   }
@@ -1297,52 +1434,62 @@ void ScanModelForDominanceDetection(PresolveContext& context,
   const int num_constraints = cp_model.constraints_size();
   std::vector<int64_t> linear_lb_slack(num_constraints, 0);
   std::vector<int64_t> linear_ub_slack(num_constraints, 0);
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = cp_model.constraints(c);
-    switch (ct.constraint_case()) {
-      case ConstraintProto::kBoolOr:
-        break;
-      case ConstraintProto::kBoolAnd:
-        break;
-      case ConstraintProto::kAtMostOne:
-        break;
-      case ConstraintProto::kExactlyOne:
-        var_domination->ActivityShouldNotChange(ct.exactly_one().literals(),
-                                                /*coeffs=*/{});
-        break;
-      case ConstraintProto::kLinear: {
-        if (ct.linear().domain().size() != 2) {
-          var_domination->ActivityShouldNotChange(ct.linear().vars(),
-                                                  ct.linear().coeffs());
+  {
+    DeterministicTimer2<{
+        .scale1 = 4.1e-08, .scale2 = 4.0e-09, .offset = 1.2e-07}>
+        timer(context.time_limit());
+    int64_t work2 = 0;
+    for (int c = 0; c < num_constraints; ++c) {
+      const ConstraintProto& ct = cp_model.constraints(c);
+      switch (ct.constraint_case()) {
+        case ConstraintProto::kBoolOr:
+          break;
+        case ConstraintProto::kBoolAnd:
+          break;
+        case ConstraintProto::kAtMostOne:
+          break;
+        case ConstraintProto::kExactlyOne:
+          work2 += ct.exactly_one().literals().size();
+          var_domination->ActivityShouldNotChange(ct.exactly_one().literals(),
+                                                  /*coeffs=*/{});
+          break;
+        case ConstraintProto::kLinear: {
+          work2 += ct.linear().vars().size();
+          if (ct.linear().domain().size() != 2) {
+            var_domination->ActivityShouldNotChange(ct.linear().vars(),
+                                                    ct.linear().coeffs());
+            break;
+          }
+          const PresolveContext::LinearStats stats =
+              context.ComputeLinearStats(ct.linear());
+          const int64_t lb = ct.linear().domain(0);
+          const int64_t ub = ct.linear().domain(1);
+          const bool has_lb = lb > stats.min_activity;
+          const bool has_ub = ub < stats.max_activity;
+          if (!has_lb && !has_ub) break;
+          const int64_t lb_slack = has_lb ? lb - stats.min_activity : 0;
+          const int64_t ub_slack = has_ub ? stats.max_activity - ub : 0;
+          if (has_lb && has_ub && ct.enforcement_literal().empty() &&
+              stats.max_coeff_magnitude <= std::min(lb_slack, ub_slack)) {
+            var_domination->ActivityShouldNotChange(ct.linear().vars(),
+                                                    ct.linear().coeffs());
+            break;
+          }
+          linear_lb_slack[c] = lb_slack;
+          linear_ub_slack[c] = ub_slack;
           break;
         }
-        const PresolveContext::LinearStats stats =
-            context.ComputeLinearStats(ct.linear());
-        const int64_t lb = ct.linear().domain(0);
-        const int64_t ub = ct.linear().domain(1);
-        const bool has_lb = lb > stats.min_activity;
-        const bool has_ub = ub < stats.max_activity;
-        if (!has_lb && !has_ub) break;
-        const int64_t lb_slack = has_lb ? lb - stats.min_activity : 0;
-        const int64_t ub_slack = has_ub ? stats.max_activity - ub : 0;
-        if (has_lb && has_ub && ct.enforcement_literal().empty() &&
-            stats.max_coeff_magnitude <= std::min(lb_slack, ub_slack)) {
-          var_domination->ActivityShouldNotChange(ct.linear().vars(),
-                                                  ct.linear().coeffs());
+        default:
+          // We cannot infer anything if we don't know the constraint.
+          // TODO(user): Handle enforcement better here.
+          work2 += context.ConstraintToVars(c).size();
+          for (const int var : context.ConstraintToVars(c)) {
+            var_domination->CanOnlyDominateEachOther({var});
+          }
           break;
-        }
-        linear_lb_slack[c] = lb_slack;
-        linear_ub_slack[c] = ub_slack;
-        break;
       }
-      default:
-        // We cannot infer anything if we don't know the constraint.
-        // TODO(user): Handle enforcement better here.
-        for (const int var : context.ConstraintToVars(c)) {
-          var_domination->CanOnlyDominateEachOther({var});
-        }
-        break;
     }
+    timer.Advance(num_constraints, work2);
   }
 
   // The objective is handled like a <= constraint, or an == constraint if
@@ -1380,105 +1527,134 @@ void ScanModelForDominanceDetection(PresolveContext& context,
     }
     return clamped_coeffs;
   };
-  for (int phase = 0; phase < 2; phase++) {
-    for (int c = 0; c < num_constraints; ++c) {
-      const ConstraintProto& ct = cp_model.constraints(c);
-      switch (ct.constraint_case()) {
-        case ConstraintProto::kBoolOr:
-          var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
-                                                    ct.bool_or().literals(),
-                                                    /*coeffs=*/{});
-          break;
-        case ConstraintProto::kBoolAnd:
-          // We process it like n clauses.
-          //
-          // TODO(user): the way we process that is a bit restrictive. By
-          // working on the implication graph we could detect more dominance
-          // relations. Since if a => b we say that a++ can only be paired with
-          // b--, but it could actually be paired with any variables that when
-          // decreased implies b = 0. This is a bit mitigated by the fact that
-          // we regroup when we can such implications into big at-most-ones.
-          tmp.clear();
-          for (const int ref : ct.enforcement_literal()) {
-            tmp.push_back(NegatedRef(ref));
-          }
-          for (const int ref : ct.bool_and().literals()) {
-            tmp.push_back(ref);
-            var_domination->ActivityShouldNotDecrease(/*enforcements=*/{}, tmp,
+  {
+    DeterministicTimer2<{
+        .scale1 = 2.2e-08, .scale2 = 1.4e-08, .offset = 1.0e-07}>
+        timer(context.time_limit());
+    int64_t work2 = 0;
+    for (int phase = 0; phase < 2; phase++) {
+      for (int c = 0; c < num_constraints; ++c) {
+        const ConstraintProto& ct = cp_model.constraints(c);
+        switch (ct.constraint_case()) {
+          case ConstraintProto::kBoolOr:
+            work2 += ct.enforcement_literal().size() +
+                     ct.bool_or().literals().size();
+            var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
+                                                      ct.bool_or().literals(),
                                                       /*coeffs=*/{});
-            tmp.pop_back();
-          }
-          break;
-        case ConstraintProto::kAtMostOne:
-          var_domination->ActivityShouldNotIncrease(ct.enforcement_literal(),
-                                                    ct.at_most_one().literals(),
-                                                    /*coeffs=*/{});
-          break;
-        case ConstraintProto::kLinear: {
-          const int64_t lb_slack = linear_lb_slack[c];
-          const int64_t ub_slack = linear_ub_slack[c];
-          if (lb_slack > 0) {
-            var_domination->ActivityShouldNotDecrease(
-                ct.enforcement_literal(), ct.linear().vars(),
-                get_coeffs(ct.linear(), lb_slack));
-          }
-          if (ub_slack > 0) {
+            break;
+          case ConstraintProto::kBoolAnd:
+            // We process it like n clauses.
+            //
+            // TODO(user): the way we process that is a bit restrictive. By
+            // working on the implication graph we could detect more dominance
+            // relations. Since if a => b we say that a++ can only be paired
+            // with b--, but it could actually be paired with any variables that
+            // when decreased implies b = 0. This is a bit mitigated by the fact
+            // that we regroup when we can such implications into big
+            // at-most-ones.
+            tmp.clear();
+            work2 += ct.enforcement_literal().size() +
+                     ct.bool_and().literals().size();
+            for (const int ref : ct.enforcement_literal()) {
+              tmp.push_back(NegatedRef(ref));
+            }
+            for (const int ref : ct.bool_and().literals()) {
+              tmp.push_back(ref);
+              var_domination->ActivityShouldNotDecrease(
+                  /*enforcements=*/{}, tmp,
+                  /*coeffs=*/{});
+              tmp.pop_back();
+            }
+            break;
+          case ConstraintProto::kAtMostOne:
+            work2 += ct.enforcement_literal().size() +
+                     ct.at_most_one().literals().size();
             var_domination->ActivityShouldNotIncrease(
-                ct.enforcement_literal(), ct.linear().vars(),
-                get_coeffs(ct.linear(), ub_slack));
+                ct.enforcement_literal(), ct.at_most_one().literals(),
+                /*coeffs=*/{});
+            break;
+          case ConstraintProto::kLinear: {
+            const int64_t lb_slack = linear_lb_slack[c];
+            const int64_t ub_slack = linear_ub_slack[c];
+            if (lb_slack > 0) {
+              work2 +=
+                  ct.enforcement_literal().size() + ct.linear().vars().size();
+              var_domination->ActivityShouldNotDecrease(
+                  ct.enforcement_literal(), ct.linear().vars(),
+                  get_coeffs(ct.linear(), lb_slack));
+            }
+            if (ub_slack > 0) {
+              work2 +=
+                  ct.enforcement_literal().size() + ct.linear().vars().size();
+              var_domination->ActivityShouldNotIncrease(
+                  ct.enforcement_literal(), ct.linear().vars(),
+                  get_coeffs(ct.linear(), ub_slack));
+            }
+            if (lb_slack == 0 && ub_slack == 0 &&
+                ct.linear().domain().size() != 2 &&
+                !ct.enforcement_literal().empty()) {
+              work2 += ct.enforcement_literal().size();
+              var_domination->ActivityShouldNotIncrease(
+                  /*enforcements=*/{}, ct.enforcement_literal(),
+                  /*coeffs=*/{});
+            }
+            break;
           }
-          if (lb_slack == 0 && ub_slack == 0 &&
-              ct.linear().domain().size() != 2 &&
-              !ct.enforcement_literal().empty()) {
-            var_domination->ActivityShouldNotIncrease(
-                /*enforcements=*/{}, ct.enforcement_literal(), /*coeffs=*/{});
-          }
-          break;
+          default:
+            break;
         }
-        default:
-          break;
+      }
+
+      // The objective is handled like a <= constraints, or an == constraint if
+      // there is a non-trivial domain.
+      if (cp_model.has_objective()) {
+        const auto [min_activity, max_activity] =
+            context.ComputeMinMaxActivity(cp_model.objective());
+        const auto& domain = cp_model.objective().domain();
+        if (domain.empty() ||
+            (domain.size() == 2 && domain[0] <= min_activity)) {
+          var_domination->ActivityShouldNotIncrease(
+              /*enforcements=*/{}, cp_model.objective().vars(),
+              cp_model.objective().coeffs());
+        }
+      }
+
+      if (phase == 0) {
+        // Early abort if no possible relations can be found.
+        //
+        // TODO(user): We might be able to detect that nothing can be done
+        // earlier during the constraint scanning.
+        if (!var_domination->EndFirstPhase()) {
+          timer.Advance(num_constraints, work2);
+          return;
+        }
+      } else {
+        CHECK_EQ(phase, 1);
+        var_domination->EndSecondPhase();
       }
     }
-
-    // The objective is handled like a <= constraints, or an == constraint if
-    // there is a non-trivial domain.
-    if (cp_model.has_objective()) {
-      const auto [min_activity, max_activity] =
-          context.ComputeMinMaxActivity(cp_model.objective());
-      const auto& domain = cp_model.objective().domain();
-      if (domain.empty() || (domain.size() == 2 && domain[0] <= min_activity)) {
-        var_domination->ActivityShouldNotIncrease(
-            /*enforcements=*/{}, cp_model.objective().vars(),
-            cp_model.objective().coeffs());
-      }
-    }
-
-    if (phase == 0) {
-      // Early abort if no possible relations can be found.
-      //
-      // TODO(user): We might be able to detect that nothing can be done earlier
-      // during the constraint scanning.
-      if (!var_domination->EndFirstPhase()) return;
-    } else {
-      CHECK_EQ(phase, 1);
-      var_domination->EndSecondPhase();
-    }
+    timer.Advance(2 * int64_t{num_constraints}, work2);
   }
 
   // Some statistics.
   int64_t num_unconstrained_refs = 0;
   int64_t num_dominated_refs = 0;
   int64_t num_dominance_relations = 0;
-  for (int var = 0; var < num_vars; ++var) {
-    if (context.IsFixed(var)) continue;
+  {
+    DeterministicTimer<{.scale = 8.7e-09, .offset = 5.1e-07}> timer(
+        context.time_limit(), num_vars);
+    for (int var = 0; var < num_vars; ++var) {
+      if (context.IsFixed(var)) continue;
 
-    for (const int ref : {var, NegatedRef(var)}) {
-      if (var_domination->CanFreelyDecrease(ref)) {
-        num_unconstrained_refs++;
-      } else if (!var_domination->DominatingVariables(ref).empty()) {
-        num_dominated_refs++;
-        num_dominance_relations +=
-            var_domination->DominatingVariables(ref).size();
+      for (const int ref : {var, NegatedRef(var)}) {
+        if (var_domination->CanFreelyDecrease(ref)) {
+          num_unconstrained_refs++;
+        } else if (!var_domination->DominatingVariables(ref).empty()) {
+          num_dominated_refs++;
+          num_dominance_relations +=
+              var_domination->DominatingVariables(ref).size();
+        }
       }
     }
   }
@@ -1496,85 +1672,95 @@ void ScanModelForDualBoundStrengthening(
   const int num_vars = cp_model.variables().size();
   dual_bound_strengthening->Reset(num_vars);
 
-  for (int var = 0; var < num_vars; ++var) {
-    // Ignore variables that have been substituted already or are unused.
-    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
-        context.VariableIsNotUsedAnymore(var)) {
-      dual_bound_strengthening->CannotMove({var});
-      continue;
-    }
+  {
+    DeterministicTimer<{.scale = 2.4e-08, .offset = 3.2e-07}> timer(
+        context.time_limit(), num_vars);
+    for (int var = 0; var < num_vars; ++var) {
+      // Ignore variables that have been substituted already or are unused.
+      if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
+          context.VariableIsNotUsedAnymore(var)) {
+        dual_bound_strengthening->CannotMove({var});
+        continue;
+      }
 
-    // Deal with the affine relations that are not part of the proto.
-    // Those only need to be processed in the first pass.
-    const AffineRelation::Relation r = context.GetAffineRelation(var);
-    if (r.representative != var) {
-      dual_bound_strengthening->CannotMove({var, r.representative});
+      // Deal with the affine relations that are not part of the proto.
+      // Those only need to be processed in the first pass.
+      const AffineRelation::Relation r = context.GetAffineRelation(var);
+      if (r.representative != var) {
+        dual_bound_strengthening->CannotMove({var, r.representative});
+      }
     }
   }
 
   std::vector<int> tmp_refs;
 
   const int num_constraints = cp_model.constraints_size();
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = cp_model.constraints(c);
-    dual_bound_strengthening->CannotIncrease(ct.enforcement_literal(), c);
-    switch (ct.constraint_case()) {
-      case ConstraintProto::kBoolOr:
-        dual_bound_strengthening->CannotDecrease(ct.bool_or().literals(), c);
-        break;
-      case ConstraintProto::kBoolAnd:
-        dual_bound_strengthening->CannotDecrease(ct.bool_and().literals(), c);
-        break;
-      case ConstraintProto::kAtMostOne:
-        dual_bound_strengthening->CannotIncrease(ct.at_most_one().literals(),
-                                                 c);
-        break;
-      case ConstraintProto::kExactlyOne:
-        dual_bound_strengthening->CannotMove(ct.exactly_one().literals(), c);
-        break;
-      case ConstraintProto::kLinear: {
-        // TODO(user): Maybe we should avoid recomputing that here.
-        const auto [min_activity, max_activity] =
-            context.ComputeMinMaxActivity(ct.linear());
-        dual_bound_strengthening->ProcessLinearConstraint(
-            false, context, ct.linear(), min_activity, max_activity, c);
-        break;
-      }
-      case ConstraintProto::kCumulative: {
-        for (const auto& demand : ct.cumulative().demands()) {
-          for (int i = 0; i < demand.vars().size(); ++i) {
-            if (demand.coeffs(i) > 0) {
-              dual_bound_strengthening->CannotIncrease({demand.vars(i)}, c);
-            } else {
-              dual_bound_strengthening->CannotDecrease({demand.vars(i)}, c);
+  {
+    DeterministicTimer<{.scale = 3.1e-08, .offset = 2.8e-07}> timer(
+        context.time_limit());
+    for (int c = 0; c < num_constraints; ++c) {
+      const ConstraintProto& ct = cp_model.constraints(c);
+      dual_bound_strengthening->CannotIncrease(ct.enforcement_literal(), c);
+      switch (ct.constraint_case()) {
+        case ConstraintProto::kBoolOr:
+          dual_bound_strengthening->CannotDecrease(ct.bool_or().literals(), c);
+          break;
+        case ConstraintProto::kBoolAnd:
+          dual_bound_strengthening->CannotDecrease(ct.bool_and().literals(), c);
+          break;
+        case ConstraintProto::kAtMostOne:
+          dual_bound_strengthening->CannotIncrease(ct.at_most_one().literals(),
+                                                   c);
+          break;
+        case ConstraintProto::kExactlyOne:
+          dual_bound_strengthening->CannotMove(ct.exactly_one().literals(), c);
+          break;
+        case ConstraintProto::kLinear: {
+          // TODO(user): Maybe we should avoid recomputing that here.
+          const auto [min_activity, max_activity] =
+              context.ComputeMinMaxActivity(ct.linear());
+          dual_bound_strengthening->ProcessLinearConstraint(
+              false, context, ct.linear(), min_activity, max_activity, c);
+          break;
+        }
+        case ConstraintProto::kCumulative: {
+          for (const auto& demand : ct.cumulative().demands()) {
+            for (int i = 0; i < demand.vars().size(); ++i) {
+              if (demand.coeffs(i) > 0) {
+                dual_bound_strengthening->CannotIncrease({demand.vars(i)}, c);
+              } else {
+                dual_bound_strengthening->CannotDecrease({demand.vars(i)}, c);
+              }
             }
           }
+          for (int i = 0; i < ct.cumulative().capacity().vars().size(); ++i) {
+            if (ct.cumulative().capacity().coeffs(i) > 0) {
+              dual_bound_strengthening->CannotDecrease(
+                  {ct.cumulative().capacity().vars(i)}, c);
+            } else {
+              dual_bound_strengthening->CannotIncrease(
+                  {ct.cumulative().capacity().vars(i)}, c);
+            }
+          }
+          break;
         }
-        for (int i = 0; i < ct.cumulative().capacity().vars().size(); ++i) {
-          if (ct.cumulative().capacity().coeffs(i) > 0) {
-            dual_bound_strengthening->CannotDecrease(
-                {ct.cumulative().capacity().vars(i)}, c);
+        default:
+          // We cannot infer anything if we don't know the constraint.
+          if (ct.enforcement_literal().empty()) {
+            // Faster code path, but equivalent to the one below.
+            dual_bound_strengthening->CannotMove(context.ConstraintToVars(c),
+                                                 c);
           } else {
-            dual_bound_strengthening->CannotIncrease(
-                {ct.cumulative().capacity().vars(i)}, c);
+            tmp_refs.clear();
+            GetReferencesUsedByConstraint(ct, &tmp_refs, &tmp_refs);
+            for (const int ref : tmp_refs) {
+              dual_bound_strengthening->CannotMove({PositiveRef(ref)}, c);
+            }
           }
-        }
-        break;
+          break;
       }
-      default:
-        // We cannot infer anything if we don't know the constraint.
-        if (ct.enforcement_literal().empty()) {
-          // Faster code path, but equivalent to the one below.
-          dual_bound_strengthening->CannotMove(context.ConstraintToVars(c), c);
-        } else {
-          tmp_refs.clear();
-          GetReferencesUsedByConstraint(ct, &tmp_refs, &tmp_refs);
-          for (const int ref : tmp_refs) {
-            dual_bound_strengthening->CannotMove({PositiveRef(ref)}, c);
-          }
-        }
-        break;
     }
+    timer.Advance(num_constraints);
   }
 
   // The objective is handled like a <= constraints, or an == constraint if
@@ -1583,6 +1769,8 @@ void ScanModelForDualBoundStrengthening(
     if (!context.ObjectiveDomainIsConstraining()) {
       // Fast pass, we just never want to increase the objective.
       // It is okay to decrease it.
+      DeterministicTimer<{.scale = 2.6e-08, .offset = 1.9e-06}> timer(
+          context.time_limit(), context.ObjectiveMap().size());
       for (const auto [proto_var, coeff] : context.ObjectiveMap()) {
         const int ref = coeff > 0 ? proto_var : NegatedRef(proto_var);
         dual_bound_strengthening->CannotIncrease({ref});
@@ -1683,7 +1871,7 @@ FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
   }
   if (!work_to_do) return kOk;
 
-  const int64_t saved_num_operations = context->num_presolve_operations;
+  const int64_t saved_num_operations = context->num_presolve_operations();
 
   // Strengthening via domination. When a variable is dominated by a bunch of
   // others, either we can do (var--, dom++) or if we can't (i.e. all dominated
@@ -1707,288 +1895,316 @@ FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
   const int num_constraints = cp_model.constraints_size();
   CompactVectorVectorBuilder<IntegerVariable, IntegerVariable>
       implications_vec_builder;
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = cp_model.constraints(c);
+  {
+    DeterministicTimer2<{.scale1 = 1.5e-08, .scale2 = 3.8e-07}> timer(
+        context->time_limit());
+    int64_t work2 = 0;
+    for (int c = 0; c < num_constraints; ++c) {
+      const ConstraintProto& ct = cp_model.constraints(c);
 
-    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
+      if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
 
-    if (ct.enforcement_literal().size() != 1) continue;
-    const int a = ct.enforcement_literal(0);
-    if (context->IsFixed(a)) continue;
-    for (const int b : ct.bool_and().literals()) {
-      if (context->IsFixed(b)) continue;
-      implications.insert({a, b});
-      implications.insert({NegatedRef(b), NegatedRef(a)});
-      implications_vec_builder.Add(VarDomination::RefToIntegerVariable(a),
-                                   VarDomination::RefToIntegerVariable(b));
-      implications_vec_builder.Add(
-          VarDomination::RefToIntegerVariable(NegatedRef(b)),
-          VarDomination::RefToIntegerVariable(NegatedRef(a)));
+      if (ct.enforcement_literal().size() != 1) continue;
+      const int a = ct.enforcement_literal(0);
+      if (context->IsFixed(a)) continue;
+      work2 += ct.bool_and().literals().size();
+      for (const int b : ct.bool_and().literals()) {
+        if (context->IsFixed(b)) continue;
+        implications.insert({a, b});
+        implications.insert({NegatedRef(b), NegatedRef(a)});
+        implications_vec_builder.Add(VarDomination::RefToIntegerVariable(a),
+                                     VarDomination::RefToIntegerVariable(b));
+        implications_vec_builder.Add(
+            VarDomination::RefToIntegerVariable(NegatedRef(b)),
+            VarDomination::RefToIntegerVariable(NegatedRef(a)));
+      }
     }
+    timer.Advance(num_constraints, work2);
   }
 
   // Handle first all the implications.
   CompactVectorVector<IntegerVariable, IntegerVariable> implications_vec(
       implications_vec_builder, 2 * num_vars);
   SparseBitset<IntegerVariable> impacted_vars;
-  for (IntegerVariable a_var{0}; a_var < implications_vec.size(); ++a_var) {
-    if (implications_vec[a_var].empty()) continue;
+  {
+    DeterministicTimer<{.scale = 1.9e-08, .offset = 5.3e-06}> timer(
+        context->time_limit());
+    int64_t work2 = 0;
+    for (IntegerVariable a_var{0}; a_var < implications_vec.size(); ++a_var) {
+      if (implications_vec[a_var].empty()) continue;
 
-    const int a = VarDomination::IntegerVariableToRef(a_var);
-    if (context->IsFixed(a)) continue;
+      const int a = VarDomination::IntegerVariableToRef(a_var);
+      if (context->IsFixed(a)) continue;
 
-    impacted_vars.ClearAndResize(IntegerVariable(2 * num_vars));
-    for (const IntegerVariable b_var : implications_vec[a_var]) {
-      const int b = VarDomination::IntegerVariableToRef(b_var);
-      if (context->IsFixed(b)) continue;
-      impacted_vars.Set(b_var);
-    }
+      impacted_vars.ClearAndResize(IntegerVariable(2 * num_vars));
+      work2 += implications_vec[a_var].size();
+      for (const IntegerVariable b_var : implications_vec[a_var]) {
+        const int b = VarDomination::IntegerVariableToRef(b_var);
+        if (context->IsFixed(b)) continue;
+        impacted_vars.Set(b_var);
+      }
 
-    // If (a--, b--) is valid, we can always set a to false. If the hint
-    // value of `a` is 1 then the hint value of `b` should be 1 due to the
-    // a => b constraint. Hence the hint feasibility can always be preserved
-    // (if the hint value of `a` is 0 the hint does not need to be updated).
-    for (const IntegerVariable ivar : var_domination.DominatingVariables(a)) {
-      if (impacted_vars[NegationOf(ivar)]) {
-        context->UpdateRuleStats("domination: in implication");
-        const int ref = VarDomination::IntegerVariableToRef(ivar);
-        crush.UpdateLiteralsWithDominance(a, ref);
-        if (context->SetLiteralToFalse(a).unsat()) return kUnsat;
-        break;
+      // If (a--, b--) is valid, we can always set a to false. If the hint
+      // value of `a` is 1 then the hint value of `b` should be 1 due to the
+      // a => b constraint. Hence the hint feasibility can always be preserved
+      // (if the hint value of `a` is 0 the hint does not need to be updated).
+      for (const IntegerVariable ivar : var_domination.DominatingVariables(a)) {
+        if (impacted_vars[NegationOf(ivar)]) {
+          context->UpdateRuleStats("domination: in implication");
+          const int ref = VarDomination::IntegerVariableToRef(ivar);
+          crush.UpdateLiteralsWithDominance(a, ref);
+          if (context->SetLiteralToFalse(a).unsat()) return kUnsat;
+          break;
+        }
       }
     }
+    timer.Advance(work2);
   }
 
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = cp_model.constraints(c);
-    if (!ct.enforcement_literal().empty()) continue;
+  {
+    DeterministicTimer2<{
+        .scale1 = 1.9e-08, .scale2 = 2.1e-08, .offset = 1.8e-06}>
+        timer(context->time_limit());
+    int64_t work2 = 0;
+    for (int c = 0; c < num_constraints; ++c) {
+      const ConstraintProto& ct = cp_model.constraints(c);
+      if (!ct.enforcement_literal().empty()) continue;
 
-    // TODO(user): More generally, combine with probing? if a dominated
-    // variable implies one of its dominant to zero, then it can be set to
-    // zero. It seems adding the implication below should have the same
-    // effect? but currently it requires a lot of presolve rounds.
-    const auto add_implications = [&implications](absl::Span<const int> lits) {
-      if (lits.size() > 3) return;
-      for (int i = 0; i < lits.size(); ++i) {
-        for (int j = 0; j < lits.size(); ++j) {
-          if (i == j) continue;
-          implications.insert({lits[i], NegatedRef(lits[j])});
+      // TODO(user): More generally, combine with probing? if a dominated
+      // variable implies one of its dominant to zero, then it can be set to
+      // zero. It seems adding the implication below should have the same
+      // effect? but currently it requires a lot of presolve rounds.
+      const auto add_implications =
+          [&implications](absl::Span<const int> lits) {
+            if (lits.size() > 3) return;
+            for (int i = 0; i < lits.size(); ++i) {
+              for (int j = 0; j < lits.size(); ++j) {
+                if (i == j) continue;
+                implications.insert({lits[i], NegatedRef(lits[j])});
+              }
+            }
+          };
+      if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+        add_implications(ct.at_most_one().literals());
+        if (ProcessAtMostOne(ct.at_most_one().literals(),
+                             "domination: in at most one", var_domination,
+                             &in_constraints, context)
+                .unsat()) {
+          return kUnsat;
         }
-      }
-    };
-    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-      add_implications(ct.at_most_one().literals());
-      if (ProcessAtMostOne(ct.at_most_one().literals(),
-                           "domination: in at most one", var_domination,
-                           &in_constraints, context)
-              .unsat()) {
-        return kUnsat;
-      }
-    } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
-      add_implications(ct.exactly_one().literals());
-      if (ProcessAtMostOne(ct.exactly_one().literals(),
-                           "domination: in exactly one", var_domination,
-                           &in_constraints, context)
-              .unsat()) {
-        return kUnsat;
-      }
-    }
-
-    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-
-    int num_dominated = 0;
-    for (const int var : context->ConstraintToVars(c)) {
-      if (!var_domination.DominatingVariables(var).empty()) ++num_dominated;
-      if (!var_domination.DominatingVariables(NegatedRef(var)).empty()) {
-        ++num_dominated;
-      }
-    }
-    if (num_dominated == 0) continue;
-
-    // Precompute.
-    int64_t min_activity = 0;
-    int64_t max_activity = 0;
-    const int num_terms = ct.linear().vars_size();
-    for (int i = 0; i < num_terms; ++i) {
-      int ref = ct.linear().vars(i);
-      int64_t coeff = ct.linear().coeffs(i);
-      if (coeff < 0) {
-        ref = NegatedRef(ref);
-        coeff = -coeff;
-      }
-      const int64_t min_term = coeff * context->MinOf(ref);
-      const int64_t max_term = coeff * context->MaxOf(ref);
-      min_activity += min_term;
-      max_activity += max_term;
-      const IntegerVariable ivar = VarDomination::RefToIntegerVariable(ref);
-      var_lb_to_ub_diff[ivar] = max_term - min_term;
-      var_lb_to_ub_diff[NegationOf(ivar)] = min_term - max_term;
-    }
-    const int64_t rhs_lb = ct.linear().domain(0);
-    const int64_t rhs_ub = ct.linear().domain(ct.linear().domain_size() - 1);
-    if (max_activity < rhs_lb || min_activity > rhs_ub) {
-      return context->NotifyUnsat("linear equation unsat.");
-    }
-
-    // Returns the change magnitude in min-activity (resp. max-activity) if all
-    // the given variables are fixed to their upper bound.
-    const auto get_delta = [context, &var_lb_to_ub_diff](
-                               bool use_min_side,
-                               absl::Span<const IntegerVariable> vars) {
-      int64_t delta = 0;
-      for (const IntegerVariable var : vars) {
-        // Tricky: For now we skip complex domains as we are not sure they
-        // can be moved correctly.
-        if (DomainOfRef(*context, VarDomination::IntegerVariableToRef(var))
-                .NumIntervals() != 1) {
-          continue;
-        }
-        if (use_min_side) {
-          delta += std::max(int64_t{0}, var_lb_to_ub_diff[var]);
-        } else {
-          delta += std::max(int64_t{0}, -var_lb_to_ub_diff[var]);
-        }
-      }
-      return delta;
-    };
-
-    // Look for dominated var.
-    for (int i = 0; i < num_terms; ++i) {
-      const int ref = ct.linear().vars(i);
-      const int64_t coeff = ct.linear().coeffs(i);
-      const int64_t coeff_magnitude = std::abs(coeff);
-      if (context->IsFixed(ref)) continue;
-
-      // For strengthening using domination, just consider >= constraints.
-      const bool domain_is_simple = ct.linear().domain_size() == 2;
-      const bool only_lb = max_activity <= rhs_ub && domain_is_simple;
-      const bool only_ub = min_activity >= rhs_lb && domain_is_simple;
-      if (only_lb || only_ub) {
-        // Always transform to coeff_magnitude * current_ref + ... >=
-        const int current_ref = (coeff > 0) == only_lb ? ref : NegatedRef(ref);
-        const int64_t shifted_rhs =
-            only_lb ? rhs_lb - min_activity : max_activity - rhs_ub;
-        const IntegerVariable current_ivar =
-            VarDomination::RefToIntegerVariable(current_ref);
-        can_freely_decrease_count[NegationOf(current_ivar)]++;
-
-        const int64_t delta = get_delta(
-            only_lb, var_domination.DominatingVariables(current_ivar));
-        if (delta > 0) {
-          // When all dominated vars are at their upper bound, we miss 'slack'
-          // to make the constraint trivially satisfiable.
-          const int64_t slack = shifted_rhs - delta;
-          const int64_t current_lb = context->MinOf(current_ref);
-
-          // Any increase such that coeff * delta >= slack makes the constraint
-          // trivial.
-          //
-          // NOTE(user): It looks like even if any of the upper bounds of the
-          // dominating vars decrease, this should still be valid. Here we only
-          // decrease such a bound due to a dominance relation, so the slack
-          // when all dominating variables are at their bounds should not really
-          // decrease.
-          const int64_t min_delta =
-              slack <= 0 ? 0 : MathUtil::CeilOfRatio(slack, coeff_magnitude);
-          can_freely_decrease_until[current_ivar] = std::max(
-              can_freely_decrease_until[current_ivar], current_lb + min_delta);
-          can_freely_decrease_count[current_ivar]++;
+      } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+        add_implications(ct.exactly_one().literals());
+        if (ProcessAtMostOne(ct.exactly_one().literals(),
+                             "domination: in exactly one", var_domination,
+                             &in_constraints, context)
+                .unsat()) {
+          return kUnsat;
         }
       }
 
-      for (const int current_ref : {ref, NegatedRef(ref)}) {
-        const absl::Span<const IntegerVariable> dominated_by =
-            var_domination.DominatingVariables(current_ref);
-        if (dominated_by.empty()) continue;
+      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
 
-        const bool ub_side = (coeff > 0) == (current_ref == ref);
-        if (ub_side) {
-          if (max_activity <= rhs_ub) continue;
-        } else {
-          if (min_activity >= rhs_lb) continue;
+      int num_dominated = 0;
+      work2 += context->ConstraintToVars(c).size();
+      for (const int var : context->ConstraintToVars(c)) {
+        if (!var_domination.DominatingVariables(var).empty()) ++num_dominated;
+        if (!var_domination.DominatingVariables(NegatedRef(var)).empty()) {
+          ++num_dominated;
         }
-        const int64_t slack =
-            ub_side ? rhs_ub - min_activity : max_activity - rhs_lb;
+      }
+      if (num_dominated == 0) continue;
 
-        // Compute the delta in min-activity if all dominating var moves to
-        // their other bounds.
-        const int64_t delta = get_delta(ub_side, dominated_by);
-        const int64_t lb = context->MinOf(current_ref);
-        if (delta + coeff_magnitude > slack) {
-          context->UpdateRuleStats("domination: fixed to lb.");
-          const Domain reduced_domain = Domain(lb);
-          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
-                                          dominated_by);
-          if (context->IntersectDomainWith(current_ref, reduced_domain)
-                  .unsat()) {
-            return kUnsat;
+      // Precompute.
+      int64_t min_activity = 0;
+      int64_t max_activity = 0;
+      const int num_terms = ct.linear().vars_size();
+      work2 += num_terms;
+      for (int i = 0; i < num_terms; ++i) {
+        int ref = ct.linear().vars(i);
+        int64_t coeff = ct.linear().coeffs(i);
+        if (coeff < 0) {
+          ref = NegatedRef(ref);
+          coeff = -coeff;
+        }
+        const int64_t min_term = coeff * context->MinOf(ref);
+        const int64_t max_term = coeff * context->MaxOf(ref);
+        min_activity += min_term;
+        max_activity += max_term;
+        const IntegerVariable ivar = VarDomination::RefToIntegerVariable(ref);
+        var_lb_to_ub_diff[ivar] = max_term - min_term;
+        var_lb_to_ub_diff[NegationOf(ivar)] = min_term - max_term;
+      }
+      const int64_t rhs_lb = ct.linear().domain(0);
+      const int64_t rhs_ub = ct.linear().domain(ct.linear().domain_size() - 1);
+      if (max_activity < rhs_lb || min_activity > rhs_ub) {
+        return context->NotifyUnsat("linear equation unsat.");
+      }
+
+      // Returns the change magnitude in min-activity (resp. max-activity) if
+      // all the given variables are fixed to their upper bound.
+      const auto get_delta = [context, &var_lb_to_ub_diff](
+                                 bool use_min_side,
+                                 absl::Span<const IntegerVariable> vars) {
+        DeterministicTimer<{.scale = 1.4e-08, .offset = 1.1e-08}> delta_timer(
+            context->time_limit(), vars.size());
+        int64_t delta = 0;
+        for (const IntegerVariable var : vars) {
+          // Tricky: For now we skip complex domains as we are not sure they
+          // can be moved correctly.
+          if (DomainOfRef(*context, VarDomination::IntegerVariableToRef(var))
+                  .NumIntervals() != 1) {
+            continue;
           }
+          if (use_min_side) {
+            delta += std::max(int64_t{0}, var_lb_to_ub_diff[var]);
+          } else {
+            delta += std::max(int64_t{0}, -var_lb_to_ub_diff[var]);
+          }
+        }
+        return delta;
+      };
 
-          // We need to update the precomputed quantities.
-          const IntegerVariable current_var =
+      // Look for dominated var.
+      for (int i = 0; i < num_terms; ++i) {
+        const int ref = ct.linear().vars(i);
+        const int64_t coeff = ct.linear().coeffs(i);
+        const int64_t coeff_magnitude = std::abs(coeff);
+        if (context->IsFixed(ref)) continue;
+
+        // For strengthening using domination, just consider >= constraints.
+        const bool domain_is_simple = ct.linear().domain_size() == 2;
+        const bool only_lb = max_activity <= rhs_ub && domain_is_simple;
+        const bool only_ub = min_activity >= rhs_lb && domain_is_simple;
+        if (only_lb || only_ub) {
+          // Always transform to coeff_magnitude * current_ref + ... >=
+          const int current_ref =
+              (coeff > 0) == only_lb ? ref : NegatedRef(ref);
+          const int64_t shifted_rhs =
+              only_lb ? rhs_lb - min_activity : max_activity - rhs_ub;
+          const IntegerVariable current_ivar =
               VarDomination::RefToIntegerVariable(current_ref);
-          if (ub_side) {
-            CHECK_GE(var_lb_to_ub_diff[current_var], 0);
-            max_activity -= var_lb_to_ub_diff[current_var];
-          } else {
-            CHECK_LE(var_lb_to_ub_diff[current_var], 0);
-            min_activity -= var_lb_to_ub_diff[current_var];
-          }
-          var_lb_to_ub_diff[current_var] = 0;
-          var_lb_to_ub_diff[NegationOf(current_var)] = 0;
+          can_freely_decrease_count[NegationOf(current_ivar)]++;
 
-          continue;
+          const int64_t delta = get_delta(
+              only_lb, var_domination.DominatingVariables(current_ivar));
+          if (delta > 0) {
+            // When all dominated vars are at their upper bound, we miss 'slack'
+            // to make the constraint trivially satisfiable.
+            const int64_t slack = shifted_rhs - delta;
+            const int64_t current_lb = context->MinOf(current_ref);
+
+            // Any increase such that coeff * delta >= slack makes the
+            // constraint trivial.
+            //
+            // NOTE(user): It looks like even if any of the upper bounds of the
+            // dominating vars decrease, this should still be valid. Here we
+            // only decrease such a bound due to a dominance relation, so the
+            // slack when all dominating variables are at their bounds should
+            // not really decrease.
+            const int64_t min_delta =
+                slack <= 0 ? 0 : MathUtil::CeilOfRatio(slack, coeff_magnitude);
+            can_freely_decrease_until[current_ivar] =
+                std::max(can_freely_decrease_until[current_ivar],
+                         current_lb + min_delta);
+            can_freely_decrease_count[current_ivar]++;
+          }
         }
 
-        const IntegerValue diff = FloorRatio(IntegerValue(slack - delta),
-                                             IntegerValue(coeff_magnitude));
-        int64_t new_ub = lb + diff.value();
-        if (new_ub < context->MaxOf(current_ref)) {
-          // Tricky: If there are holes, we can't just reduce the domain to
-          // new_ub if it is not a valid value, so we need to compute the
-          // Min() of the intersection.
-          new_ub = DomainOfRef(*context, current_ref).ValueAtOrAfter(new_ub);
-        }
-        if (new_ub < context->MaxOf(current_ref)) {
-          context->UpdateRuleStats("domination: reduced ub.");
-          const Domain reduced_domain = Domain(lb, new_ub);
-          MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
-                                          dominated_by);
-          if (context->IntersectDomainWith(current_ref, reduced_domain)
-                  .unsat()) {
-            return kUnsat;
+        for (const int current_ref : {ref, NegatedRef(ref)}) {
+          const absl::Span<const IntegerVariable> dominated_by =
+              var_domination.DominatingVariables(current_ref);
+          if (dominated_by.empty()) continue;
+
+          const bool ub_side = (coeff > 0) == (current_ref == ref);
+          if (ub_side) {
+            if (max_activity <= rhs_ub) continue;
+          } else {
+            if (min_activity >= rhs_lb) continue;
+          }
+          const int64_t slack =
+              ub_side ? rhs_ub - min_activity : max_activity - rhs_lb;
+
+          // Compute the delta in min-activity if all dominating var moves to
+          // their other bounds.
+          const int64_t delta = get_delta(ub_side, dominated_by);
+          const int64_t lb = context->MinOf(current_ref);
+          if (delta + coeff_magnitude > slack) {
+            context->UpdateRuleStats("domination: fixed to lb.");
+            const Domain reduced_domain = Domain(lb);
+            MaybeUpdateRefHintFromDominance(*context, current_ref,
+                                            reduced_domain, dominated_by);
+            if (context->IntersectDomainWith(current_ref, reduced_domain)
+                    .unsat()) {
+              return kUnsat;
+            }
+
+            // We need to update the precomputed quantities.
+            const IntegerVariable current_var =
+                VarDomination::RefToIntegerVariable(current_ref);
+            if (ub_side) {
+              CHECK_GE(var_lb_to_ub_diff[current_var], 0);
+              max_activity -= var_lb_to_ub_diff[current_var];
+            } else {
+              CHECK_LE(var_lb_to_ub_diff[current_var], 0);
+              min_activity -= var_lb_to_ub_diff[current_var];
+            }
+            var_lb_to_ub_diff[current_var] = 0;
+            var_lb_to_ub_diff[NegationOf(current_var)] = 0;
+
+            continue;
           }
 
-          // We need to update the precomputed quantities.
-          const IntegerVariable current_var =
-              VarDomination::RefToIntegerVariable(current_ref);
-          if (ub_side) {
-            CHECK_GE(var_lb_to_ub_diff[current_var], 0);
-            max_activity -= var_lb_to_ub_diff[current_var];
-          } else {
-            CHECK_LE(var_lb_to_ub_diff[current_var], 0);
-            min_activity -= var_lb_to_ub_diff[current_var];
+          const IntegerValue diff = FloorRatio(IntegerValue(slack - delta),
+                                               IntegerValue(coeff_magnitude));
+          int64_t new_ub = lb + diff.value();
+          if (new_ub < context->MaxOf(current_ref)) {
+            // Tricky: If there are holes, we can't just reduce the domain to
+            // new_ub if it is not a valid value, so we need to compute the
+            // Min() of the intersection.
+            new_ub = DomainOfRef(*context, current_ref).ValueAtOrAfter(new_ub);
           }
-          const int64_t new_diff = std::abs(coeff_magnitude * (new_ub - lb));
-          if (ub_side) {
-            var_lb_to_ub_diff[current_var] = new_diff;
-            var_lb_to_ub_diff[NegationOf(current_var)] = -new_diff;
-            max_activity += new_diff;
-          } else {
-            var_lb_to_ub_diff[current_var] = -new_diff;
-            var_lb_to_ub_diff[NegationOf(current_var)] = +new_diff;
-            min_activity -= new_diff;
+          if (new_ub < context->MaxOf(current_ref)) {
+            context->UpdateRuleStats("domination: reduced ub.");
+            const Domain reduced_domain = Domain(lb, new_ub);
+            MaybeUpdateRefHintFromDominance(*context, current_ref,
+                                            reduced_domain, dominated_by);
+            if (context->IntersectDomainWith(current_ref, reduced_domain)
+                    .unsat()) {
+              return kUnsat;
+            }
+
+            // We need to update the precomputed quantities.
+            const IntegerVariable current_var =
+                VarDomination::RefToIntegerVariable(current_ref);
+            if (ub_side) {
+              CHECK_GE(var_lb_to_ub_diff[current_var], 0);
+              max_activity -= var_lb_to_ub_diff[current_var];
+            } else {
+              CHECK_LE(var_lb_to_ub_diff[current_var], 0);
+              min_activity -= var_lb_to_ub_diff[current_var];
+            }
+            const int64_t new_diff = std::abs(coeff_magnitude * (new_ub - lb));
+            if (ub_side) {
+              var_lb_to_ub_diff[current_var] = new_diff;
+              var_lb_to_ub_diff[NegationOf(current_var)] = -new_diff;
+              max_activity += new_diff;
+            } else {
+              var_lb_to_ub_diff[current_var] = -new_diff;
+              var_lb_to_ub_diff[NegationOf(current_var)] = +new_diff;
+              min_activity -= new_diff;
+            }
           }
         }
       }
-    }
 
-    // Restore.
-    for (const int ref : ct.linear().vars()) {
-      const IntegerVariable ivar = VarDomination::RefToIntegerVariable(ref);
-      var_lb_to_ub_diff[ivar] = 0;
-      var_lb_to_ub_diff[NegationOf(ivar)] = 0;
+      // Restore.
+      for (const int ref : ct.linear().vars()) {
+        const IntegerVariable ivar = VarDomination::RefToIntegerVariable(ref);
+        var_lb_to_ub_diff[ivar] = 0;
+        var_lb_to_ub_diff[NegationOf(ivar)] = 0;
+      }
     }
+    timer.Advance(num_constraints, work2);
   }
 
   // For any dominance relation still left (i.e. between non-fixed vars), if
@@ -2008,105 +2224,113 @@ FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
   int num_added = 0;
   util_intops::StrongVector<IntegerVariable, bool> increase_is_forbidden(
       2 * num_vars, false);
-  for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
-    if (context->IsFixed(positive_ref)) continue;
-    if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
-    if (context->VariableWasRemoved(positive_ref)) continue;
+  {
+    DeterministicTimer<{.scale = 2.9e-07, .offset = 5.0e-07}> timer(
+        context->time_limit());
+    int64_t work3 = 0;
+    for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
+      if (context->IsFixed(positive_ref)) continue;
+      if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
+      if (context->VariableWasRemoved(positive_ref)) continue;
 
-    // Increase the count for variable in the objective to account for the
-    // kObjectiveConstraint in their VarToConstraints() list.
-    if (!context->ObjectiveDomainIsConstraining()) {
-      const int64_t obj_coeff = context->ObjectiveCoeff(positive_ref);
-      if (obj_coeff > 0) {
-        can_freely_decrease_count[VarDomination::RefToIntegerVariable(
-            positive_ref)]++;
-      } else if (obj_coeff < 0) {
-        can_freely_decrease_count[NegationOf(
-            VarDomination::RefToIntegerVariable(positive_ref))]++;
-      }
-    }
-
-    for (const int ref : {positive_ref, NegatedRef(positive_ref)}) {
-      const IntegerVariable var = VarDomination::RefToIntegerVariable(ref);
-      if (increase_is_forbidden[NegationOf(var)]) continue;
-      if (can_freely_decrease_count[var] ==
-          context->VarToConstraints(positive_ref).size()) {
-        // We need to account for domains with holes, hence the
-        // ValueAtOrAfter().
-        int64_t lb = can_freely_decrease_until[var];
-        lb = DomainOfRef(*context, ref).ValueAtOrAfter(lb);
-        if (lb < context->MaxOf(ref)) {
-          // We have a candidate, however, we need to make sure the dominating
-          // variable upper bound didn't change.
-          //
-          // TODO(user): It looks like testing this is not really necessary.
-          // The reductions done by this class seem to be order-independent.
-          bool ok = true;
-          const absl::Span<const IntegerVariable> dominating_vars =
-              var_domination.DominatingVariables(var);
-          for (const IntegerVariable dom : dominating_vars) {
-            // Note that we assumed that a fixed point was reached before this
-            // is called, so modified_domains should have been empty as we
-            // entered this function. If not, the code is still correct, but we
-            // might miss some reduction, they will still likely be done later
-            // though.
-            if (increase_is_forbidden[dom] ||
-                context->modified_domains[PositiveRef(
-                    VarDomination::IntegerVariableToRef(dom))]) {
-              ok = false;
-              break;
-            }
-          }
-          if (increase_is_forbidden[NegationOf(var)]) {
-            ok = false;
-          }
-          if (ok) {
-            // TODO(user): Is this needed?
-            increase_is_forbidden[var] = true;
-            context->UpdateRuleStats(
-                "domination: dual strengthening using dominance");
-            const Domain reduced_domain = Domain(context->MinOf(ref), lb);
-            MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
-                                            dominating_vars);
-            if (context->IntersectDomainWith(ref, reduced_domain).unsat()) {
-              return kUnsat;
-            }
-
-            // The rest of the loop only cares about Booleans.
-            // And if this was boolean, we would have fixed it.
-            // If it became Boolean, we wait for the next call.
-            // TODO(user): maybe the last point can be improved.
-            continue;
-          }
+      // Increase the count for variable in the objective to account for the
+      // kObjectiveConstraint in their VarToConstraints() list.
+      if (!context->ObjectiveDomainIsConstraining()) {
+        const int64_t obj_coeff = context->ObjectiveCoeff(positive_ref);
+        if (obj_coeff > 0) {
+          can_freely_decrease_count[VarDomination::RefToIntegerVariable(
+              positive_ref)]++;
+        } else if (obj_coeff < 0) {
+          can_freely_decrease_count[NegationOf(
+              VarDomination::RefToIntegerVariable(positive_ref))]++;
         }
       }
 
-      if (!context->CanBeUsedAsLiteral(positive_ref)) continue;
-      for (const IntegerVariable dom :
-           var_domination.DominatingVariables(ref)) {
-        if (increase_is_forbidden[dom]) continue;
-        const int dom_ref = VarDomination::IntegerVariableToRef(dom);
-        if (context->IsFixed(dom_ref)) continue;
-        if (context->VariableIsNotUsedAnymore(dom_ref)) continue;
-        if (context->VariableWasRemoved(PositiveRef(dom_ref))) continue;
-        if (!context->CanBeUsedAsLiteral(dom_ref)) continue;
-        if (implications.contains({ref, dom_ref})) continue;
+      for (const int ref : {positive_ref, NegatedRef(positive_ref)}) {
+        const IntegerVariable var = VarDomination::RefToIntegerVariable(ref);
+        if (increase_is_forbidden[NegationOf(var)]) continue;
+        if (can_freely_decrease_count[var] ==
+            context->VarToConstraints(positive_ref).size()) {
+          // We need to account for domains with holes, hence the
+          // ValueAtOrAfter().
+          int64_t lb = can_freely_decrease_until[var];
+          lb = DomainOfRef(*context, ref).ValueAtOrAfter(lb);
+          if (lb < context->MaxOf(ref)) {
+            // We have a candidate, however, we need to make sure the dominating
+            // variable upper bound didn't change.
+            //
+            // TODO(user): It looks like testing this is not really necessary.
+            // The reductions done by this class seem to be order-independent.
+            bool ok = true;
+            const absl::Span<const IntegerVariable> dominating_vars =
+                var_domination.DominatingVariables(var);
+            for (const IntegerVariable dom : dominating_vars) {
+              // Note that we assumed that a fixed point was reached before this
+              // is called, so modified_domains should have been empty as we
+              // entered this function. If not, the code is still correct, but
+              // we might miss some reduction, they will still likely be done
+              // later though.
+              if (increase_is_forbidden[dom] ||
+                  context->DomainWasModified(
+                      PositiveRef(VarDomination::IntegerVariableToRef(dom)))) {
+                ok = false;
+                break;
+              }
+            }
+            if (increase_is_forbidden[NegationOf(var)]) {
+              ok = false;
+            }
+            if (ok) {
+              // TODO(user): Is this needed?
+              increase_is_forbidden[var] = true;
+              context->UpdateRuleStats(
+                  "domination: dual strengthening using dominance");
+              const Domain reduced_domain = Domain(context->MinOf(ref), lb);
+              MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
+                                              dominating_vars);
+              if (context->IntersectDomainWith(ref, reduced_domain).unsat()) {
+                return kUnsat;
+              }
 
-        ++num_added;
-        context->AddImplication(ref, dom_ref);
-        // The newly added implication can break the hint only if the hint value
-        // of `ref` is 1 and the hint value of `dom_ref` is 0. In this case the
-        // call below fixes it by negating both values. Otherwise it does
-        // nothing and thus preserves its feasibility.
-        crush.UpdateLiteralsWithDominance(ref, dom_ref);
-        implications.insert({ref, dom_ref});
-        implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
+              // The rest of the loop only cares about Booleans.
+              // And if this was boolean, we would have fixed it.
+              // If it became Boolean, we wait for the next call.
+              // TODO(user): maybe the last point can be improved.
+              continue;
+            }
+          }
+        }
 
-        // dom-- or var++ are now forbidden.
-        increase_is_forbidden[var] = true;
-        increase_is_forbidden[NegationOf(dom)] = true;
+        if (!context->CanBeUsedAsLiteral(positive_ref)) continue;
+        const absl::Span<const IntegerVariable> dominating_vars =
+            var_domination.DominatingVariables(ref);
+        work3 += dominating_vars.size();
+        for (const IntegerVariable dom : dominating_vars) {
+          if (increase_is_forbidden[dom]) continue;
+          const int dom_ref = VarDomination::IntegerVariableToRef(dom);
+          if (context->IsFixed(dom_ref)) continue;
+          if (context->VariableIsNotUsedAnymore(dom_ref)) continue;
+          if (context->VariableWasRemoved(PositiveRef(dom_ref))) continue;
+          if (!context->CanBeUsedAsLiteral(dom_ref)) continue;
+          if (implications.contains({ref, dom_ref})) continue;
+
+          ++num_added;
+          context->AddImplication(ref, dom_ref);
+          // The newly added implication can break the hint only if the hint
+          // value of `ref` is 1 and the hint value of `dom_ref` is 0. In this
+          // case the call below fixes it by negating both values. Otherwise it
+          // does nothing and thus preserves its feasibility.
+          crush.UpdateLiteralsWithDominance(ref, dom_ref);
+          implications.insert({ref, dom_ref});
+          implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
+
+          // dom-- or var++ are now forbidden.
+          increase_is_forbidden[var] = true;
+          increase_is_forbidden[NegationOf(dom)] = true;
+        }
       }
     }
+    timer.Advance(work3);
   }
 
   if (num_added > 0) {
@@ -2115,7 +2339,7 @@ FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
   }
 
   // TODO(user): We should probably be able to do something with this.
-  if (saved_num_operations == context->num_presolve_operations) {
+  if (saved_num_operations == context->num_presolve_operations()) {
     context->UpdateRuleStats("TODO domination: unexploited dominations");
   }
 

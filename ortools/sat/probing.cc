@@ -14,6 +14,7 @@
 #include "ortools/sat/probing.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -27,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
@@ -46,6 +48,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -299,39 +302,43 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (!implied_bounds_->ProcessIntegerTrail(decision)) return false;
     product_detector_->ProcessTrailAtLevelOne();
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
-    to_fix_at_true_.clear();
-    new_literals_implied_by_decision_.clear();
-    new_implied_or_fixed_literals_.clear();
-    for (int i = saved_index + 1; i < trail_.Index(); ++i) {
-      const Literal l = trail_[i];
+    {
+      DeterministicTimer<{.scale = 2.4e-08}> timer(
+          time_limit_, std::max(0, trail_.Index() - saved_index - 1));
+      to_fix_at_true_.clear();
+      new_literals_implied_by_decision_.clear();
+      new_implied_or_fixed_literals_.clear();
+      for (int i = saved_index + 1; i < trail_.Index(); ++i) {
+        const Literal l = trail_[i];
 
-      // We mark on the first pass (b.IsPositive()) and check on the second.
-      bool added_to_new_implied_of_fixed_literals = false;
-      if (decision.IsPositive()) {
-        propagated_.Set(l.Index());
-      } else {
-        if (propagated_[l]) {
-          to_fix_at_true_.push_back(l);
-          if (lrat_proof_handler_ != nullptr) {
-            new_implied_or_fixed_literals_.push_back(l);
-            added_to_new_implied_of_fixed_literals = true;
+        // We mark on the first pass (b.IsPositive()) and check on the second.
+        bool added_to_new_implied_of_fixed_literals = false;
+        if (decision.IsPositive()) {
+          propagated_.Set(l.Index());
+        } else {
+          if (propagated_[l]) {
+            to_fix_at_true_.push_back(l);
+            if (lrat_proof_handler_ != nullptr) {
+              new_implied_or_fixed_literals_.push_back(l);
+              added_to_new_implied_of_fixed_literals = true;
+            }
           }
         }
-      }
 
-      // Anything not propagated by the BinaryImplicationGraph is a "new"
-      // binary clause. This is because the BinaryImplicationGraph has the
-      // highest priority of all propagators.
-      if (trail_.AssignmentType(l.Variable()) !=
-          implication_graph_->PropagatorId()) {
-        if (l == decision.Negated()) {
-          to_fix_at_true_.push_back(l);
-        } else if (l != decision) {
-          new_literals_implied_by_decision_.push_back(l);
-        }
-        if (lrat_proof_handler_ != nullptr && l != decision &&
-            !added_to_new_implied_of_fixed_literals) {
-          new_implied_or_fixed_literals_.push_back(l);
+        // Anything not propagated by the BinaryImplicationGraph is a "new"
+        // binary clause. This is because the BinaryImplicationGraph has the
+        // highest priority of all propagators.
+        if (trail_.AssignmentType(l.Variable()) !=
+            implication_graph_->PropagatorId()) {
+          if (l == decision.Negated()) {
+            to_fix_at_true_.push_back(l);
+          } else if (l != decision) {
+            new_literals_implied_by_decision_.push_back(l);
+          }
+          if (lrat_proof_handler_ != nullptr && l != decision &&
+              !added_to_new_implied_of_fixed_literals) {
+            new_implied_or_fixed_literals_.push_back(l);
+          }
         }
       }
     }
@@ -382,15 +389,27 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       }
     }
     if (!sat_solver_->FinishPropagation()) return false;
-    for (const Literal l : new_literals_implied_by_decision_) {
-      // Some variables can be fixed by the above loop.
-      if (trail_.Assignment().LiteralIsAssigned(decision)) break;
-      if (trail_.Assignment().LiteralIsAssigned(l)) continue;
-      counters_.num_new_binary++;
-      counters_.num_total_new_binary++;
-      if (!implication_graph_->AddBinaryClause(decision.Negated(), l)) {
-        return false;
+    {
+      DeterministicTimer2<{
+          .scale1 = 8.3e-08, .scale2 = 1.0e-07, .offset = 1.4e-07}>
+          timer(time_limit_);
+      const int64_t initial_num_new_binary = counters_.num_new_binary;
+      int i = 0;
+      for (; i < new_literals_implied_by_decision_.size(); ++i) {
+        const Literal l = new_literals_implied_by_decision_[i];
+        // Some variables can be fixed by the above loop.
+        if (trail_.Assignment().LiteralIsAssigned(decision)) break;
+        if (trail_.Assignment().LiteralIsAssigned(l)) continue;
+        counters_.num_new_binary++;
+        counters_.num_total_new_binary++;
+        if (!implication_graph_->AddBinaryClause(decision.Negated(), l)) {
+          return false;
+        }
       }
+      timer.Advance(
+          std::min(i + 1,
+                   static_cast<int>(new_literals_implied_by_decision_.size())),
+          counters_.num_new_binary - initial_num_new_binary);
     }
     if (!sat_solver_->FinishPropagation()) return false;
   }
@@ -411,8 +430,13 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   // TODO(user): fix binary variables in the same way? It might not be as
   // useful since probing on such a variable will also fix it. But then we might
   // abort probing early, so it might still be good.
-  std::sort(new_integer_bounds_.begin(), new_integer_bounds_.end(),
-            [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
+  {
+    const size_t n = new_integer_bounds_.size();
+    DeterministicTimer<{.scale = 4.2e-09, .offset = 4.3e-07}> timer(
+        time_limit_, n * absl::bit_width(n));
+    std::sort(new_integer_bounds_.begin(), new_integer_bounds_.end(),
+              [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
+  }
 
   // This is used for the hole detection.
   IntegerVariable prev_var = kNoIntegerVariable;
@@ -664,30 +688,40 @@ bool Prober::ProbeDnf(absl::string_view name,
     }
 
     // Process propagated literals.
-    new_propagated_literals_.clear();
-    for (int i = root_trail_index; i < trail_.Index(); ++i) {
-      const LiteralIndex literal_index = trail_[i].Index();
-      if (num_valid_conjunctions == 1 ||
-          always_propagated_literals_.contains(literal_index)) {
-        new_propagated_literals_.insert(literal_index);
+    {
+      DeterministicTimer<{.scale = 1.5e-07, .offset = 6.1e-08}> timer(
+          time_limit_);
+      new_propagated_literals_.clear();
+      for (int i = root_trail_index; i < trail_.Index(); ++i) {
+        const LiteralIndex literal_index = trail_[i].Index();
+        if (num_valid_conjunctions == 1 ||
+            always_propagated_literals_.contains(literal_index)) {
+          new_propagated_literals_.insert(literal_index);
+        }
       }
+      std::swap(new_propagated_literals_, always_propagated_literals_);
+      timer.Advance(always_propagated_literals_.size());
     }
-    std::swap(new_propagated_literals_, always_propagated_literals_);
 
     // Process propagated integer bounds.
-    new_integer_bounds_.clear();
-    integer_trail_->AppendNewBoundsFrom(root_integer_trail_index,
-                                        &new_integer_bounds_);
-    new_propagated_bounds_.clear();
-    for (const IntegerLiteral entry : new_integer_bounds_) {
-      const auto it = always_propagated_bounds_.find(entry.var);
-      if (num_valid_conjunctions == 1) {  // First loop.
-        new_propagated_bounds_[entry.var] = entry.bound;
-      } else if (it != always_propagated_bounds_.end()) {
-        new_propagated_bounds_[entry.var] = std::min(entry.bound, it->second);
+    {
+      DeterministicTimer<{.scale = 2.5e-07, .offset = 3.6e-08}> timer(
+          time_limit_);
+      new_integer_bounds_.clear();
+      integer_trail_->AppendNewBoundsFrom(root_integer_trail_index,
+                                          &new_integer_bounds_);
+      new_propagated_bounds_.clear();
+      for (const IntegerLiteral entry : new_integer_bounds_) {
+        const auto it = always_propagated_bounds_.find(entry.var);
+        if (num_valid_conjunctions == 1) {  // First loop.
+          new_propagated_bounds_[entry.var] = entry.bound;
+        } else if (it != always_propagated_bounds_.end()) {
+          new_propagated_bounds_[entry.var] = std::min(entry.bound, it->second);
+        }
       }
+      std::swap(new_propagated_bounds_, always_propagated_bounds_);
+      timer.Advance(always_propagated_bounds_.size());
     }
-    std::swap(new_propagated_bounds_, always_propagated_bounds_);
   }
 
   if (!sat_solver_->ResetToLevelZero()) return false;
@@ -1030,17 +1064,26 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   new_params.set_max_number_of_conflicts(1);
   new_params.set_max_deterministic_time(deterministic_time_limit);
 
+  const double initial_dtime = time_limit->GetElapsedDeterministicTime();
+  const double initial_dtime_limit = time_limit->GetDeterministicLimit();
   double elapsed_dtime = 0.0;
 
   // We need to keep a copy of the time limit to restore it later since we will
   // reset it by calling Model::SetParameters().
   TimeLimit original_time_limit;
-  original_time_limit.MergeWithGlobalTimeLimit(model->GetOrCreate<TimeLimit>());
+  original_time_limit.MergeWithGlobalTimeLimit(time_limit);
+
+  absl::Cleanup restore_time_limit = [&] {
+    time_limit->ResetLimitFromParameters(initial_params);
+    time_limit->MergeWithGlobalTimeLimit(&original_time_limit);
+    time_limit->ChangeDeterministicLimit(initial_dtime_limit);
+    time_limit->AdvanceDeterministicTime(initial_dtime + elapsed_dtime);
+  };
 
   const int num_times = 1000;
   bool limit_reached = false;
   auto* random = model->GetOrCreate<ModelRandomGenerator>();
-  for (int i = 0; i < num_times; ++i) {
+  for (int iters = 0; iters < num_times; ++iters) {
     if (time_limit->LimitReached() ||
         elapsed_dtime > deterministic_time_limit) {
       limit_reached = true;
@@ -1052,33 +1095,32 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
     time_limit->MergeWithGlobalTimeLimit(&original_time_limit);
     sat_solver->ResetDecisionHeuristic();
     const SatSolver::Status result = sat_solver->SolveWithTimeLimit(time_limit);
-    elapsed_dtime += time_limit->GetElapsedDeterministicTime();
+    const double iter_dtime = time_limit->GetElapsedDeterministicTime();
+    elapsed_dtime += iter_dtime;
+    original_time_limit.AdvanceDeterministicTime(iter_dtime);
 
     if (result == SatSolver::FEASIBLE) {
       SOLVER_LOG(logger, "Trivial exploration found feasible solution!");
-      time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return true;
     }
 
     if (!sat_solver->ResetToLevelZero()) {
       SOLVER_LOG(logger, "UNSAT during trivial exploration heuristic.");
-      time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return false;
     }
 
     // We randomize at the end so that the default params are executed
     // at least once.
     RandomizeDecisionHeuristic(*random, &new_params);
-    new_params.set_random_seed(i);
+    new_params.set_random_seed(iters);
     new_params.set_max_deterministic_time(deterministic_time_limit -
                                           elapsed_dtime);
   }
 
-  // Restore the initial parameters.
+  // Restore the initial parameters and time limit.
   sat_solver->SetParameters(initial_params);
   sat_solver->ResetDecisionHeuristic();
-  time_limit->MergeWithGlobalTimeLimit(&original_time_limit);
-  time_limit->AdvanceDeterministicTime(elapsed_dtime);
+  std::move(restore_time_limit).Invoke();
   if (!sat_solver->ResetToLevelZero()) return false;
 
   if (logger->LoggingIsEnabled()) {
@@ -1225,38 +1267,42 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
     const int new_level = sat_solver_->CurrentDecisionLevel();
     if (new_level == 0) continue;
     const Literal last_decision = trail_.Decisions()[new_level - 1].literal;
-    binary_clauses_to_extract_.clear();
-    for (int i = first_new_trail_index; i < trail_.Index(); ++i) {
-      const Literal l = trail_[i];
-      if (l == last_decision) continue;
+    {
+      DeterministicTimer<{.scale = 2.0e-08}> timer(
+          time_limit_, trail_.Index() - first_new_trail_index);
+      binary_clauses_to_extract_.clear();
+      for (int i = first_new_trail_index; i < trail_.Index(); ++i) {
+        const Literal l = trail_[i];
+        if (l == last_decision) continue;
 
-      // This part of the trail is new, so we didn't extract any binary clause
-      // about it yet.
-      DCHECK(!binary_clause_extracted_[i]);
+        // This part of the trail is new, so we didn't extract any binary clause
+        // about it yet.
+        DCHECK(!binary_clause_extracted_[i]);
 
-      if (options.subsume_with_binary_clause) {
-        MaybeSubsumeWithBinaryClause(last_decision, l);
-      }
-      if (options.extract_binary_clauses) {
-        // Note that we don't want to extract binary clauses that are already
-        // present in some form in the binary implication graph. Thus we skip
-        // anything that was propagated by it.
-        //
-        // Because the BinaryImplicationGraph has the highest priority of all
-        // propagators, this should cover most of the cases.
-        //
-        // NOTE(user): This is not 100% true, since when we launch the clause
-        // propagation for one literal we do finish it before calling again
-        // the binary propagation.
-        if (trail_.AssignmentType(l.Variable()) != binary_propagator_id_) {
-          if (ShouldExtractImplication(l)) {
-            binary_clauses_to_extract_.push_back(l);
-          }
+        if (options.subsume_with_binary_clause) {
+          MaybeSubsumeWithBinaryClause(last_decision, l);
         }
-      } else {
-        // If we don't extract binary clauses, we don't need to explore any of
-        // these literals until more variables are fixed.
-        processed_.Set(l.Index());
+        if (options.extract_binary_clauses) {
+          // Note that we don't want to extract binary clauses that are already
+          // present in some form in the binary implication graph. Thus we skip
+          // anything that was propagated by it.
+          //
+          // Because the BinaryImplicationGraph has the highest priority of all
+          // propagators, this should cover most of the cases.
+          //
+          // NOTE(user): This is not 100% true, since when we launch the clause
+          // propagation for one literal we do finish it before calling again
+          // the binary propagation.
+          if (trail_.AssignmentType(l.Variable()) != binary_propagator_id_) {
+            if (ShouldExtractImplication(l)) {
+              binary_clauses_to_extract_.push_back(l);
+            }
+          }
+        } else {
+          // If we don't extract binary clauses, we don't need to explore any of
+          // these literals until more variables are fixed.
+          processed_.Set(l.Index());
+        }
       }
     }
     if (!binary_clauses_to_extract_.empty()) {
@@ -1343,7 +1389,12 @@ bool FailedLiteralProbing::ComputeNextDecisionInOrder(
     queue_.push_back({candidate.Index(), -position_in_order_[candidate]});
   }
   // Sort all the candidates.
-  std::sort(queue_.begin() + saved_queue_size, queue_.end());
+  {
+    const size_t n = queue_.size() - saved_queue_size;
+    DeterministicTimer<{.scale = 3.0e-09}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    std::sort(queue_.begin() + saved_queue_size, queue_.end());
+  }
 
   // Set next_decision to the first unassigned candidate.
   while (!queue_.empty()) {
@@ -1596,28 +1647,37 @@ void FailedLiteralProbing::ExtractImplications(
   // 1.b Expand the reasons of all the literals in the heap and add the reason
   //     literals back in the heap. Collect the literals in the order they are
   //     popped from the heap in `tmp_marked_literals_`.
-  tmp_marked_literals_.clear();
-  while (!tmp_heap_.empty()) {
-    absl::c_pop_heap(tmp_heap_);
-    const int trail_index = tmp_heap_.back();
-    tmp_heap_.pop_back();
-    const Literal marked_literal = trail_[trail_index];
-    tmp_marked_literals_.push_back(marked_literal);
+  {
+    DeterministicTimer<{.scale = 1.1e-08, .offset = 5.7e-06}> timer(
+        time_limit_);
+    tmp_marked_literals_.clear();
+    uint64_t inner_iters = 0;
+    while (!tmp_heap_.empty()) {
+      absl::c_pop_heap(tmp_heap_);
+      const int trail_index = tmp_heap_.back();
+      tmp_heap_.pop_back();
+      const Literal marked_literal = trail_[trail_index];
+      tmp_marked_literals_.push_back(marked_literal);
 
-    DCHECK_GT(trail_.Info(marked_literal.Variable()).level, 0);
-    DCHECK_NE(trail_.AssignmentType(marked_literal.Variable()),
-              AssignmentType::kSearchDecision);
+      DCHECK_GT(trail_.Info(marked_literal.Variable()).level, 0);
+      DCHECK_NE(trail_.AssignmentType(marked_literal.Variable()),
+                AssignmentType::kSearchDecision);
 
-    for (const Literal literal : trail_.Reason(marked_literal.Variable())) {
-      const BooleanVariable var = literal.Variable();
-      const AssignmentInfo& info = trail_.Info(var);
-      if (info.level > 0 && !tmp_mark_[var] &&
-          trail_.AssignmentType(var) != AssignmentType::kSearchDecision) {
-        tmp_mark_.Set(var);
-        tmp_heap_.push_back(info.trail_index);
-        absl::c_push_heap(tmp_heap_);
+      const absl::Span<const Literal> reason =
+          trail_.Reason(marked_literal.Variable());
+      inner_iters += reason.size();
+      for (const Literal literal : reason) {
+        const BooleanVariable var = literal.Variable();
+        const AssignmentInfo& info = trail_.Info(var);
+        if (info.level > 0 && !tmp_mark_[var] &&
+            trail_.AssignmentType(var) != AssignmentType::kSearchDecision) {
+          tmp_mark_.Set(var);
+          tmp_heap_.push_back(info.trail_index);
+          absl::c_push_heap(tmp_heap_);
+        }
       }
     }
+    timer.Advance(inner_iters);
   }
 
   // 2. Add an LRAT implication "last_decision => l" for each literal l in
@@ -1625,13 +1685,16 @@ void FailedLiteralProbing::ExtractImplications(
   //    cache in ExtractImplication(), the proof for each new implication has
   //    the same size as its reason. Also add a "real" implication in the binary
   //    implication graph if `l` is in `literals`.
-  tmp_mark_.ClearAndResize(BooleanVariable(trail_.NumVariables()));
-  for (const Literal lit : literals) {
-    tmp_mark_.Set(lit.Variable());
-  }
-  for (int i = tmp_marked_literals_.size() - 1; i >= 0; --i) {
-    const bool lrat_only = !tmp_mark_[tmp_marked_literals_[i].Variable()];
-    ExtractImplication(last_decision, tmp_marked_literals_[i], lrat_only);
+  {
+    DeterministicTimer<{.scale = 1.1e-06}> timer(time_limit_, literals.size());
+    tmp_mark_.ClearAndResize(BooleanVariable(trail_.NumVariables()));
+    for (const Literal lit : literals) {
+      tmp_mark_.Set(lit.Variable());
+    }
+    for (int i = tmp_marked_literals_.size() - 1; i >= 0; --i) {
+      const bool lrat_only = !tmp_mark_[tmp_marked_literals_[i].Variable()];
+      ExtractImplication(last_decision, tmp_marked_literals_[i], lrat_only);
+    }
   }
 }
 

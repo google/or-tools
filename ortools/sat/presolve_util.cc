@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <tuple>
@@ -23,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/distributions.h"
@@ -524,15 +526,15 @@ bool ActivityBoundHelper::AppearInTriggeredAmo(int literal) const {
 }
 
 bool ActivityBoundHelper::PresolveEnforcement(
-    absl::Span<const int> refs, ConstraintProto* ct,
+    absl::Span<const int> refs, std::vector<int>* enforcement,
     absl::flat_hash_set<int>* literals_at_true) {
-  if (ct->enforcement_literal().empty()) return true;
+  if (enforcement->empty()) return true;
 
   literals_at_true->clear();
   triggered_amo_.clear();
   int new_size = 0;
-  for (int i = 0; i < ct->enforcement_literal().size(); ++i) {
-    const int ref = ct->enforcement_literal(i);
+  for (int i = 0; i < enforcement->size(); ++i) {
+    const int ref = (*enforcement)[i];
     if (literals_at_true->contains(ref)) continue;  // Duplicate.
     if (literals_at_true->contains(NegatedRef(ref))) return false;  // False.
     literals_at_true->insert(ref);
@@ -555,9 +557,9 @@ bool ActivityBoundHelper::PresolveEnforcement(
     }
 
     // Keep this enforcement.
-    ct->set_enforcement_literal(new_size++, ref);
+    (*enforcement)[new_size++] = ref;
   }
-  ct->mutable_enforcement_literal()->Truncate(new_size);
+  enforcement->resize(new_size);
 
   for (const int ref : refs) {
     // Skip already fixed.
@@ -584,14 +586,15 @@ bool ActivityBoundHelper::PresolveEnforcement(
 
 int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     absl::Span<const std::pair<int, int64_t>> boolean_terms,
-    const Domain& other_terms, const Domain& rhs, ConstraintProto* ct) {
+    const Domain& other_terms, const Domain& rhs,
+    std::vector<int>* enforcement) {
   if (boolean_terms.empty()) return 0;
   tmp_set_.clear();
   triggered_amo_.clear();
   tmp_boolean_terms_in_some_amo_.clear();
   tmp_boolean_terms_in_some_amo_.reserve(boolean_terms.size());
   int num_enforcement_to_check = 0;
-  for (const int enf_lit : ct->enforcement_literal()) {
+  for (const int enf_lit : *enforcement) {
     const Index negated_index = IndexFromLiteral(NegatedRef(enf_lit));
     if (negated_index >= amo_indices_.size()) continue;
     if (amo_indices_[negated_index].empty()) continue;
@@ -625,7 +628,7 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     if (work > kMaxWork) return log_work();
   }
 
-  for (const int enf_lit : ct->enforcement_literal()) {
+  for (const int enf_lit : *enforcement) {
     const Index negated_index = IndexFromLiteral(NegatedRef(enf_lit));
     if (negated_index >= amo_indices_.size()) continue;
     if (amo_indices_[negated_index].empty()) continue;
@@ -685,12 +688,12 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
 
   if (!tmp_set_.empty()) {
     int new_size = 0;
-    for (const int ref : ct->enforcement_literal()) {
+    for (const int ref : *enforcement) {
       if (tmp_set_.contains(ref)) continue;
-      ct->set_enforcement_literal(new_size++, ref);
+      (*enforcement)[new_size++] = ref;
     }
-    const int old_size = ct->enforcement_literal().size();
-    ct->mutable_enforcement_literal()->Truncate(new_size);
+    const int old_size = enforcement->size();
+    enforcement->resize(new_size);
     return old_size - new_size;
   }
   return 0;
@@ -921,6 +924,40 @@ bool ComputeCliqueShiftsAndSizes(int num_terms,
   }
   *shifts = std::move(s);
   return true;
+}
+
+namespace {
+
+bool SimpleLinearExprEq(const LinearExpressionProto& a,
+                        const LinearExpressionProto& b) {
+  return absl::MakeSpan(a.vars()) == absl::MakeSpan(b.vars()) &&
+         absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
+         a.offset() == b.offset();
+}
+
+std::size_t LinearExpressionHash(const LinearExpressionProto& expr) {
+  return absl::HashOf(absl::MakeSpan(expr.vars()),
+                      absl::MakeSpan(expr.coeffs()), expr.offset());
+}
+
+}  // namespace
+
+bool IntervalConstraintEq::operator()(int a, int b) const {
+  const ConstraintProto& ct_a = working_model->constraints(a);
+  const ConstraintProto& ct_b = working_model->constraints(b);
+  return absl::MakeSpan(ct_a.enforcement_literal()) ==
+             absl::MakeSpan(ct_b.enforcement_literal()) &&
+         SimpleLinearExprEq(ct_a.interval().start(), ct_b.interval().start()) &&
+         SimpleLinearExprEq(ct_a.interval().size(), ct_b.interval().size()) &&
+         SimpleLinearExprEq(ct_a.interval().end(), ct_b.interval().end());
+}
+
+std::size_t IntervalConstraintHash::operator()(int ct_idx) const {
+  const ConstraintProto& ct = working_model->constraints(ct_idx);
+  return absl::HashOf(absl::MakeSpan(ct.enforcement_literal()),
+                      LinearExpressionHash(ct.interval().start()),
+                      LinearExpressionHash(ct.interval().size()),
+                      LinearExpressionHash(ct.interval().end()));
 }
 
 }  // namespace sat

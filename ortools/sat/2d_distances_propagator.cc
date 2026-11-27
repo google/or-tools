@@ -181,9 +181,12 @@ bool Precedences2DPropagator::Propagate() {
   CollectNewPairsOfBoxesWithNonTrivialDistance();
 
   num_calls_++;
-  DeterministicTimer<{.scale = 5e-9}> timer(time_limit_, pair_data_.size());
+  // Only count the pairs actually scanned, since we stop at the first conflict.
+  DeterministicTimer<{.scale = 2.5e-08, .offset = 5.5e-08}> timer(time_limit_);
+  uint64_t num_scanned_pairs = 0;
 
   for (const PairData& pair_data : pair_data_) {
+    ++num_scanned_pairs;
     if (!absl::c_all_of(pair_data.pair_presence_literals,
                         [this](const Literal& literal) {
                           return trail_->Assignment().LiteralIsTrue(literal);
@@ -206,6 +209,7 @@ bool Precedences2DPropagator::Propagate() {
     if (!is_unfeasible) continue;
 
     // We have a mandatory overlap on both x and y! Explain and propagate.
+    timer.Advance(num_scanned_pairs);
     if (!helper_.SynchronizeAndSetDirection()) return false;
 
     const int box1 = pair_data.box1;
@@ -222,6 +226,7 @@ bool Precedences2DPropagator::Propagate() {
     helper_.AddPresenceReason(box2);
     return helper_.ReportConflict();
   }
+  timer.Advance(num_scanned_pairs);
   return true;
 }
 

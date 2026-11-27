@@ -131,6 +131,41 @@ TEST(ValidateParameters, ValidateSubsolvers) {
   EXPECT_THAT(ValidateParameters(params), IsEmpty());
 }
 
+TEST(ValidateParameters, MipTightPrecisionAtMostWantedPrecision) {
+  {
+    SatParameters params;
+    EXPECT_THAT(ValidateParameters(params), IsEmpty());
+  }
+  {
+    SatParameters params;
+    params.set_mip_wanted_precision(1e-6);
+    params.set_mip_tight_precision(1e-6);
+    EXPECT_THAT(ValidateParameters(params), IsEmpty());
+  }
+  {
+    SatParameters params;
+    params.set_mip_wanted_precision(0.0);
+    params.set_mip_tight_precision(0.0);
+    EXPECT_THAT(ValidateParameters(params), IsEmpty());
+  }
+  {
+    // Default `mip_tight_precision` (1e-9) exceeds `mip_wanted_precision = 0`.
+    SatParameters params;
+    params.set_mip_wanted_precision(0.0);
+    EXPECT_THAT(ValidateParameters(params),
+                AllOf(HasSubstr("mip_tight_precision"),
+                      HasSubstr("mip_wanted_precision")));
+  }
+  {
+    SatParameters params;
+    params.set_mip_wanted_precision(1e-6);
+    params.set_mip_tight_precision(1e-5);
+    EXPECT_THAT(ValidateParameters(params),
+                AllOf(HasSubstr("mip_tight_precision"),
+                      HasSubstr("mip_wanted_precision")));
+  }
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

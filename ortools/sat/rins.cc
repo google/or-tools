@@ -33,6 +33,8 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/deterministic_time.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -41,8 +43,11 @@ void RecordLPRelaxationValues(Model* model) {
   auto* lp_solutions = model->Mutable<SharedLPSolutionRepository>();
   if (lp_solutions == nullptr) return;
 
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* lp_values = model->GetOrCreate<ModelLpValues>();
+  const int size = lp_values->size();
+  DeterministicTimer<{.scale = 2.0e-08}> timer(time_limit, size / 2);
 
   // TODO(user): The default of ::infinity() for variables for which we do not
   // have any LP solution is weird and inconsistent with the ModelLpValues
@@ -53,7 +58,6 @@ void RecordLPRelaxationValues(Model* model) {
       mapping->NumProtoVariables(), std::numeric_limits<double>::infinity());
 
   // We only loop over the positive variables.
-  const int size = lp_values->size();
   for (IntegerVariable var(0); var < size; var += 2) {
     const int proto_var = mapping->GetProtoVariableFromIntegerVariable(var);
     if (proto_var != -1) {

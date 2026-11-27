@@ -35,8 +35,10 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -44,12 +46,15 @@ namespace sat {
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       random_(*model->GetOrCreate<ModelRandomGenerator>()),
       ls_hints_(model->GetOrCreate<SharedLsSolutionRepository>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   const int old_num_variables = activities_.size();
   DCHECK_GE(num_variables, activities_.size());
+  DeterministicTimer<{.scale = 1.2e-08, .offset = 2.9e-07}> timer(
+      time_limit_, num_variables - old_num_variables);
 
   activities_.resize(num_variables, parameters_.initial_variables_activity());
   tie_breakers_.resize(num_variables, 0.0);
@@ -75,12 +80,14 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
 }
 
 void SatDecisionPolicy::BeforeConflict(int trail_index) {
+  DeterministicTimer<{.scale = 6.0e-09}> timer(time_limit_);
   if (parameters_.use_erwa_heuristic()) {
     ++num_conflicts_;
     num_conflicts_stack_.push_back({trail_.Index(), 1});
   }
 
   if (trail_index > target_length_) {
+    timer.Advance(trail_index);
     target_length_ = trail_index;
     has_target_polarity_.ClearAll();
     for (int i = 0; i < trail_index; ++i) {
@@ -172,6 +179,8 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
 void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
   // Sets the initial polarity.
   const int num_variables = activities_.size();
+  DeterministicTimer<{.scale = 7.3e-09, .offset = 2.1e-07}> timer(
+      time_limit_, std::max(0, num_variables - from));
   for (BooleanVariable var(from); var < num_variables; ++var) {
     switch (parameters_.initial_polarity()) {
       case SatParameters::POLARITY_TRUE:
@@ -262,16 +271,21 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
 
   // First, extract the variables without activity, and add the others to the
   // priority queue.
-  var_ordering_.Clear();
-  tmp_variables_.clear();
-  for (BooleanVariable var(0); var < num_variables; ++var) {
-    if (!trail_.Assignment().VariableIsAssigned(var)) {
-      if (activities_[var] > 0.0) {
-        var_ordering_.Add({var, tie_breakers_[var], activities_[var]});
-      } else {
-        tmp_variables_.push_back(var);
+  {
+    DeterministicTimer<{.scale = 1.0e-08, .offset = 1.6e-07}> timer(
+        time_limit_);
+    var_ordering_.Clear();
+    tmp_variables_.clear();
+    for (BooleanVariable var(0); var < num_variables; ++var) {
+      if (!trail_.Assignment().VariableIsAssigned(var)) {
+        if (activities_[var] > 0.0) {
+          var_ordering_.Add({var, tie_breakers_[var], activities_[var]});
+        } else {
+          tmp_variables_.push_back(var);
+        }
       }
     }
+    timer.Advance(num_variables);
   }
 
   // Set the order of the others according to the parameters_.
@@ -280,26 +294,30 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   // which adds a big overhead on the priority queue.
   //
   // TODO(user): Experiment and come up with a good set of heuristics.
-  switch (parameters_.preferred_variable_order()) {
-    case SatParameters::IN_ORDER:
-      break;
-    case SatParameters::IN_REVERSE_ORDER:
-      std::reverse(tmp_variables_.begin(), tmp_variables_.end());
-      break;
-    case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
-      break;
-  }
+  {
+    DeterministicTimer<{.scale = 2.8e-08}> timer(time_limit_,
+                                                 tmp_variables_.size());
+    switch (parameters_.preferred_variable_order()) {
+      case SatParameters::IN_ORDER:
+        break;
+      case SatParameters::IN_REVERSE_ORDER:
+        std::reverse(tmp_variables_.begin(), tmp_variables_.end());
+        break;
+      case SatParameters::IN_RANDOM_ORDER:
+        std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
+        break;
+    }
 
-  // Add the variables without activity to the queue (in the default order)
-  for (const BooleanVariable var : tmp_variables_) {
-    var_ordering_.Add({var, tie_breakers_[var], 0.0});
-  }
+    // Add the variables without activity to the queue (in the default order)
+    for (const BooleanVariable var : tmp_variables_) {
+      var_ordering_.Add({var, tie_breakers_[var], 0.0});
+    }
 
-  // Finish the queue initialization.
-  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables);
-  pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_.Index());
-  var_ordering_is_initialized_ = true;
+    // Finish the queue initialization.
+    pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables);
+    pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_.Index());
+    var_ordering_is_initialized_ = true;
+  }
 }
 
 void SatDecisionPolicy::SetAssignmentPreference(Literal literal, float weight) {
@@ -383,6 +401,7 @@ void SatDecisionPolicy::UpdateVariableActivityIncrement() {
 }
 
 Literal SatDecisionPolicy::NextBranch() {
+  DeterministicTimer<{.scale = 5.0e-08, .offset = 2.4e-07}> timer(time_limit_);
   // Lazily initialize var_ordering_ if needed.
   if (!var_ordering_is_initialized_) {
     InitializeVariableOrdering();
@@ -394,6 +413,7 @@ Literal SatDecisionPolicy::NextBranch() {
   auto zero_to_one = [this]() {
     return std::uniform_real_distribution<double>()(random_);
   };
+  uint64_t work_done = 0;
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
@@ -404,6 +424,7 @@ Literal SatDecisionPolicy::NextBranch() {
       if (!trail_.Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
+      ++work_done;
     }
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
@@ -414,8 +435,10 @@ Literal SatDecisionPolicy::NextBranch() {
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
       var = var_ordering_.Top().var;
+      ++work_done;
     }
   }
+  timer.Advance(work_done);
 
   // Choose its polarity (i.e. True or False).
   const double random_ratio = parameters_.random_polarity_ratio();
@@ -444,6 +467,8 @@ void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
 void SatDecisionPolicy::Untrail(int target_trail_index) {
   // TODO(user): avoid looping twice over the trail?
   if (maybe_enable_phase_saving_ && parameters_.use_phase_saving()) {
+    DeterministicTimer<{.scale = 5.0e-09}> timer(
+        time_limit_, trail_.Index() - target_trail_index);
     for (int i = target_trail_index; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
       var_polarity_.Set(l.Variable(), l.IsPositive());
@@ -503,14 +528,19 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
   } else {
     if (!var_ordering_is_initialized_) return;
 
+    DeterministicTimer<{.scale = 4.9e-08, .offset = 3.3e-07}> timer(
+        time_limit_);
     // Trail index of the next variable that will need a priority queue update.
     int to_update = pq_need_update_for_var_at_trail_index_.Top();
+    uint64_t work_done = 0;
     while (to_update >= target_trail_index) {
       DCHECK_LT(to_update, trail_.Index());
       PqInsertOrUpdate(trail_[to_update].Variable());
       pq_need_update_for_var_at_trail_index_.ClearTop();
       to_update = pq_need_update_for_var_at_trail_index_.Top();
+      ++work_done;
     }
+    timer.Advance(work_done);
   }
 
   // Invariant.

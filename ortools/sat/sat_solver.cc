@@ -29,6 +29,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -52,6 +53,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/recycled_var_guard.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -262,21 +264,39 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
       }
     }
   } else {
-    for (const Literal l : literals) {
+    DeterministicTimer<{.scale = 8.8e-09, .offset = 3.1e-08}> timer(
+        time_limit_);
+    for (int i = 0; i < literals.size(); ++i) {
+      const Literal l = literals[i];
       const Literal rep = binary_implication_graph_->RepresentativeOf(l);
-      if (trail_->Assignment().LiteralIsTrue(rep)) return true;
+      if (trail_->Assignment().LiteralIsTrue(rep)) {
+        timer.Advance(i + 1);
+        return true;
+      }
       if (trail_->Assignment().LiteralIsFalse(rep)) continue;
       tmp_literals_.push_back(rep);
     }
+    timer.Advance(literals.size());
   }
 
   // A clause with l and not(l) is trivially true.
-  gtl::STLSortAndRemoveDuplicates(&tmp_literals_);
-  for (int i = 0; i + 1 < tmp_literals_.size(); ++i) {
-    if (tmp_literals_[i] == tmp_literals_[i + 1].Negated()) {
-      maybe_delete_lrat_problem_clause();
-      return true;
+  {
+    const uint64_t n = tmp_literals_.size();
+    DeterministicTimer<{.scale = 1.2e-09, .offset = 2.6e-08}> sort_timer(
+        time_limit_, n * absl::bit_width(n));
+    gtl::STLSortAndRemoveDuplicates(&tmp_literals_);
+  }
+  {
+    DeterministicTimer<{.scale = 1.3e-09, .offset = 1.0e-08}> check_timer(
+        time_limit_);
+    for (int i = 0; i + 1 < tmp_literals_.size(); ++i) {
+      if (tmp_literals_[i] == tmp_literals_[i + 1].Negated()) {
+        check_timer.Advance(i + 1);
+        maybe_delete_lrat_problem_clause();
+        return true;
+      }
     }
+    check_timer.Advance(tmp_literals_.empty() ? 0 : tmp_literals_.size() - 1);
   }
   ClauseUniquePtr clause(kNullClausePtr);
   if (lrat_proof_handler_ != nullptr) {
@@ -448,8 +468,13 @@ void SatSolver::CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
   // Now we canonicalize.
   // TODO(user): fix variables that must be true/false and remove them.
   Coefficient bound_delta(0);
-  CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_delta,
-                                                    max_value));
+  {
+    const uint64_t n = cst->size();
+    DeterministicTimer<{.scale = 5.9e-09, .offset = 4.0e-08}> timer(
+        time_limit_, n * absl::bit_width(n));
+    CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_delta,
+                                                      max_value));
+  }
 
   CHECK(SafeAddInto(bound_delta, bound_shift));
   CHECK(SafeAddInto(fixed_variable_shift, bound_shift));
@@ -794,7 +819,12 @@ bool SatSolver::ProcessCurrentConflict(
   }
 
   if (trail_->GetConflictResolutionFunction() == nullptr) {
-    const int max_trail_index = ComputeMaxTrailIndex(trail_->FailingClause());
+    int max_trail_index = -1;
+    {
+      DeterministicTimer<{.scale = 7.8e-09}> timer(
+          time_limit_, trail_->FailingClause().size());
+      max_trail_index = ComputeMaxTrailIndex(trail_->FailingClause());
+    }
     if (!assumptions_.empty() && !trail_->FailingClause().empty()) {
       // If the failing clause only contains literals at the assumption level,
       // we cannot use the ComputeFirstUIPConflict() code as we might have more
@@ -803,9 +833,13 @@ bool SatSolver::ProcessCurrentConflict(
       // TODO(user): We might still want to "learn" the clause, especially if
       // it reduces to only one literal in which case we can just fix it.
       int highest_level = 0;
-      for (const Literal l : trail_->FailingClause()) {
-        highest_level =
-            std::max<int>(highest_level, trail_->Info(l.Variable()).level);
+      {
+        DeterministicTimer<{.scale = 1.7e-09, .offset = 6.1e-08}> timer(
+            time_limit_, trail_->FailingClause().size());
+        for (const Literal l : trail_->FailingClause()) {
+          highest_level =
+              std::max<int>(highest_level, trail_->Info(l.Variable()).level);
+        }
       }
       if (highest_level == assumption_level_) {
         MaybeLearnOnAssumptionUnsat();
@@ -830,11 +864,16 @@ bool SatSolver::ProcessCurrentConflict(
 
     // Recompute is_marked_.
     is_marked_.ClearAndResize(num_variables_);
-    for (const Literal l : learned_conflict_) {
-      is_marked_.Set(l.Variable());
-    }
-    for (const Literal l : reason_used_to_infer_the_conflict_) {
-      is_marked_.Set(l.Variable());
+    {
+      DeterministicTimer<{.scale = 8.4e-09, .offset = 3.0e-07}> timer(
+          time_limit_,
+          learned_conflict_.size() + reason_used_to_infer_the_conflict_.size());
+      for (const Literal l : learned_conflict_) {
+        is_marked_.Set(l.Variable());
+      }
+      for (const Literal l : reason_used_to_infer_the_conflict_) {
+        is_marked_.Set(l.Variable());
+      }
     }
   }
 
@@ -905,7 +944,7 @@ bool SatSolver::ProcessCurrentConflict(
   if (parameters_->use_pb_resolution()) {
     compute_pb_conflict = (pb_constraints_->ConflictingConstraint() != nullptr);
     if (!compute_pb_conflict) {
-      for (Literal lit : reason_used_to_infer_the_conflict_) {
+      for (const Literal lit : reason_used_to_infer_the_conflict_) {
         if (ReasonPbConstraintOrNull(lit.Variable()) != nullptr) {
           compute_pb_conflict = true;
           break;
@@ -1101,58 +1140,72 @@ bool SatSolver::ProcessCurrentConflict(
 
   // Preprocess the new clauses.
   // We might need to backtrack further !
-  for (auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
-    DCHECK_NE(clause.get(), kNullClausePtr);
-    if (clause.get().GetType() == ClausePtr::kEmptyClause)
-      return SetModelUnsat();
-
-    std::optional<ClauseUniquePtr> canonicalized_clause =
-        RemoveRedundantLiteralFromConflict(clause.get());
-    if (!canonicalized_clause.has_value()) {
-      LOG(FATAL) << "learned a trivial clause ?? "
-                 << clause.get().GetLiterals();
-    }
-    if (canonicalized_clause->get() != kNullClausePtr) {
-      // Replace the learned clause with the canonicalized one.
-      if (lrat_proof_handler_ != nullptr) {
-        lrat_proof_handler_->DeleteClause(clause.get());
+  {
+    uint64_t num_learned_literals = 0;
+    DeterministicTimer<{.scale = 2.0e-09, .offset = 7.2e-08}> timer(
+        time_limit_);
+    for (auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
+      DCHECK_NE(clause.get(), kNullClausePtr);
+      if (clause.get().GetType() == ClausePtr::kEmptyClause) {
+        timer.Advance(num_learned_literals);
+        return SetModelUnsat();
       }
-      clause = std::move(*canonicalized_clause);
-    }
-    DCHECK_NE(clause.get(), kNullClausePtr);
 
-    const absl::Span<const Literal> literals = clause.get().GetLiterals();
-
-    // Tricky: in case of propagation not at the right level we might need to
-    // backjump further.
-    int num_false = 0;
-    for (const Literal l : literals) {
-      if (Assignment().LiteralIsFalse(l)) ++num_false;
-    }
-    if (num_false == literals.size() || literals.size() == 1) {
-      int max_level = 0;
-      for (const Literal l : literals) {
-        const int level = AssignmentLevel(l.Variable());
-        max_level = std::max(max_level, level);
+      std::optional<ClauseUniquePtr> canonicalized_clause =
+          RemoveRedundantLiteralFromConflict(clause.get());
+      if (!canonicalized_clause.has_value()) {
+        LOG(FATAL) << "learned a trivial clause ?? "
+                   << clause.get().GetLiterals();
       }
-      int propag_level = 0;
-      for (const Literal l : literals) {
-        const int level = AssignmentLevel(l.Variable());
-        if (level < max_level) {
-          propag_level = std::max(propag_level, level);
+      if (canonicalized_clause->get() != kNullClausePtr) {
+        // Replace the learned clause with the canonicalized one.
+        if (lrat_proof_handler_ != nullptr) {
+          lrat_proof_handler_->DeleteClause(clause.get());
         }
+        clause = std::move(*canonicalized_clause);
       }
-      Backtrack(propag_level);
+      DCHECK_NE(clause.get(), kNullClausePtr);
+
+      const absl::Span<const Literal> literals = clause.get().GetLiterals();
+
+      // Tricky: in case of propagation not at the right level we might need to
+      // backjump further.
+      int num_false = 0;
+      num_learned_literals += literals.size();
+      for (const Literal l : literals) {
+        if (Assignment().LiteralIsFalse(l)) ++num_false;
+      }
+      if (num_false == literals.size() || literals.size() == 1) {
+        num_learned_literals += 2 * literals.size();
+        int max_level = 0;
+        for (const Literal l : literals) {
+          const int level = AssignmentLevel(l.Variable());
+          max_level = std::max(max_level, level);
+        }
+        int propag_level = 0;
+        for (const Literal l : literals) {
+          const int level = AssignmentLevel(l.Variable());
+          if (level < max_level) {
+            propag_level = std::max(propag_level, level);
+          }
+        }
+        Backtrack(propag_level);
+      }
     }
+    timer.Advance(num_learned_literals);
   }
 
   // Learn the new clauses.
   int best_lbd = kint32max;
-  for (auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
-    DCHECK(clause.get() != kNullClausePtr);
-    const int lbd = AddLearnedClauseAndEnqueueUnitPropagation(
-        std::move(clause), is_redundant, min_lbd);
-    best_lbd = std::min(best_lbd, lbd);
+  {
+    DeterministicTimer<{.scale = 2.8e-07, .offset = 2.6e-07}> timer(
+        time_limit_, learned_clauses_.size());
+    for (auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
+      DCHECK(clause.get() != kNullClausePtr);
+      const int lbd = AddLearnedClauseAndEnqueueUnitPropagation(
+          std::move(clause), is_redundant, min_lbd);
+      best_lbd = std::min(best_lbd, lbd);
+    }
   }
   // Clear the temporary learned clauses vector, ownership has been transferred
   // in the loop above.
@@ -1168,27 +1221,36 @@ std::optional<ClauseUniquePtr> SatSolver::RemoveRedundantLiteralFromConflict(
   const RecycledVarLock proof_lock(tmp_proof_guard_);
   tmp_proof_.clear();
   const RecycledVarLock literals_lock(tmp_literals_guard_);
+  const absl::Span<const Literal> clause_literals = clause.GetLiterals();
   std::vector<Literal>& literals = tmp_literals_;
-  literals.assign(clause.GetLiterals().begin(), clause.GetLiterals().end());
-  for (Literal& lit : literals) {
-    const Literal rep = binary_implication_graph_->RepresentativeOf(lit);
-    if (rep != lit) {
-      some_change = true;
-      if (lrat_proof_handler_ != nullptr) {
-        // We need not(rep) => not(lit) for the proof.
-        tmp_proof_.push_back(ClausePtr(lit.Negated(), rep));
+  {
+    DeterministicTimer<{.scale = 1.0e-08}> timer(time_limit_,
+                                                 clause_literals.size());
+    literals.assign(clause_literals.begin(), clause_literals.end());
+    for (Literal& lit : literals) {
+      const Literal rep = binary_implication_graph_->RepresentativeOf(lit);
+      if (rep != lit) {
+        some_change = true;
+        if (lrat_proof_handler_ != nullptr) {
+          // We need not(rep) => not(lit) for the proof.
+          tmp_proof_.push_back(ClausePtr(lit.Negated(), rep));
+        }
+        lit = rep;
       }
-      lit = rep;
     }
   }
   if (!some_change) return ClauseUniquePtr(kNullClausePtr);
 
-  gtl::STLSortAndRemoveDuplicates(&literals);
+  {
+    const int64_t n = literals.size();
+    DeterministicTimer<{.scale = 5.3e-08}> timer(time_limit_, n);
+    gtl::STLSortAndRemoveDuplicates(&literals);
 
-  // This shouldn't happen since it is a new learned clause, otherwise
-  // something is wrong.
-  for (int i = 1; i < literals.size(); ++i) {
-    if (literals[i] == literals[i - 1].Negated()) return std::nullopt;
+    // This shouldn't happen since it is a new learned clause, otherwise
+    // something is wrong.
+    for (int i = 1; i < literals.size(); ++i) {
+      if (literals[i] == literals[i - 1].Negated()) return std::nullopt;
+    }
   }
 
   // We need a new clause for the canonicalized version, and the proof for
@@ -1518,7 +1580,10 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
   DCHECK(assumptions_.empty());
   int decision_index = trail_->CurrentDecisionLevel();
   const auto& decisions = trail_->Decisions();
+  uint64_t num_iterations = 0;
+  DeterministicTimer<{.scale = 1.4e-06, .offset = 1.1e-07}> timer(time_limit_);
   while (decision_index <= max_level) {
+    ++num_iterations;
     DCHECK_GE(decision_index, trail_->CurrentDecisionLevel());
     const Literal previous_decision = decisions[decision_index].literal;
     ++decision_index;
@@ -1531,6 +1596,7 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
     if (Assignment().LiteralIsFalse(previous_decision)) {
       // See GetLastIncompatibleDecisions().
       incompatible_decisions_.lazily_fill_from = previous_decision;
+      timer.Advance(num_iterations);
       return ASSUMPTIONS_UNSAT;
     }
 
@@ -1556,6 +1622,7 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
       decision_index = trail_->CurrentDecisionLevel();
     }
   }
+  timer.Advance(num_iterations);
   return FEASIBLE;
 }
 
@@ -1612,6 +1679,10 @@ void SatSolver::Backtrack(int target_level) {
   // Per the SatPropagator interface, this is needed before calling Untrail.
   const int target_trail_index = trail_->PrepareBacktrack(target_level);
   DCHECK_LT(target_trail_index, trail_->Index());
+  // The second time unit counts the untrailed entries, whose cost dominates in
+  // the propagators' Untrail() methods.
+  DeterministicTimer2<{.scale1 = 7.0e-08, .scale2 = 6.2e-09}> timer(
+      time_limit_, propagators_.size(), trail_->Index() - target_trail_index);
   for (SatPropagator* propagator : propagators_) {
     if (propagator->IsEmpty()) continue;
     propagator->Untrail(*trail_, target_trail_index);
@@ -1933,6 +2004,8 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   RecycledVarLock lock(tmp_mark_guard_);
   tmp_mark_.ClearAndResize(num_variables_);
 
+  DeterministicTimer<{.scale = 1.1e-08}> timer(time_limit_);
+
   int trail_index = 0;
   for (const Literal lit : literals) {
     CHECK(Assignment().LiteralIsAssigned(lit));
@@ -1946,6 +2019,7 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   const int limit =
       CurrentDecisionLevel() > 0 ? decisions[0].trail_index : trail_->Index();
   CHECK_LT(trail_index, trail_->Index());
+  const int initial_trail_index = trail_index;
   while (true) {
     // Find next marked literal to expand from the trail.
     while (trail_index >= limit &&
@@ -1972,11 +2046,13 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   // We reverse the assumptions so they are in the same order as the one in
   // which the decisions were made.
   std::reverse(result.begin(), result.end());
+  timer.Advance((initial_trail_index - trail_index) + result.size());
   return result;
 }
 
 void SatSolver::BumpReasonActivities(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
+  DeterministicTimer<{.scale = 9.6e-08}> timer(time_limit_, literals.size());
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();
     if (AssignmentLevel(var) > 0) {
@@ -2067,6 +2143,7 @@ int SatSolver::ComputePropagationLevel(absl::Span<const Literal> literals) {
   // AddLearnedClauseAndEnqueueUnitPropagation() to fix the literal and not
   // backtrack over it. Also, subsequent propagated variables may not have a
   // correct level in this case.
+  DeterministicTimer<{.scale = 6.2e-09}> timer(time_limit_, literals.size());
   int propagation_level = 0;
   for (int i = 1; i < literals.size(); ++i) {
     const int level = AssignmentLevel(literals[i].Variable());
@@ -2086,6 +2163,7 @@ int SatSolver::ComputePropagationLevel(absl::Span<const Literal> literals) {
 // conflict.
 int SatSolver::ComputeLbd(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
+  DeterministicTimer<{.scale = 9.1e-09}> timer(time_limit_, literals.size());
   const int limit =
       parameters_->count_assumption_levels_in_lbd() ? 0 : assumption_level_;
   int max_level = 0;
@@ -2103,6 +2181,7 @@ int SatSolver::ComputeLbd(absl::Span<const Literal> literals) {
     if (level > limit) is_level_marked_.Set(level);
   }
 
+  timer.Advance(literals.size());
   return is_level_marked_.NumberOfSetCallsWithDifferentArguments() +
          (num_at_max_level > 1 ? 1 : 0);
 }
@@ -2188,49 +2267,55 @@ bool SatSolver::ProcessNewlyFixedVariables() {
   // others. Note that none of the clauses should be all false because we should
   // have detected a conflict before this is called.
   int saved_index = trail_->Index();
-  for (SatClause* const clause :
-       clauses_propagator_->AllMutableClausesInCreationOrder()) {
-    if (clause->IsRemoved()) continue;
+  {
+    DeterministicTimer<{.scale = 1.6e-08, .offset = 2.2e-07}> timer(
+        time_limit_,
+        clauses_propagator_->AllMutableClausesInCreationOrder().size());
+    for (SatClause* const clause :
+         clauses_propagator_->AllMutableClausesInCreationOrder()) {
+      if (clause->IsRemoved()) continue;
 
-    const size_t old_size = clause->size();
-    if (clauses_propagator_->RemoveFixedLiteralsAndTestIfTrue(clause)) {
-      ++num_detached_clauses;
-      continue;
-    }
-
-    const size_t new_size = clause->size();
-    if (new_size == old_size) continue;
-
-    if (new_size == 2) {
-      // This clause is now a binary clause, treat it separately. Note that
-      // it is safe to do that because this clause can't be used as a reason
-      // since we are at level zero and the clause is not satisfied.
-      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
-      clauses_propagator_->LazyDelete(
-          clause, DeletionSourceForStat::PROMOTED_TO_BINARY);
-      ++num_binary;
-
-      // Tricky: AddBinaryClauseInternal() might fix literals if there is some
-      // unprocessed equivalent literal, and the binary clause turns out to be
-      // unary. This shouldn't happen otherwise the logic of
-      // RemoveFixedLiteralsAndTestIfTrue() might fail.
-      //
-      // To prevent issues, we reach the fix point propagation each time this is
-      // triggered. Note that the already processed clauses might contain new
-      // fixed literals, that is okay, we will clean them up on the next call to
-      // ProcessNewlyFixedVariables().
-      //
-      // Note that this is hard to avoid, because as we find new equivalences,
-      // more clauses can become binary which might cause new equivalences...
-      // And making sure we reach a fix-point each time DetectEquivalence() is
-      // called is not so easy.
-      if (trail_->Index() > saved_index) {
-        if (!FinishPropagation()) {
-          return SetModelUnsat();
-        }
-        saved_index = trail_->Index();
+      const size_t old_size = clause->size();
+      if (clauses_propagator_->RemoveFixedLiteralsAndTestIfTrue(clause)) {
+        ++num_detached_clauses;
+        continue;
       }
-      continue;
+
+      const size_t new_size = clause->size();
+      if (new_size == old_size) continue;
+
+      if (new_size == 2) {
+        // This clause is now a binary clause, treat it separately. Note that
+        // it is safe to do that because this clause can't be used as a reason
+        // since we are at level zero and the clause is not satisfied.
+        AddBinaryClauseInternal(clause->FirstLiteral(),
+                                clause->SecondLiteral());
+        clauses_propagator_->LazyDelete(
+            clause, DeletionSourceForStat::PROMOTED_TO_BINARY);
+        ++num_binary;
+
+        // Tricky: AddBinaryClauseInternal() might fix literals if there is some
+        // unprocessed equivalent literal, and the binary clause turns out to be
+        // unary. This shouldn't happen otherwise the logic of
+        // RemoveFixedLiteralsAndTestIfTrue() might fail.
+        //
+        // To prevent issues, we reach the fix point propagation each time this
+        // is triggered. Note that the already processed clauses might contain
+        // new fixed literals, that is okay, we will clean them up on the next
+        // call to ProcessNewlyFixedVariables().
+        //
+        // Note that this is hard to avoid, because as we find new equivalences,
+        // more clauses can become binary which might cause new equivalences...
+        // And making sure we reach a fix-point each time DetectEquivalence() is
+        // called is not so easy.
+        if (trail_->Index() > saved_index) {
+          if (!FinishPropagation()) {
+            return SetModelUnsat();
+          }
+          saved_index = trail_->Index();
+        }
+        continue;
+      }
     }
   }
 
@@ -2252,7 +2337,8 @@ bool SatSolver::ProcessNewlyFixedVariables() {
   // all the checks are happy.
   CHECK(binary_implication_graph_->Propagate(trail_));
   binary_implication_graph_->RemoveFixedVariables();
-  deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
+  deterministic_time_of_last_fixed_variables_cleanup_ =
+      time_limit_->GetElapsedDeterministicTime();
   return true;
 }
 
@@ -2310,9 +2396,9 @@ bool SatSolver::Propagate(bool potentially_process_fixed_variables) {
     //
     // TODO(user): Do more advanced preprocessing?
     if (CurrentDecisionLevel() == 0 && potentially_process_fixed_variables) {
-      const double kMinDeterministicTimeBetweenCleanups = 1.0;
+      const double kMinDeterministicTimeBetweenCleanups = 3.0;
       if (num_processed_fixed_variables_ < trail_->Index() &&
-          deterministic_time() >
+          time_limit_->GetElapsedDeterministicTime() >
               deterministic_time_of_last_fixed_variables_cleanup_ +
                   kMinDeterministicTimeBetweenCleanups) {
         if (!ProcessNewlyFixedVariables()) return false;
@@ -2324,7 +2410,6 @@ bool SatSolver::Propagate(bool potentially_process_fixed_variables) {
     // non-empty() now.
     if (PropagationIsDone()) return true;
   }
-  return true;
 }
 
 void SatSolver::InitializePropagators() {
@@ -2504,12 +2589,15 @@ void SatSolver::ComputeFirstUIPConflict(
   // propagation done at the current level will pass through it at some point.
   SatClause* sat_clause = trail_->FailingSatClause();
   DCHECK(!conflict_or_reason_to_expand.empty());
+  uint64_t num_expanded_literals = 0;
+  DeterministicTimer<{.scale = 2.4e-08, .offset = 2.5e-06}> timer(time_limit_);
   while (true) {
     const int old_conflict_size = conflict->size();
     const int old_heap_size = last_level_heap.size();
 
     int num_new_vars_at_positive_level = 0;
     int num_vars_at_positive_level_in_clause_to_expand = 0;
+    num_expanded_literals += conflict_or_reason_to_expand.size();
     for (const Literal literal : conflict_or_reason_to_expand) {
       const BooleanVariable var = literal.Variable();
       const int level = AssignmentLevel(var);
@@ -2542,6 +2630,7 @@ void SatSolver::ComputeFirstUIPConflict(
           reason_used_to_infer_the_conflict->size() > 1) {
         // The "old" conflict should subsume all of that.
         const RecycledVarLock literals_lock(tmp_literals_guard_);
+        num_expanded_literals += old_conflict_size + old_heap_size;
         tmp_literals_.clear();
         tmp_literals_.push_back(previous_literal.Negated());
         for (int i = 0; i < old_conflict_size; ++i) {
@@ -2617,6 +2706,7 @@ void SatSolver::ComputeFirstUIPConflict(
     absl::c_pop_heap(last_level_heap);
     last_level_heap.pop_back();
   }
+  timer.Advance(num_expanded_literals);
 }
 
 void SatSolver::ComputeUnionOfReasons(absl::Span<const Literal> input,
@@ -3202,46 +3292,55 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   typedef std::pair<const SatClause*, ClauseInfo> Entry;
   std::vector<Entry> entries;
   auto& clauses_info = *(clauses_propagator_->mutable_clauses_info());
-  for (auto& entry : clauses_info) {
-    DCHECK(!entry.first->empty());  // Should have been deleted !
-    entry.second.num_cleanup_rounds_since_last_bumped++;
-    if (clauses_propagator_->ClauseIsUsedAsReason(entry.first)) continue;
+  {
+    DeterministicTimer<{.scale = 1.1e-07}> timer(time_limit_,
+                                                 clauses_info.size());
+    for (auto& entry : clauses_info) {
+      DCHECK(!entry.first->empty());  // Should have been deleted !
+      entry.second.num_cleanup_rounds_since_last_bumped++;
+      if (clauses_propagator_->ClauseIsUsedAsReason(entry.first)) continue;
 
-    if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier1() &&
-        entry.second.num_cleanup_rounds_since_last_bumped <= 32) {
-      continue;
+      if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier1() &&
+          entry.second.num_cleanup_rounds_since_last_bumped <= 32) {
+        continue;
+      }
+
+      if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier2() &&
+          entry.second.num_cleanup_rounds_since_last_bumped <= 1) {
+        continue;
+      }
+
+      // The LBD should always have been updated to be <= size.
+      DCHECK_LE(entry.second.lbd, entry.first->size());
+      entries.push_back(entry);
     }
-
-    if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier2() &&
-        entry.second.num_cleanup_rounds_since_last_bumped <= 1) {
-      continue;
-    }
-
-    // The LBD should always have been updated to be <= size.
-    DCHECK_LE(entry.second.lbd, entry.first->size());
-    entries.push_back(entry);
   }
   const int num_protected_clauses =
       clauses_propagator_->num_removable_clauses() - entries.size();
 
-  if (parameters_->clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
-    // Order the clauses by decreasing LBD and then increasing activity.
-    std::sort(entries.begin(), entries.end(),
-              [](const Entry& a, const Entry& b) {
-                if (a.second.lbd == b.second.lbd) {
-                  return a.second.activity < b.second.activity;
-                }
-                return a.second.lbd > b.second.lbd;
-              });
-  } else {
-    // Order the clauses by increasing activity and then decreasing LBD.
-    std::sort(entries.begin(), entries.end(),
-              [](const Entry& a, const Entry& b) {
-                if (a.second.activity == b.second.activity) {
+  {
+    const uint64_t n = entries.size();
+    DeterministicTimer<{.scale = 9.0e-09}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    if (parameters_->clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
+      // Order the clauses by decreasing LBD and then increasing activity.
+      std::sort(entries.begin(), entries.end(),
+                [](const Entry& a, const Entry& b) {
+                  if (a.second.lbd == b.second.lbd) {
+                    return a.second.activity < b.second.activity;
+                  }
                   return a.second.lbd > b.second.lbd;
-                }
-                return a.second.activity < b.second.activity;
-              });
+                });
+    } else {
+      // Order the clauses by increasing activity and then decreasing LBD.
+      std::sort(entries.begin(), entries.end(),
+                [](const Entry& a, const Entry& b) {
+                  if (a.second.activity == b.second.activity) {
+                    return a.second.lbd > b.second.lbd;
+                  }
+                  return a.second.activity < b.second.activity;
+                });
+    }
   }
 
   // The clauses we want to keep are at the end of the vector.
@@ -3268,11 +3367,15 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   }
   if (num_deleted_clauses > 0) {
     entries.resize(num_deleted_clauses);
-    for (const Entry& entry : entries) {
-      const SatClause* clause = entry.first;
-      counters_.num_literals_forgotten += clause->size();
-      clauses_propagator_->LazyDelete(clause,
-                                      DeletionSourceForStat::GARBAGE_COLLECTED);
+    {
+      DeterministicTimer<{.scale = 1.5e-07}> timer(time_limit_,
+                                                   num_deleted_clauses);
+      for (const Entry& entry : entries) {
+        const SatClause* clause = entry.first;
+        counters_.num_literals_forgotten += clause->size();
+        clauses_propagator_->LazyDelete(
+            clause, DeletionSourceForStat::GARBAGE_COLLECTED);
+      }
     }
     clauses_propagator_->CleanUpWatchers();
 

@@ -26,6 +26,8 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_status.h"
+#include "ortools/util/deterministic_time.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -52,7 +54,8 @@ namespace sat {
 // any. Try to improve the situation.
 class VarDomination {
  public:
-  VarDomination() = default;
+  VarDomination() : time_limit_(&dummy_time_limit_) {}
+  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
 
   // This is the translation used from "ref" to IntegerVariable. The API
   // understands the cp_model.proto ref, but internally we only store
@@ -214,6 +217,9 @@ class VarDomination {
   std::vector<IntegerVariable> other_buffer_;
   util_intops::StrongVector<IntegerVariable, IntegerVariableSpan>
       dominating_vars_;
+
+  TimeLimit* time_limit_ = nullptr;
+  TimeLimit dummy_time_limit_;
 };
 
 // This detects variables that can move freely in one direction, or that can
@@ -223,12 +229,17 @@ class VarDomination {
 // usually reduce really large bounds!
 class DualBoundStrengthening {
  public:
+  DualBoundStrengthening() : time_limit_(&dummy_time_limit_) {}
+  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
+
   // Reset the class to a clean state.
   // This must be called before processing the constraints.
   void Reset(int num_variables) {
+    DeterministicTimer<{.scale = 5.7e-09}> timer(time_limit_);
     can_freely_decrease_until_.assign(2 * num_variables, kMinIntegerValue);
     num_locks_.assign(2 * num_variables, 0);
     locking_ct_index_.assign(2 * num_variables, -1);
+    timer.Advance(num_variables);
   }
 
   // All constraints should be mapped to one or more calls to these functions.
@@ -281,6 +292,9 @@ class DualBoundStrengthening {
   util_intops::StrongVector<IntegerVariable, int> locking_ct_index_;
 
   int num_deleted_constraints_ = 0;
+
+  TimeLimit* time_limit_ = nullptr;
+  TimeLimit dummy_time_limit_;
 };
 
 // Detects the variable dominance relations within the given model. Note that

@@ -1,0 +1,145 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Protocol buffers describing a Mixed-Integer Programming (MIP) model for
+// presolve, as seen by operations_research::sat::MPModelProtoWrapper.
+
+syntax = "proto2";
+
+package operations_research.sat;
+
+option csharp_namespace = "Google.OrTools.Sat";
+option java_package = "com.google.ortools.sat";
+option java_multiple_files = true;
+
+// A variable is always constrained in the form:
+//   lower_bound <= x <= upper_bound
+// where lower_bound and upper_bound can form a singleton, a finite interval, a
+// semi-infinite interval, or the infinite interval [-inf, +inf].
+message MipVariableProto {
+  // If lower_bound > upper_bound, the model is trivially infeasible.
+  optional double lower_bound = 1 [default = -inf];
+  optional double upper_bound = 2 [default = inf];
+
+  // The coefficient of the variable in the objective. Must be finite.
+  optional double objective_coefficient = 3 [default = 0.0];
+
+  // True if the variable is constrained to be integer.
+  optional bool is_integer = 4 [default = false];
+
+  // The name of the variable.
+  optional string name = 5 [default = ""];
+
+  // Restrict the variable to be within `maximum_distance_to_integer` of some
+  // integer `z`. Must be finite and in `(0.0, 0.5]`. A value of `0.5` imposes
+  // no integrality restriction (every real number is within `0.5` of an
+  // integer), while `0.0` is disallowed since one should use
+  // `is_integer = true` instead. Ignored if `is_integer == true`.
+  // Note that this API is unsupported and might disappear in future versions
+  // of OR-Tools. Its main usage today is to support presolve heuristics that
+  // detect problems where continuous solutions are close to integers.
+  optional double maximum_distance_to_integer = 6 [default = 0.5];
+}
+
+// Encodes a partial (or full) assignment of the variables of a MipModelProto
+// problem. The indices in vars should be unique and valid variable indices of
+// the associated problem.
+message MipPartialVariableAssignment {
+  repeated int32 vars = 1 [packed = true];
+  repeated double values = 2 [packed = true];
+}
+
+// A linear constraint optionally guarded by a conjunction of integer literals:
+//   (forall j, variables[enforcement_vars[j]] == enforcement_values[j])
+//       => lower_bound <= sum_i coeffs[i] * variables[vars[i]] <= upper_bound.
+//
+// Constraints are ignored unless all enforcement literals hold. Feasibility
+// guarantees are defined in infinite-precision arithmetic using a
+// per-constraint `tolerance >= 0`:
+// - The inner solution space is defined as solution values satisfying this
+//   constraint without tolerance.
+// - The outer solution space is defined as solution values satisfying the
+//   constraint with the constraint tolerance, i.e.
+//   `lower_bound - tolerance <= sum_i coeffs[i] * variables[vars[i]] <=
+//   upper_bound + tolerance`.
+message EnforcedLinearConstraintProto {
+  // Sparse linear expression `sum_i coeffs[i] * variables[vars[i]]`.
+  // `vars` and `coeffs` must have the same size, `vars` must contain valid
+  // unique indices into `MipModelProto.variables`, and all `coeffs` must be
+  // finite.
+  repeated int32 vars = 1 [packed = true];
+  repeated double coeffs = 2 [packed = true];
+
+  // Lower and upper bounds on the linear expression. Bounds may be `-inf` or
+  // `+inf` to indicate an unconstrained side, and `lower_bound > upper_bound`
+  // makes the constraint trivially infeasible in the inner solution space.
+  optional double lower_bound = 3 [default = -inf];
+  optional double upper_bound = 4 [default = inf];
+
+  // Outward per-constraint feasibility tolerance (error budget). Must be finite
+  // and non-negative (`>= 0.0`).
+  optional double tolerance = 5 [default = 0.0];
+
+  // Conjunction of enforcement literals `variables[enforcement_vars[j]] ==
+  // enforcement_values[j]`. `enforcement_vars` and `enforcement_values` must
+  // have the same size, and each `enforcement_vars[j]` must index an integer
+  // variable (`is_integer == true`). Empty means unconditionally enforced.
+  repeated int32 enforcement_vars = 6 [packed = true];
+  repeated int64 enforcement_values = 7 [packed = true];
+
+  // Optional name of the constraint, for debugging and logging.
+  optional string name = 8;
+}
+
+// Input (and intermediate) MIP model for presolve, representing the problem as
+// a minimization over `MipVariableProto` variables subject to uniform
+// `EnforcedLinearConstraintProto` constraints.
+//
+// Next ID: 8.
+message MipModelProto {
+  // Optional name of the model.
+  optional string name = 1;
+
+  // Variables of the model, including exact variable bounds, integrality, and
+  // the linear coefficients of the inner minimization objective.
+  repeated MipVariableProto variables = 2;
+
+  // Uniform list of enforced (or unconditional) linear constraints.
+  repeated EnforcedLinearConstraintProto constraints = 3;
+
+  // The inner model is always a minimization problem with inner objective:
+  //   inner_objective(x) = sum_v variables[v].objective_coefficient * x[v].
+  //
+  // The objective value in the original user-facing model is given by:
+  //   (inner_objective(x) + objective_offset) * objective_scaling.
+  //
+  // In particular, if the original model was a maximization problem, its
+  // objective coefficients and offset are negated and `objective_scaling` is
+  // set to `-1.0` (so `objective_scaling < 0.0` indicates maximization).
+  // `objective_offset` must be finite, and `objective_scaling` must be finite
+  // and non-zero.
+  optional double objective_offset = 4 [default = 0.0];
+  optional double objective_scaling = 5 [default = 1.0];
+
+  // Optional solution hint over `variables`.
+  optional MipPartialVariableAssignment solution_hint = 6;
+
+  // Loosen (subtract) the returned inner objective lower bound by this amount,
+  // measured in unscaled inner objective units. Must be finite and `>= 0.0`.
+  // This is different from `objective_offset` that applies both to the
+  // objective value of primal solutions and to the lower bound. This is mainly
+  // used to support presolve heuristics, which might incur a small (but of
+  // bounded magnitude) rounding error on the objective. Note that this API is
+  // unsupported and might disappear in future versions of OR-Tools.
+  optional double objective_max_rounding_error = 7 [default = 0.0];
+}

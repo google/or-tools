@@ -28,6 +28,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/scheduling.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -72,6 +73,7 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
   SchedulingDemandHelper* demands_;
+  TimeLimit* time_limit_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
 

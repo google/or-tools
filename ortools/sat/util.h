@@ -41,6 +41,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/fp_utils.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -610,13 +611,6 @@ bool DiophantineEquationOfSizeTwoHasSolutionInDomain(const Domain& x, int64_t a,
 int64_t FloorSquareRoot(int64_t a);
 int64_t CeilSquareRoot(int64_t a);
 
-// Converts a double to int64_t and caps large magnitudes at kint64min/max.
-// We also arbitrarily return 0 for NaNs.
-//
-// NOTE(user): This is similar to SaturatingFloatToInt(), but we use our own
-// since we need to open source it and the code is simple enough.
-int64_t SafeDoubleToInt64(double value);
-
 // Returns the multiple of base closest to value. If there is a tie, we return
 // the one closest to zero. This way we have ClosestMultiple(x) =
 // -ClosestMultiple(-x) which is important for how this is used.
@@ -1127,17 +1121,6 @@ inline bool IsStrictlyIncluded(Bitset64<LiteralIndex>::ConstView in_subset,
 // ============================================================================
 // Implementation.
 // ============================================================================
-
-inline int64_t SafeDoubleToInt64(double value) {
-  if (std::isnan(value)) return 0;
-  if (value >= static_cast<double>(kint64max)) {
-    return kint64max;
-  }
-  if (value <= static_cast<double>(kint64min)) {
-    return kint64min;
-  }
-  return static_cast<int64_t>(value);
-}
 
 // Tells whether an int128 can be cast to an int64_t that can be negated.
 inline bool IsNegatableInt64(absl::int128 x) {

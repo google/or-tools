@@ -42,6 +42,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -462,6 +463,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
     scratch_task_set_.ClearAndReserve(NumTasks());
     return scratch_task_set_;
   }
+  TimeLimit* time_limit() const { return time_limit_; }
 
  private:
   // Tricky: when a task is optional, it is possible its size min is negative,
@@ -498,6 +500,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   Trail* trail_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
+  TimeLimit* time_limit_;
   Linear2Bounds* linear2_bounds_;
   RootLevelLinear2Bounds* root_level_lin2_bounds_;
   EnforcementHelper& enforcement_helper_;

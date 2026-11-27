@@ -35,8 +35,10 @@
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/scheduling.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -71,7 +73,8 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
     : capacity_(capacity),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       helper_(helper),
-      demands_(demands) {
+      demands_(demands),
+      time_limit_(model->GetOrCreate<TimeLimit>()) {
   const int num_tasks = helper_->NumTasks();
   task_to_start_event_.resize(num_tasks);
 }
@@ -122,12 +125,14 @@ bool CumulativeEnergyConstraint::Propagate() {
 
   // Main loop: insert tasks by increasing end_max, check for overloads.
   const auto by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
-  for (const auto [current_task, current_end] :
-       ::gtl::reversed_view(by_decreasing_end_max)) {
-    if (task_to_start_event_[current_task] == -1) continue;
+  {
+    DeterministicTimer<{.scale = 1.3e-07}> timer(time_limit_);
+    for (const auto [current_task, current_end] :
+         ::gtl::reversed_view(by_decreasing_end_max)) {
+      if (task_to_start_event_[current_task] == -1) continue;
 
-    // Add the current task to the tree.
-    {
+      // Add the current task to the tree.
+      timer.Advance(1);
       const int current_event = task_to_start_event_[current_task];
       const IntegerValue start_min = start_event_task_time_[current_event].time;
       const bool is_present = helper_->IsPresent(current_task);
@@ -142,106 +147,107 @@ bool CumulativeEnergyConstraint::Propagate() {
                                              start_min * capacity_max,
                                              demands_->EnergyMax(current_task));
       }
-    }
 
-    if (tree_has_mandatory_intervals) {
-      // Find the critical interval.
-      const IntegerValue envelope = theta_tree_.GetEnvelope();
-      const int critical_event =
-          theta_tree_.GetMaxEventWithEnvelopeGreaterThan(envelope - 1);
-      const IntegerValue window_start =
-          start_event_task_time_[critical_event].time;
-      const IntegerValue window_end = current_end;
-      const IntegerValue window_size = window_end - window_start;
-      if (window_size == 0) continue;
-      const IntegerValue new_capacity_min =
-          CeilRatio(envelope - window_start * capacity_max, window_size);
+      if (tree_has_mandatory_intervals) {
+        // Find the critical interval.
+        const IntegerValue envelope = theta_tree_.GetEnvelope();
+        const int critical_event =
+            theta_tree_.GetMaxEventWithEnvelopeGreaterThan(envelope - 1);
+        const IntegerValue window_start =
+            start_event_task_time_[critical_event].time;
+        const IntegerValue window_end = current_end;
+        const IntegerValue window_size = window_end - window_start;
+        if (window_size == 0) continue;
+        const IntegerValue new_capacity_min =
+            CeilRatio(envelope - window_start * capacity_max, window_size);
 
-      // Push the new capacity min, note that this can fail if it goes above the
-      // maximum capacity.
-      //
-      // TODO(user): We do not need the capacity max in the reason, but by using
-      // a lower one, we could maybe have propagated the minimum capacity more.
-      // Investigate.
-      if (new_capacity_min > integer_trail_->LowerBound(capacity_)) {
+        // Push the new capacity min, note that this can fail if it goes above
+        // the maximum capacity.
+        //
+        // TODO(user): We do not need the capacity max in the reason, but by
+        // using a lower one, we could maybe have propagated the minimum
+        // capacity more. Investigate.
+        if (new_capacity_min > integer_trail_->LowerBound(capacity_)) {
+          helper_->ResetReason();
+          for (int event = critical_event; event < num_events; event++) {
+            if (start_event_is_present_[event]) {
+              const int task = start_event_task_time_[event].task_index;
+              helper_->AddPresenceReason(task);
+              demands_->AddEnergyMinReason(task);
+              helper_->AddStartMinReason(task, window_start);
+              helper_->AddEndMaxReason(task, window_end);
+            }
+          }
+          if (capacity_.var == kNoIntegerVariable) {
+            return helper_->ReportConflict();
+          } else {
+            if (!helper_->PushIntegerLiteral(
+                    capacity_.GreaterOrEqual(new_capacity_min))) {
+              return false;
+            }
+          }
+        }
+      }
+
+      // Reduce energy of all tasks whose max energy would exceed an interval
+      // ending at current_end.
+      while (theta_tree_.GetOptionalEnvelope() > current_end * capacity_max) {
+        // Some task's max energy is too high, reduce its maximal energy.
+        // Explain with tasks present in the critical interval.
+        // If it is optional, it might get excluded, in that case,
+        // remove it from the tree.
+        // TODO(user): This could be done lazily.
+        // TODO(user): the same required task can have its energy pruned
+        // several times, making this algorithm O(n^2 log n). Is there a way
+        // to get the best pruning in one go? This looks like edge-finding not
+        // being able to converge in one pass, so it might not be easy.
         helper_->ResetReason();
+        int critical_event;
+        int event_with_new_energy_max;
+        IntegerValue new_energy_max;
+        theta_tree_.GetEventsWithOptionalEnvelopeGreaterThan(
+            current_end * capacity_max, &critical_event,
+            &event_with_new_energy_max, &new_energy_max);
+
+        const IntegerValue window_start =
+            start_event_task_time_[critical_event].time;
+
+        // TODO(user): Improve window_end using envelope of critical event.
+        const IntegerValue window_end = current_end;
+        timer.Advance(1);
         for (int event = critical_event; event < num_events; event++) {
           if (start_event_is_present_[event]) {
+            if (event == event_with_new_energy_max) continue;
             const int task = start_event_task_time_[event].task_index;
             helper_->AddPresenceReason(task);
-            demands_->AddEnergyMinReason(task);
             helper_->AddStartMinReason(task, window_start);
             helper_->AddEndMaxReason(task, window_end);
+            demands_->AddEnergyMinReason(task);
           }
         }
-        if (capacity_.var == kNoIntegerVariable) {
-          return helper_->ReportConflict();
+        if (capacity_.var != kNoIntegerVariable) {
+          helper_->AddIntegerReason(
+              integer_trail_->UpperBoundAsLiteral(capacity_.var));
+        }
+
+        const int task_with_new_energy_max =
+            start_event_task_time_[event_with_new_energy_max].task_index;
+        helper_->AddStartMinReason(task_with_new_energy_max, window_start);
+        helper_->AddEndMaxReason(task_with_new_energy_max, window_end);
+        if (!demands_->DecreaseEnergyMax(task_with_new_energy_max,
+                                         new_energy_max)) {
+          return false;
+        }
+
+        if (helper_->IsPresent(task_with_new_energy_max)) {
+          theta_tree_.AddOrUpdateEvent(
+              task_to_start_event_[task_with_new_energy_max],
+              start_event_task_time_[event_with_new_energy_max].time *
+                  capacity_max,
+              demands_->EnergyMin(task_with_new_energy_max), new_energy_max);
         } else {
-          if (!helper_->PushIntegerLiteral(
-                  capacity_.GreaterOrEqual(new_capacity_min))) {
-            return false;
-          }
+          theta_tree_.RemoveEvent(event_with_new_energy_max);
         }
-      }
-    }
-
-    // Reduce energy of all tasks whose max energy would exceed an interval
-    // ending at current_end.
-    while (theta_tree_.GetOptionalEnvelope() > current_end * capacity_max) {
-      // Some task's max energy is too high, reduce its maximal energy.
-      // Explain with tasks present in the critical interval.
-      // If it is optional, it might get excluded, in that case,
-      // remove it from the tree.
-      // TODO(user): This could be done lazily.
-      // TODO(user): the same required task can have its energy pruned
-      // several times, making this algorithm O(n^2 log n). Is there a way
-      // to get the best pruning in one go? This looks like edge-finding not
-      // being able to converge in one pass, so it might not be easy.
-      helper_->ResetReason();
-      int critical_event;
-      int event_with_new_energy_max;
-      IntegerValue new_energy_max;
-      theta_tree_.GetEventsWithOptionalEnvelopeGreaterThan(
-          current_end * capacity_max, &critical_event,
-          &event_with_new_energy_max, &new_energy_max);
-
-      const IntegerValue window_start =
-          start_event_task_time_[critical_event].time;
-
-      // TODO(user): Improve window_end using envelope of critical event.
-      const IntegerValue window_end = current_end;
-      for (int event = critical_event; event < num_events; event++) {
-        if (start_event_is_present_[event]) {
-          if (event == event_with_new_energy_max) continue;
-          const int task = start_event_task_time_[event].task_index;
-          helper_->AddPresenceReason(task);
-          helper_->AddStartMinReason(task, window_start);
-          helper_->AddEndMaxReason(task, window_end);
-          demands_->AddEnergyMinReason(task);
-        }
-      }
-      if (capacity_.var != kNoIntegerVariable) {
-        helper_->AddIntegerReason(
-            integer_trail_->UpperBoundAsLiteral(capacity_.var));
-      }
-
-      const int task_with_new_energy_max =
-          start_event_task_time_[event_with_new_energy_max].task_index;
-      helper_->AddStartMinReason(task_with_new_energy_max, window_start);
-      helper_->AddEndMaxReason(task_with_new_energy_max, window_end);
-      if (!demands_->DecreaseEnergyMax(task_with_new_energy_max,
-                                       new_energy_max)) {
-        return false;
-      }
-
-      if (helper_->IsPresent(task_with_new_energy_max)) {
-        theta_tree_.AddOrUpdateEvent(
-            task_to_start_event_[task_with_new_energy_max],
-            start_event_task_time_[event_with_new_energy_max].time *
-                capacity_max,
-            demands_->EnergyMin(task_with_new_energy_max), new_energy_max);
-      } else {
-        theta_tree_.RemoveEvent(event_with_new_energy_max);
       }
     }
   }

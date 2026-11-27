@@ -21,6 +21,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -74,6 +75,29 @@ TEST(FailedLiteralProbingRoundTest, TrivialExample) {
 
   EXPECT_TRUE(FailedLiteralProbing(&model).DoOneRound(ProbingOptions()));
   EXPECT_TRUE(sat_soler->Assignment().LiteralIsTrue(a));
+}
+
+TEST(LookForTrivialSatSolutionTest, PreservesElapsedDeterministicTimeOnUnsat) {
+  Model model;
+  const Literal a(model.Add(NewBooleanVariable()), true);
+  const Literal b(model.Add(NewBooleanVariable()), true);
+  const Literal c(model.Add(NewBooleanVariable()), true);
+  // Unsatisfiable 3-SAT instance without level-0 propagation conflict.
+  for (const Literal la : {a, a.Negated()}) {
+    for (const Literal lb : {b, b.Negated()}) {
+      for (const Literal lc : {c, c.Negated()}) {
+        AddClauseConstraint({la, lb, lc}, &model);
+      }
+    }
+  }
+  auto* time_limit = model.GetOrCreate<TimeLimit>();
+  time_limit->ChangeDeterministicLimit(42.0);
+  time_limit->AdvanceDeterministicTime(1.5);
+
+  EXPECT_FALSE(LookForTrivialSatSolution(/*deterministic_time_limit=*/1.0,
+                                         &model, /*logger=*/nullptr));
+  EXPECT_GT(time_limit->GetElapsedDeterministicTime(), 1.5);
+  EXPECT_DOUBLE_EQ(time_limit->GetDeterministicLimit(), 42.0);
 }
 
 }  // namespace

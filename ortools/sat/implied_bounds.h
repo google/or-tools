@@ -39,6 +39,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -91,6 +92,7 @@ class ImpliedBounds {
  public:
   explicit ImpliedBounds(Model* model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -169,6 +171,7 @@ class ImpliedBounds {
 
  private:
   const SatParameters& parameters_;
+  TimeLimit* time_limit_;
   SatSolver* sat_solver_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
@@ -393,6 +396,7 @@ class ProductDetector {
   // Fixed at creation time.
   const bool enabled_;
   const bool rlt_enabled_;
+  TimeLimit* time_limit_;
   SatSolver* sat_solver_;
   Trail* trail_;
   IntegerTrail* integer_trail_;

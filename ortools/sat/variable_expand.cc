@@ -307,39 +307,63 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
 
   const int64_t max_le_value = encoded_le_literal_.rbegin()->first;
   const int64_t max_ge_value = var_domain_.ValueAtOrAfter(max_le_value + 1);
-  ConstraintProto* not_le = nullptr;
-  ConstraintProto* not_ge = context_->AddConstraint();
-  ConstraintProto* le = context_->AddConstraint();
-  ConstraintProto* ge = nullptr;
+  bool has_not_le = false;
+  int not_le_enf = 0;
+  std::vector<int> not_le_lits;
+  bool has_not_ge = true;
+  std::vector<int> not_ge_lits;
+  bool has_le = true;
+  std::vector<int> le_lits;
+  bool has_ge = false;
+  int ge_enf = 0;
+  std::vector<int> ge_lits;
+
+  const auto flush_bool_or = [this](int enf, absl::Span<const int> lits) {
+    if (lits.empty()) return;
+    context_->AddEnforcedConstraint({enf}, [lits](ConstraintProto* new_ct) {
+      new_ct->mutable_bool_or()->mutable_literals()->Assign(lits.begin(),
+                                                            lits.end());
+    });
+  };
+  const auto flush_bool_and = [this](int enf, absl::Span<const int> lits) {
+    if (lits.empty()) return;
+    context_->AddEnforcedConstraint({enf}, [lits](ConstraintProto* new_ct) {
+      new_ct->mutable_bool_and()->mutable_literals()->Assign(lits.begin(),
+                                                             lits.end());
+    });
+  };
 
   for (const auto [value, eq_literal] : values.encoding()) {
     const int ne_literal = NegatedRef(eq_literal);
 
     // Lower or equal.
-    if (not_le != nullptr) {
-      not_le->mutable_bool_and()->add_literals(ne_literal);
+    if (has_not_le) {
+      not_le_lits.push_back(ne_literal);
     }
-    if (le != nullptr) {
-      le->mutable_bool_or()->add_literals(eq_literal);
+    if (has_le) {
+      le_lits.push_back(eq_literal);
     }
 
     const auto it_le = encoded_le_literal_.find(value);
     if (it_le != encoded_le_literal_.end()) {
       const int le_literal = it_le->second;
 
-      DCHECK(le != nullptr);
-      le->add_enforcement_literal(le_literal);
+      DCHECK(has_le);
+      flush_bool_or(le_literal, le_lits);
+      le_lits.clear();
       if (value < max_le_value) {
-        le = context_->AddConstraint();
-        le->mutable_bool_or()->add_literals(le_literal);
+        le_lits.push_back(le_literal);
       } else {
-        le = nullptr;
+        has_le = false;
       }
 
-      if (not_le != nullptr) {
-        not_le->mutable_bool_and()->add_literals(le_literal);
+      if (has_not_le) {
+        not_le_lits.push_back(le_literal);
+        flush_bool_and(not_le_enf, not_le_lits);
+        not_le_lits.clear();
       }
-      not_le = context_->AddEnforcedConstraint({le_literal});
+      has_not_le = true;
+      not_le_enf = le_literal;
     }
 
     // Greater or equal.
@@ -349,27 +373,38 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
       if (it_ge != encoded_le_literal_.end()) {
         const int ge_literal = NegatedRef(it_ge->second);
 
-        if (ge != nullptr) {
-          ge->mutable_bool_or()->add_literals(ge_literal);
+        if (has_ge) {
+          ge_lits.push_back(ge_literal);
+          flush_bool_or(ge_enf, ge_lits);
+          ge_lits.clear();
         }
-        ge = context_->AddEnforcedConstraint({ge_literal});
+        has_ge = true;
+        ge_enf = ge_literal;
 
-        DCHECK(not_ge != nullptr);
-        not_ge->add_enforcement_literal(ge_literal);
+        DCHECK(has_not_ge);
+        flush_bool_and(ge_literal, not_ge_lits);
+        not_ge_lits.clear();
         if (value != max_ge_value) {
-          not_ge = context_->AddConstraint();
-          not_ge->mutable_bool_and()->add_literals(ge_literal);
+          not_ge_lits.push_back(ge_literal);
         } else {
-          not_ge = nullptr;
+          has_not_ge = false;
         }
       }
     }
-    if (ge != nullptr) {
-      ge->mutable_bool_or()->add_literals(eq_literal);
+    if (has_ge) {
+      ge_lits.push_back(eq_literal);
     }
-    if (not_ge != nullptr) {
-      not_ge->mutable_bool_and()->add_literals(ne_literal);
+    if (has_not_ge) {
+      not_ge_lits.push_back(ne_literal);
     }
+  }
+  DCHECK(!has_le);
+  DCHECK(!has_not_ge);
+  if (has_not_le) {
+    flush_bool_and(not_le_enf, not_le_lits);
+  }
+  if (has_ge) {
+    flush_bool_or(ge_enf, ge_lits);
   }
 }
 
@@ -773,23 +808,27 @@ FeasibilityStatus TryToReplaceVariableByItsEncoding(
     // Note, the use of exactly_one here is correct because this is a partition,
     // and the two equations complement each other.
     for (const EncodingLinear1& info_in : lin_domain) {
-      BoolArgumentProto* exo = context->AddConstraint()->mutable_exactly_one();
-      exo->add_literals(NegatedRef(info_in.enforcement_literal));
-      for (const int64_t v : info_in.rhs.Values()) {
-        exo->add_literals(values.literal(v));
-      }
+      context->AddConstraint([&](ConstraintProto* new_ct) {
+        BoolArgumentProto* exo = new_ct->mutable_exactly_one();
+        exo->add_literals(NegatedRef(info_in.enforcement_literal));
+        for (const int64_t v : info_in.rhs.Values()) {
+          exo->add_literals(values.literal(v));
+        }
+      });
     }
   } else {
     // We encode lit => var in domain with:
     //     not(lit) => forall v in domain.Complement(), x != v
     for (const EncodingLinear1& info_in : lin_domain) {
-      ConstraintProto* remove =
-          context->AddEnforcedConstraint({info_in.enforcement_literal});
       const Domain implied_complement =
           var_domain.IntersectionWith(info_in.rhs.Complement());
-      for (const int64_t v : implied_complement.Values()) {
-        remove->mutable_bool_and()->add_literals(NegatedRef(values.literal(v)));
-      }
+      context->AddEnforcedConstraint(
+          {info_in.enforcement_literal}, [&](ConstraintProto* new_ct) {
+            for (const int64_t v : implied_complement.Values()) {
+              new_ct->mutable_bool_and()->add_literals(
+                  NegatedRef(values.literal(v)));
+            }
+          });
     }
   }
 
@@ -799,10 +838,11 @@ FeasibilityStatus TryToReplaceVariableByItsEncoding(
     const int e_i = info_i.enforcement_literal;
     const int e_j = info_j.enforcement_literal;
     if (e_i == NegatedRef(e_j)) return;
-    BoolArgumentProto* incompatible =
-        context->AddConstraint()->mutable_bool_or();
-    incompatible->add_literals(NegatedRef(e_i));
-    incompatible->add_literals(NegatedRef(e_j));
+    context->AddConstraint([e_i, e_j](ConstraintProto* new_ct) {
+      BoolArgumentProto* incompatible = new_ct->mutable_bool_or();
+      incompatible->add_literals(NegatedRef(e_i));
+      incompatible->add_literals(NegatedRef(e_j));
+    });
     context->UpdateRuleStats(
         "variables: add at_most_one between incompatible complex encodings");
   };
@@ -934,11 +974,12 @@ FeasibilityStatus TryToReplaceVariableByItsEncoding(
   }
 
   // This must be done after we removed all the constraints containing var.
-  ConstraintProto* exo = context->AddConstraint();
-  BoolArgumentProto* arg = exo->mutable_exactly_one();
-  for (const auto& [value, literal] : values.encoding()) {
-    arg->add_literals(literal);
-  }
+  context->AddConstraint([&values](ConstraintProto* new_ct) {
+    BoolArgumentProto* arg = new_ct->mutable_exactly_one();
+    for (const auto& [value, literal] : values.encoding()) {
+      arg->add_literals(literal);
+    }
+  });
 
   // To simplify the postsolve, we output a single constraint to infer X from
   // the bi: X = sum bi * (Vi - min_value) + min_value, falling back to

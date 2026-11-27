@@ -2821,6 +2821,99 @@ TEST(ImpliedBoundsProcessorTest,
   EXPECT_EQ(info.implied_bound, IntegerValue(60));
 }
 
+TEST(ImpliedBoundsProcessorTest,
+     SkipsExtremeImpliedBoundCoeffThatWouldOverflowRoundingFunction) {
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_use_implied_bounds(true);
+  auto* integer_encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model.GetOrCreate<ImpliedBounds>();
+
+  constexpr int64_t kHugeBound = int64_t{1} << 59;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, kHugeBound));
+  const BooleanVariable b = model.Add(NewBooleanVariable());
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 1));
+  integer_encoder->AssociateToIntegerEqualValue(Literal(b, true), z,
+                                                IntegerValue(1));
+  implied_bounds->Add(Literal(b, true), IntegerLiteral::GreaterOrEqual(
+                                            x1, IntegerValue(kHugeBound)));
+
+  ImpliedBoundsProcessor processor({x0, x1, z}, integer_trail, implied_bounds);
+  util_intops::StrongVector<IntegerVariable, double> lp_values(20, 0.0);
+  lp_values[x0] = 2011.0 / 2000.0;
+  lp_values[NegationOf(x0)] = -lp_values[x0];
+  lp_values[x1] = static_cast<double>(kHugeBound) * 0.1;
+  lp_values[NegationOf(x1)] = -lp_values[x1];
+  lp_values[z] = 0.1;
+  lp_values[NegationOf(z)] = -0.1;
+  processor.RecomputeCacheAndSeparateSomeImpliedBoundCuts(lp_values);
+
+  // Divisor = 2000, rhs = 2011 (r = 11, t = 91, max_scaling = 60 =>
+  // f(divisor) = 5460). PostprocessWithImpliedBound() sees bool_term.coeff =
+  // 7 * 2^59 (~4e18), whose ratio * f(divisor) would overflow int64_t if
+  // decomposed; skipping that decomposition still safely rounds 2000*x0 + 7*x1.
+  CutData data;
+  ASSERT_TRUE(data.FillFromParallelVectors(
+      IntegerValue(2011), {x0, x1}, {IntegerValue(2000), IntegerValue(7)},
+      {2011.0 / 2000.0, 0.0}, {IntegerValue(0), IntegerValue(0)},
+      {IntegerValue(10), IntegerValue(kHugeBound)}));
+  ASSERT_TRUE(processor.CacheDataForCut(IntegerVariable(20), &data));
+
+  RoundingOptions options;
+  options.max_scaling = IntegerValue(60);
+  options.use_ib_before_heuristic = false;
+  IntegerRoundingCutHelper helper(&model);
+  ASSERT_TRUE(helper.ComputeCut(options, data, &processor));
+  CutDataBuilder builder;
+  LinearConstraint ct;
+  EXPECT_TRUE(builder.ConvertToLinearConstraint(helper.cut(), &ct));
+}
+
+TEST(ImpliedBoundsProcessorTest,
+     DecomposeWithImpliedLowerBoundRejectsExtremeOffsetOverflow) {
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_use_implied_bounds(true);
+  auto* integer_encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model.GetOrCreate<ImpliedBounds>();
+
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 100));
+  const BooleanVariable b = model.Add(NewBooleanVariable());
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 1));
+  integer_encoder->AssociateToIntegerEqualValue(Literal(b, true), z,
+                                                IntegerValue(1));
+  implied_bounds->Add(Literal(b, false),
+                      IntegerLiteral::GreaterOrEqual(x, IntegerValue(50)));
+
+  ImpliedBoundsProcessor processor({x, z}, integer_trail, implied_bounds);
+  util_intops::StrongVector<IntegerVariable, double> lp_values(20, 0.0);
+  lp_values[x] = 25.0;
+  lp_values[NegationOf(x)] = -25.0;
+  lp_values[z] = 0.5;
+  lp_values[NegationOf(z)] = -0.5;
+  processor.RecomputeCacheAndSeparateSomeImpliedBoundCuts(lp_values);
+
+  CutData data;
+  ASSERT_TRUE(data.FillFromParallelVectors(
+      IntegerValue(50), {x}, {IntegerValue(1)}, {25.0}, {IntegerValue(0)},
+      {IntegerValue(100)}));
+  ASSERT_TRUE(processor.CacheDataForCut(IntegerVariable(20), &data));
+
+  CutTerm term = data.terms[0];
+  term.expr_offset = IntegerValue(std::numeric_limits<int64_t>::min());
+  CutTerm bool_term;
+  CutTerm slack_term;
+  EXPECT_FALSE(
+      processor.DecomposeWithImpliedLowerBound(term, bool_term, slack_term));
+
+  term = data.terms[0];
+  term.expr_offset = kMaxIntegerValue;
+  term.bound_diff = kMaxIntegerValue;
+  EXPECT_FALSE(
+      processor.DecomposeWithImpliedLowerBound(term, bool_term, slack_term));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

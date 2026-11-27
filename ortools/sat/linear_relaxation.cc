@@ -64,6 +64,7 @@
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1835,7 +1836,10 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
       CHECK(lc.AddLiteralTerm(alternative_literals[j],
                               -exprs[j].offset - sum_of_max_corner_diff[i][j]));
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_lc;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_lc)) {
+      relaxation->linear_constraints.push_back(std::move(built_lc));
+    }
   }
 }
 
@@ -2570,6 +2574,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                                          Model* m) {
   LinearRelaxation relaxation;
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
 
   // Collect AtMostOne to compute better Big-M.
   ActivityBoundHelper activity_bound_helper;
@@ -2645,17 +2650,23 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     LinearizeComplexLinear1(m, model_proto, &already_linearized, &relaxation);
   }
 
-  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
   if (time_limit->LimitReached()) return relaxation;
 
   TimeLimitCheckEveryNCalls time_limit_check(100, time_limit);
   // Linearize the constraints.
-  for (int c = 0; c < num_constraints; ++c) {
-    if (time_limit_check.LimitReached()) return relaxation;
-    if (already_linearized[c]) continue;
-    const ConstraintProto& ct = model_proto.constraints(c);
-    TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
-                             &relaxation, &activity_bound_helper);
+  {
+    DeterministicTimer<{.scale = 3.5e-07, .offset = 6.0e-07}> dt(time_limit);
+    for (int c = 0; c < num_constraints; ++c) {
+      if (time_limit_check.LimitReached()) {
+        dt.Advance(c + 1);
+        return relaxation;
+      }
+      if (already_linearized[c]) continue;
+      const ConstraintProto& ct = model_proto.constraints(c);
+      TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
+                               &relaxation, &activity_bound_helper);
+    }
+    dt.Advance(num_constraints);
   }
 
   if (params.infer_all_diffs() && !time_limit->LimitReached()) {
@@ -2706,17 +2717,23 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
 
   if (time_limit->LimitReached()) return relaxation;
 
-  for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
-    if (at_most_one.empty()) continue;
+  {
+    int64_t num_inner_iters = 0;
+    DeterministicTimer2<{.scale1 = 1.1e-07, .scale2 = 6.7e-08}> dt(time_limit);
+    for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
+      if (at_most_one.empty()) continue;
 
-    LinearConstraintBuilder lc(m, kMinIntegerValue, IntegerValue(1));
-    for (const Literal literal : at_most_one) {
-      // Note that it is okay to simply ignore the literal if it has no
-      // integer view.
-      const bool unused [[maybe_unused]] =
-          lc.AddLiteralTerm(literal, IntegerValue(1));
+      LinearConstraintBuilder lc(m, kMinIntegerValue, IntegerValue(1));
+      num_inner_iters += at_most_one.size();
+      for (const Literal literal : at_most_one) {
+        // Note that it is okay to simply ignore the literal if it has no
+        // integer view.
+        const bool unused [[maybe_unused]] =
+            lc.AddLiteralTerm(literal, IntegerValue(1));
+      }
+      relaxation.linear_constraints.push_back(lc.Build());
     }
-    relaxation.linear_constraints.push_back(lc.Build());
+    dt.Advance(relaxation.at_most_ones.size(), num_inner_iters);
   }
 
   // We converted all at_most_one to LP constraints, so we need to clear them

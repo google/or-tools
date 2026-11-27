@@ -32,6 +32,7 @@
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_constraint_presolve.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -45,6 +46,7 @@
 #include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -383,11 +385,12 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
   LinearProgramToMPModelProto(lp, &mp_model);
   CpModelProto initial_model;
   SolverLogger logger;
-  CHECK(ClampVariableBounds(SatParameters(), &mp_model, &logger));
-  const std::vector<double> zero_errors(mp_model.variable_size(), 0.0);
-  ConvertMPModelProtoToCpModelProto(
-      SatParameters(), MPModelProtoWrapper(std::move(mp_model)),
-      /*num_clamped=*/0, zero_errors, zero_errors, &initial_model, &logger);
+  MPModelProtoWrapper wrapper(std::move(mp_model));
+  CHECK(ClampVariableBounds(SatParameters(), &wrapper, &logger));
+  const std::vector<double> zero_errors(wrapper.num_variables(), 0.0);
+  ConvertMPModelProtoToCpModelProto(SatParameters(), wrapper,
+                                    /*num_clamped=*/0, zero_errors, zero_errors,
+                                    &initial_model, &logger);
 
   const CpModelProto mapping_model =
       GetMappingModel(initial_model, SatParameters());
@@ -3772,10 +3775,12 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjective) {
 }
 
 TEST(PresolveCpModelTest, ExpandMinimizeObjectiveWithOppositeCoeff) {
+  // The domain of x2 is such that the objective 2 * x2 passes
+  // PossibleIntegerOverflow() (2 * (2 * 1152921504606846975) <= kint64max / 2).
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -10, 10 ] }
     variables { domain: [ -10, 10 ] }
-    variables { domain: [ -4611686018427387903, 4611686018427387903 ] }
+    variables { domain: [ -1152921504606846975, 1152921504606846975 ] }
     constraints { dummy_constraint { vars: [ 0, 1 ] } }
     constraints {
       linear { vars: 0 vars: 1 coeffs: 1 coeffs: 2 domain: -10 domain: 10 }
@@ -6511,12 +6516,17 @@ TEST(PresolveCpModelTest, DetectVarValueEncoding) {
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CpModelProto presolved_model = initial_model;
   CpModelProto mapping_model;
-  std::vector<int> mapping;
   PresolveContext context(&model, &presolved_model, &mapping_model);
-  PresolveCpModel(&context, &mapping);
+  CpConstraintPresolver presolver(&context);
+  ASSERT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(0), kOk);
+  EXPECT_EQ(presolver.PresolveOneConstraint(1), kOk);
   int encoding_literal = -1;
   EXPECT_TRUE(context.HasVarValueEncoding(1, int64_t{2}, &encoding_literal));
   EXPECT_EQ(encoding_literal, 0);
+
+  std::vector<int> mapping;
+  EXPECT_EQ(PresolveCpModel(&context, &mapping), CpSolverStatus::UNKNOWN);
 }
 
 TEST(FindDuplicateConstraintsTest, BasicTest) {
@@ -6555,8 +6565,9 @@ TEST(FindDuplicateConstraintsTest, BasicTest) {
     }
   )pb");
 
+  TimeLimit time_limit;
   std::vector<std::pair<int, int>> duplicates =
-      FindDuplicateConstraints(model, false, true, false);
+      FindDuplicateConstraints(model, false, true, false, &time_limit);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(1, 0), std::make_pair(2, 0),
                                      std::make_pair(3, 0)));
@@ -6577,8 +6588,9 @@ TEST(FindDuplicateConstraintsTest, LinearConstraintParallelToObjective) {
     }
   )pb");
 
+  TimeLimit time_limit;
   std::vector<std::pair<int, int>> duplicates =
-      FindDuplicateConstraints(model, false, true, false);
+      FindDuplicateConstraints(model, false, true, false, &time_limit);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(0, kObjectiveConstraint)));
 }
@@ -6643,6 +6655,207 @@ TEST(DetectDuplicateConstraintsTest, DifferentRedundantEnforcement) {
   CpModelProto presolved_model = PresolveForTest(initial_model, params);
 
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
+}
+
+TEST(DetectDuplicateConstraintsTest,
+     DifferentEnforcementsSkipsMutatedRepresentative) {
+  // Regression test where SAT presolve narrows variable 0 from [1, 4] to [2, 4]
+  // without fixing it, and DetectDuplicateConstraintsWithDifferentEnforcements
+  // processes four (dup, rep) pairs:
+  //   (1, 0): clears enforcement on rep=0, setting NeedsCanonicalization()=true
+  //   (3, 2): canonicalizes rep=2 (v0 == 1) into an unenforced bool_or
+  //   (4, 0): canonicalizes dup=4 and rep=0, resetting NeedsCanonicalization()
+  //   (5, 2): AreEqualIgnoringEnforcement() sees rep=2 is no longer a duplicate
+  //           of dup=5 and skips the pair instead of dropping dup=5.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 4 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 4 ]
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 5 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 5 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 6, 7 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 8, 9 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 5 ]
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 5 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 10, 11 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ -13 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 2, 4 ]
+      }
+    }
+    constraints { bool_or { literals: [ 4, 5, 12 ] } }
+    constraints { bool_or { literals: [ -13, 13, 14 ] } }
+    constraints { bool_or { literals: [ -13, 13, -15 ] } }
+    constraints { bool_or { literals: [ -13, -14, 14 ] } }
+    constraints { bool_or { literals: [ -13, -14, -15 ] } }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, 1 ]
+        domain: [ 3, 8 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2, 3 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 1, 10 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 4, 5, 6, 7, 8, 9 ]
+        coeffs: [ 2, 3, 2, 3, 2, 3 ]
+        domain: [ 3, 12 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 3, 10, 11 ]
+        coeffs: [ 2, 3, 4 ]
+        domain: [ 2, 8 ]
+      }
+    }
+    objective {
+      vars: [ 10, 11 ]
+      coeffs: [ -2, -1 ]
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(initial_model), "");
+
+  for (const bool keep_symmetry : {false, true}) {
+    SCOPED_TRACE(keep_symmetry);
+    SatParameters params;
+    params.set_cp_model_probing_level(0);
+    params.set_symmetry_level(0);
+    params.set_keep_symmetry_in_presolve(keep_symmetry);
+    const CpSolverResponse response =
+        SolveWithParameters(initial_model, params);
+    ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+    EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+    EXPECT_EQ(response.objective_value(), -2.0);
+  }
+}
+
+TEST(DetectDuplicateConstraintsTest,
+     DifferentEnforcementsRecanonicalizesAfterLoopMutation) {
+  // Three enforced copies of v0 == 1:
+  //   c0 (rep):  v3 => v0 == 1
+  //   c1 (dup1): ~v3 => v0 == 1  (literal -4)
+  //   c2 (dup2): v4 => v0 == 1
+  // Pair (1, 0) clears enforcement on rep=0, leaving an unenforced unary linear
+  // constraint (v0 == 1 while v0 has domain [0, 2]), which must be
+  // re-canonicalized before pair (2, 0) is inspected.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 3 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ -4 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 4 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 1, 4 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 3, 4, 5 ]
+        coeffs: [ 2, 3, 2 ]
+        domain: [ 1, 6 ]
+      }
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(initial_model), "");
+
+  SatParameters params;
+  params.set_cp_model_probing_level(0);
+  params.set_keep_symmetry_in_presolve(true);
+  const CpSolverResponse response = SolveWithParameters(initial_model, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
+  EXPECT_EQ(response.solution(0), 1);
 }
 
 TEST(PresolveCpModelTest, EncodingIssue) {
@@ -10714,17 +10927,19 @@ TEST(PresolveCpModelTest,
 }
 
 TEST(PresolveCpModelTest, ReplaceVariableByEncodingMappingOverflowFallback) {
+  // The range of x2 is 4e18 <= kint64max / 2, but the combined postsolve
+  // constraint x2 = -2e18 * l1 + ... + 2e18 * l2 would have a range of 8e18.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables {
       domain: [
-        -4000000000000000000,
-        -4000000000000000000,
+        -2000000000000000000,
+        -2000000000000000000,
         0,
         10,
-        4000000000000000000,
-        4000000000000000000
+        2000000000000000000,
+        2000000000000000000
       ]
     }
     constraints {
@@ -10732,7 +10947,7 @@ TEST(PresolveCpModelTest, ReplaceVariableByEncodingMappingOverflowFallback) {
       linear {
         vars: 2
         coeffs: 1
-        domain: [ 4000000000000000000, 4000000000000000000 ]
+        domain: [ 2000000000000000000, 2000000000000000000 ]
       }
     }
     constraints {
@@ -10751,7 +10966,7 @@ TEST(PresolveCpModelTest, ReplaceVariableByEncodingMappingOverflowFallback) {
   ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_TRUE(SolutionIsFeasible(initial_model, response.solution()));
   EXPECT_EQ(response.solution(0), 1);
-  EXPECT_EQ(response.solution(2), 4000000000000000000LL);
+  EXPECT_EQ(response.solution(2), 2000000000000000000LL);
 }
 
 }  // namespace

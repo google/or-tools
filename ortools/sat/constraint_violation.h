@@ -481,13 +481,14 @@ class LsEvaluator {
   std::vector<uint64_t> var_to_violation_delta_work_estimate_;
   CompactVectorVector<int> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
-  TimeLimit* time_limit_;
 
   UnsafeDenseSet<int> violated_constraints_;
   std::vector<int> num_violated_constraint_per_var_ignoring_objective_;
 
   // Constraint index with changed violations.
   std::vector<int> last_update_violation_changes_;
+
+  TimeLimit* time_limit_;
 
   // Used for tracking the deterministic time without updating time_limit_.
   mutable TimeLimit dtime_;
@@ -570,7 +571,8 @@ class CompiledIntModConstraint : public CompiledConstraintWithProto {
 // with the same value.
 class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
  public:
-  explicit CompiledAllDiffConstraint(const ConstraintProto& ct_proto);
+  CompiledAllDiffConstraint(const ConstraintProto& ct_proto,
+                            TimeLimit* time_limit);
   ~CompiledAllDiffConstraint() override = default;
 
   int64_t ComputeViolationWhenEnforced(
@@ -578,6 +580,7 @@ class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
 
  private:
   std::vector<int64_t> values_;
+  TimeLimit* time_limit_;
 };
 
 // This is more compact and faster to destroy than storing a
@@ -792,12 +795,14 @@ class CompiledReservoirConstraint : public CompiledConstraint {
                               LinearExpressionProto capacity,
                               std::vector<std::optional<int>> is_active,
                               std::vector<LinearExpressionProto> times,
-                              std::vector<LinearExpressionProto> demands)
+                              std::vector<LinearExpressionProto> demands,
+                              TimeLimit* time_limit)
       : enforcement_literals_(std::move(enforcement_literals)),
         capacity_(std::move(capacity)),
         is_active_(std::move(is_active)),
         times_(std::move(times)),
-        demands_(std::move(demands)) {
+        demands_(std::move(demands)),
+        time_limit_(time_limit) {
     const int num_events = times_.size();
     time_values_.resize(num_events, 0);
     demand_values_.resize(num_events, 0);
@@ -863,6 +868,7 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   int64_t capacity_value_;
   std::vector<int64_t> time_values_;
   std::vector<int64_t> demand_values_;
+  TimeLimit* time_limit_;
 };
 
 // This encodes a scalar product constraint:

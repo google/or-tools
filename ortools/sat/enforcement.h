@@ -29,6 +29,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -103,6 +104,7 @@ class EnforcementPropagator : public SatPropagator {
   LiteralIndex ProcessIdOnTrue(Literal watched, EnforcementId id);
 
   // External classes.
+  TimeLimit* time_limit_;
   const Trail& trail_;
   const VariablesAssignment& assignment_;
   RevRepository<int> rev_int_repository_;

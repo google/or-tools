@@ -26,6 +26,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_cat.h"
@@ -47,6 +48,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -107,8 +109,11 @@ class SavedVariable {
 class LazyConstraintVariableGraph {
  public:
   LazyConstraintVariableGraph(const CpModelProto* cp_model,
-                              const SolutionCrush* solution_crush)
-      : cp_model_(*cp_model), solution_crush_(*solution_crush) {}
+                              const SolutionCrush* solution_crush,
+                              TimeLimit* time_limit)
+      : cp_model_(*cp_model),
+        solution_crush_(*solution_crush),
+        time_limit_(time_limit) {}
 
   // This must be called when new variables are created, BEFORE any other
   // functions here.
@@ -180,9 +185,21 @@ class LazyConstraintVariableGraph {
     return constraint_to_linear1_var_[c];
   }
 
-  SparseBitset<int>* MutableVarWithReducedSmallDegree() {
+  const std::vector<int>& VarsWithReducedSmallDegree() {
     LazyUpdate();
-    return &var_with_reduced_small_degree_;
+    return var_with_reduced_small_degree_.PositionsSetAtLeastOnce();
+  }
+  void MarkVarWithReducedSmallDegree(int var) {
+    LazyUpdate();
+    var_with_reduced_small_degree_.Set(var);
+  }
+  void ClearVarWithReducedSmallDegree(int var) {
+    LazyUpdate();
+    var_with_reduced_small_degree_.Clear(var);
+  }
+  void ResetVarsWithReducedSmallDegree() {
+    LazyUpdate();
+    var_with_reduced_small_degree_.ResetAllToFalse();
   }
 
   void RegisterVariablesUsedInAssumptions() {
@@ -207,6 +224,8 @@ class LazyConstraintVariableGraph {
 
   // TODO(user): This is a bit hacky, fix.
   void RemoveAllVariablesFromAffineRelationConstraint() {
+    DeterministicTimer<{.scale = 2.5e-08, .offset = 7.0e-07}> timer(
+        time_limit_, var_to_constraints_.size());
     for (auto& ref_map : var_to_constraints_) {
       ref_map.erase(kAffineRelationConstraint);
     }
@@ -216,11 +235,29 @@ class LazyConstraintVariableGraph {
     to_update_.ClearAndResize(0);
     constraint_to_vars_.clear();
     constraint_to_intervals_.clear();
+    interval_usage_.clear();
     constraint_to_linear1_var_.clear();
     var_with_reduced_small_degree_.ResetAllToFalse();
     var_to_constraints_.clear();
     var_to_num_linear1_.clear();
     var_was_removed_.clear();
+  }
+
+  // Clears constraint-indexed graph structures after constraint compaction
+  // while preserving variable-sized vectors (`var_was_removed_` and negative
+  // special-constraint markers in `var_to_constraints_`), so `LazyUpdate()` can
+  // rebuild constraint edges lazily if queried afterwards.
+  void ResetConstraintIndices() {
+    to_update_.ClearAndResize(0);
+    constraint_to_vars_.clear();
+    constraint_to_intervals_.clear();
+    interval_usage_.clear();
+    constraint_to_linear1_var_.clear();
+    var_with_reduced_small_degree_.ResetAllToFalse();
+    std::fill(var_to_num_linear1_.begin(), var_to_num_linear1_.end(), 0);
+    for (absl::flat_hash_set<int>& ref_map : var_to_constraints_) {
+      absl::erase_if(ref_map, [](int c) { return c >= 0; });
+    }
   }
 
   // Note that once a variable is removed, we DCHECK() that no constraint
@@ -233,7 +270,8 @@ class LazyConstraintVariableGraph {
   }
 
   bool VariableWasRemoved(int var) const {
-    return var_was_removed_[PositiveRef(var)];
+    DCHECK(RefIsPositive(var));
+    return var_was_removed_[var];
   }
 
  private:
@@ -246,6 +284,7 @@ class LazyConstraintVariableGraph {
   // This can change behind the class back, but is never mutated here.
   const CpModelProto& cp_model_;
   const SolutionCrush& solution_crush_;
+  TimeLimit* const time_limit_;
 
   // The constraints that need to be updated by LazyUpdate().
   // Note that any new constraint will also need update.
@@ -288,6 +327,7 @@ struct ConstraintCanonicalizationState {
     num_dirty_constraints = 0;
     routes_with_dimensions.clear();
     DCHECK_EQ(detached_constraint_index, -1);
+    DCHECK_EQ(active_modified_constraint_index, -1);
   }
 
   void MarkDirty(int c) {
@@ -323,8 +363,13 @@ struct ConstraintCanonicalizationState {
 
   // Index of the constraint currently swapped out of working_model_ during
   // CanonicalizeConstraintsLazily() (or -1 when none is detached), used to
-  // DCHECK against re-entrant Constraint(c) / MutableConstraint(c) access.
+  // DCHECK against re-entrant Constraint(c) / ModifyConstraint(c) access.
   int detached_constraint_index = -1;
+
+  // Index of the constraint currently being mutated inside ModifyConstraint()
+  // (or -1 when none is active), used to DCHECK against re-entrant
+  // Constraint(c), ModifyConstraint(c, ...), or narrow-mutator access.
+  int active_modified_constraint_index = -1;
 
   // Scratch ConstraintProto allocated on the same google::protobuf::Arena as
   // working_model_ (or heap-owned via owned_detached_ct when arena == nullptr)
@@ -339,8 +384,8 @@ class PresolveContext {
  public:
   PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping,
                   SolutionCrushProto* solution_crush_proto = nullptr)
-      : mapping_model(mapping),
-        lrat_proof_handler(model->Mutable<LratProofHandler>()),
+      : mapping_model_(mapping),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -348,7 +393,7 @@ class PresolveContext {
         working_model_(cp_model),
         canonicalization_(cp_model->GetArena()),
         solution_crush_(solution_crush_proto),
-        graph_(cp_model, &solution_crush_),
+        graph_(cp_model, &solution_crush_, time_limit_),
         canonical_checker_(&domains_, MakeCanonicalCheckerOptions()) {}
 
   // Helpers to add new variables to the presolved model.
@@ -464,6 +509,8 @@ class PresolveContext {
   LinearStats ComputeLinearStats(const ProtoWithVarsAndCoeffs& proto) const {
     LinearStats stats;
     const int num_vars = proto.vars().size();
+    DeterministicTimer<{.scale = 1.2e-08, .offset = 5.0e-08}> timer(time_limit_,
+                                                                    num_vars);
     for (int i = 0; i < num_vars; ++i) {
       const int var = proto.vars(i);
       const int64_t coeff = proto.coeffs(i);
@@ -532,13 +579,6 @@ class PresolveContext {
     }
   }
 
-  // Canonicalization of linear constraints. This might also be needed when
-  // creating new constraints to make sure there are no duplicate variables.
-  //
-  // This uses affine relations and regroups duplicate/fixed terms.
-  ModificationStatus CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                                  bool* is_impossible = nullptr,
-                                                  bool* is_trivial = nullptr);
   ModificationStatus CanonicalizeLinearExpression(
       absl::Span<const int> enforcements, LinearExpressionProto* expr);
 
@@ -546,9 +586,21 @@ class PresolveContext {
   // for lazy variable-graph update.
   ChangeStatus CanonicalizeConstraint(int c);
 
+  // Canonicalizes `ct`, which must not be a constraint of `working_model_`
+  // (e.g. a constraint being built before being added to the model). Note that,
+  // like CanonicalizeConstraint(int c), this can change the variable domains.
+  ChangeStatus CanonicalizeDetachedConstraint(ConstraintProto* ct) {
+    return CanonicalizeConstraint(ct);
+  }
+
   // Canonicalizes constraint `c` after an in-place modification and marks it
   // for lazy variable-graph update.
   FeasibilityStatus CanonicalizeModifiedConstraint(int c);
+
+  // Rewrites expressions in `working_model_->search_strategy()` using affine
+  // representatives, removes fixed expressions, and deduplicates variables
+  // across strategies.
+  void CanonicalizeSearchStrategy();
 
   // Lazy pass-entry canonicalization of all dirty constraints, cascading until
   // quiescence or UNSAT.
@@ -595,6 +647,8 @@ class PresolveContext {
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
+    DCHECK(RefIsPositive(var));
+    DCHECK_LT(var, domains_.size());
     return domains_[var].IsIncludedIn(domain);
   }
 
@@ -663,8 +717,47 @@ class PresolveContext {
   // what the presolve did at the end.
   void UpdateRuleStats(std::string_view name, int num_times = 1);
 
-  SparseBitset<int>* MutableVarWithReducedSmallDegree() {
-    return graph_.MutableVarWithReducedSmallDegree();
+  // Number of "rules" applied. This should be equal to the sum of all numbers
+  // in stats_by_rule_name. This is used to decide if we should do one more pass
+  // of the presolve or not. Note that depending on the presolve transformation,
+  // a rule can correspond to a tiny change or a big change. Because of that,
+  // this isn't a perfect proxy for the efficacy of the presolve.
+  int64_t num_presolve_operations() const { return num_presolve_operations_; }
+
+  // Queue of variables whose domains (or half-encodings / affine
+  // representatives) were modified since the last clear/reset. Returns a
+  // reference to the underlying vector so index-based loops remain valid when
+  // new variables are marked during iteration.
+  const std::vector<int>& ModifiedDomains() const {
+    return modified_domains_.PositionsSetAtLeastOnce();
+  }
+  bool DomainWasModified(int var) const {
+    DCHECK(RefIsPositive(var));
+    return modified_domains_[var];
+  }
+  void ClearModifiedDomain(int var) {
+    DCHECK(RefIsPositive(var));
+    modified_domains_.Clear(var);
+  }
+  void ResetModifiedDomains() { modified_domains_.ResetAllToFalse(); }
+
+  // Queue of variables whose degree in the constraint <-> variable graph
+  // decreased to a small value. Returns a reference to the underlying vector so
+  // index-based loops remain valid when new variables are marked during
+  // iteration.
+  const std::vector<int>& VarsWithReducedSmallDegree() {
+    return graph_.VarsWithReducedSmallDegree();
+  }
+  void MarkVarWithReducedSmallDegree(int var) {
+    DCHECK(RefIsPositive(var));
+    graph_.MarkVarWithReducedSmallDegree(var);
+  }
+  void ClearVarWithReducedSmallDegree(int var) {
+    DCHECK(RefIsPositive(var));
+    graph_.ClearVarWithReducedSmallDegree(var);
+  }
+  void ResetVarsWithReducedSmallDegree() {
+    graph_.ResetVarsWithReducedSmallDegree();
   }
 
   // Returns true if our current constraints <-> variables graph is ok.
@@ -827,16 +920,35 @@ class PresolveContext {
   int64_t GetValueEncodingSize(int ref) const;
 
   // Stores the fact that literal implies var == value. Marks `var` in
-  // `modified_domains` and returns `kModified` if that information is new,
+  // `ModifiedDomains()` and returns `kModified` if that information is new,
   // `kUnchanged` if already present or trivial, or `kUnsat` on infeasibility.
   ChangeStatus StoreLiteralImpliesVarEqValue(int literal, int var,
                                              int64_t value);
 
   // Stores the fact that literal implies var != value. Marks `var` in
-  // `modified_domains` and returns `kModified` if that information is new,
+  // `ModifiedDomains()` and returns `kModified` if that information is new,
   // `kUnchanged` if already present or trivial, or `kUnsat` on infeasibility.
   ChangeStatus StoreLiteralImpliesVarNeValue(int literal, int var,
                                              int64_t value);
+
+  // Domain deductions (literal => var \in domain). All passed literals must
+  // already be canonical representatives (checked via DCHECK).
+  void AddDeduction(int literal, int var, const Domain& domain);
+  Domain ImpliedDomain(int literal, int var) const;
+  std::vector<std::pair<int, Domain>> ProcessClauseDeductions(
+      absl::Span<const int> clause);
+  void MarkDeductionProcessingAsDoneForNow() {
+    deductions_.MarkProcessingAsDoneForNow();
+  }
+  int NumDeductions() const { return deductions_.NumDeductions(); }
+
+  // Syncs variable domains to `working_model_`, snapshots the floating-point
+  // objective and variable bounds into `mapping_model_` (if non-null), scales
+  // `working_model_->floating_point_objective()` into an integer `objective()`,
+  // and copies the resulting integer `objective()` into `mapping_model_` (if
+  // non-null). Returns false if the floating-point objective cannot be scaled
+  // with enough precision.
+  [[nodiscard]] bool ScaleFloatingPointObjective();
 
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
@@ -948,11 +1060,6 @@ class PresolveContext {
   }
   int IntervalUsage(int c) const { return graph_.IntervalUsage(c); }
 
-  // Note that this function does not update the constraint graph; it assumes
-  // this is done elsewhere.
-  FeasibilityStatus MarkConstraintAsFalse(ConstraintProto* ct,
-                                          std::string_view reason);
-
   // Checks if a constraint contains an enforcement literal set to false,
   // or if it has been cleared.
   bool ConstraintIsInactive(int ct_index) const;
@@ -1014,9 +1121,10 @@ class PresolveContext {
   // satisfies `working_model_`.
   bool DebugTestHintFeasibility();
 
+  LratProofHandler* lrat_proof_handler() const { return lrat_proof_handler_; }
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
-  TimeLimit* time_limit() { return time_limit_; }
+  TimeLimit* time_limit() const { return time_limit_; }
   absl::BitGenRef random() { return *random_; }
 
   // CpModelProto const accessors.
@@ -1025,87 +1133,109 @@ class PresolveContext {
   int NumVariables() const { return working_model_->variables().size(); }
   const ConstraintProto& Constraint(int c) const {
     DCHECK_NE(c, canonicalization_.detached_constraint_index);
+    DCHECK_NE(c, canonicalization_.active_modified_constraint_index);
     return working_model_->constraints(c);
   }
 
-  // Function to create a new constraint, with shortcuts for enforced ones.
-  ConstraintProto* AddConstraint() { return working_model_->add_constraints(); }
-  ConstraintProto* AddEnforcedConstraint(
-      absl::Span<const int> enforcement_literals);
-  ConstraintProto* AddEnforcedConstraint(const ConstraintProto& ct);
-  ConstraintProto* AddEnforcedConstraint(const ConstraintProto* ct);
-
-  // CpModelProto mutable accessors.
-  ConstraintProto* MutableConstraint(int c) {
-    DCHECK_NE(c, canonicalization_.detached_constraint_index);
-    return working_model_->mutable_constraints(c);
+  // Appends a new constraint to `working_model_`, invokes `callback` via
+  // `ModifyConstraint` to populate it, and returns its constraint index.
+  //
+  // While `callback` is executing, calling any canonicalization method,
+  // adding/mutating any other constraint, or reading the new constraint via
+  // `Constraint(c)` is forbidden (DCHECKed).
+  int AddConstraint(absl::FunctionRef<void(ConstraintProto*)> callback) {
+    const int c = working_model_->constraints_size();
+    working_model_->add_constraints();
+    ModifyConstraint(c, callback);
+    return c;
   }
+  int AddEnforcedConstraint(absl::Span<const int> enforcement_literals,
+                            absl::FunctionRef<void(ConstraintProto*)> callback);
+  int AddEnforcedConstraint(const ConstraintProto& ct,
+                            absl::FunctionRef<void(ConstraintProto*)> callback);
+
+  // Invokes `callback` with a mutable pointer to constraint `c` and calls
+  // `MarkConstraintForCanonicalization(c)` (which marks `c` for lazy
+  // variable-graph update and, unless `c` was cleared, lazy canonicalization).
+  //
+  // While `callback` is executing, calling any canonicalization method,
+  // adding/mutating any constraint, or reading constraint `c` via
+  // `Constraint(c)` is forbidden (DCHECKed).
+  void ModifyConstraint(int c,
+                        absl::FunctionRef<void(ConstraintProto*)> callback);
 
   // Clears constraint `c`, marks it for lazy variable-graph update, and clears
   // its lazy-canonicalization dirty bit. The return type allows callers
-  // returning a `CanonicalizationStatus` or a `FeasibilityStatus` to just
-  // use `return context_->ClearConstraint(c);`.
+  // returning a `ChangeStatus` or a `FeasibilityStatus` to just use
+  // `return context_->ClearConstraint(c);`.
   class ClearedConstraintStatus {
    public:
-    constexpr operator CanonicalizationStatus() const { return kCanonical; }
+    constexpr operator ChangeStatus() const { return kModified; }
     constexpr operator FeasibilityStatus() const { return kOk; }
     friend constexpr bool operator==(ClearedConstraintStatus,
                                      ClearedConstraintStatus) = default;
   };
   ClearedConstraintStatus ClearConstraint(int c) {
-    MutableConstraint(c)->Clear();
+    MutableConstraintInternal(c)->Clear();
     graph_.MarkForLazyUpdate(c);
     canonicalization_.ClearDirty(c);
     return ClearedConstraintStatus{};
   }
 
-  // Sometimes we start creating a constraint but bail out, this is a "safe"
-  // pattern and shouldn't break invariants.
-  void RemoveLastConstraint() {
-    working_model_->mutable_constraints()->RemoveLast();
-    const int num_constraints = NumConstraints();
-    if (num_constraints <
-        canonicalization_.constraints_to_canonicalize.size()) {
-      canonicalization_.ClearDirty(num_constraints);
-      canonicalization_.constraints_to_canonicalize.Resize(num_constraints);
-    }
-  }
+  // =========================================================================
+  // Narrow mutators of constraint `c`. They mark `c` for lazy
+  // canonicalization and/or lazy variable-graph update if needed.
+  // =========================================================================
 
-  // WARNING. Only use when you know what you are doing as some modification
-  // might break the invariants maintained by this class. In particular, do not
-  // modify constraints via this pointer!
-  //
-  // This is still exposed for efficiency and set-up in some places. The usage
-  // should stay minimal.
-  CpModelProto* UnsafeMutableWorkingModel() { return working_model_; }
+  // Replaces constraint `c` with `ct`. `ct` must not alias `c` (DCHECK'ed).
+  void ReplaceConstraint(int c, const ConstraintProto& ct);
+  // Swaps constraints `c1` and `c2`. `c1 == c2` is a no-op.
+  void SwapConstraints(int c1, int c2);
+  // Sets the (non-empty) domain of the linear constraint `c`. Does not mark `c`
+  // for canonicalization or variable-graph update.
+  void SetLinearDomain(int c, const Domain& domain);
+  // Replaces the body of constraint `c` with a kBoolOr, kBoolAnd, kAtMostOne or
+  // kExactlyOne constraint (depending on `type`) over `literals`, keeping its
+  // enforcement literals and name. `literals` may alias into constraint `c`.
+  void SetTypeAndBoolArgument(int c, ConstraintProto::ConstraintCase type,
+                              absl::Span<const int> literals);
+  // Replaces the enforcement literals of constraint `c` with `literals`.
+  // `literals` may alias into constraint `c`.
+  void SetEnforcementLiterals(int c, absl::Span<const int> literals);
+
+  // Replaces constraint `c` with the clause "not(enforcement)" and
+  // canonicalizes it, or returns UNSAT if `c` is not enforced. `reason` is
+  // used for the rule statistics.
+  FeasibilityStatus MarkConstraintAsFalse(int c, std::string_view reason);
+
+  // Remaps all variable and literal references in `working_model_` according to
+  // `mapping` (extending `mapping` and `reverse_mapping` if any `mapping[v] <
+  // 0` variable is still referenced) and resets internal domain, graph, and
+  // objective state.
+  void RemapVariablesAndReset(absl::Span<int> mapping,
+                              std::vector<int>* reverse_mapping);
+
+  // Compacts out empty/dummy constraints, unperformed or duplicate intervals,
+  // and emptied NoOverlap/NoOverlap2D constraints, remapping interval indices
+  // and updating the constraint-variable graph and canonicalization state.
+  void RemoveEmptyConstraints();
+
+  // TODO(user): Remove MutableWorkingModelSymmetry().
   SymmetryProto* MutableWorkingModelSymmetry() {
     return working_model_->mutable_symmetry();
   }
 
-  CpModelProto* mapping_model = nullptr;
+  const CpModelProto& MappingModel() const {
+    DCHECK_NE(mapping_model_, nullptr);
+    return *mapping_model_;
+  }
 
-  // Used for the LRAT proof of inferred clauses during model copy and, if
-  // applicable, during the pure SAT presolve.
-  LratProofHandler* lrat_proof_handler = nullptr;
-
-  // Number of "rules" applied. This should be equal to the sum of all numbers
-  // in stats_by_rule_name. This is used to decide if we should do one more pass
-  // of the presolve or not. Note that depending on the presolve transformation,
-  // a rule can correspond to a tiny change or a big change. Because of that,
-  // this isn't a perfect proxy for the efficacy of the presolve.
-  int64_t num_presolve_operations = 0;
-
-  // Temporary storage.
-  std::vector<int> tmp_literals;
-  std::vector<Domain> tmp_term_domains;
-  std::vector<Domain> tmp_left_domains;
-  absl::flat_hash_set<int> tmp_literal_set;
-
-  // Each time a domain is modified this is set to true.
-  SparseBitset<int> modified_domains;
-
-  // Advanced presolve. See this class comment.
-  DomainDeductions deductions;
+  // Helpers for postsolve mapping_model_ setup and finalization.
+  void InitializeMappingModelVariables(
+      std::vector<int>* fixed_postsolve_mapping);
+  void FixMappingModelVariable(int mapping_var, int64_t value);
+  void SnapshotVariablesToMappingModel();
+  void MoveMappingConstraintsToWorkingModel();
 
   // Adds a new constraint to the mapping proto. The version with the base
   // constraint will copy that constraint to the new constraint.
@@ -1117,13 +1247,6 @@ class PresolveContext {
                                         absl::string_view file, int line);
 
  private:
-  bool ConstraintIsEmpty(int c) const {
-    const ConstraintProto& ct = Constraint(c);
-    return ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET &&
-           ct.enforcement_literal().empty();
-  }
-  CanonicalizationChecker::Options MakeCanonicalCheckerOptions() const;
-
   class ConstraintCanonicalizer {
    public:
     ConstraintCanonicalizer(PresolveContext* context, ConstraintProto* ct)
@@ -1166,17 +1289,62 @@ class PresolveContext {
     bool changed_ = false;
   };
 
+  CanonicalizationChecker::Options MakeCanonicalCheckerOptions() const;
+
+  bool ConstraintIsEmpty(int c) const {
+    const ConstraintProto& ct = Constraint(c);
+    return ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET &&
+           ct.enforcement_literal().empty();
+  }
+
   // Helper to add an affine relation x = c.y + o to the given repository.
   // Returns true if the relation was added to `repo`, or false if `x` and `y`
   // were already related in `repo` (or neither representative was allowed).
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
 
+  // Note that this function does not update the constraint graph; it assumes
+  // this is done elsewhere.
+  FeasibilityStatus MarkConstraintAsFalse(ConstraintProto* ct,
+                                          std::string_view reason);
+
   // Graph-free structural canonicalization of a single constraint using
   // current domains and affine relations. Returns `kModified` if `*ct` was
   // mutated in a way that may change its variable usage or structure.
+  ModificationStatus CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                                  bool* is_impossible = nullptr,
+                                                  bool* is_trivial = nullptr);
   ChangeStatus CanonicalizeConstraint(ConstraintProto* ct);
   ChangeStatus CanonicalizeConstraintInternal(int c,
                                               bool force_variable_usage_update);
+
+  // Updates *sum_min and *sum_max, which must be objective overflow sums (see
+  // objective_overflow_sum_min_), for a change of the objective coefficient of
+  // var from old_coeff to new_coeff. Returns false if the result is not exact,
+  // i.e. if a sum is or becomes saturated, which only happens if the objective
+  // does not satisfy our overflow preconditions.
+  bool UpdateObjectiveOverflowSums(int var, int64_t old_coeff,
+                                   int64_t new_coeff, int64_t* sum_min,
+                                   int64_t* sum_max) const;
+
+  // Computes in *sum_min and *sum_max the objective overflow sums after adding
+  // the given deltas to the objective coefficients of the given (positive)
+  // variables. A variable can appear more than once. Returns false if the
+  // resulting objective might not satisfy our overflow preconditions, or if a
+  // coefficient might overflow. Note that this sorts `deltas`.
+  bool ComputeObjectiveOverflowSums(
+      std::vector<std::pair<int, int64_t>>* deltas, int64_t* sum_min,
+      int64_t* sum_max) const;
+
+  // Recomputes objective_overflow_sum_min_ and objective_overflow_sum_max_
+  // from objective_map_ and the current domains.
+  void RecomputeObjectiveOverflowSums();
+
+  // Direct mutable accessor for internal use by PresolveContext methods.
+  ConstraintProto* MutableConstraintInternal(int c) {
+    DCHECK_NE(c, canonicalization_.detached_constraint_index);
+    DCHECK_EQ(canonicalization_.active_modified_constraint_index, -1);
+    return working_model_->mutable_constraints(c);
+  }
 
   // Makes sure we only insert encoding about the current representative.
   //
@@ -1202,6 +1370,12 @@ class PresolveContext {
                                                    int64_t value,
                                                    bool add_constraints);
 
+  CpModelProto* const mapping_model_ = nullptr;
+
+  // Used for the LRAT proof of inferred clauses during model copy and, if
+  // applicable, during the pure SAT presolve.
+  LratProofHandler* const lrat_proof_handler_ = nullptr;
+
   SolverLogger* logger_;
   const SatParameters& params_;
   TimeLimit* time_limit_;
@@ -1215,6 +1389,9 @@ class PresolveContext {
 
   // The current domain of each variable.
   std::vector<Domain> domains_;
+
+  // Each time a domain is modified this is set to true.
+  SparseBitset<int> modified_domains_;
 
   // Variables newly fixed or ceasing to be affine representatives since the
   // last CanonicalizeConstraintsLazily() pass.
@@ -1233,7 +1410,17 @@ class PresolveContext {
   // we convert it back to its proto form.
   mutable bool objective_proto_is_up_to_date_ = false;
   absl::flat_hash_map<int, int64_t> objective_map_;
-  int64_t objective_overflow_detection_;
+  // The sum_min and sum_max computed by LinearOverflowChecker for the terms
+  // of objective_map_ (without the offset, like in ValidateObjective()). Since
+  // they are updated incrementally and domains can only shrink, these are
+  // only a lower bound of the actual sum_min and an upper bound of the actual
+  // sum_max. This is enough to make sure that the objective keeps satisfying
+  // our overflow preconditions. They can only be saturated if the objective
+  // does not satisfy these preconditions, in which case they are no longer
+  // updated.
+  int64_t objective_overflow_sum_min_ = 0;
+  int64_t objective_overflow_sum_max_ = 0;
+  std::vector<std::pair<int, int64_t>> tmp_objective_deltas_;
   mutable std::vector<std::pair<int, int64_t>> tmp_entries_;
   bool objective_domain_is_constraining_ = false;
   Domain objective_domain_;
@@ -1277,10 +1464,22 @@ class PresolveContext {
   absl::flat_hash_set<std::pair<int, int>> added_implications_;
 
   // Just used to display statistics on the presolve rules that were used.
+  int64_t num_presolve_operations_ = 0;
   absl::flat_hash_map<std::string, int> stats_by_rule_name_;
 
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
+
+  // Scratch storage used inside ConstraintCanonicalizer.
+  std::vector<int> tmp_literals_;
+  absl::flat_hash_set<int> tmp_literal_set_;
+
+  // Used by SetTypeAndBoolArgument() and SetEnforcementLiterals() to support
+  // aliased arguments.
+  std::vector<int> tmp_set_literals_;
+
+  // Advanced presolve: literal-implied variable domain deductions.
+  DomainDeductions deductions_;
 
   bool model_is_expanded_ = false;
 

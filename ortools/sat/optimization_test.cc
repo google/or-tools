@@ -15,20 +15,25 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <functional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -182,6 +187,71 @@ TEST(MinimizeCoreWithSearchTest, RemovesIrrelevantAmoGroupAndPartialAmoMember) {
   std::vector<Literal> core = Literals({+1, +2, +3, +4, +5, +6, +7});
   MinimizeCoreWithSearch(time_limit, sat_solver, &core, implications);
   EXPECT_THAT(core, ElementsAre(Literal(+4), Literal(+7)));
+}
+
+TEST(CoreBasedOptimizerTest, ExportsSmallDepthZeroCoreClause) {
+  Model model;
+  SatParameters* parameters = model.GetOrCreate<SatParameters>();
+  parameters->set_optimize_with_core(true);
+  parameters->set_max_sat_stratification(SatParameters::STRATIFICATION_NONE);
+
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable obj = model.Add(NewIntegerVariable(0, 3));
+
+  CpModelProto cp_model;
+  cp_model.mutable_objective()->add_vars(0);
+  cp_model.mutable_objective()->add_coeffs(1);
+  model.GetOrCreate<SharedResponseManager>()->InitializeObjective(cp_model);
+
+  auto* encoder = model.GetOrCreate<IntegerEncoder>();
+  const Literal l0 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x0, IntegerValue(1)));
+  const Literal l1 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x1, IntegerValue(1)));
+  const Literal l2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(x2, IntegerValue(1)));
+
+  // Encode (l0 v l1 v l2) indirectly via an auxiliary literal so the 3-literal
+  // clause is not already a problem clause before optimization.
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  const Literal aux(sat_solver->NewBooleanVariable(), true);
+  sat_solver->AddProblemClause({l0, l1, aux});
+  sat_solver->AddProblemClause({l2, aux.Negated()});
+
+  model.GetOrCreate<SearchHeuristics>()->fixed_search =
+      FirstUnassignedVarAtItsMinHeuristic({x0, x1, x2}, &model);
+  ConfigureSearchHeuristics(&model);
+
+  bool exported_core_clause = false;
+  model.GetOrCreate<ClauseManager>()->SetAddClauseCallback(
+      [&exported_core_clause, l0, l1, l2](int lbd, ClausePtr /*ptr*/,
+                                          absl::Span<const Literal> literals) {
+        if (lbd == -1 && literals.size() == 3) {
+          std::vector<Literal> sorted(literals.begin(), literals.end());
+          std::vector<Literal> expected = {l0, l1, l2};
+          std::sort(sorted.begin(), sorted.end());
+          std::sort(expected.begin(), expected.end());
+          if (sorted == expected) {
+            exported_core_clause = true;
+          }
+        }
+      });
+
+  IntegerValue best_obj = kMaxIntegerValue;
+  CoreBasedOptimizer core(
+      obj, {x0, x1, x2}, {IntegerValue(1), IntegerValue(1), IntegerValue(1)},
+      [&model, x0, x1, x2, &best_obj]() {
+        best_obj = std::min(
+            best_obj, IntegerValue(model.Get(Value(x0)) + model.Get(Value(x1)) +
+                                   model.Get(Value(x2))));
+      },
+      &model);
+
+  EXPECT_EQ(core.Optimize(), SatSolver::Status::INFEASIBLE);
+  EXPECT_EQ(best_obj, IntegerValue(1));
+  EXPECT_TRUE(exported_core_clause);
 }
 
 }  // namespace

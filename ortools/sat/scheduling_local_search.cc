@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -31,6 +32,7 @@
 #include "absl/random/distributions.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/topologicalsorter.h"
@@ -45,6 +47,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
 
@@ -1037,6 +1040,11 @@ SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
     // TODO(user): Support huge problems.
     return {};
   }
+  // Note: this timer's share of the total time is too small for
+  // update_deterministic_times, so its scale was fitted manually.
+  DeterministicTimer<{.scale = 7.3e-10}> timer(
+      time_limit, static_cast<uint64_t>(num_tasks_) *
+                      static_cast<uint64_t>(num_tasks_ + num_machines_));
 
   std::vector<int> current_machines(num_tasks_);
   std::vector<int64_t> current_durations(num_tasks_);
@@ -1081,6 +1089,11 @@ SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
   int iterations_without_improvement = 0;
   for (current_iteration = 0; current_iteration < max_iterations;
        ++current_iteration) {
+    // The first time unit counts the tasks (analysis and dynamic state
+    // computations are linear in this number), and the second one the
+    // candidate moves (move generation and evaluation).
+    DeterministicTimer2<{.scale1 = 1.6e-07, .scale2 = 9.4e-08}> iter_timer(
+        time_limit, num_tasks_, 0);
     if (time_limit_check.LimitReached()) break;
 
     // Analyze the current sequence.
@@ -1114,6 +1127,7 @@ SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
     const std::vector<InsertMove> candidates = GenerateMoves(
         analysis.critical_path, state, analysis.start_mins, current_machines,
         current_durations, current_machine_tasks);
+    iter_timer.Advance(0, candidates.size());
 
     // Select the best move.
     std::optional<InsertMove> best_move = SelectBestMove(
@@ -1282,6 +1296,12 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     if (relaxation_.problems.empty()) return;
     TimeLimit task_time_limit;
     shared_time_limit_->UpdateLocalLimit(&task_time_limit);
+    // Record the deterministic time of this task on all exit paths. It is
+    // added to the shared time limit in Synchronize().
+    absl::Cleanup record_dtime = [this, &task_time_limit] {
+      absl::MutexLock mutex_lock(mutex_);
+      dtime_since_last_sync_ += task_time_limit.GetElapsedDeterministicTime();
+    };
     // Create a random number generator whose seed depends both on the task_id
     // and on the params_.random_seed() so that changing the latter will
     // change the LNS behavior.

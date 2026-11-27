@@ -130,11 +130,11 @@ void LogTumStats(const TumStats& stats, SolverLogger* logger);
 //
 // Returns true if the component was made integral. Its variables are then
 // marked as integer, scaled, with bounds rounded outward (or snapped within
-// `mip_tight_precision`) to multiples of `modular_factor` and shifted like any
-// other integer variable, and each of `compo.constraints` was scaled
-// accordingly and added to `cp_model` via `scaler`. The caller only has to
-// convert the variables. Otherwise, nothing is modified besides the bounds in
-// `states`, which may have been tightened.
+// `mip_tight_precision`) to multiples of `modular_factor`, shifted like any
+// other integer variable, and written to `cp_model`, and each of
+// `compo.constraints` was scaled accordingly and added to `cp_model` via
+// `scaler`. Otherwise, nothing is modified besides the bounds in `states`,
+// which may have been tightened.
 //
 // This processes a single residual continuous component (whose
 // `var_to_local_col` must be set). All variables must have finite bounds

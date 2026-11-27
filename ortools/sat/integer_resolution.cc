@@ -38,6 +38,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
@@ -165,95 +166,100 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   // and the slack. So we first deal with what is specific to each entry.
   tmp_propagated_terms_.clear();
   const IntegerReason* last_reason = nullptr;
-  for (const EntryToExpand& entry : entries) {
-    const GlobalTrailIndex source_index = entry.index;
-    const std::optional<IntegerValue> bound = entry.bound;
-    const IntegerReason& reason =
-        initial_conflict != nullptr
-            ? *initial_conflict
-            : integer_trail_->GetIntegerReason(source_index, bound);
-    if (source_index.IsInteger()) {
-      IntegerVariableData& data = MutableIntData(
-          integer_trail_->IntegerLiteralAtIndex(source_index.integer_index)
-              .var);
-
-      // The entry might have been settled while its expansion was delayed.
-      if (data.settled_bound >= *bound) continue;
-
-      CHECK_EQ(data.slack_ptr, kNoListIndex);
-      CHECK_LE(reason.index_at_propagation, source_index.integer_index);
-      CHECK_GE(source_index.integer_index,
-               integer_trail_->NumIntegerVariables().value());
-    }
-    last_reason = &reason;
-
-    // If we have a linear reason with slack, check to see if we can relax the
-    // reason and have more slack, because we don't need to explain the stronger
-    // possible push that was done.
-    //
-    // TODO(user): Skip for the first AddToQueue() that corresponds to a
-    // conflict. Or handle properly, for now, we never have !vars.empty() for
-    // conflicts.
-    CHECK_GE(reason.slack, 0);
-    PropagatedTerm term;
-    term.slack = reason.slack;
-    if (!reason.vars.empty() && reason.propagated_i_lit.IsValid()) {
-      const IntegerLiteral propagated_i_lit = reason.propagated_i_lit;
-      const IntegerVariable var = propagated_i_lit.var;
-
-      IntegerValue needed_bound = kMaxIntegerValue;
+  {
+    DeterministicTimer<{.scale = 9.7e-08, .offset = 6.7e-08}> entries_timer(
+        time_limit_, entries.size());
+    for (const EntryToExpand& entry : entries) {
+      const GlobalTrailIndex source_index = entry.index;
+      const std::optional<IntegerValue> bound = entry.bound;
+      const IntegerReason& reason =
+          initial_conflict != nullptr
+              ? *initial_conflict
+              : integer_trail_->GetIntegerReason(source_index, bound);
       if (source_index.IsInteger()) {
-        CHECK_EQ(var, integer_trail_
-                          ->IntegerLiteralAtIndex(source_index.integer_index)
-                          .var);
-        CHECK_NE(bound, std::nullopt);
-        needed_bound = *bound;
-      } else {
-        // Currently, the only other case where we have a linear reason is for
-        // associated literals, in which case, we just need to explain the
-        // associated bound, which might be lower than what is currently
-        // explained.
-        for (const IntegerLiteral i_lit :
-             IndexToIntegerLiterals(source_index)) {
-          if (i_lit.var == var) {
-            // In some corner case we see the same variable more than once!
-            needed_bound = std::min(i_lit.bound, needed_bound);
-          }
-        }
+        IntegerVariableData& data = MutableIntData(
+            integer_trail_->IntegerLiteralAtIndex(source_index.integer_index)
+                .var);
 
-        // Special case for initial conflict.
-        // TODO(user): We can relax more in this case.
-        if (source_index.bool_index == trail_->Index()) {
-          needed_bound = propagated_i_lit.bound;
-        }
-        CHECK_NE(needed_bound, kMaxIntegerValue);
+        // The entry might have been settled while its expansion was delayed.
+        if (data.settled_bound >= *bound) continue;
+
+        CHECK_EQ(data.slack_ptr, kNoListIndex);
+        CHECK_LE(reason.index_at_propagation, source_index.integer_index);
+        CHECK_GE(source_index.integer_index,
+                 integer_trail_->NumIntegerVariables().value());
       }
+      last_reason = &reason;
 
-      // If we have holes, and var >= needed_bound falls into one, we can relax
-      // it as much as possible.
+      // If we have a linear reason with slack, check to see if we can relax the
+      // reason and have more slack, because we don't need to explain the
+      // stronger possible push that was done.
       //
-      // Note that this is needed for the check needed_bound <=
-      // propagated_bound.
-      needed_bound = RelaxBoundIfHoles(var, needed_bound);
-      CHECK_LE(needed_bound, propagated_i_lit.bound);
+      // TODO(user): Skip for the first AddToQueue() that corresponds to a
+      // conflict. Or handle properly, for now, we never have !vars.empty() for
+      // conflicts.
+      CHECK_GE(reason.slack, 0);
+      PropagatedTerm term;
+      term.slack = reason.slack;
+      if (!reason.vars.empty() && reason.propagated_i_lit.IsValid()) {
+        const IntegerLiteral propagated_i_lit = reason.propagated_i_lit;
+        const IntegerVariable var = propagated_i_lit.var;
 
-      // We will bump the slack below, once we know the coefficient of the term.
-      //
-      // TODO(user): It might be better to pass to the Explain() function the
-      // thing we need to be explaining, and let it handle the modification of
-      // the slack. So we can also relax non-linear reasons.
-      term.var = NegationOf(var);
-      term.bound_diff = propagated_i_lit.bound - needed_bound;
-    }
-    tmp_propagated_terms_.push_back(term);
+        IntegerValue needed_bound = kMaxIntegerValue;
+        if (source_index.IsInteger()) {
+          CHECK_EQ(var, integer_trail_
+                            ->IntegerLiteralAtIndex(source_index.integer_index)
+                            .var);
+          CHECK_NE(bound, std::nullopt);
+          needed_bound = *bound;
+        } else {
+          // Currently, the only other case where we have a linear reason is for
+          // associated literals, in which case, we just need to explain the
+          // associated bound, which might be lower than what is currently
+          // explained.
+          for (const IntegerLiteral i_lit :
+               IndexToIntegerLiterals(source_index)) {
+            if (i_lit.var == var) {
+              // In some corner case we see the same variable more than once!
+              needed_bound = std::min(i_lit.bound, needed_bound);
+            }
+          }
 
-    // Reset.
-    // As we explain var >= bound, we might need var >= lower_bound.
-    for (const IntegerLiteral i_lit : IndexToIntegerLiterals(source_index)) {
-      IntegerVariableData& data = MutableIntData(i_lit.var);
-      ConsumeSlack(i_lit.var, i_lit.bound);
-      if (i_lit.bound >= data.bound) {
-        data.bound = kMinIntegerValue;
+          // Special case for initial conflict.
+          // TODO(user): We can relax more in this case.
+          if (source_index.bool_index == trail_->Index()) {
+            needed_bound = propagated_i_lit.bound;
+          }
+          CHECK_NE(needed_bound, kMaxIntegerValue);
+        }
+
+        // If we have holes, and var >= needed_bound falls into one, we can
+        // relax it as much as possible.
+        //
+        // Note that this is needed for the check needed_bound <=
+        // propagated_bound.
+        needed_bound = RelaxBoundIfHoles(var, needed_bound);
+        CHECK_LE(needed_bound, propagated_i_lit.bound);
+
+        // We will bump the slack below, once we know the coefficient of the
+        // term.
+        //
+        // TODO(user): It might be better to pass to the Explain() function the
+        // thing we need to be explaining, and let it handle the modification of
+        // the slack. So we can also relax non-linear reasons.
+        term.var = NegationOf(var);
+        term.bound_diff = propagated_i_lit.bound - needed_bound;
+      }
+      tmp_propagated_terms_.push_back(term);
+
+      // Reset.
+      // As we explain var >= bound, we might need var >= lower_bound.
+      for (const IntegerLiteral i_lit : IndexToIntegerLiterals(source_index)) {
+        IntegerVariableData& data = MutableIntData(i_lit.var);
+        ConsumeSlack(i_lit.var, i_lit.bound);
+        if (i_lit.bound >= data.bound) {
+          data.bound = kMinIntegerValue;
+        }
       }
     }
   }
@@ -269,22 +275,26 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     num_combined_entries_ += tmp_propagated_terms_.size();
   }
 
-  for (const auto span_of_literals :
-       {reason.boolean_literals_at_true, reason.boolean_literals_at_false}) {
-    for (const Literal literal : span_of_literals) {
-      const auto& info = trail_->Info(literal.Variable());
-      if (info.level == 0) continue;
-      if (tmp_bool_index_seen_[info.trail_index]) continue;
+  {
+    DeterministicTimer<{.scale = 7.7e-08, .offset = 6.5e-08}> reason_timer(
+        time_limit_, reason.integer_literals.size());
+    for (const auto span_of_literals :
+         {reason.boolean_literals_at_true, reason.boolean_literals_at_false}) {
+      for (const Literal literal : span_of_literals) {
+        const auto& info = trail_->Info(literal.Variable());
+        if (info.level == 0) continue;
+        if (tmp_bool_index_seen_[info.trail_index]) continue;
 
-      tmp_bool_index_seen_.Set(info.trail_index);
+        tmp_bool_index_seen_.Set(info.trail_index);
 
-      const GlobalTrailIndex index = GlobalTrailIndexFromAssignmentInfo(info);
-      tmp_queue_.push_back(index);
-      DCHECK_LT(tmp_queue_.back(), source_index);
+        const GlobalTrailIndex index = GlobalTrailIndexFromAssignmentInfo(info);
+        tmp_queue_.push_back(index);
+        DCHECK_LT(tmp_queue_.back(), source_index);
+      }
     }
-  }
-  for (const IntegerLiteral i_lit : reason.integer_literals) {
-    ProcessIntegerLiteral(source_index, i_lit);
+    for (const IntegerLiteral i_lit : reason.integer_literals) {
+      ProcessIntegerLiteral(source_index, i_lit);
+    }
   }
 
   // Deal with linear reason.
@@ -313,79 +323,92 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   const int size = reason.vars.size();
   const IntegerVariable to_ignore =
       PositiveVariable(tmp_propagated_terms_[0].var);
-  for (int i = 0; i < size; ++i) {
-    const IntegerVariable var = reason.vars[i];
-    CHECK_GT(reason.coeffs[i], 0);
+  {
+    DeterministicTimer2<{
+        .scale1 = 6.8e-08, .scale2 = 4.8e-09, .offset = 2.1e-07}>
+        vars_timer(time_limit_);
+    int num_skipped_vars = 0;
+    for (int i = 0; i < size; ++i) {
+      const IntegerVariable var = reason.vars[i];
+      CHECK_GT(reason.coeffs[i], 0);
 
-    int term_index = -1;
-    if (many_entries) {
-      term_index = var_to_propagated_term_[var];
-    } else if (PositiveVariable(var) == to_ignore) {
-      term_index = 0;
-    }
-    if (term_index != -1) {
-      PropagatedTerm& term = tmp_propagated_terms_[term_index];
-      if (var == term.var) term.coeff = reason.coeffs[i];
-      if (!many_entries) continue;
-    }
-
-    // A variable whose current lower bound is from level zero is true
-    // unconditionally: it requires no explanation in the conflict and cannot
-    // be relaxed below its level-zero bound.
-    if (integer_trail_->VariableLowerBoundIsFromLevelZero(var)) continue;
-
-    IntegerVariableData& data = MutableIntData(var);
-    UpdateData(var, source_index, data);
-
-    // No need to relax further than this in the code below.
-    data.bound = std::max(data.bound, data.settled_bound);
-    DCHECK_GE(data.bound, integer_trail_->LevelZeroLowerBound(var));
-
-    const IntegerValue required_bound =
-        data.int_index_in_queue < 0
-            ? integer_trail_->LevelZeroLowerBound(var)
-            : integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
-                  .bound;
-    if (data.settled_bound >= required_bound) {
-      // We can increase the slack since we already have a high bound in the
-      // reason. In all cases, no need to add to the queue.
-      //
-      // Note that the settled bound of a propagated variable increases the
-      // slack of all the other entries, but not of its own entry.
-      if (data.settled_bound > required_bound) {
-        ++num_slack_increase_;
-        const absl::int128 increase =
-            absl::int128(reason.coeffs[i].value()) *
-            absl::int128((data.settled_bound - required_bound).value());
-        slack_increase += increase;
-        if (term_index != -1) {
-          tmp_propagated_terms_[term_index].settled_increase = increase;
+      int term_index = -1;
+      if (many_entries) {
+        term_index = var_to_propagated_term_[var];
+      } else if (PositiveVariable(var) == to_ignore) {
+        term_index = 0;
+      }
+      if (term_index != -1) {
+        PropagatedTerm& term = tmp_propagated_terms_[term_index];
+        if (var == term.var) term.coeff = reason.coeffs[i];
+        if (!many_entries) {
+          ++num_skipped_vars;
+          continue;
         }
       }
-      continue;
-    }
-    CHECK_GE(required_bound, data.bound);
 
-    // In all cases, we need the bound at the time.
-    // In some rare cases, we have reason.index_at_propagation <
-    // data.int_index_in_queue So we might use a stronger integer literal than
-    // necessary. Investigate further.
-    if (data.int_index_in_queue > reason.index_at_propagation) {
-      ++num_possibly_non_optimal_reason_;
-    }
+      // A variable whose current lower bound is from level zero is true
+      // unconditionally: it requires no explanation in the conflict and cannot
+      // be relaxed below its level-zero bound.
+      if (integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
+        ++num_skipped_vars;
+        continue;
+      }
 
-    if (required_bound == data.bound) {
-      AddToQueueIfNotThere(data);
-      continue;
-    }
+      IntegerVariableData& data = MutableIntData(var);
+      UpdateData(var, source_index, data);
 
-    // This might be relaxable, add for later processing.
-    //
-    // Tricky: the slack can be increased further during this loop, so we can't
-    // use it here and need two passes.
-    max_slack_needed += absl::int128(reason.coeffs[i].value()) *
-                        absl::int128((required_bound - data.bound).value());
-    relaxable.push_back({var, reason.coeffs[i], required_bound});
+      // No need to relax further than this in the code below.
+      data.bound = std::max(data.bound, data.settled_bound);
+      DCHECK_GE(data.bound, integer_trail_->LevelZeroLowerBound(var));
+
+      const IntegerValue required_bound =
+          data.int_index_in_queue < 0
+              ? integer_trail_->LevelZeroLowerBound(var)
+              : integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
+                    .bound;
+      if (data.settled_bound >= required_bound) {
+        // We can increase the slack since we already have a high bound in the
+        // reason. In all cases, no need to add to the queue.
+        //
+        // Note that the settled bound of a propagated variable increases the
+        // slack of all the other entries, but not of its own entry.
+        if (data.settled_bound > required_bound) {
+          ++num_slack_increase_;
+          const absl::int128 increase =
+              absl::int128(reason.coeffs[i].value()) *
+              absl::int128((data.settled_bound - required_bound).value());
+          slack_increase += increase;
+          if (term_index != -1) {
+            tmp_propagated_terms_[term_index].settled_increase = increase;
+          }
+        }
+        continue;
+      }
+      CHECK_GE(required_bound, data.bound);
+
+      // In all cases, we need the bound at the time.
+      // In some rare cases, we have reason.index_at_propagation <
+      // data.int_index_in_queue So we might use a stronger integer literal than
+      // necessary. Investigate further.
+      if (data.int_index_in_queue > reason.index_at_propagation) {
+        ++num_possibly_non_optimal_reason_;
+      }
+
+      if (required_bound == data.bound) {
+        AddToQueueIfNotThere(data);
+        continue;
+      }
+
+      // This might be relaxable, add for later processing.
+      //
+      // Tricky: the slack can be increased further during this loop, so we
+      // can't use it here and need two passes.
+      max_slack_needed += absl::int128(reason.coeffs[i].value()) *
+                          absl::int128((required_bound - data.bound).value());
+      relaxable.push_back({var, reason.coeffs[i], required_bound});
+    }
+    vars_timer.Advance(size - num_skipped_vars, num_skipped_vars);
   }
 
   // Each entry can be explained with its own slack, so to explain all of them
@@ -393,6 +416,10 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   // not needed to explain its own entry, so it can use `second_slack` (the
   // minimum slack of the other entries), and with two entries the two
   // propagated terms only constrain each other's entry.
+  // Note that this timer also includes the code after the min and second min
+  // slack computations, except for the code in nested timers.
+  DeterministicTimer<{.scale = 4.7e-10, .offset = 5.6e-08}> slack_timer(
+      time_limit_, tmp_propagated_terms_.size() + relaxable.size());
   absl::int128 slack = std::numeric_limits<absl::int128>::max();
   absl::int128 second_slack = std::numeric_limits<absl::int128>::max();
   IntegerVariable min_slack_var = kNoIntegerVariable;
@@ -520,31 +547,35 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     linked_list_buffer_.push_back({coeff, slack_index, data.slack_ptr});
     data.slack_ptr = next;
   };
-  for (const auto& [var, coeff, required_bound] : relaxable) {
-    IntegerVariableData& data = MutableIntData(var);
-    AddToQueueIfNotThere(data);
+  {
+    DeterministicTimer<{.scale = 4.4e-08}> relax_timer(time_limit_,
+                                                       relaxable.size());
+    for (const auto& [var, coeff, required_bound] : relaxable) {
+      IntegerVariableData& data = MutableIntData(var);
+      AddToQueueIfNotThere(data);
 
-    // Invariant checks.
-    DCHECK_GT(required_bound, data.bound);
-    DCHECK_GE(data.bound, data.settled_bound);
-    DCHECK_GT(coeff, 0);
+      // Invariant checks.
+      DCHECK_GT(required_bound, data.bound);
+      DCHECK_GE(data.bound, data.settled_bound);
+      DCHECK_GT(coeff, 0);
 
-    if (use_second_slack && var == min_slack_var) {
-      DCHECK_LE(coeff, int_second_slack);
-      add_slack(data, coeff, int_second_slack, second_index);
-    } else if (use_second_slack && var == second_slack_var) {
-      if (coeff <= int_slack) {
+      if (use_second_slack && var == min_slack_var) {
+        DCHECK_LE(coeff, int_second_slack);
+        add_slack(data, coeff, int_second_slack, second_index);
+      } else if (use_second_slack && var == second_slack_var) {
+        if (coeff <= int_slack) {
+          add_slack(data, coeff, int_slack, index);
+        } else {
+          data.bound = required_bound;
+        }
+      } else if (coeff <= int_slack) {
         add_slack(data, coeff, int_slack, index);
+        if (use_second_slack) {
+          add_slack(data, coeff, int_second_slack, second_index);
+        }
       } else {
         data.bound = required_bound;
       }
-    } else if (coeff <= int_slack) {
-      add_slack(data, coeff, int_slack, index);
-      if (use_second_slack) {
-        add_slack(data, coeff, int_second_slack, second_index);
-      }
-    } else {
-      data.bound = required_bound;
     }
   }
 }
@@ -605,8 +636,10 @@ void IntegerConflictResolution::ProcessIntegerLiteral(
 
 void IntegerConflictResolution::MarkAllAssociatedLiterals(
     absl::Span<const Literal> literals) {
+  DeterministicTimer<{.scale = 2.9e-08, .offset = 9.8e-08}> timer(time_limit_);
   for (const Literal l : literals) {
-    for (const IntegerLiteral i_lit : integer_encoder_->GetIntegerLiterals(l)) {
+    const auto& i_lits = integer_encoder_->GetIntegerLiterals(l);
+    for (const IntegerLiteral i_lit : i_lits) {
       // The std::max() is for the corner case of more than one
       // integer literal on the same variable.
       //
@@ -617,6 +650,7 @@ void IntegerConflictResolution::MarkAllAssociatedLiterals(
       ++num_associated_integer_for_literals_in_conflict_;
     }
   }
+  timer.Advance(literals.size());
 }
 
 // In this initial implementation, we just consume as much slack as possible.
@@ -734,9 +768,11 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   // Then we will expand all integer_literals until we have only Boolean left.
   int64_t work_done = 0;
   bool uip_found = false;
+  DeterministicTimer<{.scale = 2.3e-07}> timer(time_limit_);
   while (!tmp_queue_.empty() || !entries_to_expand_.empty()) {
     ++work_done;
     if (can_abort_on_time_limit && time_limit_check.LimitReached()) {
+      timer.Advance(work_done);
       FillConflictWithDecisions(conflict_level, conflict,
                                 reason_used_to_infer_the_conflict);
       return;
@@ -759,6 +795,8 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
         const int old_size = tmp_queue_.size();
         ExpandAndAddReasonToQueue(entries_to_expand_);
         entries_to_expand_.clear();
+        DeterministicTimer<{.scale = 5.2e-09, .offset = 5.9e-08}>
+            push_heap_timer(time_limit_, tmp_queue_.size() - old_size);
         for (int i = old_size + 1; i <= tmp_queue_.size(); ++i) {
           std::push_heap(tmp_queue_.begin(), tmp_queue_.begin() + i);
         }
@@ -1031,6 +1069,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
     // We will expand this entry in one of the next iterations.
     entries_to_expand_.push_back({top_index, needed_bound});
   }
+  timer.Advance(work_done);
 
   num_conflict_literals_ += conflict->size();
 

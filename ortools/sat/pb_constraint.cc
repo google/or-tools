@@ -26,6 +26,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
@@ -35,6 +36,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
@@ -914,6 +916,9 @@ bool PbConstraints::AddConstraint(
       std::is_sorted(enforcement_literals.begin(), enforcement_literals.end()));
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
 
+  uint64_t work = cst.size() + enforcement_literals.size();
+  DeterministicTimer<{.scale = 1.1e-07, .offset = 1.4e-06}> timer(time_limit_);
+
   // Special case if this is the first constraint.
   if (constraints_.empty()) {
     to_update_.resize(trail->NumVariables() << 1);
@@ -929,8 +934,10 @@ bool PbConstraints::AddConstraint(
 
   // Optimization if the constraint terms are duplicates.
   for (UpperBoundedLinearConstraint* candidate : duplicate_candidates) {
+    ++work;
     if (candidate->HasIdenticalTermsAndEnforcement(enforcement_literals, cst,
                                                    enforcement_propagator_)) {
+      work += cst.size() + enforcement_literals.size();
       if (rhs < candidate->Rhs()) {
         // TODO(user): the index is needed to give the correct thresholds_ entry
         // to InitializeRhs() below, but this linear scan is not super
@@ -940,6 +947,8 @@ bool PbConstraints::AddConstraint(
                constraints_[i.value()].get() != candidate) {
           ++i;
         }
+        work += i.value();
+        timer.Advance(work);
         CHECK_LT(i, constraints_.size());
         return candidate->InitializeRhs(
             enforcement_propagator_->Status(candidate->enforcement_id()),
@@ -947,6 +956,7 @@ bool PbConstraints::AddConstraint(
             &thresholds_[i], trail, &enqueue_helper_);
       } else {
         // The constraint is redundant, so there is nothing to do.
+        timer.Advance(work);
         return true;
       }
     }
@@ -959,6 +969,7 @@ bool PbConstraints::AddConstraint(
                         propagation_trail_index_, &thresholds_.back(), trail,
                         &enqueue_helper_)) {
     thresholds_.pop_back();
+    timer.Advance(work);
     return false;
   }
 
@@ -982,6 +993,7 @@ bool PbConstraints::AddConstraint(
         trail->Assignment().VariableIsAssigned(term.literal.Variable()),
         cst_index, term.coefficient));
   }
+  timer.Advance(work);
   return true;
 }
 
@@ -1010,6 +1022,8 @@ bool PbConstraints::PropagateConstraint(ConstraintIndex index, Trail* trail,
       enforcement_status == EnforcementStatus::CANNOT_PROPAGATE) {
     return true;
   }
+  uint64_t work = 1;
+  DeterministicTimer<{.scale = 1.7e-08, .offset = 1.3e-07}> timer(time_limit_);
   bool conflict = false;
   ++num_constraint_lookups_;
   const int old_value = cst->already_propagated_end();
@@ -1021,12 +1035,15 @@ bool PbConstraints::PropagateConstraint(ConstraintIndex index, Trail* trail,
     trail->MutableConflict()->swap(enqueue_helper_.conflict);
     conflicting_constraint_index_ = index;
     conflict = true;
+    work += cst->size();
 
     // We bump the activity of the conflict.
     BumpActivity(constraints_[index.value()].get());
   }
-  num_inspected_constraint_literals_ +=
-      old_value - cst->already_propagated_end();
+  const int inspected = old_value - cst->already_propagated_end();
+  work += inspected;
+  num_inspected_constraint_literals_ += inspected;
+  timer.Advance(work);
   return !conflict;
 }
 
@@ -1039,8 +1056,9 @@ bool PbConstraints::PropagateNext(Trail* trail) {
   // We need to update ALL thresholds, otherwise Untrail() will not be
   // synchronized.
   bool conflict = false;
-  num_threshold_updates_ += to_update_[true_literal].size();
-  for (ConstraintIndexWithCoeff& update : to_update_[true_literal]) {
+  std::vector<ConstraintIndexWithCoeff>& updates = to_update_[true_literal];
+  num_threshold_updates_ += updates.size();
+  for (ConstraintIndexWithCoeff& update : updates) {
     const Coefficient threshold =
         thresholds_[update.index] - update.coefficient;
     thresholds_[update.index] = threshold;
@@ -1053,29 +1071,54 @@ bool PbConstraints::PropagateNext(Trail* trail) {
 }
 
 bool PbConstraints::Propagate(Trail* trail) {
-  for (const ConstraintIndex index :
-       enforcement_status_changed_.PositionsSetAtLeastOnce()) {
-    if (thresholds_[index] < 0 &&
-        !PropagateConstraint(index, trail, propagation_trail_index_)) {
-      enforcement_status_changed_.ResetAllToFalse();
-      return false;
+  {
+    DeterministicTimer<{.scale = 3.7e-09, .offset = 2.6e-08}> timer(
+        time_limit_);
+    uint64_t num_changed = 0;
+    for (const ConstraintIndex index :
+         enforcement_status_changed_.PositionsSetAtLeastOnce()) {
+      ++num_changed;
+      if (thresholds_[index] < 0 &&
+          !PropagateConstraint(index, trail, propagation_trail_index_)) {
+        enforcement_status_changed_.ResetAllToFalse();
+        timer.Advance(num_changed);
+        return false;
+      }
     }
+    enforcement_status_changed_.ResetAllToFalse();
+    timer.Advance(num_changed);
   }
-  enforcement_status_changed_.ResetAllToFalse();
 
   const int old_index = trail->Index();
+  const int old_propagation_trail_index = propagation_trail_index_;
+  const int64_t old_num_threshold_updates = num_threshold_updates_;
+  DeterministicTimer2<{.scale1 = 1.3e-08, .scale2 = 1.2e-08}> timer(
+      time_limit_);
+  bool conflict = false;
   while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
-    if (!PropagateNext(trail)) return false;
+    if (!PropagateNext(trail)) {
+      conflict = true;
+      break;
+    }
   }
-  return true;
+  timer.Advance(propagation_trail_index_ - old_propagation_trail_index,
+                num_threshold_updates_ - old_num_threshold_updates);
+  return !conflict;
 }
 
 void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   SCOPED_TIME_STAT(&stats_);
+  uint64_t num_updates = 0;
+  uint64_t num_untrailed = 0;
+  DeterministicTimer2<{.scale1 = 2.3e-08, .scale2 = 1.8e-08}> timer(
+      time_limit_);
   to_untrail_.ClearAndResize(ConstraintIndex(constraints_.size()));
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
     const Literal literal = trail[propagation_trail_index_];
+    // Also count the literal itself, which costs time even when it has no
+    // updates.
+    num_updates += 1 + to_update_[literal].size();
     for (ConstraintIndexWithCoeff& update : to_update_[literal]) {
       thresholds_[update.index] += update.coefficient;
 
@@ -1088,9 +1131,12 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
     }
   }
   for (ConstraintIndex cst_index : to_untrail_.PositionsSetAtLeastOnce()) {
-    constraints_[cst_index.value()]->Untrail(&(thresholds_[cst_index]),
-                                             trail_index);
+    UpperBoundedLinearConstraint* cst = constraints_[cst_index.value()].get();
+    const int old_end = cst->already_propagated_end();
+    cst->Untrail(&(thresholds_[cst_index]), trail_index);
+    num_untrailed += cst->already_propagated_end() - old_end + 1;
   }
+  timer.Advance(num_updates, num_untrailed);
 }
 
 absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
@@ -1099,12 +1145,17 @@ absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
+  DeterministicTimer<{.scale = 1.0e-08, .offset = 1.3e-06}> timer(time_limit_);
   std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   reason_info.pb_constraint->FillReason(
       trail, reason_info.source_trail_index,
       enforcement_propagator_->GetEnforcementLiterals(
           reason_info.pb_constraint->enforcement_id()),
       trail[trail_index].Variable(), &enqueue_helper_.temporary_tuples, reason);
+  {
+    const uint64_t n = reason->size();
+    timer.Advance(n * absl::bit_width(n));
+  }
   return *reason;
 }
 

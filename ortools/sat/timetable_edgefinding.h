@@ -101,6 +101,7 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   SchedulingConstraintHelper* helper_;
   SchedulingDemandHelper* demands_;
   IntegerTrail* integer_trail_;
+  TimeLimit* time_limit_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
   std::vector<TaskTime> scp_;

@@ -110,7 +110,8 @@ double EstimateCopyDeterministicTime(const ModelStats& stats);
 // Only visible for testing.
 class ModelCopyHelper {
  public:
-  ModelCopyHelper() = default;
+  explicit ModelCopyHelper(TimeLimit* time_limit) : time_limit_(time_limit) {}
+  TimeLimit* time_limit() const { return time_limit_; }
 
   // IMPORTANT: Must be called before any other functions in this class.
   //
@@ -192,6 +193,8 @@ class ModelCopyHelper {
   SolutionCrush* solution_crush() { return &solution_crush_; }
 
  private:
+  TimeLimit* time_limit_ = nullptr;
+
   // We track which of the variable in the input proto was or is now fixed.
   // And for such fixed variable, its fixed value.
   //
@@ -548,6 +551,10 @@ class DenseModelCopy {
                  SharedClausesManager* shared_clauses,
                  std::function<bool(int)> active_constraints = nullptr);
 
+  // Sets the time limit used to account the deterministic time of this class,
+  // and advances it by the deterministic time spent in the constructor.
+  void SetTimeLimit(TimeLimit* time_limit);
+
   // The timestamps of the shared bounds and equivalences used at the last full
   // model build. Incremental domain updates do not change these timestamps.
   int64_t bounds_timestamp() const { return bounds_timestamp_; }
@@ -597,6 +604,9 @@ class DenseModelCopy {
   SharedBoundsManager* const shared_bounds_;
   const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
+  // Used until SetTimeLimit() is called.
+  TimeLimit default_time_limit_;
+  TimeLimit* time_limit_ = &default_time_limit_;
 
   bool first_update_ = true;
   bool is_unsat_ = false;

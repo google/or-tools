@@ -127,6 +127,8 @@ class TaskSet {
 struct PropagationStatistics {
   explicit PropagationStatistics(std::string _name, Model* model = nullptr)
       : name(_name),
+        time_limit(model == nullptr ? &dummy_time_limit
+                                    : model->GetOrCreate<TimeLimit>()),
         shared_stats(model == nullptr
                          ? nullptr
                          : model->GetOrCreate<SharedStatistics>()) {};
@@ -157,6 +159,8 @@ struct PropagationStatistics {
   }
 
   const std::string name;
+  TimeLimit dummy_time_limit;
+  TimeLimit* const time_limit;
   SharedStatistics* shared_stats;
   int64_t saved_num_propag;
 
@@ -238,7 +242,8 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
                                    Model* model = nullptr)
       : time_direction_(time_direction),
         helper_(helper),
-        stats_("DisjunctiveDetectablePrecedences", model) {
+        stats_("DisjunctiveDetectablePrecedences", model),
+        time_limit_(stats_.time_limit) {
     ranks_.resize(helper->NumTasks());
     to_add_.ClearAndReserve(helper->NumTasks());
   }
@@ -255,6 +260,7 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   PropagationStatistics stats_;
+  TimeLimit* time_limit_;
 };
 
 // This propagates the same things as DisjunctiveDetectablePrecedences, except
@@ -311,7 +317,8 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
                          Model* model = nullptr)
       : time_direction_(time_direction),
         helper_(helper),
-        stats_("DisjunctiveEdgeFinding", model) {
+        stats_("DisjunctiveEdgeFinding", model),
+        time_limit_(stats_.time_limit) {
     event_size_.ClearAndReserve(helper->NumTasks());
   }
 
@@ -334,6 +341,7 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   std::vector<bool> is_gray_;
 
   PropagationStatistics stats_;
+  TimeLimit* time_limit_;
 };
 
 // Exploits the precedence relations of the form "this set of disjoint

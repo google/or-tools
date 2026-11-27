@@ -292,6 +292,7 @@ TEST(BasicFixedSearchBehaviorTest, MedianTest2) {
     }
   )pb");
   SatParameters params;
+  params.set_expand_alldiff_constraints(true);
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_search_branching(SatParameters::FIXED_SEARCH);
   params.set_num_workers(1);

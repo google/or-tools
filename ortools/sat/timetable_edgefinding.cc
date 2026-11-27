@@ -23,7 +23,9 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -36,7 +38,8 @@ TimeTableEdgeFinding::TimeTableEdgeFinding(AffineExpression capacity,
       capacity_(capacity),
       helper_(helper),
       demands_(demands),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()) {
   // Edge finding structures.
   mandatory_energy_before_end_max_.resize(num_tasks_);
   mandatory_energy_before_start_min_.resize(num_tasks_);
@@ -200,174 +203,182 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   // Apply the Timetabling Edge Finding filtering rule.
   // --------------------------------------------------
   // The loop order is not important for correctness.
-  for (const TaskTime end_task_time : helper_->TaskByDecreasingEndMax()) {
-    const int end_task = end_task_time.task_index;
-
-    // TODO(user): consider optional tasks for additional propagation.
-    if (!helper_->IsPresent(end_task)) continue;
-    if (energy_free_[end_task] == 0) continue;
-
-    // We only need to consider each time point once.
-    if (end_task_time.time == previous_end) continue;
-    previous_end = end_task_time.time;
-
-    // Energy of the free parts contained in the interval
-    // [window_min, window_max].
-    IntegerValue energy_free_parts = IntegerValue(0);
-    reason_tasks_fully_included_in_window_.clear();
-    reason_tasks_partially_included_in_window_.clear();
-
-    // Task that requires the biggest additional amount of energy to be
-    // scheduled at its minimum start time in the task interval
-    // [window_min, window_max].
-    int max_task = -1;
-    IntegerValue free_energy_of_max_task_in_window(0);
-    IntegerValue extra_energy_required_by_max_task = kMinIntegerValue;
-
-    // Process task by decreasing start min.
-    const IntegerValue window_max = end_task_time.time;
-    for (const TaskTime begin_task_time : gtl::reversed_view(by_start_min)) {
-      const int begin_task = begin_task_time.task_index;
-
-      // The considered time window. Note that we use the "cached" values so
-      // that our mandatory energy before computation is correct.
-      const IntegerValue window_min = begin_task_time.time;
-
-      // Not a valid time window.
-      if (window_max <= window_min) continue;
+  {
+    DeterministicTimer<{.scale = 3.0e-08}> timer(time_limit_);
+    for (const TaskTime end_task_time : helper_->TaskByDecreasingEndMax()) {
+      const int end_task = end_task_time.task_index;
 
       // TODO(user): consider optional tasks for additional propagation.
-      if (!helper_->IsPresent(begin_task)) continue;
-      if (energy_free_[begin_task] == 0) continue;
+      if (!helper_->IsPresent(end_task)) continue;
+      if (energy_free_[end_task] == 0) continue;
 
-      // We consider two different cases: either the free part overlaps the
-      // window_max of the interval (right) or it does not (inside).
-      //
-      //            window_min  window_max
-      //                   v     v
-      // right:            ======|===
-      //
-      //      window_min     window_max
-      //            v            v
-      // inside:    ==========   |
-      //
-      // In the inside case, the additional amount of energy required to
-      // schedule the task at its minimum start time is equal to the whole
-      // energy of the free part. In the right case, the additional energy is
-      // equal to the largest part of the free part that can fit in the task
-      // interval.
-      const IntegerValue end_max = helper_->EndMax(begin_task);
-      if (end_max <= window_max) {
-        // The whole task energy is contained in the window.
-        reason_tasks_fully_included_in_window_.push_back(begin_task);
-        energy_free_parts += energy_free_[begin_task];
-      } else {
-        const IntegerValue demand_min = demands_->DemandMin(begin_task);
-        const IntegerValue extra_energy =
-            std::min(size_free_[begin_task], (window_max - window_min)) *
-            demand_min;
+      // We only need to consider each time point once.
+      if (end_task_time.time == previous_end) continue;
+      previous_end = end_task_time.time;
 
-        // This is not in the paper, but it is almost free for us to account for
-        // the free energy of this task that must be present in the window.
-        const IntegerValue free_energy_in_window =
-            std::max(IntegerValue(0),
-                     size_free_[begin_task] - (end_max - window_max)) *
-            demand_min;
+      // Energy of the free parts contained in the interval
+      // [window_min, window_max].
+      IntegerValue energy_free_parts = IntegerValue(0);
+      reason_tasks_fully_included_in_window_.clear();
+      reason_tasks_partially_included_in_window_.clear();
 
-        // TODO(user): There is no point setting max_task if its start min
-        // is already bigger than what we can push. Maybe we can exploit that?
-        if (extra_energy > extra_energy_required_by_max_task) {
-          if (max_task != -1 && free_energy_of_max_task_in_window > 0) {
-            reason_tasks_partially_included_in_window_.push_back(max_task);
+      // Task that requires the biggest additional amount of energy to be
+      // scheduled at its minimum start time in the task interval
+      // [window_min, window_max].
+      int max_task = -1;
+      IntegerValue free_energy_of_max_task_in_window(0);
+      IntegerValue extra_energy_required_by_max_task = kMinIntegerValue;
+
+      // Process task by decreasing start min.
+      const IntegerValue window_max = end_task_time.time;
+      for (const TaskTime begin_task_time : gtl::reversed_view(by_start_min)) {
+        const int begin_task = begin_task_time.task_index;
+
+        // The considered time window. Note that we use the "cached" values so
+        // that our mandatory energy before computation is correct.
+        const IntegerValue window_min = begin_task_time.time;
+
+        // Not a valid time window.
+        if (window_max <= window_min) continue;
+
+        // TODO(user): consider optional tasks for additional propagation.
+        if (!helper_->IsPresent(begin_task)) continue;
+        if (energy_free_[begin_task] == 0) continue;
+
+        timer.Advance(1);
+
+        // We consider two different cases: either the free part overlaps the
+        // window_max of the interval (right) or it does not (inside).
+        //
+        //            window_min  window_max
+        //                   v     v
+        // right:            ======|===
+        //
+        //      window_min     window_max
+        //            v            v
+        // inside:    ==========   |
+        //
+        // In the inside case, the additional amount of energy required to
+        // schedule the task at its minimum start time is equal to the whole
+        // energy of the free part. In the right case, the additional energy is
+        // equal to the largest part of the free part that can fit in the task
+        // interval.
+        const IntegerValue end_max = helper_->EndMax(begin_task);
+        if (end_max <= window_max) {
+          // The whole task energy is contained in the window.
+          reason_tasks_fully_included_in_window_.push_back(begin_task);
+          energy_free_parts += energy_free_[begin_task];
+        } else {
+          const IntegerValue demand_min = demands_->DemandMin(begin_task);
+          const IntegerValue extra_energy =
+              std::min(size_free_[begin_task], (window_max - window_min)) *
+              demand_min;
+
+          // This is not in the paper, but it is almost free for us to account
+          // for the free energy of this task that must be present in the
+          // window.
+          const IntegerValue free_energy_in_window =
+              std::max(IntegerValue(0),
+                       size_free_[begin_task] - (end_max - window_max)) *
+              demand_min;
+
+          // TODO(user): There is no point setting max_task if its start min
+          // is already bigger than what we can push. Maybe we can exploit that?
+          if (extra_energy > extra_energy_required_by_max_task) {
+            if (max_task != -1 && free_energy_of_max_task_in_window > 0) {
+              reason_tasks_partially_included_in_window_.push_back(max_task);
+            }
+
+            max_task = begin_task;
+            extra_energy_required_by_max_task = extra_energy;
+
+            // Account for the free energy of the old max task, and cache the
+            // new one for later.
+            energy_free_parts += free_energy_of_max_task_in_window;
+            free_energy_of_max_task_in_window = free_energy_in_window;
+          } else if (free_energy_in_window > 0) {
+            reason_tasks_partially_included_in_window_.push_back(begin_task);
+            energy_free_parts += free_energy_in_window;
           }
-
-          max_task = begin_task;
-          extra_energy_required_by_max_task = extra_energy;
-
-          // Account for the free energy of the old max task, and cache the
-          // new one for later.
-          energy_free_parts += free_energy_of_max_task_in_window;
-          free_energy_of_max_task_in_window = free_energy_in_window;
-        } else if (free_energy_in_window > 0) {
-          reason_tasks_partially_included_in_window_.push_back(begin_task);
-          energy_free_parts += free_energy_in_window;
         }
-      }
 
-      // No task to push. This happens if all the tasks that overlap the task
-      // interval are entirely contained in it.
-      // TODO(user): check that we should not fail if the interval is
-      // overloaded, i.e., available_energy < 0.
-      //
-      // We also defensively abort if the demand_min is 0.
-      // This may happen along an energy_min > 0 if the literals in the
-      // decomposed_energy have been fixed, and not yet propagated to the demand
-      // affine expression.
-      if (max_task == -1 || demands_->DemandMin(max_task) == 0) continue;
-
-      // Compute the amount of energy available to schedule max_task.
-      const IntegerValue window_energy =
-          CapacityMax() * (window_max - window_min);
-      const IntegerValue energy_mandatory =
-          mandatory_energy_before_end_max_[end_task] -
-          mandatory_energy_before_start_min_[begin_task];
-      const IntegerValue available_energy =
-          window_energy - energy_free_parts - energy_mandatory;
-
-      // Enough energy to schedule max_task at its minimum start time?
-      //
-      // TODO(user): In case of alternatives, for each fixed
-      // size/demand pair, we can compute a new_start and use the min of them.
-      if (extra_energy_required_by_max_task <= available_energy) {
-        // If the test below is true, we know the max_task cannot fully
-        // fit in the time window, so at least end_min > window_max.
+        // No task to push. This happens if all the tasks that overlap the task
+        // interval are entirely contained in it.
+        // TODO(user): check that we should not fail if the interval is
+        // overloaded, i.e., available_energy < 0.
         //
-        // TODO(user): We currently only do that if we are not about to push the
-        // start as we assume the start push is just stronger. Maybe we should
-        // do it in more situations?
-        if (energy_free_[max_task] > available_energy &&
-            helper_->EndMin(max_task) <= window_max) {
+        // We also defensively abort if the demand_min is 0.
+        // This may happen along an energy_min > 0 if the literals in the
+        // decomposed_energy have been fixed, and not yet propagated to the
+        // demand affine expression.
+        if (max_task == -1 || demands_->DemandMin(max_task) == 0) continue;
+
+        // Compute the amount of energy available to schedule max_task.
+        const IntegerValue window_energy =
+            CapacityMax() * (window_max - window_min);
+        const IntegerValue energy_mandatory =
+            mandatory_energy_before_end_max_[end_task] -
+            mandatory_energy_before_start_min_[begin_task];
+        const IntegerValue available_energy =
+            window_energy - energy_free_parts - energy_mandatory;
+
+        // Enough energy to schedule max_task at its minimum start time?
+        //
+        // TODO(user): In case of alternatives, for each fixed
+        // size/demand pair, we can compute a new_start and use the min of them.
+        if (extra_energy_required_by_max_task <= available_energy) {
+          // If the test below is true, we know the max_task cannot fully
+          // fit in the time window, so at least end_min > window_max.
+          //
+          // TODO(user): We currently only do that if we are not about to push
+          // the start as we assume the start push is just stronger. Maybe we
+          // should do it in more situations?
+          if (energy_free_[max_task] > available_energy &&
+              helper_->EndMin(max_task) <= window_max) {
+            FillEnergyInWindowReason(window_min, window_max, max_task);
+            demands_->AddEnergyMinReason(max_task);
+            helper_->AddStartMinReason(max_task, window_min);
+            if (!helper_->IncreaseEndMin(max_task, window_max + 1))
+              return false;
+          }
+          continue;
+        }
+
+        // Compute the length of the mandatory subpart of max_task that should
+        // be considered as available.
+        //
+        // TODO(user): Because this uses updated bounds, it might be more than
+        // what we accounted for in the precomputation. This is correct but
+        // could be improved upon.
+        const IntegerValue mandatory_size_in_window =
+            std::max(IntegerValue(0),
+                     std::min(window_max, helper_->EndMin(max_task)) -
+                         std::max(window_min, helper_->StartMax(max_task)));
+
+        // Compute the new minimum start time of max_task.
+        const IntegerValue max_free_size_that_fit =
+            available_energy / demands_->DemandMin(max_task);
+        const IntegerValue new_start =
+            window_max - mandatory_size_in_window - max_free_size_that_fit;
+
+        // Push and explain only if the new start is bigger than the current
+        // one.
+        if (helper_->StartMin(max_task) < new_start) {
           FillEnergyInWindowReason(window_min, window_max, max_task);
-          demands_->AddEnergyMinReason(max_task);
+
+          // Reason needed for max_task.
+          // We need start_min and demand_min to push the start.
           helper_->AddStartMinReason(max_task, window_min);
-          if (!helper_->IncreaseEndMin(max_task, window_max + 1)) return false;
+          demands_->AddDemandMinReason(max_task);
+
+          // We also need the explanation for extra_energy_required_by_max_task.
+          //
+          // TODO(user): This might not be enough, the whole logic probably
+          // needs to be inspected again as tasks with variable size are tricky.
+          helper_->AddSizeMinReason(max_task);
+
+          if (!helper_->IncreaseStartMin(max_task, new_start)) return false;
         }
-        continue;
-      }
-
-      // Compute the length of the mandatory subpart of max_task that should be
-      // considered as available.
-      //
-      // TODO(user): Because this uses updated bounds, it might be more than
-      // what we accounted for in the precomputation. This is correct but could
-      // be improved upon.
-      const IntegerValue mandatory_size_in_window =
-          std::max(IntegerValue(0),
-                   std::min(window_max, helper_->EndMin(max_task)) -
-                       std::max(window_min, helper_->StartMax(max_task)));
-
-      // Compute the new minimum start time of max_task.
-      const IntegerValue max_free_size_that_fit =
-          available_energy / demands_->DemandMin(max_task);
-      const IntegerValue new_start =
-          window_max - mandatory_size_in_window - max_free_size_that_fit;
-
-      // Push and explain only if the new start is bigger than the current one.
-      if (helper_->StartMin(max_task) < new_start) {
-        FillEnergyInWindowReason(window_min, window_max, max_task);
-
-        // Reason needed for max_task.
-        // We need start_min and demand_min to push the start.
-        helper_->AddStartMinReason(max_task, window_min);
-        demands_->AddDemandMinReason(max_task);
-
-        // We also need the explanation for extra_energy_required_by_max_task.
-        //
-        // TODO(user): This might not be enough, the whole logic probably needs
-        // to be inspected again as tasks with variable size are tricky.
-        helper_->AddSizeMinReason(max_task);
-
-        if (!helper_->IncreaseStartMin(max_task, new_start)) return false;
       }
     }
   }

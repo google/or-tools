@@ -22,8 +22,10 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
@@ -263,7 +265,12 @@ class SchedulingLocalSearchSolver : public SubSolver {
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) final;
-  void Synchronize() final {}
+  void Synchronize() final {
+    absl::MutexLock mutex_lock(mutex_);
+    AddTaskDeterministicDuration(dtime_since_last_sync_);
+    shared_time_limit_->AdvanceDeterministicTime(dtime_since_last_sync_);
+    dtime_since_last_sync_ = 0.0;
+  }
   bool IsDone() final { return false; }
   bool TaskIsAvailable() final {
     if (IsDone()) return false;
@@ -287,6 +294,11 @@ class SchedulingLocalSearchSolver : public SubSolver {
   SharedStatTables* stat_tables_;
   const SchedulingRelaxation& relaxation_;
   std::vector<std::unique_ptr<SchedulingLocalSearch>> local_search_solvers_;
+
+  absl::Mutex mutex_;
+  // The deterministic time of the tasks completed since the last call to
+  // Synchronize().
+  double dtime_since_last_sync_ ABSL_GUARDED_BY(mutex_) = 0.0;
 };
 
 }  // namespace sat

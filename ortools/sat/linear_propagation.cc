@@ -190,7 +190,8 @@ void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
 void LinearPropagator::AddVarConstraintsToQueue(IntegerVariable var) {
   const int size = var_to_constraint_ids_[var].size();
   if (size == 0) return;
-  DeterministicTimer<{.scale = 1e-9}> timer(time_limit_, size);
+  DeterministicTimer<{.scale = 5.9e-09, .offset = 2.5e-08}> timer(time_limit_,
+                                                                  size);
   Bitset64<int>::View in_queue = in_queue_.view();
   for (const int id : var_to_constraint_ids_[var]) {
     if (in_queue[id]) continue;
@@ -200,6 +201,8 @@ void LinearPropagator::AddVarConstraintsToQueue(IntegerVariable var) {
 }
 
 void LinearPropagator::PushPendingLin2Bounds() {
+  DeterministicTimer<{.scale = 1.5e-07, .offset = 2.6e-08}> timer(
+      time_limit_, lin3_ids_.PositionsSetAtLeastOnce().size());
   for (const int id : lin3_ids_.PositionsSetAtLeastOnce()) {
     // "Activates" the 3 potential affine bounds.
     CHECK_LT(id, id_to_lin2_cache_.size());
@@ -217,13 +220,20 @@ bool LinearPropagator::Propagate() {
   //
   // We will clear modified_vars_ on exit since everything we propagate here
   // is handled by PropagateOneConstraint().
-  for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var >= var_to_constraint_ids_.size()) continue;
-    OnVariableChange(var, integer_trail_->LowerBound(var), -1);
+  {
+    DeterministicTimer<{.scale = 3.9e-08, .offset = 5.9e-08}> timer(
+        time_limit_);
+    uint64_t work_done = 0;
+    for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
+      if (var >= var_to_constraint_ids_.size()) continue;
+      ++work_done;
+      OnVariableChange(var, integer_trail_->LowerBound(var), -1);
+    }
+    timer.Advance(work_done);
   }
 
   // Cleanup.
-  DeterministicTimer<{.scale = 1e-9}> timer(time_limit_);
+  DeterministicTimer<{.scale = 1.1e-08, .offset = 6.1e-08}> timer(time_limit_);
   num_terms_for_dtime_update_ = 0;
   const auto cleanup = ::absl::MakeCleanup([&timer, this]() {
     timer.Advance(num_terms_for_dtime_update_);
@@ -690,11 +700,15 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
   // Fill integer reason.
   integer_reason_.clear();
   reason_coeffs_.clear();
-  for (int i = 0; i < info.initial_size; ++i) {
-    const IntegerVariable var = vars[i];
-    if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-      integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
-      reason_coeffs_.push_back(coeffs[i]);
+  {
+    DeterministicTimer<{.scale = 1.9e-08, .offset = 4.5e-08}> timer(
+        time_limit_, info.initial_size);
+    for (int i = 0; i < info.initial_size; ++i) {
+      const IntegerVariable var = vars[i];
+      if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
+        integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+        reason_coeffs_.push_back(coeffs[i]);
+      }
     }
   }
 
@@ -841,20 +855,23 @@ bool LinearPropagator::ReportConflictingCycle() {
     // We shouldn't have overflow since each component does not overflow an
     // int64_t and we sum a small amount of them.
     absl::int128 implied_lb = 0;
-    for (const auto [var, coeff] : map_sum) {
-      if (coeff > 0) {
-        if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-          integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+    {
+      DeterministicTimer<{.scale = 3.2e-08}> timer(time_limit_, map_sum.size());
+      for (const auto [var, coeff] : map_sum) {
+        if (coeff > 0) {
+          if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
+            integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+          }
+          implied_lb +=
+              coeff * absl::int128{integer_trail_->LowerBound(var).value()};
+        } else if (coeff < 0) {
+          if (!integer_trail_->VariableLowerBoundIsFromLevelZero(
+                  NegationOf(var))) {
+            integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(var));
+          }
+          implied_lb +=
+              coeff * absl::int128{integer_trail_->UpperBound(var).value()};
         }
-        implied_lb +=
-            coeff * absl::int128{integer_trail_->LowerBound(var).value()};
-      } else if (coeff < 0) {
-        if (!integer_trail_->VariableLowerBoundIsFromLevelZero(
-                NegationOf(var))) {
-          integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(var));
-        }
-        implied_lb +=
-            coeff * absl::int128{integer_trail_->UpperBound(var).value()};
       }
     }
     if (implied_lb > rhs_sum) {
@@ -907,8 +924,8 @@ bool LinearPropagator::ReportConflictingCycle() {
     enforcement_propagator_->AddEnforcementReason(info.enf_id,
                                                   &literal_reason_);
     for (const IntegerVariable var : GetVariables(infos_[id])) {
-      // The lower bound of this variable is implied by the previous constraint,
-      // so we do not need to include it.
+      // The lower bound of this variable is implied by the previous
+      // constraint, so we do not need to include it.
       if (var == previous_var) continue;
 
       // We do not need the lower bound of var to propagate its upper bound.
@@ -964,6 +981,8 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
   {
     const ConstraintInfo& info = infos_[root_id];
     const auto vars = GetVariables(info);
+    DeterministicTimer<{.scale = 1.2e-08, .offset = 9.8e-09}> timer(time_limit_,
+                                                                    num_tight);
     for (int i = 0; i < num_tight; ++i) {
       disassemble_queue_.push_back({root_id, NegationOf(vars[i]), 1});
     }
@@ -984,7 +1003,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
 
     disassemble_branch_.push_back({prev_id, var, increase});
 
-    DeterministicTimer<{.scale = 1e-9}> timer(
+    DeterministicTimer<{.scale = 4.0e-09, .offset = 3.5e-08}> timer(
         time_limit_, var_to_constraint_ids_[var].size());
     for (const int id : var_to_constraint_ids_[var]) {
       if (id == root_id) {
@@ -1028,7 +1047,8 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
       disassemble_candidates_.clear();
       ++num_explored_in_disassemble_;
       {
-        DeterministicTimer<{.scale = 1e-9}> timer(time_limit_, info.rev_size);
+        DeterministicTimer<{.scale = 5.0e-09, .offset = 3.2e-08}> timer(
+            time_limit_, info.rev_size);
         for (int i = 0; i < info.rev_size; ++i) {
           if (vars[i] == var) {
             var_coeff = coeffs[i];
@@ -1045,22 +1065,26 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         }
       }
 
-      for (const auto [next_var, next_var_coeff] : disassemble_candidates_) {
-        // If var was pushed by increase, next_var is pushed by
-        // (var_coeff * increase) / next_var_coeff.
-        //
-        // Note that it is okay to underevaluate the increase in case of
-        // overflow.
-        const IntegerValue next_increase =
-            FloorRatio(CapProdI(var_coeff, increase), next_var_coeff);
-        if (next_increase > 0) {
-          disassemble_queue_.push_back({id, next_var, next_increase});
+      {
+        DeterministicTimer<{.scale = 2.4e-08, .offset = 1.3e-08}> timer(
+            time_limit_, disassemble_candidates_.size());
+        for (const auto [next_var, next_var_coeff] : disassemble_candidates_) {
+          // If var was pushed by increase, next_var is pushed by
+          // (var_coeff * increase) / next_var_coeff.
+          //
+          // Note that it is okay to underevaluate the increase in case of
+          // overflow.
+          const IntegerValue next_increase =
+              FloorRatio(CapProdI(var_coeff, increase), next_var_coeff);
+          if (next_increase > 0) {
+            disassemble_queue_.push_back({id, next_var, next_increase});
 
-          // We know this will push later, so we register it with a sentinel
-          // value so that it does not block any earlier propagation. Hopefully,
-          // adding this "dependency" should help find a better propagation
-          // order.
-          order_.Register(id, next_var, kMinIntegerValue);
+            // We know this will push later, so we register it with a sentinel
+            // value so that it does not block any earlier propagation.
+            // Hopefully, adding this "dependency" should help find a better
+            // propagation order.
+            order_.Register(id, next_var, kMinIntegerValue);
+          }
         }
       }
     }
@@ -1081,11 +1105,14 @@ void LinearPropagator::AddToQueueIfNeeded(int id) {
 void LinearPropagator::ClearPropagatedBy() {
   // To be sparse, we use the fact that each node with a parent must be in
   // modified_vars_.
-  for (const IntegerVariable var :
-       propagated_by_was_set_.PositionsSetAtLeastOnce()) {
-    int& id = propagated_by_[var];
-    if (id != -1) --id_to_propagation_count_[id];
-    propagated_by_[var] = -1;
+  const auto positions = propagated_by_was_set_.PositionsSetAtLeastOnce();
+  {
+    DeterministicTimer<{.scale = 1.8e-08}> timer(time_limit_, positions.size());
+    for (const IntegerVariable var : positions) {
+      int& id = propagated_by_[var];
+      if (id != -1) --id_to_propagation_count_[id];
+      propagated_by_[var] = -1;
+    }
   }
   propagated_by_was_set_.ClearAndResize(propagated_by_was_set_.size());
   DCHECK(std::all_of(propagated_by_.begin(), propagated_by_.end(),

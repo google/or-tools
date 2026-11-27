@@ -164,6 +164,12 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(mip_tight_precision);
+  if (params.mip_tight_precision() > params.mip_wanted_precision()) {
+    return absl::StrCat("parameter 'mip_tight_precision' (",
+                        params.mip_tight_precision(),
+                        ") must be <= 'mip_wanted_precision' (",
+                        params.mip_wanted_precision(), ")");
+  }
   TEST_NON_NEGATIVE(new_constraints_batch_size);
   TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);

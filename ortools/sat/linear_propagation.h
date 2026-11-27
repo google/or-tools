@@ -117,7 +117,8 @@ class ConstraintPropagationOrder {
   int NextId() {
     if (ids_.empty()) return -1;
 
-    DeterministicTimer<{.scale = 5e-9}> timer(time_limit_);
+    DeterministicTimer<{.scale = 6.3e-09, .offset = 2.0e-07}> timer(
+        time_limit_);
     int best_id = 0;
     int best_num_vars = 0;
     int best_degree = kint32max;

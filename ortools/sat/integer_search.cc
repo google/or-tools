@@ -63,6 +63,7 @@
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -186,15 +187,20 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
 std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
     absl::Span<const IntegerVariable> vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return
-      [/*copy*/ vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-       integer_trail]() {
-        for (const IntegerVariable var : vars) {
-          const IntegerLiteral decision = AtMinValue(var, integer_trail);
-          if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
-        }
-        return BooleanOrIntegerLiteral();
-      };
+  return [/*copy*/ vars =
+              std::vector<IntegerVariable>(vars.begin(), vars.end()),
+          integer_trail]() {
+    DeterministicTimer<{.scale = 3.0e-09}> timer(integer_trail->time_limit());
+    for (int i = 0; i < vars.size(); ++i) {
+      const IntegerLiteral decision = AtMinValue(vars[i], integer_trail);
+      if (decision.IsValid()) {
+        timer.Advance(i + 1);
+        return BooleanOrIntegerLiteral(decision);
+      }
+    }
+    timer.Advance(vars.size());
+    return BooleanOrIntegerLiteral();
+  };
 }
 
 std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {
@@ -726,8 +732,9 @@ class IntervalPrecedencesDetector {
           relation.expr.vars[1] == kNoIntegerVariable) {
         continue;
       }
-      // There are four ways to interpret 'relation' as a precedence constraint
-      // between intervals: terms can be swapped and variables can be negated.
+      // There are four ways to interpret 'relation' as a precedence
+      // constraint between intervals: terms can be swapped and variables can
+      // be negated.
       for (int j = 0; j < 4; ++j) {
         if (NegationOf(relation.expr.vars[0]) <
                 intervals_by_start_var_.size() &&
@@ -1531,6 +1538,9 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
       // Set some assignment preference.
       // TODO(user): Also use LP value as assignment like in Bop.
       if (objective != nullptr && absl::Bernoulli(*random, 0.2)) {
+        const int objective_size = objective->vars.size();
+        DeterministicTimer<{.scale = 3.1e-08, .offset = 3.4e-06}> timer(
+            integer_trail->time_limit(), objective_size);
         // Use Boolean objective as assignment preference.
         IntegerValue max_abs_weight = 0;
         for (const IntegerValue coeff : objective->coeffs) {
@@ -1538,7 +1548,6 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
         }
         const double max_abs_weight_double = ToDouble(max_abs_weight);
 
-        const int objective_size = objective->vars.size();
         for (int i = 0; i < objective_size; ++i) {
           const IntegerVariable var = objective->vars[i];
           if (integer_trail->LowerBound(var) != 0) continue;
@@ -1585,12 +1594,22 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     }
 
     // Decode the decision and get the variable.
-    for (const IntegerVariable var : encoder->GetAllAssociatedVariables(
-             Literal(current_decision.boolean_literal_index))) {
-      // Try the selected policy.
-      const IntegerLiteral new_decision =
-          value_selection_heuristics[val_policy_index](var);
-      if (new_decision.IsValid()) return BooleanOrIntegerLiteral(new_decision);
+    {
+      DeterministicTimer<{.scale = 3.8e-07, .offset = 2.8e-08}> timer(
+          integer_trail->time_limit());
+      const std::vector<IntegerVariable>& associated_vars =
+          encoder->GetAllAssociatedVariables(
+              Literal(current_decision.boolean_literal_index));
+      for (int i = 0; i < associated_vars.size(); ++i) {
+        // Try the selected policy.
+        const IntegerLiteral new_decision =
+            value_selection_heuristics[val_policy_index](associated_vars[i]);
+        if (new_decision.IsValid()) {
+          timer.Advance(i + 1);
+          return BooleanOrIntegerLiteral(new_decision);
+        }
+      }
+      timer.Advance(associated_vars.size());
     }
 
     // Selected policy failed. Revert back to original decision.
@@ -1884,7 +1903,7 @@ void ConfigureSearchHeuristics(Model* model) {
       std::vector<IntegerVariable> integer_vars;
       literals.reserve(2 * num_bool_vars);
       integer_vars.reserve(2 * (num_model_vars - num_bool_vars));
-      for (int v = 0; v < mapping->ModelProto()->variables_size(); ++v) {
+      for (int v = 0; v < num_model_vars; ++v) {
         // Skip non-representative variables in symmetry orbits.
         if (!var_to_representative.empty() && var_to_representative[v] != v) {
           continue;
