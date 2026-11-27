@@ -75,7 +75,6 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -91,6 +90,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/scheduling_local_search.h"
 #include "ortools/sat/shaving_solver.h"
 #include "ortools/sat/solution_crush.h"
@@ -98,6 +98,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/violation_ls.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
@@ -1080,6 +1081,13 @@ bool SolutionHintIsCompleteAndFeasible(
       // Add it to the pool right away! Note that we already have a log in this
       // case, so we don't log anything more.
       manager->NewSolution(solution, "complete_hint");
+
+      // In interleaved multi-thread mode, solutions only become visible in the
+      // pool after a Synchronize(). Since no subsolver is running yet, we can
+      // synchronize now deterministically. Otherwise, if the search stops
+      // before the first synchronization (e.g. stop_after_first_solution), the
+      // response would be FEASIBLE but with an empty solution.
+      manager->Synchronize();
     } else if (logger != nullptr) {
       std::string message = "The solution hint is complete and is feasible.";
       if (model_proto.has_objective()) {
@@ -1583,7 +1591,7 @@ class LnsSolver : public SubSolver {
           }
         }
         ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
-        if (!copier.ImportVariables(neighborhood.delta)) return;
+        if (copier.ImportVariables(neighborhood.delta).unsat()) return;
 
         if (use_hint) {
           if (neighborhood.delta.has_solution_hint()) {
@@ -1595,35 +1603,40 @@ class LnsSolver : public SubSolver {
 
         // Copy and simplify the constraints from the initial model.
         if (!ignored_constraints.empty()) {
-          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
+          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())
+                   .ok()) {
             return;
           }
         } else {
           auto active_constraints = [&ignored_constraints](int c) {
             return !ignored_constraints.contains(c);
           };
-          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto(),
-                                                   /*first_copy=*/false,
-                                                   active_constraints)) {
+          if (!copier
+                   .ImportAndSimplifyConstraints(helper_->ModelProto(),
+                                                 /*first_copy=*/false,
+                                                 active_constraints)
+                   .ok()) {
             return;
           }
         }
 
         // Copy and simplify the constraints from the delta model.
         if (!neighborhood.delta.constraints().empty() &&
-            !copier.ImportAndSimplifyConstraints(neighborhood.delta)) {
+            !copier.ImportAndSimplifyConstraints(neighborhood.delta).ok()) {
           return;
         }
 
         // Copy the rest of the model, except symmetries (we don't want to use
         // the symmetry of the main problem in the LNS presolved problem).
-        if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-                helper_->ModelProto(), /*clear_internal_fields=*/false,
-                /*copy_symmetry=*/false)) {
+        if (copier
+                .ImportEverythingExceptVariablesConstraintsAndHint(
+                    helper_->ModelProto(), /*clear_internal_fields=*/false,
+                    /*copy_symmetry=*/false)
+                .unsat()) {
           return;
         }
 
-        if (!copier.FinishCopy(neighborhood.delta)) return;
+        if (copier.FinishCopy(neighborhood.delta).unsat()) return;
       }
 
       lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
@@ -1666,7 +1679,9 @@ class LnsSolver : public SubSolver {
       auto context = std::make_unique<PresolveContext>(
           &local_model, &lns_fragment, &mapping_proto);
       const CpSolverStatus presolve_status =
-          PresolveCpModel(context.get(), &postsolve_mapping);
+          local_time_limit->LimitReached()
+              ? CpSolverStatus::UNKNOWN
+              : PresolveCpModel(context.get(), &postsolve_mapping);
 
       // It is important to stop here to avoid using a model for which the
       // presolve was interrupted in the middle.
@@ -2365,7 +2380,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     }
   }
 
-  // Active constraints management for feasibility jump and violation LS.
+  // Active constraints management for violation LS.
   std::function<bool(int)> active_constraints = nullptr;
   if (shared->scheduling_relaxation != nullptr &&
       shared->scheduling_relaxation->HasRedundantConstraints() &&
@@ -2381,148 +2396,99 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     };
   }
 
-  // Add violation LS workers.
+  const bool has_objective = shared->model_proto.has_objective() &&
+                             !shared->model_proto.objective().vars().empty();
+
+  if (has_objective && shared->scheduling_relaxation != nullptr &&
+      name_filter.Keep("ls_scheduling")) {
+    interleaved_subsolvers.push_back(
+        std::make_unique<SchedulingLocalSearchSolver>(
+            "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto, params,
+            shared->time_limit, shared->response, shared->stat_tables,
+            shared->scheduling_relaxation.get()));
+  }
+
+  // Add violation LS workers (handling both finding an initial feasible
+  // solution and finding improving solutions).
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
-  if (shared->model_proto.has_objective() &&
-      !shared->model_proto.objective().vars().empty()) {
-    // If not forced by the parameters, we want one LS every 3 threads that
-    // work on interleaved stuff. Note that by default there are many LNS
-    // subsolvers, so that shouldn't be too many.
-    const int num_thread_for_interleaved_workers =
-        params.num_workers() - full_worker_subsolvers.size();
-    int num_violation_ls = params.has_num_violation_ls()
-                               ? params.num_violation_ls()
-                               : (num_thread_for_interleaved_workers + 2) / 3;
+  const bool ls_find_first_solution = params.use_feasibility_jump();
+  const bool ls_improve_solutions =
+      has_objective && !params.use_lns_only() &&
+      (!params.has_num_violation_ls() || params.num_violation_ls() > 0);
 
-    // If there is no reentrant solver, maybe increase the number to reach max
-    // parallelism.
-    if (reentrant_interleaved_subsolvers.empty()) {
-      num_violation_ls =
-          std::max(num_violation_ls,
-                   num_thread_for_interleaved_workers -
-                       static_cast<int>(interleaved_subsolvers.size()));
-    }
+  int num_first_solution_threads_available =
+      std::max(0, params.num_workers() -
+                      static_cast<int>(full_worker_subsolvers.size()));
+  if (params.interleave_search() && params.num_workers() == 1) {
+    // TODO(user): the 1 should be a parameter.
+    num_first_solution_threads_available = 1;
+  }
 
-    const absl::string_view ls_name = "ls";
-    const absl::string_view lin_ls_name = "ls_lin";
+  const std::vector<SatParameters> first_solution_base_params =
+      name_filter.Filter(GetFirstSolutionBaseParams(params));
 
-    const int num_ls_lin =
-        name_filter.Keep(lin_ls_name) ? (num_violation_ls + 1) / 3 : 0;
-    const int num_ls_default =
-        name_filter.Keep(ls_name) ? num_violation_ls - num_ls_lin : 0;
-
-    if (num_ls_default > 0) {
-      std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
-          ls_name, params, shared->stat_tables);
-      for (int i = 0; i < num_ls_default; ++i) {
-        SatParameters local_params = params;
-        local_params.set_random_seed(
-            CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
-        local_params.set_feasibility_jump_linearization_level(0);
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                ls_name, SubSolver::INCOMPLETE, shared->model_proto,
-                local_params, states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints));
-      }
-    }
-
-    if (shared->scheduling_relaxation != nullptr &&
-        name_filter.Keep("ls_scheduling")) {
-      interleaved_subsolvers.push_back(
-          std::make_unique<SchedulingLocalSearchSolver>(
-              "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
-              params, shared->time_limit, shared->response, shared->stat_tables,
-              shared->scheduling_relaxation.get()));
-    }
-
-    if (num_ls_lin > 0) {
-      std::shared_ptr<SharedLsStates> lin_states =
-          std::make_shared<SharedLsStates>(lin_ls_name, params,
-                                           shared->stat_tables);
-      for (int i = 0; i < num_ls_lin; ++i) {
-        SatParameters local_params = params;
-        local_params.set_random_seed(
-            CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
-        local_params.set_feasibility_jump_linearization_level(2);
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                lin_ls_name, SubSolver::INCOMPLETE, shared->model_proto,
-                local_params, lin_states, shared->time_limit, shared->response,
-                shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables, active_constraints));
+  int num_ls = 0;
+  if (ls_find_first_solution || ls_improve_solutions) {
+    if (ls_improve_solutions && params.has_num_violation_ls()) {
+      num_ls = params.num_violation_ls();
+    } else {
+      num_ls = (num_first_solution_threads_available + 2) / 3;
+      if (reentrant_interleaved_subsolvers.empty() &&
+          (ls_improve_solutions || first_solution_base_params.empty())) {
+        num_ls = std::max(num_ls,
+                          num_first_solution_threads_available -
+                              static_cast<int>(interleaved_subsolvers.size()));
       }
     }
   }
 
-  // Adds first solution subsolvers.
-  // We have two kinds, either full_worker_subsolvers or feasibility jump ones.
-  //
-  // These will be stopped and deleted as soon as the first solution is found,
-  // leaving the resource for the other subsolvers (if we have an objective).
-  {
-    int num_thread_available =
-        params.num_workers() - static_cast<int>(full_worker_subsolvers.size());
+  const int num_ls_lin =
+      (num_ls > 0 && name_filter.Keep("ls_lin")) ? (num_ls + 1) / 3 : 0;
+  const int num_ls_default =
+      (num_ls > 0 && name_filter.Keep("ls")) ? num_ls - num_ls_lin : 0;
 
-    // We reserve 1 thread for all interleaved subsolvers that can work without
-    // a first solution. If we have feasibility jump, because these will be
-    // interleaved, we don't do that.
-    if (!params.use_feasibility_jump() &&
-        num_interleaved_subsolver_that_do_not_need_solution > 0) {
-      --num_thread_available;
+  auto add_ls_subsolvers = [&](int count, absl::string_view ls_name,
+                               int linearization_level) {
+    if (count <= 0) return;
+    auto states =
+        std::make_shared<SharedLsStates>(ls_name, params, shared->stat_tables);
+    for (int i = 0; i < count; ++i) {
+      SatParameters local_params = params;
+      local_params.set_random_seed(
+          CombineSeed(params.random_seed(), interleaved_subsolvers.size()));
+      local_params.set_feasibility_jump_linearization_level(
+          linearization_level);
+      interleaved_subsolvers.push_back(std::make_unique<ViolationLsSolver>(
+          ls_name, ls_find_first_solution, ls_improve_solutions,
+          shared->model_proto, local_params, states, shared->time_limit,
+          shared->response, shared->bounds.get(), shared->clauses.get(),
+          shared->ls_hints, shared->stat_tables, active_constraints));
     }
-    num_thread_available = std::max(num_thread_available, 0);
-    // If we are in interleaved mode with one worker, num_thread_available is
-    // always zero. We force it to 1 so that we at least have a
-    // feasibility_jump subsolver.
-    if (params.interleave_search() && params.num_workers() == 1) {
-      // TODO(user): the 1 should be a parameter.
-      num_thread_available = 1;
-    }
+  };
+  add_ls_subsolvers(num_ls_default, "ls", /*linearization_level=*/0);
+  add_ls_subsolvers(num_ls_lin, "ls_lin", /*linearization_level=*/2);
 
-    const std::vector<SatParameters> all_params =
-        RepeatParameters(name_filter.Filter(GetFirstSolutionBaseParams(params)),
-                         num_thread_available);
-
-    std::shared_ptr<SharedLsStates> fj_states;
-    std::shared_ptr<SharedLsStates> fj_lin_states;
-
-    // Build the requested subsolvers.
-    for (const SatParameters& local_params : all_params) {
-      if (local_params.use_feasibility_jump()) {
-        // Create the SharedLsStates if not already done.
-        std::shared_ptr<SharedLsStates> states;
-        if (local_params.feasibility_jump_linearization_level() == 0) {
-          if (fj_states == nullptr) {
-            fj_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, shared->stat_tables);
-          }
-          states = fj_states;
-        } else {
-          if (fj_lin_states == nullptr) {
-            fj_lin_states = std::make_shared<SharedLsStates>(
-                local_params.name(), params, shared->stat_tables);
-          }
-          states = fj_lin_states;
-        }
-
-        interleaved_subsolvers.push_back(
-            std::make_unique<FeasibilityJumpSolver>(
-                local_params.name(), SubSolver::FIRST_SOLUTION,
-                shared->model_proto, local_params, states, shared->time_limit,
-                shared->response, shared->bounds.get(), shared->clauses.get(),
-                shared->ls_hints, shared->stat_tables, active_constraints));
-      } else {
-        first_solution_full_subsolvers.push_back(
-            std::make_unique<FullProblemSolver>(
-                local_params.name(), local_params,
-                /*split_in_chunks=*/local_params.interleave_search(), shared,
-                /*stop_on_first_solution=*/true));
-      }
-    }
+  // Add first solution subsolvers (stopped and deleted once a solution is
+  // found).
+  const int num_ls_first_solution =
+      ls_find_first_solution ? (num_ls_default + num_ls_lin) : 0;
+  int num_fs_threads =
+      num_first_solution_threads_available - num_ls_first_solution;
+  if (num_ls_first_solution == 0 &&
+      num_interleaved_subsolver_that_do_not_need_solution > 0 &&
+      !(params.interleave_search() && params.num_workers() == 1)) {
+    --num_fs_threads;
+  }
+  num_fs_threads = std::max(0, num_fs_threads);
+  for (const SatParameters& local_params :
+       RepeatParameters(first_solution_base_params, num_fs_threads)) {
+    first_solution_full_subsolvers.push_back(
+        std::make_unique<FullProblemSolver>(
+            local_params.name(), local_params,
+            /*split_in_chunks=*/local_params.interleave_search(), shared,
+            /*stop_on_first_solution=*/true));
   }
 
   // Add custom subsolvers.
@@ -2742,15 +2708,16 @@ void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
   }
 }
 
-void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
-                             PresolveContext* context, SolverLogger* logger) {
+FeasibilityStatus FixVariablesToHintValue(
+    const PartialVariableAssignment& solution_hint, PresolveContext* context,
+    SolverLogger* logger) {
   SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
              " variables to their value in the solution hint.");
-  context->InitializeNewDomains();
+  if (context->InitializeNewDomains().unsat()) return kUnsat;
   for (int i = 0; i < solution_hint.vars_size(); ++i) {
     const int var = solution_hint.vars(i);
     const int64_t value = solution_hint.values(i);
-    if (!context->IntersectDomainWith(var, Domain(value))) {
+    if (context->IntersectDomainWith(var, Domain(value)).unsat()) {
       const IntegerVariableProto& var_proto =
           context->WorkingModel().variables(var);
       const std::string var_name = var_proto.name().empty()
@@ -2761,9 +2728,10 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
       SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
                  var_name, "' with domain ", var_domain.ToString(),
                  " the value ", value);
-      break;
+      return kUnsat;
     }
   }
+  return kOk;
 }
 
 class CpModelSolver {
@@ -2866,9 +2834,10 @@ class CpModelSolver {
 
   // Presolve.
   virtual bool Presolve();
-  void MaybeFixVariablesToHintValue(PresolveContext* context);
+  FeasibilityStatus MaybeFixVariablesToHintValue(PresolveContext* context);
   void AddFloatingPointObjectiveResponsePostprocessor();
-  bool FixAssumptionsIfNotSupported(PresolveContext* context);
+  FeasibilityStatus FixAssumptionsIfNotSupported(PresolveContext* context,
+                                                 FeasibilityStatus hint_status);
   virtual CpSolverStatus PresolveCpModel(PresolveContext* context);
 
   void InitializeDebugSolutionFromHint();
@@ -3057,8 +3026,9 @@ bool CpModelSolver::CopyInputProto() {
     model_->Register<LratProofHandler>(presolve_lrat_proof_handler_.get());
   }
 
-  if (!CopyModel(model_proto_, /*clear_internal_fields=*/true,
-                 presolved_model_proto_, model_)) {
+  if (CopyModel(model_proto_, /*clear_internal_fields=*/true,
+                presolved_model_proto_, model_)
+          .unsat()) {
     const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger_, info);
     if (model_->Mutable<LratProofHandler>() != nullptr) {
@@ -3118,7 +3088,8 @@ bool CpModelSolver::Presolve() {
       solution_crush_proto_.get());
 
   // Checks for hints early in case they are forced to be hard constraints.
-  MaybeFixVariablesToHintValue(context.get());
+  const FeasibilityStatus hint_status =
+      MaybeFixVariablesToHintValue(context.get());
 
   // For the case where the assumptions are currently not supported, we just
   // assume they are fixed, and will always report all of them in the UNSAT
@@ -3126,13 +3097,18 @@ bool CpModelSolver::Presolve() {
   //
   // If the mode is not degraded, we will hopefully report a small subset
   // in case there is no feasible solution under these assumptions.
-  if (!FixAssumptionsIfNotSupported(context.get())) {
+  if (FixAssumptionsIfNotSupported(context.get(), hint_status).unsat()) {
     shared_response_manager_->NotifyPresolveEnd(CpModelProto());
     return false;
   }
 
   // Do the actual presolve.
-  const CpSolverStatus presolve_status = PresolveCpModel(context.get());
+  CpSolverStatus presolve_status = CpSolverStatus::INFEASIBLE;
+  if (hint_status.unsat()) {
+    if (logger_->LoggingIsEnabled()) context->LogInfo();
+  } else {
+    presolve_status = PresolveCpModel(context.get());
+  }
 
   // Delete the presolve_lrat_proof_handler_.
   // This is needed to properly write the first proof file.
@@ -3178,14 +3154,17 @@ bool CpModelSolver::Presolve() {
   return true;
 }
 
-void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
+FeasibilityStatus CpModelSolver::MaybeFixVariablesToHintValue(
+    PresolveContext* context) {
   // Note that this still uses the original user-given hint, which is not
   // clamped. We also don't have a hint for potential new variables created
   // during copy/canonicalization. But we should be able to recover their value
   // quite quickly when we fix the hint.
+  FeasibilityStatus status = kOk;
   if (params_.fix_variables_to_their_hinted_value() &&
       model_proto_.has_solution_hint()) {
-    FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
+    status =
+        FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
   }
 
   // If the hint is complete, we can use the solution checker to do more
@@ -3193,13 +3172,15 @@ void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
   // are no duplicate variables in the solution hint, so we can just check the
   // size.
   hint_feasible_before_presolve_ = false;
-  if (!context->ModelIsUnsat()) {
+  if (!status.unsat()) {
     hint_feasible_before_presolve_ =
         SolutionHintIsCompleteAndFeasible(model_proto_, logger_);
   }
+  return status;
 }
 
-bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
+FeasibilityStatus CpModelSolver::FixAssumptionsIfNotSupported(
+    PresolveContext* context, FeasibilityStatus hint_status) {
   if (!model_proto_.assumptions().empty() &&
       (params_.num_workers() > 1 || model_proto_.has_objective() ||
        model_proto_.has_floating_point_objective() ||
@@ -3224,20 +3205,27 @@ bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
     // Clear them from the new proto.
     presolved_model_proto_->clear_assumptions();
 
-    context->InitializeNewDomains();
+    if (hint_status.unsat() || context->InitializeNewDomains().unsat()) {
+      CpSolverResponse status_response;
+      status_response.set_status(CpSolverStatus::INFEASIBLE);
+      shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                         &status_response);
+      shared_response_manager_->AppendResponseToBeMerged(status_response);
+      return kUnsat;
+    }
     for (const int ref : model_proto_.assumptions()) {
-      if (!context->SetLiteralToTrue(ref)) {
+      if (context->SetLiteralToTrue(ref).unsat()) {
         CpSolverResponse status_response;
         status_response.set_status(CpSolverStatus::INFEASIBLE);
         status_response.add_sufficient_assumptions_for_infeasibility(ref);
         shared_response_manager_->FillSolveStatsInResponse(model_,
                                                            &status_response);
         shared_response_manager_->AppendResponseToBeMerged(status_response);
-        return false;
+        return kUnsat;
       }
     }
   }
-  return true;
+  return kOk;
 }
 
 void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
@@ -3275,6 +3263,10 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
           // Compute the true objective of the returned solution.
           response->set_objective_value(
               ComputeFloatObjectiveValue(float_obj, response->solution()));
+          if (mapping_proto_->has_objective()) {
+            response->set_inner_objective_value(ComputeInnerObjective(
+                mapping_proto_->objective(), response->solution()));
+          }
         }
       });
   shared_response_manager_->AddFinalResponsePostprocessor(
@@ -3453,9 +3445,11 @@ void CpModelSolver::AddSolutionPostsolveCallback() {
         // free variable to one of its implied bound with best objective.
         // So we need to recompute it.
         const CpObjectiveProto& objective = model_proto_.objective();
-        const double objective_value = ScaleObjectiveValue(
-            objective, ComputeInnerObjective(objective, response->solution()));
-        response->set_objective_value(objective_value);
+        const int64_t inner_objective_value =
+            ComputeInnerObjective(objective, response->solution());
+        response->set_inner_objective_value(inner_objective_value);
+        response->set_objective_value(
+            ScaleObjectiveValue(objective, inner_objective_value));
       }
     });
   } else {

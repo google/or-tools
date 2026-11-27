@@ -28,6 +28,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -264,21 +265,9 @@ TEST(FindCpModelSymmetries, CanMapLinearToItsNegation) {
 }
 
 TEST(FindCpModelSymmetries, UnsupportedConstraintTypeReturnsNoGenerators) {
-  CpModelProto model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ -5, 5 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 0, 10 ]
-    }
-    variables {
-      name: 'z'
-      domain: [ 0, 10 ]
-    }
-    constraints { routes {} }
-  )pb");
+  CpModelProto model = ParseTestProto(absl::StrCat(kBaseModel, R"pb(
+    constraints { table {} }
+  )pb"));
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
@@ -695,9 +684,9 @@ TEST(FindCpModelSymmetries, BinPacking) {
   model.GetOrCreate<SolverLogger>()->EnableLogging(true);
   model.GetOrCreate<SolverLogger>()->SetLogToStdOut(true);
   PresolveContext context(&model, &proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  EXPECT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
+  EXPECT_EQ(DetectAndExploitSymmetriesInPresolve(&context), kOk);
   context.LogInfo();
 
   // We have a 10 x 7 orbitope.
@@ -873,6 +862,112 @@ TEST(FindCpModelSymmetries, ReservoirLevelChangeAsymmetry) {
   EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
 }
 
+TEST(FindCpModelSymmetries, RoutesSymmetricNonDepotNodesAndNotDepot) {
+  // Complete directed graph on 3 nodes {0, 1, 2} with self-loops on {1, 2}:
+  // - var 0: 0 -> 1
+  // - var 1: 1 -> 2
+  // - var 2: 2 -> 0
+  // - var 3: 0 -> 2
+  // - var 4: 2 -> 1
+  // - var 5: 1 -> 0
+  // - var 6: 1 -> 1
+  // - var 7: 2 -> 2
+  // Node 0 is the depot and cannot be permuted with nodes 1 or 2. Only nodes 1
+  // and 2 can be swapped, mapping (0 <-> 3)(1 <-> 4)(2 <-> 5)(6 <-> 7).
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1, 2, 0, 2, 1, 1, 2 ]
+        heads: [ 1, 2, 0, 2, 1, 0, 1, 2 ]
+        literals: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  ASSERT_EQ(generators.size(), 1);
+  EXPECT_EQ(generators[0]->DebugString(), "(0 3) (1 4) (2 5) (6 7)");
+}
+
+TEST(FindCpModelSymmetries, RoutesDirectedCycleHasNoSymmetry) {
+  // Single directed cycle 0 -> 1 -> 2 -> 0:
+  // In a circuit constraint, (0 1 2) would be a rotational symmetry, but in a
+  // routes constraint, node 0 is fixed as the depot and arc direction prevents
+  // swapping nodes 1 and 2.
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      routes {
+        tails: [ 0, 1, 2 ]
+        heads: [ 1, 2, 0 ]
+        literals: [ 0, 1, 2 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  EXPECT_TRUE(generators.empty());
+}
+
+TEST(FindCpModelSymmetries, RoutesWithEnforcementLiteral) {
+  CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 4
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 0, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 5
+      routes {
+        tails: [ 0, 1 ]
+        heads: [ 1, 0 ]
+        literals: [ 2, 3 ]
+      }
+    }
+  )pb");
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  ASSERT_EQ(generators.size(), 1);
+  EXPECT_EQ(generators[0]->DebugString(), "(0 2) (1 3) (4 5)");
+
+  // Fixing one of the enforcement literals breaks the symmetry between the two
+  // routes constraints.
+  model.mutable_variables(4)->set_domain(0, 1);
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+  EXPECT_TRUE(generators.empty());
+}
+
 TEST(DetectAndExploitSymmetriesInPresolveTest,
      SkipsUnusedNonRepresentativeAffineVariables) {
   // 3 symmetric columns j in {0, 1, 2}:
@@ -929,16 +1024,16 @@ TEST(DetectAndExploitSymmetriesInPresolveTest,
   CpModelProto mapping_model;
   Model model;
   PresolveContext context(&model, &working_model, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
-  context.CanonicalizeConstraintsLazily();
+  EXPECT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
 
   for (int j = 0; j < 3; ++j) {
-    ASSERT_TRUE(context.StoreBooleanEqualityRelation(6 + j, 3 + j));
-    ASSERT_TRUE(context.StoreBooleanEqualityRelation(9 + j, 3 + j));
+    ASSERT_EQ(context.StoreBooleanEqualityRelation(6 + j, 3 + j), kOk);
+    ASSERT_EQ(context.StoreBooleanEqualityRelation(9 + j, 3 + j), kOk);
   }
 
-  ASSERT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
+  ASSERT_EQ(DetectAndExploitSymmetriesInPresolve(&context), kOk);
   // The 4 x 3 orbitope should be detected and order the objective row:
   // p_0 - p_1 >= 0 and p_1 - p_2 >= 0 (adding 2 linear constraints).
   ASSERT_EQ(working_model.constraints_size(), 6);

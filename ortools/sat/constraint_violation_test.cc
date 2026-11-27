@@ -1126,6 +1126,89 @@ TEST(ConstraintViolationTest, ScalarProductConstraint) {
   EXPECT_EQ(ct.violation(), 2);
 }
 
+TEST(LinearEvaluatorTest, ReduceBoundsDoesNotLeaveEmptyDomain) {
+  LinearIncrementalEvaluator evaluator;
+  const int c = evaluator.NewConstraint(Domain::FromValues({0, 10}));
+  evaluator.AddTerm(c, 0, 1);
+  evaluator.PrecomputeCompactView({10});
+  evaluator.ComputeInitialActivities({0});
+
+  bool reduced = false;
+  EXPECT_FALSE(evaluator.ReduceBounds(c, 2, 8, reduced));
+  EXPECT_FALSE(reduced);
+  EXPECT_FALSE(evaluator.ReduceBounds(c, 9, 3, reduced));
+  EXPECT_FALSE(reduced);
+
+  // Domain must still be {0, 10}, so methods calling Min()/Max() stay valid.
+  EXPECT_EQ(evaluator.Violation(c), 0);
+  std::vector<double> scores(1, 0.0);
+  evaluator.UpdateScoreOnWeightUpdate(c, {10}, absl::MakeSpan(scores));
+  EXPECT_EQ(scores[0], 0.0);
+  EXPECT_THAT(evaluator.SlopeBreakpoints(0, 0, Domain(0, 10)),
+              ElementsAre(0, 10));
+}
+
+TEST(ConstraintViolationTest,
+     InfeasibleLinMaxAndEmptyLinearDoNotCreateEmptyDomains) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 5, 10 ] }
+    constraints {
+      lin_max {
+        target {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    constraints {
+      enforcement_literal: [ 0 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: []
+      }
+    }
+  )pb");
+  SatParameters params;
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
+  ls.ComputeAllViolations({0, 3, 5});
+  EXPECT_EQ(ls.SumOfViolations(), 2);
+  ls.ComputeAllViolations({1, 3, 5});
+  EXPECT_EQ(ls.SumOfViolations(), 3);
+}
+
+TEST(ConstraintViolationTest, LinMaxOverflowSkipsPrecedence) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5000000000000000000 ] }
+    variables { domain: [ -5000000000000000000, -5000000000000000000 ] }
+    constraints {
+      lin_max {
+        target {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  SatParameters params;
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
+  EXPECT_EQ(ls.NumLinearConstraints(), 0);
+  ls.ComputeAllViolations({0, -5000000000000000000});
+  EXPECT_EQ(ls.SumOfViolations(), 5000000000000000000);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

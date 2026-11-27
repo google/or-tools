@@ -1025,9 +1025,11 @@ bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
 bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   // Get neighbors.
   double neighbors_ratio_used = 1;
+  const int min_neighbors =
+      std::min(gci_params_.min_neighbors(), static_cast<int>(model()->Size()));
   node_index_to_neighbors_by_cost_class_ =
       model()->GetOrCreateNodeNeighborsByCostClass(
-          gci_params_.neighbors_ratio(), gci_params_.min_neighbors(),
+          gci_params_.neighbors_ratio(), min_neighbors, model()->Size(),
           neighbors_ratio_used);
   if (neighbors_ratio_used == 1) {
     gci_params_.set_use_neighbors_ratio_for_initialization(false);
@@ -1272,17 +1274,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertPairs(
                         &delivery_to_entries);
       }
     }
-    // In case all pairs could not be inserted, pushing uninserted ones to the
-    // next bucket.
-    for (auto it = pair_indices_to_insert.begin(),
-              last = pair_indices_to_insert.end();
-         it != last;) {
-      if (pair_is_performed(*it)) {
-        pair_indices_to_insert.erase(it++);
-      } else {
-        ++it;
-      }
-    }
+    // Keep uninserted pairs as we move to the next bucket.
+    absl::erase_if(pair_indices_to_insert,
+                   [&](int p) { return pair_is_performed(p); });
   }
   return true;
 }

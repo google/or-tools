@@ -30,6 +30,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/parse_text_proto.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/integer_resolution.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_literal.h"
@@ -2342,6 +2344,65 @@ TEST(LevelZeroEqualityTest, BasicExample) {
   AddGreaterOrEqual(obj, 5, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_EQ(model.Get(LowerBound(obj)), 7);
+}
+
+TEST(IntegerSumLE128Test, ConflictResolutionSkipsLevelZeroVars) {
+  Model model;
+  auto* sat = model.GetOrCreate<SatSolver>();
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* int_trail = model.GetOrCreate<IntegerTrail>();
+  auto* icr = model.GetOrCreate<IntegerConflictResolution>();
+
+  // Create 50 variables at their level-zero lower bound [0, 3], 1 active
+  // variable active_var raised at level 1, and 1 target variable target_var
+  // whose upper bound is pushed by Propagate().
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  for (int i = 0; i < 50; ++i) {
+    vars.push_back(model.Add(NewIntegerVariable(0, 3)));
+    coeffs.push_back(IntegerValue(2));
+  }
+  const IntegerVariable active_var = model.Add(NewIntegerVariable(0, 5));
+  vars.push_back(active_var);
+  coeffs.push_back(IntegerValue(4));
+
+  const IntegerVariable target_var = model.Add(NewIntegerVariable(0, 5));
+  vars.push_back(target_var);
+  coeffs.push_back(IntegerValue(4));
+
+  // Constraint: sum_i 2 * root_i + 4 * active_var + 4 * target_var <= 18.
+  // At level 1 (d1): enqueue active_var >= 3 (min activity = 12, slack = 6).
+  // - root_i (coeff 2, domain [0, 3]): 0 + 6/2 = 3 >= ub(3) -> not pushed.
+  // - target_var (coeff 4, domain [0, 5]): 0 + 6/4 = 1 < ub(5) -> pushed to
+  //   target_var <= 1.
+  const Literal d1 = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal d2 = Literal(model.Add(NewBooleanVariable()), true);
+  ASSERT_TRUE(sat->EnqueueDecisionIfNotConflicting(d1));
+  ASSERT_TRUE(int_trail->Enqueue(
+      IntegerLiteral::GreaterOrEqual(active_var, IntegerValue(3)),
+      {d1.Negated()}, {}));
+
+  IntegerSumLE128 propagator(/*enforcement_literals=*/{}, vars, coeffs,
+                             IntegerValue(18), &model);
+  ASSERT_TRUE(propagator.Propagate());
+  EXPECT_EQ(int_trail->UpperBound(target_var), IntegerValue(1));
+
+  ASSERT_TRUE(sat->EnqueueDecisionIfNotConflicting(d2));
+
+  // Trigger conflict at level 2: target_var >= 2 (conflicts with target_var <=
+  // 1 from propagator) with reason ~d2.
+  EXPECT_FALSE(int_trail->Enqueue(
+      IntegerLiteral::GreaterOrEqual(target_var, IntegerValue(2)),
+      {d2.Negated()}, {}));
+
+  std::vector<Literal> conflict;
+  std::vector<Literal> reason_used;
+  icr->ComputeFirstUIPConflict(&conflict, &reason_used);
+  EXPECT_THAT(conflict,
+              testing::UnorderedElementsAre(d1.Negated(), d2.Negated()));
+
+  trail->Untrail(trail->PrepareBacktrack(0));
+  int_trail->Untrail(*trail, 0);
 }
 
 }  // namespace

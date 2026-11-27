@@ -15,7 +15,7 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
-load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -48,52 +48,24 @@ or_cc_library(
 # ---------------------------------------------------------------------------
 
 or_cc_library(
-    name = "parser_yacc_lib",
-    srcs = ["parser.tab.cc"],
-    hdrs = [
-        "parser.tab.hh",
-        "parser_util.cc",
-        "parser_util.h",
-    ],
-    copts = select({
-        "@platforms//os:windows": [],
-        "//conditions:default": ["-Wno-implicit-fallthrough"],
-    }) + [
-        "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
-    ],
+    name = "lexer",
+    srcs = ["lexer.cc"],
+    hdrs = ["lexer.h"],
     deps = [
-        ":model",
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "//ortools/base:stl_util",
-        "//ortools/base:types",
-        "//ortools/util:string_array",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-or_cc_library(
-    name = "parser_lex_lib",
-    srcs = ["parser.yy.cc"],
-    copts = select({
-        "@platforms//os:windows": [],
-        "//conditions:default": ["-Wno-implicit-fallthrough"],
-    }) + select({
-        "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
-        "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
-        "//conditions:default": [],
-    }),
-    tags = ["keep_dep"],  # So that build_cleaner doesn't remove this as a dep.
+or_cc_test(
+    name = "lexer_test",
+    size = "small",
+    srcs = ["lexer_test.cc"],
     deps = [
-        ":parser_yacc_lib",
-        "//ortools/base",
+        ":lexer",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/strings",
     ],
-    alwayslink = 1,
 )
 
 or_cc_library(
@@ -101,10 +73,29 @@ or_cc_library(
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
     deps = [
+        ":lexer",
         ":model",
-        ":parser_lex_lib",
-        ":parser_yacc_lib",
+        "//ortools/base:file",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "parser_test",
+    size = "small",
+    srcs = ["parser_test.cc"],
+    deps = [
+        ":model",
+        ":parser_lib",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

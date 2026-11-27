@@ -380,32 +380,6 @@ message MPSolverCommonParameters {
   optional OptionalBoolean scaling = 7 [default = BOOL_UNSPECIFIED];
 }
 
-// Encodes a full MPModelProto by way of referencing to a "baseline"
-// MPModelProto stored in a file, and a "delta" to apply to this model.
-message MPModelDeltaProto {
-  optional /*required*/ string baseline_model_file_path = 1;
-
-  // The variable protos listed here will override (via MergeFrom()) the ones
-  // in the baseline model: you only need to specify the fields that change.
-  // To add a new variable, add it with a new variable index (variable indices
-  // still need to span a dense integer interval).
-  // You can't "delete" a variable but you can "neutralize" it by fixing its
-  // value, setting its objective coefficient to zero, and by nullifying all
-  // the terms involving it in the constraints.
-  map<int32, MPVariableProto> variable_overrides = 2;
-
-  // Constraints can be changed (or added) in the same way as variables, see
-  // above. It's mostly like applying MergeFrom(), except that:
-  // - the "var_index" and "coefficient" fields will be overridden like a map:
-  //   if a key pre-exists, we overwrite its value, otherwise we add it.
-  // - if you set the lower bound to -inf and the upper bound to +inf, thus
-  //   effectively neutralizing the constraint, the solver will implicitly
-  //   remove all of the constraint's terms.
-  map<int32, MPConstraintProto> constraint_overrides = 3;
-
-  // NOTE(user): We may also add more deltas, eg. objective offset.
-}
-
 // Next id: 20.
 message MPModelRequest {
   // The model to be optimized by the server.
@@ -486,10 +460,6 @@ message MPModelRequest {
   optional string solver_specific_parameters = 5;
   optional bool ignore_solver_specific_parameters_failure = 9 [default = false];
 
-  // Advanced usage: model "delta". If used, "model" must be unset. See the
-  // definition of MPModelDeltaProto.
-  optional MPModelDeltaProto model_delta = 8;
-
   // Controls the recovery of additional solutions, if any, saved by the
   // underlying solver back in the MPSolutionResponse.additional_solutions.
   // The repeated field will be length
@@ -499,7 +469,8 @@ message MPModelRequest {
   // solution returned in the response.
   optional int32 populate_additional_solutions_up_to = 11 [default = 0];
 
-  reserved 12;
+  reserved 8, 12;
+  reserved "model_delta";
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to

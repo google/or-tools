@@ -32,6 +32,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -222,7 +223,7 @@ class SatPresolver {
   // It is always possible to remove x by resolving each clause containing x
   // with all the clauses containing not(x). Hence the cross-product name. Note
   // that this function only does that if the number of clauses is reduced.
-  bool CrossProduct(Literal x);
+  ModificationStatus CrossProduct(Literal x);
 
   // Visible for testing. Just applies the BVA step of the presolve.
   void PresolveWithBva();
@@ -375,7 +376,7 @@ class SatPresolver {
   SolverLogger* logger_;
 };
 
-// Visible for testing. Returns true iff:
+// Visible for testing. Returns `kModified` iff:
 // - a subsumes b (subsumption): the clause a is a subset of b, in which case
 //   opposite_literal is set to -1.
 // - b is strengthened by self-subsumption using a (self-subsuming resolution):
@@ -388,9 +389,10 @@ class SatPresolver {
 //
 // TODO(user): when a.size() << b.size(), we should use binary search instead
 // of scanning b linearly.
-bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal,
-                    int64_t* num_inspected_literals = nullptr);
+ModificationStatus SimplifyClause(const std::vector<Literal>& a,
+                                  std::vector<Literal>* b,
+                                  LiteralIndex* opposite_literal,
+                                  int64_t* num_inspected_literals = nullptr);
 
 // Visible for testing. Returns kNoLiteralIndex except if:
 // - a and b differ in only one literal.

@@ -41,6 +41,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
@@ -72,7 +73,6 @@
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/rev.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -87,6 +87,30 @@ namespace sat {
 using glop::ColIndex;
 using glop::Fractional;
 using glop::RowIndex;
+
+namespace {
+
+// Maximum magnitude allowed before adding a 64x64 product to an absl::int128
+// accumulator: any product of two int64_t values has magnitude <= 2^126, so
+// |*result| <= 2^125 guarantees |*result + a * b| <= 3 * 2^125 < 2^127 - 1
+// without signed 128-bit overflow, while leaving >= 2^125 headroom for
+// subsequent variable shifting/complementation in CutData.
+constexpr absl::int128 kMaxSafeInt128 = absl::MakeInt128(int64_t{1} << 61, 0);
+
+inline bool AddProductTo128(IntegerValue a, IntegerValue b,
+                            absl::int128* result) {
+  if (*result > kMaxSafeInt128 || *result < -kMaxSafeInt128) return false;
+  *result += absl::int128(a.value()) * absl::int128(b.value());
+  return *result <= kMaxSafeInt128 && *result >= -kMaxSafeInt128;
+}
+
+inline IntegerValue NarrowToIntegerValue(absl::int128 value) {
+  DCHECK_GE(value, absl::int128(kMinIntegerValue.value()));
+  DCHECK_LE(value, absl::int128(kMaxIntegerValue.value()));
+  return IntegerValue(static_cast<int64_t>(value));
+}
+
+}  // namespace
 
 void ScatteredIntegerVector::ClearAndResize(int size) {
   if (is_sparse_) {
@@ -167,10 +191,10 @@ template bool ScatteredIntegerVector::AddLinearExpressionMultiple<false>(
     IntegerValue multiplier, absl::Span<const glop::ColIndex> cols,
     absl::Span<const IntegerValue> coeffs, IntegerValue max_coeff_magnitude);
 
-LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
-    absl::Span<const IntegerVariable> integer_variables,
-    IntegerValue upper_bound,
-    std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term) {
+void ScatteredIntegerVector::PopulateLinearConstraintTerms(
+    absl::Span<const IntegerVariable> col_to_integer_variable,
+    std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term,
+    LinearConstraint* result) {
   // We first do one pass to compute the exact size and not overallocate.
   int final_size = 0;
   if (is_sparse_) {
@@ -193,8 +217,7 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
   }
 
   // Allocate once.
-  LinearConstraint result;
-  result.resize(final_size);
+  result->resize(final_size);
 
   // Copy terms.
   int new_size = 0;
@@ -203,17 +226,17 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
     for (const glop::ColIndex col : non_zeros_) {
       IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
-      result.vars[new_size] = integer_variables[col.value()];
+      result->vars[new_size] = col_to_integer_variable[col.value()];
 
       // Corner case if the extra term is part of the linear constraint.
       if (extra_term != std::nullopt &&
-          result.vars[new_size] == extra_term->first) {
+          result->vars[new_size] == extra_term->first) {
         coeff += extra_term->second;
         extra_term = std::nullopt;
         if (coeff == 0) continue;
       }
 
-      result.coeffs[new_size] = coeff;
+      result->coeffs[new_size] = coeff;
       ++new_size;
     }
   } else {
@@ -221,38 +244,71 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
     for (glop::ColIndex col(0); col < size; ++col) {
       IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
-      result.vars[new_size] = integer_variables[col.value()];
+      result->vars[new_size] = col_to_integer_variable[col.value()];
 
       // Corner case if the extra term is part of the linear constraint.
       if (extra_term != std::nullopt &&
-          result.vars[new_size] == extra_term->first) {
+          result->vars[new_size] == extra_term->first) {
         coeff += extra_term->second;
         extra_term = std::nullopt;
         if (coeff == 0) continue;
       }
 
-      result.coeffs[new_size] = coeff;
+      result->coeffs[new_size] = coeff;
       ++new_size;
     }
   }
 
-  result.lb = kMinIntegerValue;
-  result.ub = upper_bound;
-
   if (extra_term != std::nullopt) {
-    result.vars[new_size] = extra_term->first;
-    result.coeffs[new_size] = extra_term->second;
+    result->vars[new_size] = extra_term->first;
+    result->coeffs[new_size] = extra_term->second;
     ++new_size;
   }
 
-  result.num_terms = new_size;
+  result->lb = kMinIntegerValue;
+  result->num_terms = new_size;
   CHECK_LE(new_size, final_size);
+}
+
+LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
+    absl::Span<const IntegerVariable> col_to_integer_variable,
+    IntegerValue upper_bound,
+    std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term) {
+  LinearConstraint result;
+  PopulateLinearConstraintTerms(col_to_integer_variable, extra_term, &result);
+  result.ub = upper_bound;
   DivideByGCD(&result);
   return result;
 }
 
+bool ScatteredIntegerVector::ConvertToLinearConstraint(
+    absl::Span<const IntegerVariable> col_to_integer_variable,
+    absl::int128 upper_bound, LinearConstraint* result) {
+  PopulateLinearConstraintTerms(col_to_integer_variable,
+                                /*extra_term=*/std::nullopt, result);
+
+  int64_t gcd = 0;
+  for (int i = 0; i < result->num_terms; ++i) {
+    gcd = std::gcd(gcd, std::abs(result->coeffs[i].value()));
+    if (gcd == 1) break;
+  }
+  if (gcd > 1) {
+    for (int i = 0; i < result->num_terms; ++i) {
+      result->coeffs[i] /= IntegerValue(gcd);
+    }
+    upper_bound = MathUtil::FloorOfRatio(upper_bound, absl::int128(gcd));
+  }
+
+  if (upper_bound >= absl::int128(kMaxIntegerValue.value()) ||
+      upper_bound <= absl::int128(kMinIntegerValue.value())) {
+    return false;
+  }
+  result->ub = IntegerValue(static_cast<int64_t>(upper_bound));
+  return true;
+}
+
 void ScatteredIntegerVector::ConvertToCutData(
-    absl::int128 rhs, absl::Span<const IntegerVariable> integer_variables,
+    absl::int128 rhs, absl::Span<const IntegerVariable> col_to_integer_variable,
     absl::Span<const double> lp_solution, IntegerTrail* integer_trail,
     CutData* result) {
   result->terms.clear();
@@ -263,7 +319,7 @@ void ScatteredIntegerVector::ConvertToCutData(
     for (const glop::ColIndex col : non_zeros_) {
       const IntegerValue coeff = dense_vector[col.value()];
       if (coeff == 0) continue;
-      const IntegerVariable var = integer_variables[col.value()];
+      const IntegerVariable var = col_to_integer_variable[col.value()];
       CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
                                   integer_trail->LevelZeroLowerBound(var),
                                   integer_trail->LevelZeroUpperBound(var)));
@@ -272,7 +328,7 @@ void ScatteredIntegerVector::ConvertToCutData(
     for (int col(0); col < dense_vector.size(); ++col) {
       const IntegerValue coeff = dense_vector[col];
       if (coeff == 0) continue;
-      const IntegerVariable var = integer_variables[col];
+      const IntegerVariable var = col_to_integer_variable[col];
       CHECK(result->AppendOneTerm(var, coeff, lp_solution[col],
                                   integer_trail->LevelZeroLowerBound(var),
                                   integer_trail->LevelZeroUpperBound(var)));
@@ -1073,9 +1129,8 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
   cut_generators_.push_back(std::move(generator));
 }
 
-bool LinearProgrammingConstraint::IncrementalPropagate(
-    absl::Span<const int> watch_indices) {
-  if (!enabled_) return true;
+bool LinearProgrammingConstraint::OptimalConstraintsUseTooMuchMemory() const {
+  if (cumulative_optimal_constraint_sizes_.empty()) return false;
 
   // If we have a really deep branch, with a lot of LP explanation constraints,
   // we could take a quadratic amount of memory: O(num_var) per number of
@@ -1085,17 +1140,29 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   //
   // Note that 100 Millions int32_t variables, with the int128 coefficients and
   // extra propagation vector is already a few GB.
-  if (!cumulative_optimal_constraint_sizes_.empty()) {
-    const double current_size =
-        static_cast<double>(cumulative_optimal_constraint_sizes_.back());
-    const double low_limit = 1e7;
-    if (current_size > low_limit) {
-      // We only propagate if we use less than 100 times the number of current
-      // integer literal enqueued.
-      const double num_enqueues = static_cast<double>(integer_trail_->Index());
-      if ((current_size - low_limit) > 100 * num_enqueues) return true;
-    }
-  }
+  const double current_size =
+      static_cast<double>(cumulative_optimal_constraint_sizes_.back());
+  const double low_limit = 1e7;
+  if (current_size <= low_limit) return false;
+
+  // The relative limit below is not enough on its own: in very deep branches
+  // the integer trail itself is huge, so the memory used by the explanations
+  // kept growing linearly with time (e.g. tens of GB after a few minutes on
+  // cost266-UUE with 32 workers, mostly in workers that almost never
+  // backtrack). So we also use an absolute limit of about 1-2 GB per LP.
+  const double high_limit = 1e8;
+  if (current_size > high_limit) return true;
+
+  // We only propagate if we use less than 100 times the number of current
+  // integer literal enqueued.
+  const double num_enqueues = static_cast<double>(integer_trail_->Index());
+  return (current_size - low_limit) > 100 * num_enqueues;
+}
+
+bool LinearProgrammingConstraint::IncrementalPropagate(
+    absl::Span<const int> watch_indices) {
+  if (!enabled_) return true;
+  if (OptimalConstraintsUseTooMuchMemory()) return true;
 
   if (!lp_solution_is_set_ || num_force_lp_call_on_next_propagate_ > 0) {
     return Propagate();
@@ -1620,7 +1687,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // a bunch of fractional entries with small coefficients (relative to the one
   // of basis_col). We try to handle that in IntegerRoundingCut(), but it might
   // be better to add small multiples of the involved rows to get rid of them.
-  IntegerValue cut_ub;
+  absl::int128 cut_ub;
   if (!ComputeNewLinearConstraint(integer_multipliers, &tmp_scattered_vector_,
                                   &cut_ub)) {
     ++num_cut_overflows_;
@@ -1635,9 +1702,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // in principle be removed. Easy for cuts, but not so much for
   // implied_bounds_processor_. Note that in theory this could allow us to
   // use Literal directly without the need to have an IntegerVariable for them.
-  tmp_scattered_vector_.ConvertToCutData(
-      cut_ub.value(), extended_integer_variables_, lp_solution_, integer_trail_,
-      &base_ct_);
+  tmp_scattered_vector_.ConvertToCutData(cut_ub, extended_integer_variables_,
+                                         lp_solution_, integer_trail_,
+                                         &base_ct_);
 
   // If there are no integers (all Booleans), no need to try implied bounds
   // heuristics. By setting this to nullptr, we are a bit faster.
@@ -1876,7 +1943,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 bool LinearProgrammingConstraint::ConvertCutToLinearConstraint(
     absl::string_view name, absl::string_view info, IntegerVariable first_slack,
     const CutData& cut, int max_cut_size, LinearConstraint* result) {
-  if (cut.rhs > absl::int128(kint64max) || cut.rhs <= absl::int128(kint64min)) {
+  if (cut.rhs > kMaxSafeInt128 || cut.rhs < -kMaxSafeInt128) {
     VLOG(2) << "RHS overflow " << name << " " << info;
     ++num_cut_overflows_;
     return false;
@@ -1894,10 +1961,10 @@ bool LinearProgrammingConstraint::ConvertCutToLinearConstraint(
 
   // Substitute any slack left.
   tmp_scattered_vector_.ClearAndResize(extended_integer_variables_.size());
-  IntegerValue cut_ub = static_cast<int64_t>(cut.rhs);
+  absl::int128 cut_ub = cut.rhs;
   for (const CutTerm& term : cut.terms) {
     if (term.coeff == 0) continue;
-    if (!AddProductTo(-term.coeff, term.expr_offset, &cut_ub)) {
+    if (!AddProductTo128(-term.coeff, term.expr_offset, &cut_ub)) {
       VLOG(2) << "Overflow in conversion " << name << " " << info;
       ++num_cut_overflows_;
       return false;
@@ -1939,8 +2006,12 @@ bool LinearProgrammingConstraint::ConvertCutToLinearConstraint(
   // TODO(user): avoid allocating memory if it turns out this is a duplicate of
   // something we already added. This tends to happen if the duplicate was
   // already a generated cut which is currently not part of the LP.
-  *result = tmp_scattered_vector_.ConvertToLinearConstraint(
-      extended_integer_variables_, cut_ub);
+  if (!tmp_scattered_vector_.ConvertToLinearConstraint(
+          extended_integer_variables_, cut_ub, result)) {
+    VLOG(2) << "RHS overflow " << name << " " << info;
+    ++num_cut_overflows_;
+    return false;
+  }
   if (result->num_terms == 0) {
     ++num_bad_cuts_;
     return false;
@@ -2623,6 +2694,10 @@ bool LinearProgrammingConstraint::Propagate() {
   num_force_lp_call_on_next_propagate_ = 0;
   if (!enabled_) return true;
   if (time_limit_->LimitReached()) return true;
+  if (trail_->CurrentDecisionLevel() > 0 &&
+      OptimalConstraintsUseTooMuchMemory()) {
+    return true;
+  }
   const int64_t timestamp_at_function_start = integer_trail_->num_enqueues();
 
   // Because of AlwaysCallAtLevelZero(), this function might be called many
@@ -2948,7 +3023,7 @@ IntegerValue LinearProgrammingConstraint::ScaleMultipliers(
 template <bool check_overflow>
 bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     absl::Span<const std::pair<RowIndex, IntegerValue>> integer_multipliers,
-    ScatteredIntegerVector* scattered_vector, IntegerValue* upper_bound) const {
+    ScatteredIntegerVector* scattered_vector, absl::int128* upper_bound) const {
   // Initialize the new constraint.
   *upper_bound = 0;
   scattered_vector->ClearAndResize(extended_integer_variables_.size());
@@ -2971,9 +3046,10 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     const IntegerValue bound =
         multiplier > 0 ? integer_lp_[row].ub : integer_lp_[row].lb;
     if constexpr (check_overflow) {
-      if (!AddProductTo(multiplier, bound, upper_bound)) return false;
+      if (!AddProductTo128(multiplier, bound, upper_bound)) return false;
     } else {
-      *upper_bound += multiplier * bound;
+      *upper_bound +=
+          absl::int128(multiplier.value()) * absl::int128(bound.value());
     }
   }
 
@@ -3450,9 +3526,10 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     return true;
   }
 
-  IntegerValue rc_ub;
+  absl::int128 rc_ub_128;
   ComputeNewLinearConstraint</*check_overflow=*/false>(
-      tmp_integer_multipliers_, &tmp_scattered_vector_, &rc_ub);
+      tmp_integer_multipliers_, &tmp_scattered_vector_, &rc_ub_128);
+  IntegerValue rc_ub = NarrowToIntegerValue(rc_ub_128);
 
   std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
       std::nullopt;
@@ -3542,9 +3619,10 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
     return true;
   }
 
-  IntegerValue new_constraint_ub;
+  absl::int128 new_constraint_ub_128;
   ComputeNewLinearConstraint</*check_overflow=*/false>(
-      tmp_integer_multipliers_, &tmp_scattered_vector_, &new_constraint_ub);
+      tmp_integer_multipliers_, &tmp_scattered_vector_, &new_constraint_ub_128);
+  IntegerValue new_constraint_ub = NarrowToIntegerValue(new_constraint_ub_128);
 
   AdjustNewLinearConstraint(tmp_integer_multipliers_, &tmp_scattered_vector_,
                             &new_constraint_ub);
@@ -3568,7 +3646,9 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
     }
     if (!has_unfixed_var) {
       ComputeNewLinearConstraint</*check_overflow=*/false>(
-          tmp_integer_multipliers_, &tmp_scattered_vector_, &new_constraint_ub);
+          tmp_integer_multipliers_, &tmp_scattered_vector_,
+          &new_constraint_ub_128);
+      new_constraint_ub = NarrowToIntegerValue(new_constraint_ub_128);
       explanation = tmp_scattered_vector_.ConvertToLinearConstraint(
           extended_integer_variables_, new_constraint_ub);
     }

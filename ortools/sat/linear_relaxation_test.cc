@@ -1266,6 +1266,99 @@ TEST(AppendLinearConstraintRelaxation, BoundsNotTight) {
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }
 
+TEST(AppendLinearConstraintRelaxation,
+     OverflowWithMultipleEnforcementLiterals) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 1, 2, 3 ]
+      linear {
+        vars: [ 0, 4 ]
+        coeffs: [ 4611686018427387902, 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 1, 2, 3 ]
+      linear {
+        vars: [ 0, 4 ]
+        coeffs: [ -4611686018427387902, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(initial_model, true, &model);
+
+  LinearRelaxation relaxation;
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(1), &model,
+                                   &relaxation);
+
+  EXPECT_EQ(relaxation.linear_constraints.size(), 0);
+}
+
+TEST(AppendLinMaxRelaxation, SkipsOverflowingRelaxations) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ -1, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0 ] }
+    constraints {
+      lin_max {
+        target { vars: 0 coeffs: 4000000000000000000 }
+        exprs { vars: 1 coeffs: 4000000000000000000 }
+      }
+    }
+    constraints {
+      enforcement_literal: [ 2, -3, 3 ]
+      lin_max {
+        target { vars: 2 coeffs: 1 offset: -1 }
+        exprs { offset: 4611686018427387903 }
+      }
+    }
+    constraints {
+      lin_max {
+        target { offset: -4611686018427387904 }
+        exprs { offset: 4611686018427387903 }
+        exprs { vars: 0 coeffs: 1 }
+      }
+    }
+    constraints {
+      enforcement_literal: [ 2, 3 ]
+      lin_max {
+        target { vars: 4 coeffs: 4611686018427387904 }
+        exprs { vars: 4 coeffs: -4611686018427387904 }
+      }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(initial_model, true, &model);
+
+  LinearRelaxation relaxation;
+  AppendLinMaxRelaxationPart1(initial_model.constraints(0), &model,
+                              &relaxation);
+  AppendLinMaxRelaxationPart1(initial_model.constraints(1), &model,
+                              &relaxation);
+  AppendLinMaxRelaxationPart1(initial_model.constraints(3), &model,
+                              &relaxation);
+  EXPECT_EQ(relaxation.linear_constraints.size(), 0);
+
+  AppendLinMaxRelaxationPart1(initial_model.constraints(2), &model,
+                              &relaxation);
+  EXPECT_EQ(relaxation.linear_constraints.size(), 1);
+}
+
 TEST(ComputeLinearRelaxationTest, InfersShiftedNoOverlapCutGenerators) {
   // Four tasks with release-date shifts r = {0, 12, 25, 40} and processing
   // times p = {10, 15, 14, 12}, modeled with shifted non-negative start

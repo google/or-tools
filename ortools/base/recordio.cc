@@ -19,17 +19,26 @@
 #include <memory>
 #include <string>
 
-#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/base/file.h"
 #include "ortools/base/options.h"
 
-namespace recordio {
+namespace ORTOOLS_RECORDIO_NAMESPACE {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;
 
 RecordWriter::RecordWriter(File* file) : file_(file), use_compression_(true) {}
 
-bool RecordWriter::Close() { return file_->Close(file::Defaults()).ok(); }
+RecordWriter::~RecordWriter() { Close(); }
+
+bool RecordWriter::Close() {
+  if (file_ == nullptr) {
+    return true;
+  }
+  const bool result = file_->Close(file::Defaults()).ok();
+  // Note that ortools/base/file.h File::Close() does `delete this`.
+  file_ = nullptr;
+  return result;
+}
 
 void RecordWriter::set_use_compression(bool use_compression) {
   use_compression_ = use_compression;
@@ -54,9 +63,19 @@ std::string RecordWriter::Compress(std::string const& s) const {
 
 RecordReader::RecordReader(File* const file) : file_(file) {}
 
-bool RecordReader::Close() { return file_->Close(file::Defaults()).ok(); }
+RecordReader::~RecordReader() { Close(); }
 
-void RecordReader::Uncompress(const char* const source, uint64_t source_size,
+bool RecordReader::Close() {
+  if (file_ == nullptr) {
+    return true;
+  }
+  const bool result = file_->Close(file::Defaults()).ok();
+  // Note that ortools/base/file.h File::Close() does `delete this`.
+  file_ = nullptr;
+  return result;
+}
+
+bool RecordReader::Uncompress(const char* const source, uint64_t source_size,
                               char* const output_buffer,
                               uint64_t output_size) const {
   unsigned long result_size = output_size;  // NOLINT
@@ -65,8 +84,14 @@ void RecordReader::Uncompress(const char* const source, uint64_t source_size,
       uncompress(reinterpret_cast<unsigned char*>(output_buffer), &result_size,
                  reinterpret_cast<const unsigned char*>(source), source_size);
   if (result != Z_OK) {
-    LOG(FATAL) << "Uncompress error occurred! Error code: " << result;
+    LOG(DFATAL) << "Uncompress error occurred! Error code: " << result;
+    return false;
   }
-  CHECK_LE(result_size, static_cast<unsigned long>(output_size));  // NOLINT
+  if (uint64_t{result_size} != output_size) {
+    LOG(DFATAL) << "Uncompress size mismatch: got " << result_size
+                << ", expected " << output_size;
+    return false;
+  }
+  return true;
 }
-}  // namespace recordio
+}  // namespace ORTOOLS_RECORDIO_NAMESPACE

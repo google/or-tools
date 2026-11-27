@@ -80,6 +80,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sigint.h"
 
 ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
@@ -87,9 +88,9 @@ ABSL_FLAG(std::string, sol_hint, "",
           "Input file name with solution in .sol format.");
 ABSL_FLAG(std::optional<std::string>, solver, std::nullopt,
           "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
-          "gurobi_lp, gurobi_mip, pdlp, scip, knapsack, sat. If unspecified "
-          "either use MPModelRequest.solver_type if the --input is an "
-          "MPModelRequest and the field is set or use glop.");
+          "gurobi_lp, gurobi_mip, pdlp, scip, knapsack, sat, gridmip. If "
+          "unspecified either use MPModelRequest.solver_type if the --input is "
+          "an MPModelRequest and the field is set or use glop.");
 ABSL_FLAG(int, num_threads, 1,
           "Number of threads to use by the underlying solver.");
 ABSL_FLAG(std::string, params_file, "",
@@ -132,6 +133,13 @@ static const char kUsageStr[] =
 namespace operations_research {
 namespace {
 
+// Returns the name of the i-th variable of `model`, or "var<i>" if it is empty
+// so that the output files remain parsable.
+std::string VariableName(const MPModelProto& model, int i) {
+  const std::string& name = model.variable(i).name();
+  return name.empty() ? absl::StrCat("var", i) : name;
+}
+
 MPModelRequest ReadMipModel(const std::string& input) {
   MPModelRequest request_proto;
   MPModelProto model_proto;
@@ -154,9 +162,7 @@ MPModelRequest ReadMipModel(const std::string& input) {
   // return true. Instead use the actual number of variables found to test the
   // correct format of the input.
   const bool is_model_proto = model_proto.variable_size() > 0;
-  const bool is_request_proto =
-      request_proto.model().variable_size() > 0 ||
-      !request_proto.model_delta().baseline_model_file_path().empty();
+  const bool is_request_proto = request_proto.model().variable_size() > 0;
   if (!is_model_proto && !is_request_proto) {
     LOG(FATAL) << "Failed to parse '" << input
                << "' as an MPModelProto or an MPModelRequest.";
@@ -379,11 +385,17 @@ void Run() {
   // If requested, write the solution, in .sol format (--sol_file), proto
   // format and/or csv format.
   if (!absl::GetFlag(FLAGS_sol_file).empty() && has_solution) {
+    // Use round-trip formatting: the default formatting of doubles only keeps
+    // 6 significant digits, which is not enough to reproduce the solution.
     std::string sol_string;
-    absl::StrAppend(&sol_string, "=obj= ", response.objective_value(), "\n");
+    absl::StrAppend(&sol_string,
+                    "=obj= ", RoundTripDoubleFormat(response.objective_value()),
+                    "\n");
+    CHECK_EQ(request_proto.model().variable_size(),
+             response.variable_value_size());
     for (int i = 0; i < response.variable_value().size(); ++i) {
-      absl::StrAppend(&sol_string, request_proto.model().variable(i).name(),
-                      " ", response.variable_value(i), "\n");
+      absl::StrAppend(&sol_string, VariableName(request_proto.model(), i), " ",
+                      RoundTripDoubleFormat(response.variable_value(i)), "\n");
     }
     LOG(INFO) << "Writing .sol solution to '" << absl::GetFlag(FLAGS_sol_file)
               << "'.\n";
@@ -396,9 +408,11 @@ void Run() {
   }
   if (!absl::GetFlag(FLAGS_output_csv).empty() && has_solution) {
     std::string csv_file;
+    CHECK_EQ(request_proto.model().variable_size(),
+             response.variable_value_size());
     for (int i = 0; i < response.variable_value_size(); ++i) {
       csv_file +=
-          absl::StrFormat("%s,%e\n", request_proto.model().variable(i).name(),
+          absl::StrFormat("%s,%e\n", VariableName(request_proto.model(), i),
                           response.variable_value(i));
     }
     CHECK_OK(file::SetContents(absl::GetFlag(FLAGS_output_csv), csv_file,

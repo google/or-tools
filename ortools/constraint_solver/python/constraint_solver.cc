@@ -836,9 +836,6 @@ PYBIND11_MODULE(constraint_solver, m) {
       .value("MAKECHAININACTIVE", Solver::MAKECHAININACTIVE)
       .value("SWAPACTIVE", Solver::SWAPACTIVE)
       .value("EXTENDEDSWAPACTIVE", Solver::EXTENDEDSWAPACTIVE)
-      .value("PATHLNS", Solver::PATHLNS)
-      .value("FULLPATHLNS", Solver::FULLPATHLNS)
-      .value("UNACTIVELNS", Solver::UNACTIVELNS)
       .value("INCREMENT", Solver::INCREMENT)
       .value("DECREMENT", Solver::DECREMENT)
       .value("SIMPLELNS", Solver::SIMPLELNS)
@@ -2266,6 +2263,19 @@ PYBIND11_MODULE(constraint_solver, m) {
                &Solver::Compose),
            py::arg("db1"), py::arg("db2"),
            py::return_value_policy::reference_internal)
+      .def("solve_once",
+           py::overload_cast<DecisionBuilder*>(&Solver::MakeSolveOnce),
+           py::arg("db"), DOC(operations_research, Solver, MakeSolveOnce),
+           py::return_value_policy::reference_internal,
+           py::keep_alive<1, 2>())
+      .def("solve_once",
+           py::overload_cast<DecisionBuilder*,
+                             const std::vector<SearchMonitor*>&>(
+               &Solver::MakeSolveOnce),
+           py::arg("db"), py::arg("monitors"),
+           DOC(operations_research, Solver, MakeSolveOnce),
+           py::return_value_policy::reference_internal,
+           py::keep_alive<1, 2>(), py::keep_alive<1, 3>())
       .def("search_log",
            [](Solver* s, int64_t period) {
              return s->MakeSearchLog(period);

@@ -29,11 +29,13 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraint_presolve.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/util/bitset.h"
@@ -94,10 +96,10 @@ class CpModelPresolver {
   CpSolverStatus Presolve();
 
   // Visible for testing.
-  void DetectDuplicateColumns();
+  FeasibilityStatus DetectDuplicateColumns();
 
   // Detects variables that must take different values.
-  void DetectDifferentVariables();
+  FeasibilityStatus DetectDifferentVariables();
 
  private:
   // A simple helper that logs the rules applied so far and returns INFEASIBLE.
@@ -105,43 +107,44 @@ class CpModelPresolver {
 
   // If there is a large proportion of fixed variables, remap the whole proto
   // before we start the presolve.
-  bool MaybeRemoveFixedVariables(std::vector<int>* postsolve_mapping);
+  FeasibilityStatus MaybeRemoveFixedVariables(
+      std::vector<int>* postsolve_mapping);
 
   // Runs the inner loop of the presolver.
-  bool ProcessChangedVariables(std::vector<bool>* in_queue,
-                               std::deque<int>* queue);
-  void PresolveToFixPoint();
+  FeasibilityStatus ProcessChangedVariables(std::vector<bool>* in_queue,
+                                            std::deque<int>* queue);
+  FeasibilityStatus PresolveToFixPoint();
 
   // Runs the probing.
-  void Probe();
+  FeasibilityStatus Probe();
 
   // Runs the expansion and fix constraints that became non-canonical.
-  void ExpandCpModelAndCanonicalizeConstraints();
+  FeasibilityStatus ExpandCpModelAndCanonicalizeConstraints();
 
-  ABSL_MUST_USE_RESULT bool CanonicalizeConstraintsLazily();
+  FeasibilityStatus CanonicalizeConstraintsLazily();
 
   // This detects and converts constraints of the form:
   // "X = sum Boolean * value", with "sum Boolean <= 1".
   //
   // Note that it is not super fast, so it shouldn't be called too often.
-  void ExtractEncodingFromLinear();
-  bool ProcessEncodingFromLinear(int linear_encoding_ct_index,
-                                 const ConstraintProto& at_most_or_exactly_one,
-                                 int64_t* num_unique_terms,
-                                 int64_t* num_multiple_terms);
+  FeasibilityStatus ExtractEncodingFromLinear();
+  FeasibilityStatus ProcessEncodingFromLinear(
+      int linear_encoding_ct_index,
+      const ConstraintProto& at_most_or_exactly_one, int64_t* num_unique_terms,
+      int64_t* num_multiple_terms);
 
   // Remove duplicate constraints. This also merges domains of linear
   // constraints with duplicate linear expressions.
-  void DetectDuplicateConstraints();
-  void DetectComplementaryLinMaxConstraints();
-  void DetectDuplicateConstraintsWithDifferentEnforcements(
+  FeasibilityStatus DetectDuplicateConstraints();
+  FeasibilityStatus DetectComplementaryLinMaxConstraints();
+  FeasibilityStatus DetectDuplicateConstraintsWithDifferentEnforcements(
       const CpModelMapping* mapping = nullptr,
       BinaryImplicationGraph* implication_graph = nullptr,
       Trail* trail = nullptr);
 
   // A bit like DetectDuplicateConstraintsWithDifferentEnforcements() but
   // for linear constraints with different rhs.
-  void DetectUnenforcedEnforcedLinearPair();
+  FeasibilityStatus DetectUnenforcedEnforcedLinearPair();
 
   // If var only appears in
   // literal => var \in domain
@@ -149,11 +152,12 @@ class CpModelPresolver {
   //
   // then we can remove var, and transform the constraint to
   // literal => linear_terms \in tighter_domain.
-  void MaybeRemoveLinkingVariable(int var, int c_linear1, int c_linear);
+  FeasibilityStatus MaybeRemoveLinkingVariable(int var, int c_linear1,
+                                               int c_linear);
 
   // Detects if a linear constraint is "included" in another one, and does
   // related presolve.
-  void DetectDominatedLinearConstraints();
+  FeasibilityStatus DetectDominatedLinearConstraints();
 
   // Detects linear constraints that are redundant once the activity bounds are
   // computed using one other "knapsack" linear constraint in addition to the
@@ -169,7 +173,7 @@ class CpModelPresolver {
   // The typical case is a dense constraint sum w_j x_j <= W over non-negative
   // variables together with a cardinality constraint sum x_j <= K where
   // K * max(w_j) <= W.
-  void DetectLinearRedundantUnderKnapsack();
+  FeasibilityStatus DetectLinearRedundantUnderKnapsack();
 
   // Detects encodings of the form:
   //   b1 => x \in Domain1
@@ -194,73 +198,70 @@ class CpModelPresolver {
   // It does the same when bool_or is replaced by an at_most_one or exactly_one
   // but we need to add an extra constraint that
   //  x \notin (Domain_a U Domain_b) for all a != b.
-  void DetectEncodedComplexDomains(PresolveContext* context);
-  bool DetectEncodedComplexDomain(PresolveContext* context, ConstraintProto* ct,
-                                  const Bitset64<int>& pertinent_bools);
+  FeasibilityStatus DetectEncodedComplexDomains(PresolveContext* context);
 
   // Precomputes info about at most one, and uses it to presolve linear
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.
-  void ProcessAtMostOneAndLinear();
-  void ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
-                               ActivityBoundHelper* helper);
+  FeasibilityStatus ProcessAtMostOneAndLinear();
+  FeasibilityStatus ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
+                                            ActivityBoundHelper* helper);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   // We detect inclusion of these constraints which allows a few
   // simplifications.
-  void ProcessSetPPC();
+  FeasibilityStatus ProcessSetPPC();
 
   // Detect if one constraint has a subset of enforcement of another.
-  void DetectIncludedEnforcement();
+  FeasibilityStatus DetectIncludedEnforcement();
 
   // Removes dominated constraints or fixes some variables for given pair of
   // setppc constraints included in each other.
-  bool ProcessSetPPCSubset(int subset_c, int superset_c,
-                           absl::flat_hash_set<int>* tmp_set,
-                           bool* remove_subset, bool* remove_superset,
-                           bool* stop_processing_superset);
+  FeasibilityStatus ProcessSetPPCSubset(int subset_c, int superset_c,
+                                        absl::flat_hash_set<int>* tmp_set,
+                                        bool* remove_subset,
+                                        bool* remove_superset,
+                                        bool* stop_processing_superset);
 
   // Runs SAT specific presolve code.
-  // Returns false on UNSAT.
-  bool PresolvePureSatPart();
+  FeasibilityStatus PresolvePureSatPart();
 
   // Runs a simplified presolve code for pure SAT problems.
-  // Returns false on UNSAT.
-  bool PresolvePureSatProblem();
+  FeasibilityStatus PresolvePureSatProblem();
 
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
 
   // Extracts cliques from bool_and and small at_most_one constraints and
   // transforms them into maximal cliques.
-  void TransformIntoMaxCliques();
+  FeasibilityStatus TransformIntoMaxCliques();
 
   // Checks if there are any clauses that can be transformed to an at-most-one
   // constraint.
-  void TransformClausesToExactlyOne();
+  FeasibilityStatus TransformClausesToExactlyOne();
 
   // Use all the detected precedences to detect if a part of a no_overlap
   // constraint can only be executed after the rest and thus the no_overlap
   // constraint can be split into smaller no_overlap constraints.
-  void SplitNoOverlapAndCumulativeConstraints();
+  FeasibilityStatus SplitNoOverlapAndCumulativeConstraints();
 
   // Converts bool_or and at_most_one of size 2 to bool_and.
-  void ConvertToBoolAnd();
+  FeasibilityStatus ConvertToBoolAnd();
 
   // Sometimes an upper bound on the objective can reduce the domains of many
   // variables. This "propagates" the objective like a normal linear constraint.
-  bool PropagateObjective();
+  FeasibilityStatus PropagateObjective();
 
   // Try to reformulate the objective in terms of "base" variables. This is
   // mainly useful for a core-based approach where having more terms in the
   // objective (but with a same trivial lower bound) should help.
-  void ExpandObjective();
+  FeasibilityStatus ExpandObjective();
 
   // Transforms unenforced `lin_max` constraints whose target variable only
   // appears in the objective (with matching optimization direction) into a
   // series of linear inequalities (`target >= expr_i`).
-  void ExpandLinMaxInObjective();
+  FeasibilityStatus ExpandLinMaxInObjective();
 
   // This makes a big difference on the flatzinc mznc2017_aes_opt* problems.
   // Where, with this, the core-based approach can find small cores and close
@@ -268,26 +269,29 @@ class CpModelPresolver {
   //
   // TODO(user): Is it by chance or is there an underlying deep reason? Try to
   // merge this with what ExpandObjective() is doing.
-  void ShiftObjectiveWithExactlyOnes();
+  FeasibilityStatus ShiftObjectiveWithExactlyOnes();
 
-  void ProcessVariablesOnlyUsedInEncoding();
+  FeasibilityStatus ProcessVariablesOnlyUsedInEncoding();
 
-  void LookAtVariableWithDegreeTwo(int var);
+  FeasibilityStatus LookAtVariableWithDegreeTwo(int var);
 
-  void PresolveVarOnlyInIntProdAndLinMax(int var, int int_prod_ct_index,
-                                         int lin_max_ct_index);
-  void PresolveVarOnlyInLinearAndLinear(int var, int linear1_ct_index,
-                                        int linear2_ct_index);
-  void PresolveVarOnlyInLinMaxAndLinear(int var, int lin_max_ct_index,
-                                        int linear_ct_index);
+  FeasibilityStatus PresolveVarOnlyInIntProdAndLinMax(int var,
+                                                      int int_prod_ct_index,
+                                                      int lin_max_ct_index);
+  FeasibilityStatus PresolveVarOnlyInLinearAndLinear(int var,
+                                                     int linear1_ct_index,
+                                                     int linear2_ct_index);
+  FeasibilityStatus PresolveVarOnlyInLinMaxAndLinear(int var,
+                                                     int lin_max_ct_index,
+                                                     int linear_ct_index);
 
-  void ProcessVariableInTwoAtMostOrExactlyOne(int var);
+  FeasibilityStatus ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
-  bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
-                                    std::string_view entry_name,
-                                    ScopedTimeLogger& logger);
-  bool MergeNoOverlapConstraints();
-  bool MergeNoOverlap2DConstraints();
+  ModificationStatus MergeCliqueConstraintsHelper(
+      std::vector<std::vector<Literal>>& cliques, std::string_view entry_name,
+      ScopedTimeLogger& logger);
+  FeasibilityStatus MergeNoOverlapConstraints();
+  FeasibilityStatus MergeNoOverlap2DConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraints that contain multiple * common_part and performs the
@@ -307,15 +311,16 @@ class CpModelPresolver {
   // expression. We have two slightly different heuristics.
   //
   // TODO(user): consolidate them.
-  void FindAlmostIdenticalLinearConstraints();
-  void FindBigAtMostOneAndLinearOverlap(ActivityBoundHelper* helper);
-  void FindBigHorizontalLinearOverlap(ActivityBoundHelper* helper);
+  FeasibilityStatus FindAlmostIdenticalLinearConstraints();
+  FeasibilityStatus FindBigAtMostOneAndLinearOverlap(
+      ActivityBoundHelper* helper);
+  FeasibilityStatus FindBigHorizontalLinearOverlap(ActivityBoundHelper* helper);
 
   // Only blocks that reduce the number of non-zeros by at least min_saved_nz
   // are considered. We call this function early in the presolve with a large
   // threshold to catch big rectangles before other rules alter them.
-  void FindBigVerticalLinearOverlap(ActivityBoundHelper* helper,
-                                    int64_t min_saved_nz = 30);
+  FeasibilityStatus FindBigVerticalLinearOverlap(ActivityBoundHelper* helper,
+                                                 int64_t min_saved_nz = 30);
 
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.
@@ -328,9 +333,9 @@ class CpModelPresolver {
   // TODO(user): If the merge procedure is successful we might want to develop
   // a custom propagator for such bool_and. It should in theory be more
   // efficient than the two watcher literal scheme for clauses. Investigate!
-  void MergeClauses();
+  FeasibilityStatus MergeClauses();
 
-  void EncodeAllAffineRelations();
+  FeasibilityStatus EncodeAllAffineRelations();
 
   void MaybePermuteVariablesRandomly(std::vector<int>& mapping);
   CpSolverStatus LogAndValidatePresolvedModel();

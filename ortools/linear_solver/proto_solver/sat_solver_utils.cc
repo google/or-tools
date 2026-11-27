@@ -25,6 +25,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -35,20 +36,64 @@ namespace operations_research {
   lp_preprocessors.push_back(          \
       std::make_unique<name>(&glop_params __VA_OPT__(, ) __VA_ARGS__));
 
-glop::ProblemStatus ApplyMipPresolveSteps(
-    const glop::GlopParameters& glop_params, MPModelProto* model,
-    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,
-    SolverLogger* logger) {
-  CHECK(model != nullptr);
+namespace {
 
-  // TODO(user): General constraints are currently not supported.
-  if (!model->general_constraint().empty()) {
-    return glop::ProblemStatus::INIT;
+// Converts `model`, which must not have any enforced constraint, to `lp`. The
+// objective is expressed in its original direction, so that converting `lp`
+// back with LinearProgramToMPModelProto() and wrapping the result gives back
+// the same objective scaling.
+void WrappedModelToLinearProgram(const sat::MPModelProtoWrapper& model,
+                                 glop::LinearProgram* lp) {
+  const double scaling = model.objective_scaling();
+  CHECK(scaling == 1.0 || scaling == -1.0);
+  lp->Clear();
+  lp->SetName(model.name());
+  lp->SetMaximizationProblem(scaling < 0.0);
+  lp->SetObjectiveOffset(scaling * model.objective_offset());
+  for (int v = 0; v < model.num_variables(); ++v) {
+    const MPVariableProto& var = model.variables(v);
+    const glop::ColIndex col = lp->CreateNewVariable();
+    lp->SetVariableName(col, var.name());
+    lp->SetVariableBounds(col, var.lower_bound(), var.upper_bound());
+    lp->SetObjectiveCoefficient(col, scaling * var.objective_coefficient());
+    if (var.is_integer()) {
+      lp->SetVariableType(col, glop::LinearProgram::VariableType::INTEGER);
+    }
+  }
+  for (int c = 0; c < model.num_constraints(); ++c) {
+    const sat::EnforcedLinearConstraint& ct = model.constraints(c);
+    CHECK(!ct.IsEnforced());
+    const glop::RowIndex row = lp->CreateNewConstraint();
+    lp->SetConstraintName(row, ct.name());
+    lp->SetConstraintBounds(row, ct.lower_bound(), ct.upper_bound());
+    for (int i = 0; i < ct.num_terms(); ++i) {
+      lp->SetCoefficient(row, glop::ColIndex(ct.vars(i)), ct.coeffs(i));
+    }
+  }
+  lp->CleanUp();
+}
+
+}  // namespace
+
+glop::ProblemStatus ApplyMipPresolveSteps(
+    const glop::GlopParameters& glop_params, sat::MPModelProtoWrapper* model,
+    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,
+    int* num_presolved_constraints, SolverLogger* logger) {
+  CHECK(model != nullptr);
+  CHECK(num_presolved_constraints != nullptr);
+  *num_presolved_constraints = model->num_constraints();
+
+  // TODO(user): Enforced constraints are currently not supported.
+  for (int c = 0; c < model->num_constraints(); ++c) {
+    if (model->constraints(c).IsEnforced()) return glop::ProblemStatus::INIT;
   }
 
-  // We need to copy the hint because LinearProgramToMPModelProto() loose it.
-  const bool hint_is_present = model->has_solution_hint();
-  const auto copy_of_hint = model->solution_hint();
+  // These presolve might change the problem size.
+  //
+  // TODO(user): transform the hint instead of disabling presolve.
+  if (model->underlying_model().has_solution_hint()) {
+    return glop::ProblemStatus::INIT;
+  }
 
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(glop_params);
@@ -57,29 +102,24 @@ glop::ProblemStatus ApplyMipPresolveSteps(
   // the LinearProgram directly to a CpModelProto, or we could have a custom
   // implementation of these presolve steps.
   glop::LinearProgram lp;
-  glop::MPModelProtoToLinearProgram(*model, &lp);
+  WrappedModelToLinearProgram(*model, &lp);
 
-  // These presolve might change the problem size.
-  //
-  // TODO(user): transform the hint instead of disabling presolve.
   std::vector<std::string> names;
   std::vector<std::unique_ptr<glop::Preprocessor>> lp_preprocessors;
   const std::string header =
       "Running basic LP presolve, initial problem dimensions: ";
-  if (!hint_is_present) {
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, header, lp.GetDimensionString());
-    ADD_LP_PREPROCESSOR(glop::FixedVariablePreprocessor);
-    ADD_LP_PREPROCESSOR(glop::SingletonPreprocessor);
-    ADD_LP_PREPROCESSOR(glop::ForcingAndImpliedFreeConstraintPreprocessor);
-    ADD_LP_PREPROCESSOR(glop::FreeConstraintPreprocessor);
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, header, lp.GetDimensionString());
+  ADD_LP_PREPROCESSOR(glop::FixedVariablePreprocessor);
+  ADD_LP_PREPROCESSOR(glop::SingletonPreprocessor);
+  ADD_LP_PREPROCESSOR(glop::ForcingAndImpliedFreeConstraintPreprocessor);
+  ADD_LP_PREPROCESSOR(glop::FreeConstraintPreprocessor);
 
-    // TODO(user): Usually it is good to run the ImpliedFreePreprocessor before
-    // this one. However this seems to cause problem on atm20-100.mps. Moreover,
-    // for the conversion, it is better to have tight bounds even if the bound
-    // propagator is supposed to undo what this presolve would have done.
-    ADD_LP_PREPROCESSOR(glop::UnconstrainedVariablePreprocessor);
-  }
+  // TODO(user): Usually it is good to run the ImpliedFreePreprocessor before
+  // this one. However this seems to cause problem on atm20-100.mps. Moreover,
+  // for the conversion, it is better to have tight bounds even if the bound
+  // propagator is supposed to undo what this presolve would have done.
+  ADD_LP_PREPROCESSOR(glop::UnconstrainedVariablePreprocessor);
 
   for (int i = 0; i < lp_preprocessors.size(); ++i) {
     if (time_limit->LimitReached()) break;
@@ -97,14 +137,10 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     }
   }
 
-  glop::LinearProgramToMPModelProto(lp, model);
-
-  // Restore the hint, note that none of the presolve steps we run here change
-  // the number of variables in the model.
-  if (hint_is_present) {
-    *model->mutable_solution_hint() = copy_of_hint;
-  }
-
+  MPModelProto presolved_model;
+  glop::LinearProgramToMPModelProto(lp, &presolved_model);
+  *num_presolved_constraints = presolved_model.constraint().size();
+  *model = sat::MPModelProtoWrapper(std::move(presolved_model), logger);
   return glop::ProblemStatus::INIT;
 }
 

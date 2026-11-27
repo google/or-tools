@@ -87,15 +87,24 @@ class ScatteredIntegerVector {
   // TODO(user): Ideally we should convert to IntegerVariable as late as
   // possible. Prefer to use GetTerms().
   LinearConstraint ConvertToLinearConstraint(
-      absl::Span<const IntegerVariable> integer_variables,
+      absl::Span<const IntegerVariable> col_to_integer_variable,
       IntegerValue upper_bound,
       std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
           std::nullopt);
 
-  void ConvertToCutData(absl::int128 rhs,
-                        absl::Span<const IntegerVariable> integer_variables,
-                        absl::Span<const double> lp_solution,
-                        IntegerTrail* integer_trail, CutData* result);
+  // Converts the vector to "sum terms <= upper_bound", dividing by the GCD of
+  // the coefficients in 128-bit arithmetic before narrowing the upper bound to
+  // IntegerValue. Returns false if the reduced upper bound does not fit in
+  // (kMinIntegerValue, kMaxIntegerValue).
+  bool ConvertToLinearConstraint(
+      absl::Span<const IntegerVariable> col_to_integer_variable,
+      absl::int128 upper_bound, LinearConstraint* result);
+
+  void ConvertToCutData(
+      absl::int128 rhs,
+      absl::Span<const IntegerVariable> col_to_integer_variable,
+      absl::Span<const double> lp_solution, IntegerTrail* integer_trail,
+      CutData* result);
 
   // Similar to ConvertToLinearConstraint().
   std::vector<std::pair<glop::ColIndex, IntegerValue>> GetTerms();
@@ -108,6 +117,11 @@ class ScatteredIntegerVector {
   bool IsSparse() const { return is_sparse_; }
 
  private:
+  void PopulateLinearConstraintTerms(
+      absl::Span<const IntegerVariable> col_to_integer_variable,
+      std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term,
+      LinearConstraint* result);
+
   // If is_sparse is true we maintain the non_zeros positions and bool vector
   // of dense_vector_. Otherwise we don't. Note that we automatically switch
   // from sparse to dense as needed.
@@ -360,6 +374,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // propagation.
   bool PropagateLpConstraint(LinearConstraint ct);
 
+  // Returns true if the "optimal constraints" kept for the current branch (the
+  // LP explanations, see `PropagateLpConstraint()`) use too much memory, in
+  // which case we should not run the LP propagation until we backtrack.
+  bool OptimalConstraintsUseTooMuchMemory() const;
+
   // Returns the number of non-fixed non-basic variables with zero reduced costs
   // and sets num_cols to the number of non-fixed columns in the LP.
   int64_t CalculateDegeneracy(int64_t* num_cols = nullptr);
@@ -398,7 +417,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
           integer_multipliers,
       ScatteredIntegerVector* scattered_vector,
-      IntegerValue* upper_bound) const;
+      absl::int128* upper_bound) const;
 
   // Heuristic to minimize upper_bound - ImpliedLB(terms) by adjusting the
   // integer row multipliers. This makes the new constraint tighter and

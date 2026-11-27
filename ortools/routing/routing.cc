@@ -39,6 +39,7 @@
 #include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
@@ -618,15 +619,30 @@ void Model::NodeNeighborsByCostClass::ComputeNeighbors(
 
 const Model::NodeNeighborsByCostClass*
 Model::GetOrCreateNodeNeighborsByCostClass(
-    double neighbors_ratio, int64_t min_neighbors, double& neighbors_ratio_used,
-    bool add_vehicle_starts_to_neighbors, bool add_vehicle_ends_to_neighbors,
+    double neighbors_ratio, int min_neighbors, int max_neighbors,
+    double& neighbors_ratio_used, bool add_vehicle_starts_to_neighbors,
+    bool add_vehicle_ends_to_neighbors,
     bool only_sort_neighbors_for_partial_neighborhoods) {
+  DCHECK_LE(min_neighbors, max_neighbors);
   const int64_t num_non_start_end_nodes = Size() - vehicles();
+  if (num_non_start_end_nodes == 0) {
+    neighbors_ratio_used = 1;
+    return GetOrCreateNodeNeighborsByCostClass(
+        {static_cast<int>(Size()), add_vehicle_starts_to_neighbors,
+         add_vehicle_ends_to_neighbors,
+         only_sort_neighbors_for_partial_neighborhoods});
+  }
+
   neighbors_ratio_used = neighbors_ratio;
   int num_neighbors = std::max(
       min_neighbors,
-      MathUtil::SafeRound<int64_t>(neighbors_ratio * num_non_start_end_nodes));
-  if (neighbors_ratio == 1 || num_neighbors >= num_non_start_end_nodes - 1) {
+      MathUtil::SafeRound<int>(neighbors_ratio * num_non_start_end_nodes));
+  if (num_neighbors > max_neighbors) {
+    num_neighbors = max_neighbors;
+    neighbors_ratio_used =
+        num_neighbors / static_cast<double>(num_non_start_end_nodes);
+  }
+  if (num_neighbors >= num_non_start_end_nodes - 1) {
     neighbors_ratio_used = 1;
     num_neighbors = Size();
   }
@@ -1476,7 +1492,7 @@ void ResourceGroup::ComputeResourceClasses() {
   }
 }
 
-const std::vector<int>& Model::GetDimensionResourceGroupIndices(
+absl::Span<const int> Model::GetDimensionResourceGroupIndices(
     const Dimension* dimension) const {
   DCHECK(closed_);
   return dimension_resource_group_indices_[dimension->index()];
@@ -1837,7 +1853,7 @@ struct VehicleClass {
   uint64_t visitable_nodes_hash;
   /// Hash of allowed resources for each resource group, or -1 if a given
   /// resource group isn't required by the vehicle.
-  std::vector<int64_t> group_allowed_resources_hash;
+  absl::InlinedVector<int64_t, 2> group_allowed_resources_hash;
 
   friend bool operator==(const VehicleClass& c1, const VehicleClass& c2) {
     return c1.cost_class_index == c2.cost_class_index &&
@@ -1912,7 +1928,7 @@ void Model::ComputeVehicleClasses() {
     }
     vehicle_class.visitable_nodes_hash = bool_vec_hash(node_is_visitable);
 
-    std::vector<int64_t>& allowed_resources_hash =
+    absl::InlinedVector<int64_t, 2>& allowed_resources_hash =
         vehicle_class.group_allowed_resources_hash;
     allowed_resources_hash.reserve(resource_groups_.size());
     for (int rg_index = 0; rg_index < resource_groups_.size(); rg_index++) {
@@ -2238,7 +2254,7 @@ void Model::SetupCosts(const RoutingSearchParameters& parameters) {
         dimension->vehicle_slack_cost_coefficients();
     const std::vector<int64_t>& span_ubs =
         dimension->vehicle_span_upper_bounds();
-    const std::vector<int>& rg_indices =
+    const absl::Span<const int> rg_indices =
         dimension_resource_group_indices_[dimension->index()];
     const bool has_span_constraint =
         std::any_of(span_costs.begin(), span_costs.end(),
@@ -2479,8 +2495,8 @@ void Model::SetupCosts(const RoutingSearchParameters& parameters) {
 }
 
 DisjunctionIndex Model::AddDisjunction(
-    const std::vector<int64_t>& indices, int64_t penalty,
-    int64_t max_cardinality, PenaltyCostBehavior penalty_cost_behavior) {
+    absl::Span<const int64_t> indices, int64_t penalty, int64_t max_cardinality,
+    PenaltyCostBehavior penalty_cost_behavior) {
   CHECK_GE(max_cardinality, 1);
   for (int i = 0; i < indices.size(); ++i) {
     CHECK_NE(kUnassigned, indices[i]);
@@ -2498,10 +2514,10 @@ DisjunctionIndex Model::AddDisjunction(
   return disj_index;
 }
 
-DisjunctionIndex Model::MakeDisjunction(const std::vector<int64_t>& indices) {
+DisjunctionIndex Model::MakeDisjunction(absl::Span<const int64_t> indices) {
   const DisjunctionIndex disj_index(disjunctions_.size());
   disjunctions_.push_back({});
-  disjunctions_.back().indices = indices;
+  disjunctions_.back().indices.assign(indices.begin(), indices.end());
   disjunctions_.back().max_cardinality = indices.size();
   for (const int64_t index : indices) {
     index_to_disjunctions_[index].push_back(disj_index);
@@ -2720,8 +2736,7 @@ void Model::AddPickupAndDeliverySets(DisjunctionIndex pickup_disjunction,
 // TODO(user): Return an error (boolean?) when any node in the pickup or
 // deliveries is already registered as pickup or delivery instead of DCHECK-ing.
 void Model::AddPickupAndDeliverySetsInternal(
-    const std::vector<int64_t>& pickups,
-    const std::vector<int64_t>& deliveries) {
+    absl::Span<const int64_t> pickups, absl::Span<const int64_t> deliveries) {
   if (pickups.empty() || deliveries.empty()) {
     return;
   }
@@ -2742,7 +2757,8 @@ void Model::AddPickupAndDeliverySetsInternal(
     DCHECK(!IsDelivery(delivery));
     index_to_delivery_position_[delivery] = {pair_index, delivery_index};
   }
-  pickup_delivery_pairs_.push_back({pickups, deliveries});
+  pickup_delivery_pairs_.push_back({{pickups.begin(), pickups.end()},
+                                    {deliveries.begin(), deliveries.end()}});
 }
 
 std::optional<Model::PickupDeliveryPosition> Model::GetPickupPosition(
@@ -3300,7 +3316,7 @@ void Model::CloseModelWithParameters(
   // Nodes which are not in a disjunction are mandatory, and those with a
   // trivially infeasible type are necessarily unperformed
   for (int i = 0; i < size; ++i) {
-    const std::vector<DisjunctionIndex>& disjunctions =
+    const absl::Span<const DisjunctionIndex> disjunctions =
         GetDisjunctionIndices(i);
     bool is_mandatory = disjunctions.empty();
     for (const DisjunctionIndex& index : disjunctions) {
@@ -3399,7 +3415,7 @@ void Model::CloseModelWithParameters(
     if (disjunctions.size() <= 1) continue;
     IntVar* prev_active_var = nullptr;
     for (const DisjunctionIndex disjunction_index : disjunctions) {
-      const std::vector<int64_t>& node_indices =
+      const absl::Span<const int64_t> node_indices =
           GetDisjunctionNodeIndices(disjunction_index);
       std::vector<IntVar*> active_vars;
       active_vars.reserve(node_indices.size());
@@ -5171,7 +5187,7 @@ int64_t Model::UnperformedPenalty(int64_t var_index) const {
 int64_t Model::UnperformedPenaltyOrValue(int64_t default_value,
                                          int64_t var_index) const {
   if (active_[var_index]->Min() == 1) return kint64max;  // Forced active.
-  const std::vector<DisjunctionIndex>& disjunction_indices =
+  const absl::Span<const DisjunctionIndex> disjunction_indices =
       GetDisjunctionIndices(var_index);
   if (disjunction_indices.size() != 1) return default_value;
   const Disjunction& disj = disjunctions_[disjunction_indices[0]];
@@ -5368,10 +5384,12 @@ void Model::CreateNeighborhoodOperators(
   // This would allow the operators to iterate on the neighbors by increasing
   // distance, even if all nodes are considered as neighbors.
   double neighbors_ratio_used = 1;
+  const int min_neighbors = std::min(parameters.ls_operator_min_neighbors(),
+                                     static_cast<int>(Size()));
   const NodeNeighborsByCostClass* neighbors_by_cost_class =
       GetOrCreateNodeNeighborsByCostClass(
-          parameters.ls_operator_neighbors_ratio(),
-          parameters.ls_operator_min_neighbors(), neighbors_ratio_used,
+          parameters.ls_operator_neighbors_ratio(), min_neighbors, Size(),
+          neighbors_ratio_used,
           /*add_vehicle_starts_to_neighbors=*/false,
           /*add_vehicle_ends_to_neighbors=*/false);
   std::function<const std::vector<int>&(int, int)> get_incoming_neighbors;
@@ -5399,10 +5417,7 @@ void Model::CreateNeighborhoodOperators(
     // Operators defined by Solver::LocalSearchOperators.
     const std::vector<
         std::pair<RoutingLocalSearchOperator, Solver::LocalSearchOperators>>
-        operator_by_type = {{OR_OPT, Solver::OROPT},
-                            {PATH_LNS, Solver::PATHLNS},
-                            {FULL_PATH_LNS, Solver::FULLPATHLNS},
-                            {INACTIVE_LNS, Solver::UNACTIVELNS}};
+        operator_by_type = {{OR_OPT, Solver::OROPT}};
     for (const auto [type, op] : operator_by_type) {
       local_search_operators_[type] =
           CostsAreHomogeneousAcrossVehicles()
@@ -5470,7 +5485,8 @@ void Model::CreateNeighborhoodOperators(
     // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
     // support DAGs, and don't care about chain-DAGS.
     if (disjunction.max_cardinality == 1 && disjunction.indices.size() > 1) {
-      alternative_sets.push_back(disjunction.indices);
+      alternative_sets.emplace_back(disjunction.indices.begin(),
+                                    disjunction.indices.end());
     }
   }
   local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
@@ -5789,11 +5805,6 @@ LocalSearchOperator* Model::GetNeighborhoodOperators(
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
     CP_ROUTING_PUSH_OPERATOR(TSP_LNS, tsp_lns);
   }
-  CP_ROUTING_PUSH_OPERATOR(FULL_PATH_LNS, full_path_lns);
-  CP_ROUTING_PUSH_OPERATOR(PATH_LNS, path_lns);
-  if (!disjunctions_.empty()) {
-    CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns);
-  }
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   return solver_->ConcatenateOperators(operator_groups);
@@ -5913,7 +5924,8 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
     if (!same_vehicle_costs_.empty()) {
       if (options.filter_objective) {
         filter_events.push_back(
-            {MakeSameVehicleCostFilter(*this), kAccept, priority});
+            {MakeSameVehicleCostFilter(*this, path_state_reference), kAccept,
+             priority});
       }
     }
 
@@ -6017,7 +6029,8 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
   if (HasTypeRegulations()) {
     ++priority;
     filter_events.push_back(
-        {MakeTypeRegulationsFilter(*this), kAccept, priority});
+        {MakeTypeRegulationsFilter(*this, path_state_reference), kAccept,
+         priority});
   }
 
   {
@@ -6025,7 +6038,6 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
     const int first_dimension_filter_index = filter_events.size();
     AppendDimensionCumulFilters(path_state_reference, GetDimensions(),
                                 parameters, options.filter_objective,
-                                /* filter_light_weight_dimensions */ false,
                                 &filter_events);
     int max_priority = priority;
     for (int e = first_dimension_filter_index; e < filter_events.size(); ++e) {
@@ -7467,16 +7479,18 @@ void FillPathEvaluation(absl::Span<const int64_t> path,
 TypeRegulationsChecker::TypeRegulationsChecker(const Model& model)
     : model_(model), occurrences_of_type_(model.GetNumberOfVisitTypes()) {}
 
-bool TypeRegulationsChecker::CheckVehicle(
-    int vehicle, const std::function<int64_t(int64_t)>& next_accessor) {
+template <typename NodeRange>
+bool TypeRegulationsChecker::CheckVehicle(const NodeRange& route_nodes) {
   if (!HasRegulationsToCheck()) {
     return true;
   }
 
-  InitializeCheck(vehicle, next_accessor);
+  InitializeCheck(route_nodes);
 
-  for (int pos = 0; pos < current_route_visits_.size(); pos++) {
-    const int64_t current_visit = current_route_visits_[pos];
+  int pos = 0;
+  for (int64_t current_visit : route_nodes) {
+    if (model_.IsEnd(current_visit)) break;
+    const int current_pos = pos++;
     const int type = model_.GetVisitType(current_visit);
     if (type < 0) {
       continue;
@@ -7495,7 +7509,7 @@ bool TypeRegulationsChecker::CheckVehicle(
       continue;
     }
 
-    if (!CheckTypeRegulations(type, policy, pos)) {
+    if (!CheckTypeRegulations(type, policy, current_pos)) {
       return false;
     }
     // Update count of type based on the visit policy.
@@ -7511,8 +7525,8 @@ bool TypeRegulationsChecker::CheckVehicle(
   return FinalizeCheck();
 }
 
-void TypeRegulationsChecker::InitializeCheck(
-    int vehicle, const std::function<int64_t(int64_t)>& next_accessor) {
+template <typename NodeRange>
+void TypeRegulationsChecker::InitializeCheck(const NodeRange& route_nodes) {
   // Accumulates the count of types before the current node.
   // {0, 0, -1} does not compile on or-tools.
   std::fill(occurrences_of_type_.begin(), occurrences_of_type_.end(),
@@ -7521,20 +7535,23 @@ void TypeRegulationsChecker::InitializeCheck(
   // TODO(user): Optimize the filter to avoid scanning the route an extra
   // time when there are no TYPE_ON_VEHICLE_UP_TO_VISIT policies on the route,
   // by passing a boolean to CheckVehicle() passed to InitializeCheck().
-  current_route_visits_.clear();
-  for (int64_t current = model_.Start(vehicle); !model_.IsEnd(current);
-       current = next_accessor(current)) {
+  int pos = 0;
+  for (int64_t current : route_nodes) {
+    if (model_.IsEnd(current)) break;
     const int type = model_.GetVisitType(current);
     if (type >= 0 && model_.GetVisitTypePolicy(current) ==
                          VisitTypePolicy::TYPE_ON_VEHICLE_UP_TO_VISIT) {
       occurrences_of_type_[type].position_of_last_type_on_vehicle_up_to_visit =
-          current_route_visits_.size();
+          pos;
     }
-    current_route_visits_.push_back(current);
+    pos++;
   }
 
   OnInitializeCheck();
 }
+
+template bool TypeRegulationsChecker::CheckVehicle<PathState::NodeRange>(
+    const PathState::NodeRange& route_nodes);
 
 bool TypeRegulationsChecker::TypeOccursOnRoute(int type) const {
   const TypePolicyOccurrence& occurrences = occurrences_of_type_[type];
@@ -7675,16 +7692,48 @@ void TypeRegulationsConstraint::PropagateNodeRegulations(int node) {
   EnqueueDelayedDemon(vehicle_demons_[vehicle]);
 }
 
-void TypeRegulationsConstraint::CheckRegulationsOnVehicle(int vehicle) {
-  const auto next_accessor = [this, vehicle](int64_t node) {
-    if (model_.NextVar(node)->Bound()) {
-      return model_.NextVar(node)->Value();
+namespace {
+class NextVarNodeRange {
+ public:
+  class Iterator {
+   public:
+    Iterator(const Model& model, int64_t current_node, int64_t end_node)
+        : model_(model), current_node_(current_node), end_node_(end_node) {}
+    Iterator& operator++() {
+      current_node_ = model_.NextVar(current_node_)->Bound()
+                          ? model_.NextVar(current_node_)->Value()
+                          : end_node_;
+      return *this;
     }
-    // Node not bound, skip to the end of the vehicle.
-    return model_.End(vehicle);
+    int64_t operator*() const { return current_node_; }
+    bool operator!=(Iterator other) const {
+      return current_node_ != other.current_node_;
+    }
+
+   private:
+    const Model& model_;
+    int64_t current_node_;
+    const int64_t end_node_;
   };
-  if (!incompatibility_checker_.CheckVehicle(vehicle, next_accessor) ||
-      !requirement_checker_.CheckVehicle(vehicle, next_accessor)) {
+
+  NextVarNodeRange(const Model& model, int vehicle)
+      : model_(model),
+        start_node_(model.Start(vehicle)),
+        end_node_(model.End(vehicle)) {}
+  Iterator begin() const { return {model_, start_node_, end_node_}; }
+  Iterator end() const { return {model_, end_node_, end_node_}; }
+
+ private:
+  const Model& model_;
+  const int64_t start_node_;
+  const int64_t end_node_;
+};
+}  // namespace
+
+void TypeRegulationsConstraint::CheckRegulationsOnVehicle(int vehicle) {
+  const NextVarNodeRange route_nodes(model_, vehicle);
+  if (!incompatibility_checker_.CheckVehicle(route_nodes) ||
+      !requirement_checker_.CheckVehicle(route_nodes)) {
     model_.solver()->Fail();
   }
 }

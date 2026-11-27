@@ -11,18 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file defines some IO interfaces to compatible with Google
+// IO specifications.
 #ifndef ORTOOLS_BASE_RECORDIO_H_
 #define ORTOOLS_BASE_RECORDIO_H_
 
 #include <cstdint>
+#include <limits>
+#include <memory>
 #include <string>
 
+#include "absl/base/nullability.h"
+#include "absl/log/log.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/file.h"
 
-// This file defines some IO interfaces to compatible with Google
-// IO specifications.
-namespace recordio {
+// Enable switching the namespace in the unit tests at Google.
+//
+#define ORTOOLS_RECORDIO_NAMESPACE recordio
+
+namespace ORTOOLS_RECORDIO_NAMESPACE {
 // This class appends a protocol buffer to a file in a binary format.
 // The data written in the file follows the following format (sequentially):
 // - MagicNumber (32 bits) to recognize this format.
@@ -36,18 +44,41 @@ class OR_DLL RecordWriter {
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
+  // Maximum size of a record.
+  //
+  // Protos are limited to an `int` size. We assume here that compressed protos
+  // should fit this size as well.
+  static constexpr uint64_t kMaxRecordSize = std::numeric_limits<int>::max();
+
   explicit RecordWriter(File* file);
+  ~RecordWriter();
 
   template <class P>
   bool WriteProtocolMessage(const P& proto) {
+    if (file_ == nullptr) {
+      LOG(DFATAL) << "Close() already called";
+      return false;
+    }
     std::string uncompressed_buffer;
     if (!proto.SerializeToString(&uncompressed_buffer)) {
       return false;
     }
     const uint64_t uncompressed_size = uncompressed_buffer.size();
+    if (uncompressed_size > kMaxRecordSize) {
+      LOG(DFATAL) << "SerializeToString() should have failed if ByteSizeLong() "
+                     "> INT_MAX but it returned a buffer of "
+                  << uncompressed_size << " bytes.";
+      return false;
+    }
     const std::string compressed_buffer =
         use_compression_ ? Compress(uncompressed_buffer) : "";
     const uint64_t compressed_size = compressed_buffer.size();
+    if (compressed_size > kMaxRecordSize) {
+      // We know that uncompressed_size <= kMaxRecordSize.
+      LOG(DFATAL) << "compressed_size = " << compressed_size
+                  << " does not fit in INT_MAX.";
+      return false;
+    }
     if (file_->Write(&kMagicNumber, sizeof(kMagicNumber)) !=
         sizeof(kMagicNumber)) {
       return false;
@@ -80,7 +111,7 @@ class OR_DLL RecordWriter {
 
  private:
   std::string Compress(const std::string& input) const;
-  File* const file_;
+  File* absl_nullable file_;
   bool use_compression_;
 };
 
@@ -90,8 +121,15 @@ class RecordReader {
  public:
   explicit RecordReader(File* const file);
 
+  ~RecordReader();
+
   template <class P>
   bool ReadProtocolMessage(P* const proto) {
+    if (file_ == nullptr) {
+      LOG(DFATAL) << "Close() already called";
+      return false;
+    }
+
     uint64_t usize = 0;
     uint64_t csize = 0;
     int magic_number = 0;
@@ -105,17 +143,24 @@ class RecordReader {
     if (file_->Read(&usize, sizeof(usize)) != sizeof(usize)) {
       return false;
     }
+    if (usize > RecordWriter::kMaxRecordSize) {
+      return false;
+    }
     if (file_->Read(&csize, sizeof(csize)) != sizeof(csize)) {
       return false;
     }
-    std::unique_ptr<char[]> buffer(new char[usize + 1]);
+    if (csize > RecordWriter::kMaxRecordSize) {
+      return false;
+    }
+    std::unique_ptr<char[]> buffer(new char[usize]);
     if (csize != 0) {  // The data is compressed.
-      std::unique_ptr<char[]> compressed_buffer(new char[csize + 1]);
+      std::unique_ptr<char[]> compressed_buffer(new char[csize]);
       if (file_->Read(compressed_buffer.get(), csize) != csize) {
         return false;
       }
-      compressed_buffer[csize] = '\0';
-      Uncompress(compressed_buffer.get(), csize, buffer.get(), usize);
+      if (!Uncompress(compressed_buffer.get(), csize, buffer.get(), usize)) {
+        return false;
+      }
     } else {
       if (file_->Read(buffer.get(), usize) != usize) {
         return false;
@@ -128,11 +173,11 @@ class RecordReader {
   bool Close();
 
  private:
-  void Uncompress(const char* const source, uint64_t source_size,
+  bool Uncompress(const char* const source, uint64_t source_size,
                   char* const output_buffer, uint64_t output_size) const;
 
-  File* const file_;
+  File* absl_nullable file_;
 };
-}  // namespace recordio
+}  // namespace ORTOOLS_RECORDIO_NAMESPACE
 
 #endif  // ORTOOLS_BASE_RECORDIO_H_

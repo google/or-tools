@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/feasibility_jump.h"
+#include "ortools/sat/violation_ls.h"
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -22,6 +22,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -51,13 +52,14 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/subsolver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -115,35 +117,89 @@ SharedLsStates::~SharedLsStates() {
     CollectStatistics(*states_[i].get());
   }
 
-  // Display aggregated states
-  for (const auto& [options, counters] : options_to_stats_) {
+  // Display aggregated states.
+  for (const auto& [stat_name, counters] : name_to_stats_) {
     stat_tables_->AddLsStat(
-        absl::StrCat(name_, "_", options.name()), counters.num_batches,
-        options_to_num_restarts_[options] + counters.num_perturbations,
+        stat_name, counters.num_batches,
+        name_to_num_restarts_[stat_name] + counters.num_perturbations,
         counters.num_linear_moves, counters.num_general_moves,
         counters.num_compound_moves, counters.num_backtracks,
         counters.num_weight_updates, counters.num_scores_computed);
   }
 }
 
-FeasibilityJumpSolver::~FeasibilityJumpSolver() {
+ViolationLsSolver::~ViolationLsSolver() {
+  FinishTask();
   stat_tables_->AddTimingStat(*this);
 }
 
-void FeasibilityJumpSolver::ImportState() {
-  state_ = states_->GetNextState();
-  if (state_->move == nullptr) {
-    const int num_variables = dense_model_.var_domains().size();
+void ViolationLsSolver::Synchronize() {
+  if (!params_.interleave_search()) return;
+  // The batch barrier has completed. States must not become available to
+  // other tasks in the same batch as a function of their completion order.
+  FinishTask();
+}
+
+void ViolationLsSolver::ImportState() {
+  CHECK(state_ != nullptr);
+  const int num_variables = dense_model_.var_domains().size();
+  if (state_->move == nullptr ||
+      state_->move->NumVariables() != num_variables) {
     state_->move = std::make_unique<CompoundMoveBuilder>(num_variables);
   }
 }
 
-void FeasibilityJumpSolver::ReleaseState() {
-  state_->input_solution = dense_model_.ReverseMapSolution(state_->solution);
-  states_->Release(state_);
+void ViolationLsSolver::FinishTask() {
+  if (state_ != nullptr) {
+    states_->Release(state_);
+    state_ = nullptr;
+  }
+  task_generated_ = false;  // Atomic.
 }
 
-bool FeasibilityJumpSolver::Initialize() {
+bool ViolationLsSolver::ShouldImportNewSolution() {
+  if (!improve_solutions_ || !shared_response_->HasFeasibleSolution()) {
+    return false;
+  }
+  CHECK(state_ != nullptr);
+  const int64_t best = shared_response_->GetBestSolutionObjective().value();
+  if (state_->num_solutions_imported > 0 &&
+      best >= state_->last_solution_rank) {
+    return false;
+  }
+  states_->ResetLubyCounter();
+  state_->last_solution_rank = best;
+  return true;
+}
+
+bool ViolationLsSolver::ShouldStop() {
+  static constexpr double kStopCheckFrequency = 0.01;
+  static constexpr int kMaxShouldStopCallsPerCheck = 50;
+  if (time_limit_crossed_) return true;
+  if (shared_time_limit_ == nullptr) return false;
+  // Not all loops advance deterministic time, so we check *either* 50 calls or
+  // 10ms of deterministic time have passed before we re-check.
+  ++should_stop_calls_since_last_check_;
+  const double dtime = DeterministicTime();
+  if (should_stop_calls_since_last_check_ >= kMaxShouldStopCallsPerCheck ||
+      dtime - last_time_limit_check_dtime_ > kStopCheckFrequency) {
+    should_stop_calls_since_last_check_ = 0;
+    last_time_limit_check_dtime_ = dtime;
+    time_limit_crossed_ = shared_time_limit_->LimitReached();
+  }
+  return time_limit_crossed_;
+}
+
+bool ViolationLsSolver::Initialize() {
+  if (evaluator_ != nullptr) {
+    dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
+    evaluator_.reset();
+  }
+
+  TimeLimit time_limit;
+  shared_time_limit_->UpdateLocalLimit(&time_limit);
+  if (time_limit.LimitReached()) return false;
+
   const CpModelProto& model_proto = dense_model_.proto();
   LinearModel linear_model(model_proto);
   std::vector<bool> ignored(model_proto.constraints_size(), false);
@@ -154,19 +210,19 @@ bool FeasibilityJumpSolver::Initialize() {
   if (params_.feasibility_jump_linearization_level() == 0) {
     evaluator_ = std::make_unique<LsEvaluator>(
         model_proto, params_, ignored, absl::Span<const ConstraintProto>{},
-        &time_limit_);
+        &time_limit);
   } else {
     evaluator_ = std::make_unique<LsEvaluator>(
         model_proto, params_, ignored, linear_model.additional_constraints(),
-        &time_limit_);
+        &time_limit);
   }
 
-  if (time_limit_.LimitReached()) {
+  if (time_limit.LimitReached()) {
+    dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
     evaluator_.reset();
     return false;
   }
 
-  is_initialized_ = true;
   const int num_vars = model_proto.variables().size();
   objective_is_positive_.assign(num_vars, false);
   objective_is_negative_.assign(num_vars, false);
@@ -181,7 +237,7 @@ bool FeasibilityJumpSolver::Initialize() {
     }
   }
   vars_to_scan_.ClearAndReserve(num_vars);
-  var_occurs_in_non_linear_constraint_.resize(num_vars);
+  var_occurs_in_non_linear_constraint_.assign(num_vars, false);
   for (int c = 0; c < evaluator_->NumNonLinearConstraints(); ++c) {
     for (int v : evaluator_->GeneralConstraintToVars(c)) {
       var_occurs_in_non_linear_constraint_[v] = true;
@@ -252,8 +308,8 @@ int64_t RandomValueNearValue(const Domain& domain, int64_t value,
 
 }  // namespace
 
-void FeasibilityJumpSolver::ResetCurrentSolution(
-    bool use_hint, bool use_objective, double perturbation_probability) {
+void ViolationLsSolver::ResetCurrentSolution(bool use_hint, bool use_objective,
+                                             double perturbation_probability) {
   const VariableDomains& var_domains = dense_model_.var_domains();
   const int num_variables = var_domains.size();
   const double default_value_probability = 1.0 - perturbation_probability;
@@ -315,7 +371,7 @@ void FeasibilityJumpSolver::ResetCurrentSolution(
   state_->input_solution = dense_model_.ReverseMapSolution(solution);
 }
 
-void FeasibilityJumpSolver::PerturbateCurrentSolution(
+void ViolationLsSolver::PerturbateCurrentSolution(
     double perturbation_probability) {
   if (perturbation_probability == 0.0) return;
   const VariableDomains& var_domains = dense_model_.var_domains();
@@ -332,7 +388,7 @@ void FeasibilityJumpSolver::PerturbateCurrentSolution(
   }
 }
 
-std::string FeasibilityJumpSolver::OneLineStats() const {
+std::string ViolationLsSolver::OneLineStats() const {
   // Moves and evaluations in the general iterations.
   const std::string general_str =
       state_->counters.num_general_evals == 0 &&
@@ -369,25 +425,102 @@ std::string FeasibilityJumpSolver::OneLineStats() const {
       " #perturb:", FormatCounter(state_->counters.num_perturbations));
 }
 
-std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
+std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
   task_generated_ = true;  // Atomic.
+  CHECK_EQ(state_, nullptr);
 
-  return [this] {
+  const bool has_incumbent = shared_response_->HasFeasibleSolution();
+  bool new_best_solution_was_found = false;
+  bool change_options = false;
+  if (has_incumbent ? improve_solutions_ : find_first_solution_) {
+    // Reserve both the search state and its restart budget before dispatching
+    // the task so interleaved batches assign states deterministically. A task
+    // that rebuilds its dense model will remap and resize this state.
+    state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
+                                   dense_model_.equivalences_timestamp());
+    new_best_solution_was_found = ShouldImportNewSolution();
+    change_options =
+        new_best_solution_was_found || state_->num_batches_before_change <= 0;
+    if (change_options && state_->options.use_restart) {
+      states_->ConfigureNextLubyRestart(state_);
+    }
+  }
+
+  return [this, has_incumbent, new_best_solution_was_found, change_options]() {
+    bool state_imported = false;
+    const auto cleanup = absl::MakeCleanup([this, &state_imported] {
+      // TODO(user): Find better names. DeterministicTime() is maintained by
+      // this class while deterministic_time() is the one saved in the
+      // SubSolver base class.
+      const double current_dtime = DeterministicTime();
+      const double delta = current_dtime - deterministic_time();
+
+      // Because deterministic_time() is computed with a sum of difference, it
+      // might be slightly different than DeterministicTime() and we don't want
+      // to go backward, even by 1e-18.
+      if (delta > 0.0) {
+        AddTaskDeterministicDuration(delta);
+        shared_time_limit_->AdvanceDeterministicTime(delta);
+      }
+
+      // Keep conversion parallel and only use the mapping after ImportState().
+      // An early exit before import must leave the reserved state untouched.
+      if (state_imported && !state_->solution.empty()) {
+        state_->input_solution =
+            dense_model_.ReverseMapSolution(state_->solution);
+      }
+      // In interleaved search, keep the state reserved until Synchronize() runs
+      // after the batch barrier; releasing it as tasks finish would let
+      // completion order determine which state later tasks pick up, breaking
+      // determinism.
+      if (!params_.interleave_search()) {
+        FinishTask();
+      }
+    });
+
+    if (state_ == nullptr) {
+      return;
+    }
+
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
+    double min_reduction_ratio = std::numeric_limits<double>::infinity();
+    if (model_stats_.has_value() && search_dtime_since_rebuild_ > 0.0) {
+      min_reduction_ratio = EstimateCopyDeterministicTime(*model_stats_) /
+                            search_dtime_since_rebuild_;
+    }
     bool updated = false;
-    if (!dense_model_.MaybeUpdate(updated)) return;
-    if (updated || !is_initialized_) {
+    if (dense_model_.MaybeUpdate(updated, min_reduction_ratio).unsat()) {
+      model_is_supported_ = false;
+      return;
+    }
+    if (updated) {
+      if (!model_stats_.has_value()) {
+        model_stats_ = ComputeModelStats(input_model_proto_);
+      }
+      dtime_.AdvanceDeterministicTime(
+          EstimateCopyDeterministicTime(*model_stats_));
+      model_stats_ = ComputeModelStats(dense_model_.proto());
+      search_dtime_since_rebuild_ = 0.0;
+    } else if (!model_stats_.has_value()) {
+      model_stats_ = ComputeModelStats(dense_model_.proto());
+    }
+    if (updated || evaluator_ == nullptr) {
       if (!Initialize()) return;
     }
 
-    // Load the next state to work on.
+    // Ensure the reserved state matches the current dense model.
     ImportState();
+    state_imported = true;
 
     bool reset_weights = false;
     if (state_->bounds_timestamp != dense_model_.bounds_timestamp() ||
         state_->equivalences_timestamp !=
-            dense_model_.equivalences_timestamp()) {
+            dense_model_.equivalences_timestamp() ||
+        (!state_->solution.empty() &&
+         state_->solution.size() != dense_model_.var_domains().size()) ||
+        (!state_->weights.empty() &&
+         state_->weights.size() != evaluator_->NumEvaluatorConstraints())) {
       state_->bounds_timestamp = dense_model_.bounds_timestamp();
       state_->equivalences_timestamp = dense_model_.equivalences_timestamp();
       if (!state_->solution.empty()) {
@@ -399,28 +532,17 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       CHECK_EQ(state_->solution.size(), dense_model_.var_domains().size());
     }
 
-    // If we found a new best solution, we will restart all violation ls (we
-    // still finish each batch though). We will also reset the luby sequence.
-    bool new_best_solution_was_found = false;
-    if (type() == SubSolver::INCOMPLETE) {
-      const int64_t best = shared_response_->GetBestSolutionObjective().value();
-      if (best < state_->last_solution_rank) {
-        states_->ResetLubyCounter();
-        new_best_solution_was_found = true;
-        state_->last_solution_rank = best;
-      }
-    }
-
-    if (new_best_solution_was_found || state_->num_batches_before_change <= 0) {
+    if (change_options) {
       reset_weights = true;
-      if (state_->options.use_restart) {
+      if (state_->options.use_restart ||
+          (has_incumbent && state_->num_solutions_imported == 0)) {
         states_->CollectStatistics(*state_);
         state_->options.Randomize(params_, random_);
         state_->counters = LsCounters();  // Reset.
       } else {
         state_->options.Randomize(params_, random_);
       }
-      if (type() == SubSolver::INCOMPLETE) {
+      if (has_incumbent) {
         // This is not used once we have a solution, and setting it to false
         // allows fixing the logs.
         state_->options.use_objective = false;
@@ -429,7 +551,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       const bool first_time = (state_->num_restarts == 0);
       if (state_->options.use_restart || first_time ||
           new_best_solution_was_found) {
-        if (type() == SubSolver::INCOMPLETE) {
+        if (has_incumbent) {
           // Choose a base solution for this neighborhood.
           state_->base_solution =
               shared_response_->SolutionPool().GetSolutionToImprove(random_);
@@ -455,7 +577,6 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
       if (state_->options.use_restart) {
         ++state_->num_restarts;
-        states_->ConfigureNextLubyRestart(state_);
       } else {
         // TODO(user): Tune the improvement constant, maybe use luby.
         ++state_->counters.num_perturbations;
@@ -550,7 +671,12 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     }
 
     ++state_->counters.num_batches;
-    if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
+    const double search_start_dtime = DeterministicTime();
+    const bool feasible_found =
+        DoSomeLinearIterations() && DoSomeGeneralIterations();
+    search_dtime_since_rebuild_ +=
+        std::max(0.0, DeterministicTime() - search_start_dtime);
+    if (feasible_found) {
       const std::vector<int64_t> input_solution =
           dense_model_.ReverseMapSolution(state_->solution);
       // Checks for infeasibility induced by the non supported constraints.
@@ -597,33 +723,12 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         }
       }
     }
-
-    // Update dtime.
-    // Since we execute only one task at a time, this is safe.
-    {
-      // TODO(user): Find better names. DeterministicTime() is maintained by
-      // this class while deterministic_time() is the one saved in the SubSolver
-      // base class.
-      const double current_dtime = DeterministicTime();
-      const double delta = current_dtime - deterministic_time();
-
-      // Because deterministic_time() is computed with a sum of difference, it
-      // might be slightly different than DeterministicTime() and we don't want
-      // to go backward, even by 1e-18.
-      if (delta >= 0) {
-        AddTaskDeterministicDuration(delta);
-        shared_time_limit_->AdvanceDeterministicTime(delta);
-      }
-    }
-
-    ReleaseState();
-    task_generated_ = false;  // Atomic.
   };
 }
 
-double FeasibilityJumpSolver::ComputeScore(absl::Span<const double> weights,
-                                           int var, int64_t delta,
-                                           bool linear_only) {
+double ViolationLsSolver::ComputeScore(absl::Span<const double> weights,
+                                       int var, int64_t delta,
+                                       bool linear_only) {
   ++state_->counters.num_scores_computed;
   double score = evaluator_->WeightedViolationDelta(
       linear_only, weights, var, delta, absl::MakeSpan(state_->solution));
@@ -632,7 +737,7 @@ double FeasibilityJumpSolver::ComputeScore(absl::Span<const double> weights,
   return score;
 }
 
-std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
+std::pair<int64_t, double> ViolationLsSolver::ComputeLinearJump(int var) {
   const VariableDomains& var_domains = dense_model_.var_domains();
   DCHECK(!var_domains[var].IsFixed());
   const int64_t current_value = state_->solution[var];
@@ -720,7 +825,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
   return std::make_pair(best_jump.first - current_value, best_jump.second);
 }
 
-std::pair<int64_t, double> FeasibilityJumpSolver::ComputeGeneralJump(int var) {
+std::pair<int64_t, double> ViolationLsSolver::ComputeGeneralJump(int var) {
   if (!var_occurs_in_non_linear_constraint_[var]) {
     return ComputeLinearJump(var);
   }
@@ -750,7 +855,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeGeneralJump(int var) {
   return result;
 }
 
-void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
+void ViolationLsSolver::UpdateViolatedConstraintWeights() {
   ++state_->counters.num_weight_updates;
 
   // Because we update the weight incrementally, it is better to not have a
@@ -844,7 +949,7 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   }
 }
 
-bool FeasibilityJumpSolver::DoSomeLinearIterations() {
+bool ViolationLsSolver::DoSomeLinearIterations() {
   if (VLOG_IS_ON(1)) {
     shared_response_->LogMessageWithThrottling(name(), OneLineStats());
   }
@@ -855,7 +960,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 
   evaluator_->RecomputeViolatedList(/*linear_only=*/true);
   jumps_.SetComputeFunction(
-      absl::bind_front(&FeasibilityJumpSolver::ComputeLinearJump, this));
+      absl::bind_front(&ViolationLsSolver::ComputeLinearJump, this));
   RecomputeVarsToScan();
 
   // Do a batch of a given dtime.
@@ -893,7 +998,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
         jumps_.SetJump(best_var, prev_value - best_value, -best_score);
       }
     }
-    if (time_limit_crossed_) return false;
+    if (ShouldStop()) return false;
 
     // We will update the weight unless the queue is non-empty.
     if (vars_to_scan_.empty()) {
@@ -918,7 +1023,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 // TODO(user): For non-Booleans, we could easily detect if a non-improving
 // score cannot become improving. We don't need to add such variables to
 // the queue.
-void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
+void ViolationLsSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   // To keep DCHECKs happy. Note that we might overwrite this afterwards with
   // the known score/jump of undoing the move.
   jumps_.Recompute(changed_var);
@@ -950,7 +1055,7 @@ void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   timer.Advance(num_ops);
 }
 
-bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
+bool ViolationLsSolver::DoSomeGeneralIterations() {
   if (!state_->options.use_compound_moves &&
       evaluator_->NumNonLinearConstraints() == 0) {
     return true;
@@ -960,10 +1065,10 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
   evaluator_->RecomputeViolatedList(/*linear_only=*/false);
   if (evaluator_->NumNonLinearConstraints() == 0) {
     jumps_.SetComputeFunction(
-        absl::bind_front(&FeasibilityJumpSolver::ComputeLinearJump, this));
+        absl::bind_front(&ViolationLsSolver::ComputeLinearJump, this));
   } else {
     jumps_.SetComputeFunction(
-        absl::bind_front(&FeasibilityJumpSolver::ComputeGeneralJump, this));
+        absl::bind_front(&ViolationLsSolver::ComputeGeneralJump, this));
   }
   RecomputeVarsToScan();
 
@@ -971,6 +1076,7 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
   const double dtime_threshold =
       DeterministicTime() + params_.feasibility_jump_batch_dtime();
   while (DeterministicTime() < dtime_threshold) {
+    if (ShouldStop()) return false;
     int var;
     int64_t new_value;
     double score;
@@ -1049,8 +1155,6 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
         }
       }
       continue;
-    } else if (time_limit_crossed_) {
-      return false;
     }
 
     DCHECK_EQ(state_->move->Size(), 0);
@@ -1067,7 +1171,7 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
   return false;
 }
 
-void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
+void ViolationLsSolver::ResetChangedCompoundWeights() {
   if (!state_->options.use_compound_moves) return;
   DCHECK_EQ(state_->move->Size(), 0);
   DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
@@ -1089,19 +1193,17 @@ void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
   timer.Advance(num_ops);
 }
 
-bool FeasibilityJumpSolver::ShouldExtendCompoundMove(double score,
-                                                     double novelty) {
+bool ViolationLsSolver::ShouldExtendCompoundMove(double score, double novelty) {
   if (state_->move->Score() + score - std::max(novelty, 0.0) < 0) {
     return true;
   }
   return score < state_->move->BestChildScore();
 }
 
-bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
-                                                  int* best_var,
-                                                  int64_t* best_value,
-                                                  double* best_score) {
-  if (time_limit_crossed_) return false;
+bool ViolationLsSolver::ScanRelevantVariables(int num_to_scan, int* best_var,
+                                              int64_t* best_value,
+                                              double* best_score) {
+  if (ShouldStop()) return false;
   if (state_->move->Discrepancy() > state_->compound_move_max_discrepancy) {
     return false;
   }
@@ -1136,14 +1238,7 @@ bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
       continue;
     }
     const auto [delta, scan_score] = jumps_.GetJump(var);
-    if ((state_->counters.num_general_evals +
-         state_->counters.num_linear_evals) %
-                100 ==
-            0 &&
-        shared_time_limit_ != nullptr && shared_time_limit_->LimitReached()) {
-      time_limit_crossed_ = true;
-      return false;
-    }
+    if (ShouldStop()) return false;
     const int64_t current_value = state_->solution[var];
     DCHECK(dense_model_.var_domains()[var].Contains(current_value + delta))
         << var << " " << current_value << "+" << delta << " not in "
@@ -1185,7 +1280,7 @@ bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
   return false;
 }
 
-void FeasibilityJumpSolver::AddVarToScan(int var) {
+void ViolationLsSolver::AddVarToScan(int var) {
   DCHECK_GE(var, 0);
   if (in_vars_to_scan_[var]) return;
   if (!ShouldScan(var)) return;
@@ -1193,7 +1288,7 @@ void FeasibilityJumpSolver::AddVarToScan(int var) {
   in_vars_to_scan_[var] = true;
 }
 
-bool FeasibilityJumpSolver::ShouldScan(int var) const {
+bool ViolationLsSolver::ShouldScan(int var) const {
   DCHECK_GE(var, 0);
 
   if (state_->move->OnStack(var)) return false;
@@ -1224,7 +1319,7 @@ bool FeasibilityJumpSolver::ShouldScan(int var) const {
   return evaluator_->NumViolatedConstraintsForVarIgnoringObjective(var) > 0;
 }
 
-void FeasibilityJumpSolver::RecomputeVarsToScan() {
+void ViolationLsSolver::RecomputeVarsToScan() {
   const VariableDomains& var_domains = dense_model_.var_domains();
   const int num_variables = var_domains.size();
   jumps_.RecomputeAll(num_variables);
@@ -1251,14 +1346,14 @@ void FeasibilityJumpSolver::RecomputeVarsToScan() {
   timer.Advance(num_ops);
 }
 
-void FeasibilityJumpSolver::OnValueChange(int var, int64_t value) {
+void ViolationLsSolver::OnValueChange(int var, int64_t value) {
   const Domain& domain = dense_model_.var_domains()[var];
   has_better_objective_value_[var] =
       (objective_is_positive_[var] && value > domain.Min()) ||
       (objective_is_negative_[var] && value < domain.Max());
 }
 
-bool FeasibilityJumpSolver::SlowCheckNumViolatedConstraints() const {
+bool ViolationLsSolver::SlowCheckNumViolatedConstraints() const {
   std::vector<int> result;
   result.assign(dense_model_.var_domains().size(), 0);
   for (const int c : evaluator_->ViolatedConstraints()) {

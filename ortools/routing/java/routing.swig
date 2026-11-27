@@ -257,6 +257,42 @@ import java.util.function.LongUnaryOperator;
 %rename (addDimensionWithVehicleTransits) Model::AddDimensionWithVehicleTransits;
 
 %rename (addDisjunction) Model::AddDisjunction;
+%extend Model {
+  /// Adds a disjunction constraint on the indices.
+  ///
+  ///
+  /// Exactly 'max_cardinality' of the indices are active.
+  /// 
+  /// If a penalty is given, at most 'max_cardinality' of the indices can be
+  /// active, and if less are active, 'penalty' is payed per inactive index
+  /// if the penalty cost is set to `PENALIZE_PER_INACTIVE`. This is
+  /// equivalent to adding the constraint:
+  ///     p + Sum(i)active[i] == max_cardinality
+  /// where p is an integer variable. If the penalty cost is set to
+  /// `PENALIZE_ONCE`, then 'penalty' is payed once if there are less than
+  /// `max_cardinality` of the indices active. This is equivalent to adding
+  /// the constraint:
+  ///     p == (Sum(i)active[i] != max_cardinality)
+  /// where p is a boolean variable. The following cost is added to the cost
+  /// function: p * penalty. @param[in] penalty must be positive to make the
+  /// disjunction optional; a negative penalty will force 'max_cardinality'
+  /// indices of the disjunction to be performed, and therefore p == 0.
+  /// Note: passing a vector with a single index will model an optional
+  ///       index
+  /// with a penalty cost if it is not visited. @warning Start and end
+  /// indices of any vehicle cannot be part of a disjunction.
+  DisjunctionIndex AddDisjunction(
+      const std::vector<int64_t>& indices,
+      int64_t penalty = operations_research::routing::Model::kNoPenalty,
+      int64_t max_cardinality = 1,
+      operations_research::routing::Model::PenaltyCostBehavior
+          penalty_cost_behavior = operations_research::routing::Model::
+              PenaltyCostBehavior::PENALIZE_ONCE) {
+    return $self->AddDisjunction(
+        absl::Span<const int64_t>(indices), penalty, max_cardinality,
+        penalty_cost_behavior);
+  }
+}
 %rename (addHardTypeIncompatibility) Model::AddHardTypeIncompatibility;
 %rename (addIntervalToAssignment) Model::AddIntervalToAssignment;
 %rename (addLocalSearchFilter) Model::AddLocalSearchFilter;
@@ -296,6 +332,14 @@ import java.util.function.LongUnaryOperator;
 %rename (getDepot) Model::GetDepot;
 %rename (getDimensionOrDie) Model::GetDimensionOrDie;
 %rename (getDisjunctionIndices) Model::GetDisjunctionIndices;
+%extend Model {  // Overload, same as for Model::AddDisjunction.
+  std::vector<DisjunctionIndex> GetDisjunctionIndices(int64_t index) const {
+    absl::Span<const operations_research::routing::DisjunctionIndex> indices =
+        $self->GetDisjunctionIndices(index);
+    return std::vector<operations_research::routing::DisjunctionIndex>(
+        indices.begin(), indices.end());
+  }
+}
 %rename (getDisjunctionMaxCardinality) Model::GetDisjunctionMaxCardinality;
 %rename (getDisjunctionMinCardinality) Model::GetDisjunctionMinCardinality;
 %rename (getDisjunctionSoftMaxCardinality) Model::GetDisjunctionSoftMaxCardinality;
@@ -334,6 +378,11 @@ import java.util.function.LongUnaryOperator;
 %rename (isVehicleAllowedForIndex) Model::IsVehicleAllowedForIndex;
 %rename (isVehicleUsed) Model::IsVehicleUsed;
 %rename (makeDisjunction) Model::MakeDisjunction;
+%extend Model {  // Overload, same as for Model::AddDisjunction.
+  DisjunctionIndex MakeDisjunction(const std::vector<int64_t>& indices) {
+    return $self->MakeDisjunction(absl::Span<const int64_t>(indices));
+  }
+}
 %rename (makeGuidedSlackFinalizer) Model::MakeGuidedSlackFinalizer;
 %rename (makeSelfDependentDimensionFinalizer) Model::MakeSelfDependentDimensionFinalizer;
 %rename (mutablePreAssignment) Model::MutablePreAssignment;

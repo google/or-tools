@@ -485,7 +485,11 @@ class SharedTreeWorker {
   // Returns false if the problem is infeasible.
   bool SyncWithSharedTree();
   bool ShouldReplaceSubtree();
-  void MaybeProposeSplits();
+
+  // Tries to split the current subtree on one of the current decisions. If a
+  // split happens, the assumptions are re-enqueued. Returns false if the
+  // problem is infeasible.
+  bool MaybeProposeSplits();
 
   bool FinishedMinRestarts() const {
     return assignment_.leaf_id != kNoNodeId &&

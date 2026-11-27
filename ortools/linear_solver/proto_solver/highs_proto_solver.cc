@@ -350,7 +350,7 @@ MPSolutionResponse HighsSolveProto(
         model.general_constraint_size() == 0) {
       response.mutable_dual_value()->resize(model.constraint_size(), 0);
       for (int row = 0; row < model.constraint_size(); row++) {
-        response.set_dual_value(row, highs.getSolution().row_value[row]);
+        response.set_dual_value(row, highs.getSolution().row_dual[row]);
       }
     }
   }

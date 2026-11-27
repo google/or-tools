@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -33,7 +32,6 @@
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/strong_integers.h"
 
@@ -221,33 +219,6 @@ TEST(BitsetTest, ClearBit64) {
     bits.fill(kAllBits64);
     ClearBit64(bits.data(), i);
     EXPECT_FALSE(IsBitSet64(bits.data(), i));
-  }
-}
-
-TEST(BitsetTest, OneRange64) {
-  for (int s = 0; s < 64; ++s) {
-    for (int e = s; e < 64; ++e) {
-      const uint64_t bits = OneRange64(s, e);
-      for (int i = 0; i < 64; ++i) {
-        EXPECT_EQ(i >= s && i <= e, IsBitSet64(&bits, i));
-      }
-    }
-  }
-}
-
-TEST(BitsetTest, IntervalUp64) {
-  for (int i = 0; i < 64; ++i) {
-    const uint64_t bits = IntervalUp64(i);
-    EXPECT_EQ(i, LeastSignificantBitPosition64(bits));
-    EXPECT_EQ(64 - i, std::popcount(bits));
-  }
-}
-
-TEST(BitsetTest, IntervalDown64) {
-  for (int i = 0; i < 64; ++i) {
-    const uint64_t bits = IntervalDown64(i);
-    EXPECT_EQ(i, MostSignificantBitPosition64(bits));
-    EXPECT_EQ(i + 1, std::popcount(bits));
   }
 }
 
@@ -471,13 +442,6 @@ TEST(SparseBitsetTest, CopyFrom) {
   }
 }
 
-TEST(Bitset64Test, NegativeSize) {
-  if (!DEBUG_MODE) {
-    Bitset64<TestIndex> bitset(TestIndex(-10));
-    EXPECT_EQ(0, bitset.size());
-  }
-}
-
 TEST(Bitset64Test, BasicFunctions) {
   const TestIndex kSize(100);
   Bitset64<TestIndex> bitset(kSize);
@@ -601,6 +565,20 @@ TEST(Bitset64Test, Iterator) {
   ++it;
   next++;
   EXPECT_TRUE(it == next);
+  ++next;
+  EXPECT_EQ(next, bitset.end());
+  EXPECT_EQ(bitset.end(), next);
+  EXPECT_NE(it, next);
+  EXPECT_NE(next, it);
+}
+
+TEST(Bitset64Test, IteratorSingleBitZero) {
+  Bitset64<int> bitset(5);
+  bitset.Set(0);
+  auto begin = bitset.begin();
+  auto end = bitset.end();
+  EXPECT_NE(begin, end);
+  EXPECT_NE(end, begin);
 }
 
 TEST(Bitset64Test, CopyBucket) {
@@ -771,11 +749,6 @@ TEST(Bitset64Test, Views) {
   EXPECT_FALSE(view[TestIndex(63)]);
   EXPECT_FALSE(const_view[TestIndex(63)]);
   EXPECT_FALSE(bitset.IsSet(TestIndex(63)));
-
-  EXPECT_EQ(const_view.GetBucket(TestIndex(64)), OneBit64(0) | OneBit64(35));
-  view.GetBucket(TestIndex(64)) = 0;
-  EXPECT_FALSE(const_view[TestIndex(64)]);
-  EXPECT_FALSE(const_view[TestIndex(99)]);
 }
 
 #ifndef NDEBUG
@@ -803,10 +776,6 @@ TEST(Bitset64DeathTest, ViewBoundsChecking) {
   EXPECT_DEATH(view.Set(TestIndex(10)), "");
   EXPECT_DEATH(view.Clear(TestIndex(-1)), "");
   EXPECT_DEATH(view.Clear(TestIndex(10)), "");
-  EXPECT_DEATH((void)view.GetBucket(TestIndex(-1)), "");
-  EXPECT_DEATH((void)view.GetBucket(TestIndex(10)), "");
-  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(-1)), "");
-  EXPECT_DEATH((void)const_view.GetBucket(TestIndex(10)), "");
 }
 
 TEST(Bitset64DeathTest, MemberBoundsChecking) {

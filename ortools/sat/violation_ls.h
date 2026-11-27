@@ -11,23 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_FEASIBILITY_JUMP_H_
-#define ORTOOLS_SAT_FEASIBILITY_JUMP_H_
+#ifndef ORTOOLS_SAT_VIOLATION_LS_H_
+#define ORTOOLS_SAT_VIOLATION_LS_H_
 
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/btree_map.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
@@ -167,52 +169,37 @@ struct LsOptions {
     return absl::StrJoin(parts, "_");
   }
 
-  // In order to collect statistics by options.
-  template <typename H>
-  friend H AbslHashValue(H h, const LsOptions& o) {
-    return H::combine(std::move(h), o.use_restart, o.perturbation_probability,
-                      o.use_decay, o.use_compound_moves, o.use_objective);
-  }
-
-  bool operator==(const LsOptions& o) const {
-    return use_restart == o.use_restart &&
-           perturbation_probability == o.perturbation_probability &&
-           use_decay == o.use_decay &&
-           use_compound_moves == o.use_compound_moves &&
-           start_with_random_weights == o.start_with_random_weights &&
-           use_objective == o.use_objective;
-  }
-
   void Randomize(const SatParameters& params, absl::BitGenRef random) {
     perturbation_probability =
         absl::Bernoulli(random, 0.5)
             ? 0.0
             : params.feasibility_jump_var_randomization_probability();
     use_decay = absl::Bernoulli(random, 0.5);
-    use_compound_moves = absl::Bernoulli(random, 0.5);
+    use_compound_moves = absl::Bernoulli(
+        random, params.violation_ls_compound_move_probability());
     start_with_random_weights = absl::Bernoulli(random, 0.5);
     use_objective = absl::Bernoulli(random, 0.5);
   }
 };
 
-// Each FeasibilityJumpSolver works on many LsStates in an interleaved parallel
+// Each ViolationLsSolver works on many LsStates in an interleaved parallel
 // fashion. Each "batch of moves" will update one of these states. Restart
 // heuristics are also on a per state basis.
 //
 // This allows avoiding O(problem size) per state while having a more
 // diverse set of heuristics.
 struct LsState {
-  // Contains a value for each variable of the FeasibilityJumpSolver's
+  // Contains a value for each variable of the ViolationLsSolver's
   // input_model_proto_.
   std::vector<int64_t> input_solution;
 
-  // Contains a value for each variable of the FeasibilityJumpSolver's
+  // Contains a value for each variable of the ViolationLsSolver's
   // dense_model_. This can be recomputed from `input_solution` when the mapping
   // between the two models changes.
   std::vector<int64_t> solution;
 
   // The score of a solution is the sum of infeasibility of each constraint of
-  // the FeasibilityJumpSolver's dense_model_, weighted by `weights`.
+  // the ViolationLsSolver's dense_model_, weighted by `weights`.
   std::vector<double> weights;
 
   // This is used when we find a new solution to compute a "delta" with it.
@@ -247,8 +234,8 @@ struct LsState {
   LsOptions options;
 
   // Timestamps of the bounds and equivalences used to compute this state.
-  int64_t bounds_timestamp = -1;
-  int64_t equivalences_timestamp = -1;
+  int64_t bounds_timestamp = -2;
+  int64_t equivalences_timestamp = -2;
 
   // Global counters, incremented across restarts.
   int64_t num_restarts = 0;
@@ -269,9 +256,9 @@ struct LsState {
 // Shared set of local search states that we work on.
 //
 // Note that we can have more than one set of SharedLsStates. For instance the
-// FeasibilityJumpSolvers that do not use the same linearization level do not
-// share the same set of states. This is done like this because the number of
-// weights can be different between these workers.
+// ViolationLsSolvers that do not use the same linearization level do not share
+// the same set of states. This is done like this because the number of weights
+// can be different between these workers.
 class SharedLsStates {
  public:
   SharedLsStates(absl::string_view name, const SatParameters& params,
@@ -284,22 +271,33 @@ class SharedLsStates {
 
   ~SharedLsStates();
 
-  // Returns the next available state in round-robin fashion.
+  // Returns the next available state in round-robin fashion, preferring states
+  // compatible with `(bounds_timestamp, equivalences_timestamp)`.
   //
   // If all states are currently worked on, this will create a new one.
   // So this will always return a valid state.
-  LsState* GetNextState() {
+  LsState* GetNextState(int64_t bounds_timestamp = kint64max,
+                        int64_t equivalences_timestamp = kint64max) {
     absl::MutexLock mutex_lock(mutex_);
     int next = -1;
+    int fallback = -1;
     const int num_states = states_.size();
     for (int i = 0; i < num_states; ++i) {
       const int index = round_robin_index_;
       round_robin_index_ = (round_robin_index_ + 1) % num_states;
       if (taken_[index]) continue;
-      if (next == -1 || num_selected_[index] < num_selected_[next]) {
-        next = index;
+      if (fallback == -1 || num_selected_[index] < num_selected_[fallback]) {
+        fallback = index;
+      }
+      if (states_[index]->num_restarts == 0 ||
+          (states_[index]->bounds_timestamp <= bounds_timestamp &&
+           states_[index]->equivalences_timestamp <= equivalences_timestamp)) {
+        if (next == -1 || num_selected_[index] < num_selected_[next]) {
+          next = index;
+        }
       }
     }
+    if (next == -1) next = fallback;
 
     if (next == -1) {
       // We need more parallelism and create a new state.
@@ -346,9 +344,11 @@ class SharedLsStates {
   void CollectStatistics(const LsState& state) {
     if (state.counters.num_batches == 0) return;
 
+    const std::string stat_name =
+        absl::StrCat(name_, "_", state.options.name());
     absl::MutexLock mutex_lock(mutex_);
-    options_to_stats_[state.options].AddFrom(state.counters);
-    options_to_num_restarts_[state.options]++;
+    name_to_stats_[stat_name].AddFrom(state.counters);
+    name_to_num_restarts_[stat_name]++;
   }
 
  private:
@@ -373,8 +373,8 @@ class SharedLsStates {
   std::vector<int> num_selected_;
   int luby_counter_ = 0;
 
-  absl::flat_hash_map<LsOptions, LsCounters> options_to_stats_;
-  absl::flat_hash_map<LsOptions, int> options_to_num_restarts_;
+  absl::btree_map<std::string, LsCounters> name_to_stats_;
+  absl::btree_map<std::string, int> name_to_num_restarts_;
 };
 
 // Implements a heuristic similar to the one described in the paper:
@@ -387,19 +387,24 @@ class SharedLsStates {
 //
 // TODO(user): If we have more than one of these solvers, we might want to share
 // the evaluator memory between them. Right now we basically keep a copy of the
-// model and its transpose for each FeasibilityJumpSolver.
-class FeasibilityJumpSolver : public SubSolver {
+// model and its transpose for each ViolationLsSolver.
+class ViolationLsSolver : public SubSolver {
  public:
-  FeasibilityJumpSolver(
-      const absl::string_view name, SubSolver::SubsolverType type,
-      const CpModelProto& input_model_proto, SatParameters params,
-      std::shared_ptr<SharedLsStates> ls_states,
-      ModelSharedTimeLimit* shared_time_limit,
-      SharedResponseManager* shared_response,
-      SharedBoundsManager* shared_bounds, SharedClausesManager* shared_clauses,
-      SharedLsSolutionRepository* shared_hints, SharedStatTables* stat_tables,
-      std::function<bool(int)> active_constraints = nullptr)
-      : SubSolver(name, type),
+  // TODO(user): Use an options struct for the constructor.
+  ViolationLsSolver(absl::string_view name, bool find_first_solution,
+                    bool improve_solutions,
+                    const CpModelProto& input_model_proto, SatParameters params,
+                    std::shared_ptr<SharedLsStates> ls_states,
+                    ModelSharedTimeLimit* shared_time_limit,
+                    SharedResponseManager* shared_response,
+                    SharedBoundsManager* shared_bounds,
+                    SharedClausesManager* shared_clauses,
+                    SharedLsSolutionRepository* shared_hints,
+                    SharedStatTables* stat_tables,
+                    std::function<bool(int)> active_constraints = nullptr)
+      : SubSolver(name, SubSolver::INCOMPLETE),
+        find_first_solution_(find_first_solution),
+        improve_solutions_(improve_solutions),
         input_model_proto_(input_model_proto),
         dense_model_(name, input_model_proto, shared_bounds, shared_clauses,
                      std::move(active_constraints)),
@@ -410,22 +415,17 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_engine_(params_),
-        random_(random_engine_.bit_gen_ref()) {
-    shared_time_limit_->UpdateLocalLimit(&time_limit_);
-  }
+        random_(random_engine_.bit_gen_ref()) {}
 
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
-  ~FeasibilityJumpSolver() override;
+  ~ViolationLsSolver() override;
 
-  // No synchronization needed for TaskIsAvailable().
-  void Synchronize() final {}
+  void Synchronize() final;
 
   // Shall we delete this subsolver?
   bool IsDone() final {
     if (!model_is_supported_.load()) return true;
-
-    // We are done after the first task is done in the FIRST_SOLUTION mode.
-    return type() == SubSolver::FIRST_SOLUTION &&
+    return !improve_solutions_ &&
            shared_response_->first_solution_solvers_should_stop()->load();
   }
 
@@ -434,16 +434,19 @@ class FeasibilityJumpSolver : public SubSolver {
     if (task_generated_.load()) return false;
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
-
-    return shared_response_->HasFeasibleSolution() ==
-           (type() == SubSolver::INCOMPLETE);
+    return shared_response_->HasFeasibleSolution() ? improve_solutions_
+                                                   : find_first_solution_;
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) final;
 
  private:
+  friend class ViolationLsSolverTestPeer;
+
   void ImportState();
-  void ReleaseState();
+  void FinishTask();
+  bool ShouldImportNewSolution();
+  bool ShouldStop();
 
   // Return false if we could not initialize the evaluator in the time limit.
   bool Initialize();
@@ -514,10 +517,12 @@ class FeasibilityJumpSolver : public SubSolver {
   bool SlowCheckNumViolatedConstraints() const;
 
   double DeterministicTime() const {
-    return evaluator_->DeterministicTime() +
+    return (evaluator_ == nullptr ? 0.0 : evaluator_->DeterministicTime()) +
            dtime_.GetElapsedDeterministicTime();
   }
 
+  const bool find_first_solution_;
+  const bool improve_solutions_;
   const CpModelProto& input_model_proto_;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
@@ -526,13 +531,12 @@ class FeasibilityJumpSolver : public SubSolver {
   // operate on the variables and constraints of this model.
   DenseModelCopy dense_model_;
 
-  SatParameters params_;
-  std::shared_ptr<SharedLsStates> states_;
-  ModelSharedTimeLimit* shared_time_limit_;
-  TimeLimit time_limit_;
-  SharedResponseManager* shared_response_;
-  SharedLsSolutionRepository* shared_hints_;
-  SharedStatTables* stat_tables_;
+  const SatParameters params_;
+  const std::shared_ptr<SharedLsStates> states_;
+  ModelSharedTimeLimit* const shared_time_limit_;
+  SharedResponseManager* const shared_response_;
+  SharedLsSolutionRepository* const shared_hints_;
+  SharedStatTables* const stat_tables_;
 
   // We don't have a local Model* here, so we need to keep the underlying memory
   // for our random_ generator, and we want to initialize it like in other
@@ -552,10 +556,11 @@ class FeasibilityJumpSolver : public SubSolver {
   //
   // Note that we don't fully support all types of models, and we will abort by
   // setting the model_is_supported_ bool to false when we detect this.
-  bool is_initialized_ = false;
   std::atomic<bool> model_is_supported_ = true;
   std::atomic<bool> task_generated_ = false;
   bool time_limit_crossed_ = false;
+  double last_time_limit_check_dtime_ = 0.0;
+  int should_stop_calls_since_last_check_ = 0;
 
   std::unique_ptr<LsEvaluator> evaluator_;
   const SchedulingRelaxation* scheduling_relaxation_ = nullptr;
@@ -566,7 +571,8 @@ class FeasibilityJumpSolver : public SubSolver {
   std::vector<double> for_weight_update_;
 
   // The current state we work on, based on the `dense_model_` variables.
-  LsState* state_;
+  // In interleaved search it stays reserved until the next Synchronize().
+  LsState* state_ = nullptr;
 
   // A list of `dense_model_` variables that might be relevant to check for
   // improving jumps.
@@ -577,6 +583,8 @@ class FeasibilityJumpSolver : public SubSolver {
 
   // Used for tracking the deterministic time only. See DeterministicTime().
   TimeLimit dtime_;
+  std::optional<ModelStats> model_stats_;
+  double search_dtime_since_rebuild_ = 0.0;
 };
 
 // This class helps keep track of moves that change more than one variable.
@@ -602,6 +610,9 @@ class CompoundMoveBuilder {
 
   // Returns the number of variables in the move.
   int Size() const { return stack_.size(); }
+
+  // Returns the number of dense variables supported by this move builder.
+  int NumVariables() const { return var_on_stack_.size(); }
 
   // Returns true if this var has been set in this move already,
   bool OnStack(int var) const;
@@ -645,4 +656,4 @@ class CompoundMoveBuilder {
 
 }  // namespace operations_research::sat
 
-#endif  // ORTOOLS_SAT_FEASIBILITY_JUMP_H_
+#endif  // ORTOOLS_SAT_VIOLATION_LS_H_

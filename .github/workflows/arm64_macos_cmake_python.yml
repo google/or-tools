@@ -26,6 +26,7 @@ jobs:
           #{version: "3.12"},
           {version: "3.13"},
           {version: "3.14"},
+          {version: "3.15"},
         ]
       fail-fast: false
     name: arm64•MacOS•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}

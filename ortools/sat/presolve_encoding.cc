@@ -33,9 +33,11 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_canonical_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/deterministic_time.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -251,10 +253,10 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   return local_models;
 }
 
-bool BasicPresolveAndGetFullyEncodedDomains(
+ChangeStatus BasicPresolveAndGetFullyEncodedDomains(
     PresolveContext* context, VariableEncodingLocalModel& local_model,
-    absl::flat_hash_map<int, Domain>* result, bool* changed) {
-  *changed = false;
+    absl::flat_hash_map<int, Domain>* result) {
+  bool changed = false;
   absl::flat_hash_map<int, int> ref_to_linear1;
   TimeLimit* time_limit = context->time_limit();
 
@@ -269,34 +271,31 @@ bool BasicPresolveAndGetFullyEncodedDomains(
       const int ref = ct_proto->enforcement_literal(0);
       const Domain domain = ReadDomainFromProto(ct_proto->linear());
       if (!domain.OverlapsWith(var_domain)) {
-        *changed = true;
+        changed = true;
         context->UpdateRuleStats(
             "variables: linear1 with domain not included in variable domain");
-        if (!context->SetLiteralToFalse(ref)) {
-          return false;
+        if (context->SetLiteralToFalse(ref).unsat()) {
+          return kUnsat;
         }
-        ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(ct);
+        context->ClearConstraint(ct);
         continue;
       }
       auto [it, inserted] = ref_to_linear1.insert({ref, ct});
       if (!inserted) {
-        *changed = true;
+        changed = true;
         ConstraintProto* old_ct_proto = context->MutableConstraint(it->second);
         const Domain old_ct_domain =
             ReadDomainFromProto(old_ct_proto->linear());
         const Domain new_domain = domain.IntersectionWith(old_ct_domain);
-        ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(ct);
+        context->ClearConstraint(ct);
         if (new_domain.IsEmpty()) {
           context->UpdateRuleStats(
               "variables: linear1 with same variable and enforcement and "
               "non-overlapping domain, setting enforcement to false");
-          if (!context->SetLiteralToFalse(ref)) {
-            return false;
+          if (context->SetLiteralToFalse(ref).unsat()) {
+            return kUnsat;
           }
-          old_ct_proto->Clear();
-          context->UpdateConstraintVariableUsage(it->second);
+          context->ClearConstraint(it->second);
           ref_to_linear1.erase(ref);
         } else {
           FillDomainInProto(new_domain, old_ct_proto->mutable_linear());
@@ -327,10 +326,9 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     timer.Advance(local_model.linear1_constraints.size(), new_linear1_size);
   }
   if (new_linear1_size != local_model.linear1_constraints.size()) {
-    *changed = true;
     local_model.linear1_constraints.resize(new_linear1_size);
     // Rerun the presolve loop to recompute ref_to_linear1.
-    return true;
+    return kModified;
   }
 
   {
@@ -348,13 +346,15 @@ bool BasicPresolveAndGetFullyEncodedDomains(
       //
       // So x in (D1 U D2).
       bool domain_modified = false;
-      if (!context->IntersectDomainWith(
-              local_model.var, positive_domain.UnionWith(negative_domain),
-              &domain_modified)) {
-        return false;
+      if (context
+              ->IntersectDomainWith(local_model.var,
+                                    positive_domain.UnionWith(negative_domain),
+                                    &domain_modified)
+              .unsat()) {
+        return kUnsat;
       }
       if (domain_modified) {
-        *changed = true;
+        changed = true;
         var_domain = context->DomainOf(local_model.var);
         context->UpdateRuleStats(
             "variables: restricted domain to union of a linear1 and its "
@@ -421,9 +421,11 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     if (encoding_detected) {
       context->UpdateRuleStats("variables: detected fully encoded domain");
       bool domain_modified = false;
-      if (!context->IntersectDomainWith(local_model.var, non_overlapping_domain,
-                                        &domain_modified)) {
-        return false;
+      if (context
+              ->IntersectDomainWith(local_model.var, non_overlapping_domain,
+                                    &domain_modified)
+              .unsat()) {
+        return kUnsat;
       }
       DeterministicTimer<{.scale = 9.5e-07}> timer(time_limit,
                                                    ref_and_domains.size());
@@ -432,7 +434,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         context->UpdateRuleStats(
             "variables: restricted domain to fully encoded domain");
       }
-      *changed = *changed || domain_modified;
+      changed = changed || domain_modified;
       for (const auto& [ref, domain] : ref_and_domains) {
         result->insert({ref, domain});
         result->insert({NegatedRef(ref),
@@ -452,7 +454,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
             ->Add(new_enforcement_literals.begin(),
                   new_enforcement_literals.end());
         context->MarkConstraintForCanonicalization(ct);
-        *changed = true;
+        changed = true;
       }
       // Reinforce any negated encodings that might exist
       for (const auto& [ref, domain] : ref_and_domains) {
@@ -488,7 +490,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         if (potential_new_domain
                 .IntersectionWith(negated_ct_domain.Complement())
                 .OverlapsWith(var_domain)) {
-          *changed = true;
+          changed = true;
           FillDomainInProto(potential_new_domain,
                             negated_linear1_ct.mutable_linear());
           context->MarkConstraintForCanonicalization(it->second);
@@ -499,19 +501,16 @@ bool BasicPresolveAndGetFullyEncodedDomains(
       }
     }
   }
-  return true;
+  return ChangeStatus(changed);
 }
 
-// Return false on unsat
 namespace {
-bool DetectEncodedComplexDomain(
+ChangeStatus DetectEncodedComplexDomain(
     PresolveContext* context, int ct_index,
     VariableEncodingLocalModel& local_model,
-    absl::flat_hash_map<int, Domain>* fully_encoded_domains, bool* changed) {
+    absl::flat_hash_map<int, Domain>* fully_encoded_domains) {
   ConstraintProto* ct = context->MutableConstraint(ct_index);
-  *changed = false;
 
-  if (context->ModelIsUnsat()) return false;
   DCHECK(ct->constraint_case() == ConstraintProto::kAtMostOne ||
          ct->constraint_case() == ConstraintProto::kExactlyOne ||
          ct->constraint_case() == ConstraintProto::kBoolOr);
@@ -538,11 +537,11 @@ bool DetectEncodedComplexDomain(
           : (ct->constraint_case() == ConstraintProto::kExactlyOne
                  ? *ct->mutable_exactly_one()->mutable_literals()
                  : *ct->mutable_bool_or()->mutable_literals());
-  if (literals.size() <= 1) return true;
+  if (literals.size() <= 1) return kUnchanged;
 
   if (!ct->enforcement_literal().empty()) {
     // TODO(user): support this case if it any problem needs it.
-    return true;
+    return kUnchanged;
   }
 
   // When we have
@@ -614,7 +613,7 @@ bool DetectEncodedComplexDomain(
       return a.domain.Max() < b.domain.Max();
     });
 
-    if (candidates.size() < 2) return true;
+    if (candidates.size() < 2) return kUnchanged;
 
     for (int i = 0; i < candidates.size(); ++i) {
       start_to_candidate_index[candidates[i].domain.Min()] = i;
@@ -728,7 +727,7 @@ bool DetectEncodedComplexDomain(
                                absl::StrAppend(out, c.domain.ToString());
                              })
             << "]";
-    return true;
+    return kUnchanged;
   }
 
   VLOG(2) << "variable=" << local_model.var
@@ -746,8 +745,6 @@ bool DetectEncodedComplexDomain(
   // can thus replace the literals by their OR. Since this code is already
   // rather complex, we will just simplify a set of literals at a time, and
   // leave for the presolve fixpoint to handle disconnected regions.
-  *changed = true;
-
   context->UpdateRuleStats(
       "variables: detected encoding of a complex domain with multiple "
       "linear1");
@@ -767,9 +764,11 @@ bool DetectEncodedComplexDomain(
           forbidden_domain.UnionWith(intersection_with_other_domain);
       intervals_union = intervals_union.UnionWith(candidate.domain);
     }
-    if (!context->IntersectDomainWith(local_model.var,
-                                      forbidden_domain.Complement())) {
-      return false;
+    if (context
+            ->IntersectDomainWith(local_model.var,
+                                  forbidden_domain.Complement())
+            .unsat()) {
+      return kUnsat;
     }
     DCHECK(intervals_union.SimplifyUsingImpliedDomain(var_domain) ==
            domain_new_var);
@@ -793,9 +792,9 @@ bool DetectEncodedComplexDomain(
     const Domain domain_new_var_complement =
         domain_new_var.Complement().SimplifyUsingImpliedDomain(var_domain);
     if (domain_new_var.IsEmpty()) {
-      CHECK(context->SetLiteralToFalse(new_var));
+      CHECK_EQ(context->SetLiteralToFalse(new_var), kOk);
     } else if (domain_new_var_complement.IsEmpty()) {
-      CHECK(context->SetLiteralToTrue(new_var));
+      CHECK_EQ(context->SetLiteralToTrue(new_var), kOk);
     } else {
       local_model.linear1_constraints.push_back(context->NumConstraints());
       ConstraintProto* new_ct = context->AddConstraint();
@@ -825,7 +824,7 @@ bool DetectEncodedComplexDomain(
     }
     literals.Truncate(new_size);
     literals.Add(new_var);
-    context->UpdateConstraintVariableUsage(ct_index);
+    context->MarkConstraintForCanonicalization(ct_index);
   }
 
   // Add the removed encodings to the mapping model. Note that we cannot just
@@ -867,48 +866,45 @@ bool DetectEncodedComplexDomain(
     ConstraintProto* ct_proto = context->MutableConstraint(ct);
     if (bools_to_remove_set.contains(
             PositiveRef(ct_proto->enforcement_literal(0)))) {
-      ct_proto->Clear();
-      context->UpdateConstraintVariableUsage(ct);
+      context->ClearConstraint(ct);
       continue;
     }
     local_model.linear1_constraints[new_linear1_size++] = ct;
   }
   local_model.linear1_constraints.resize(new_linear1_size);
 
-  return true;
+  return kModified;
 }
 }  // namespace
 
-bool DetectAllEncodedComplexDomain(PresolveContext* context,
-                                   VariableEncodingLocalModel& local_model) {
+FeasibilityStatus DetectAllEncodedComplexDomain(
+    PresolveContext* context, VariableEncodingLocalModel& local_model) {
   absl::flat_hash_map<int, Domain> fully_encoded_domains;
-  bool changed_on_basic_presolve = false;
-  if (!BasicPresolveAndGetFullyEncodedDomains(context, local_model,
-                                              &fully_encoded_domains,
-                                              &changed_on_basic_presolve)) {
-    return false;
+  if (BasicPresolveAndGetFullyEncodedDomains(context, local_model,
+                                             &fully_encoded_domains)
+          .unsat()) {
+    return kUnsat;
   }
   if (local_model.constraints_linking_two_encoding_booleans.size() != 1) {
-    return true;
+    return kOk;
   }
   const int ct = local_model.constraints_linking_two_encoding_booleans[0];
-  bool changed = true;
-  while (changed) {
-    if (!DetectEncodedComplexDomain(context, ct, local_model,
-                                    &fully_encoded_domains, &changed)) {
-      return false;
-    }
+  while (true) {
+    const ChangeStatus status = DetectEncodedComplexDomain(
+        context, ct, local_model, &fully_encoded_domains);
+    if (status.unsat()) return kUnsat;
+    if (!status.modified()) break;
   }
-  return true;
+  return kOk;
 }
 
-bool MaybeTransferLinear1ToAnotherVariable(
+FeasibilityStatus MaybeTransferLinear1ToAnotherVariable(
     VariableEncodingLocalModel& local_model, PresolveContext* context) {
-  if (local_model.var == -1) return true;
-  if (local_model.variable_coeff_in_objective != 0) return true;
+  if (local_model.var == -1) return kOk;
+  if (local_model.variable_coeff_in_objective != 0) return kOk;
   if (local_model.single_constraint_using_the_var_outside_the_local_model ==
       -1) {
-    return true;
+    return kOk;
   }
   const int other_c =
       local_model.single_constraint_using_the_var_outside_the_local_model;
@@ -922,7 +918,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
   if (context->ConstraintToVars(other_c).size() != 2 ||
       !other_ct.enforcement_literal().empty() ||
       other_ct.constraint_case() == ConstraintProto::kLinear) {
-    return true;
+    return kOk;
   }
 
   // This will be the rewriting function. It takes the implied domain of var
@@ -962,7 +958,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
   if (transfer_f == nullptr) {
     context->UpdateRuleStats(
         "TODO linear1: appear in only one extra 2-var constraint");
-    return true;
+    return kOk;
   }
 
   // Applies transfer_f to all linear1.
@@ -974,7 +970,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
     if (ct->linear().vars(0) != var || ct->linear().coeffs(0) != 1) {
       // This shouldn't happen.
       LOG(INFO) << "Aborted in MaybeTransferLinear1ToAnotherVariable()";
-      return true;
+      return kOk;
     }
 
     const Domain implied =
@@ -983,8 +979,9 @@ bool MaybeTransferLinear1ToAnotherVariable(
     const Domain current = context->DomainOf(new_var);
     new_domain = new_domain.IntersectionWith(current);
     if (new_domain.IsEmpty()) {
-      if (!context->MarkConstraintAsFalse(ct, "linear1: unsat transfer")) {
-        return false;
+      if (context->MarkConstraintAsFalse(ct, "linear1: unsat transfer")
+              .unsat()) {
+        return kUnsat;
       }
     } else if (new_domain == current) {
       // Note that we don't need to remove this constraint from
@@ -995,16 +992,15 @@ bool MaybeTransferLinear1ToAnotherVariable(
       ct->mutable_linear()->set_vars(0, new_var);
       FillDomainInProto(new_domain, ct->mutable_linear());
     }
-    context->UpdateConstraintVariableUsage(c);
+    context->MarkConstraintForCanonicalization(c);
   }
 
   // Copy other_ct to the mapping model and delete var!
   context->NewMappingConstraint(other_ct, __FILE__, __LINE__);
   context->ClearConstraint(other_c);
-  context->UpdateConstraintVariableUsage(other_c);
   context->MarkVariableAsRemoved(var);
   local_model.var = -1;
-  return true;
+  return kOk;
 }
 }  // namespace sat
 }  // namespace operations_research

@@ -537,6 +537,30 @@ using Google.OrTools.ConstraintSolver;
 %include "ortools/routing/routing.h"
 
 %extend operations_research::routing::Model {
+  operations_research::routing::DisjunctionIndex AddDisjunction(
+      const std::vector<int64_t>& indices,
+      int64_t penalty = operations_research::routing::Model::kNoPenalty,
+      int64_t max_cardinality = 1,
+      operations_research::routing::Model::PenaltyCostBehavior
+          penalty_cost_behavior = operations_research::routing::Model::
+              PenaltyCostBehavior::PENALIZE_ONCE) {
+    return $self->AddDisjunction(absl::Span<const int64_t>(indices), penalty,
+                                 max_cardinality, penalty_cost_behavior);
+  }
+
+  operations_research::routing::DisjunctionIndex MakeDisjunction(
+      const std::vector<int64_t>& indices) {
+    return $self->MakeDisjunction(absl::Span<const int64_t>(indices));
+  }
+
+  std::vector<operations_research::routing::DisjunctionIndex>
+  GetDisjunctionIndices(int64_t index) const {
+    absl::Span<const operations_research::routing::DisjunctionIndex> indices =
+        $self->GetDisjunctionIndices(index);
+    return std::vector<operations_research::routing::DisjunctionIndex>(
+        indices.begin(), indices.end());
+  }
+
   void ApplyLocks(const std::vector<int64_t>& locks) {
     $self->ApplyLocks(absl::Span<const int64_t>(locks));
   }

@@ -270,7 +270,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   residual_pattern.Reset(num_rows, num_cols);
   for (ColIndex col(0); col < first_slack; ++col) {
     for (const SparseColumn::Entry e : compact_matrix_.column(col)) {
-      if (available[RowToColIndex(e.row())] && available[col]) {
+      if (available[first_slack + RowToColIndex(e.row())] && available[col]) {
         residual_pattern.AddEntry(e.row(), col);
       }
     }

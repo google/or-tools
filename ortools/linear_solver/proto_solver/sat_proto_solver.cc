@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,6 +48,7 @@
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/tum.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/mp_model_solution_checker.h"
@@ -167,12 +169,31 @@ MPSolutionResponse TimeLimitResponse(SolverLogger& logger) {
 std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     const sat::SatParameters& params, int num_clamped,
     const sat::MPModelProtoWrapper& mp_model_wrapper,
+    absl::Span<const double> pre_var_scaling,
     std::vector<sat::MipVariableState>* states, sat::CpModelProto* cp_model,
     SolverLogger* logger) {
   const int num_variables = mp_model_wrapper.num_variables();
   const MPModelProto& mp_model = mp_model_wrapper.underlying_model();
   sat::ResidualContinuousComponents components =
       sat::SplitIntoResidualContinuousComponents(mp_model_wrapper);
+  if (!components.components.empty()) {
+    int64_t num_continuous_vars = 0;
+    double min_lb = std::numeric_limits<double>::infinity();
+    double max_ub = -std::numeric_limits<double>::infinity();
+    for (const sat::ResidualContinuousComponent& compo :
+         components.components) {
+      num_continuous_vars += compo.continuous_vars.size();
+      for (const int var : compo.continuous_vars) {
+        min_lb = std::min(min_lb, (*states)[var].lb);
+        max_ub = std::max(max_ub, (*states)[var].ub);
+      }
+    }
+    SOLVER_LOG(logger, "[Scaling] ", FormatCounter(num_continuous_vars),
+               " continuous variables in ",
+               FormatCounter(components.components.size()),
+               " residual components, domains in [", min_lb, ", ", max_ub,
+               "].");
+  }
 
   cp_model->Clear();
   cp_model->set_name(mp_model_wrapper.name());
@@ -184,7 +205,6 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
 
   sat::ConstraintScaler scaler;
   scaler.wanted_precision = params.mip_wanted_precision();
-  scaler.use_tight_bounds = params.mip_use_tight_bounds();
   scaler.use_proper_relaxation = params.mip_proper_relaxation();
   scaler.tight_precision = params.mip_tight_precision();
   scaler.scaling_target = int64_t{1} << params.mip_max_activity_exponent();
@@ -217,22 +237,17 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
     return true;
   };
-  // `modular` is either empty or gives the scaling of each constraint, see
-  // MarkComponentTotallyUnimodularAsInteger().
-  const auto convert_constraints =
-      [&](absl::Span<const int> constraints,
-          absl::Span<const sat::ModularConstraintScaling> modular = {}) {
-        for (int i = 0; i < constraints.size(); ++i) {
-          const absl::Status status = scaler.ScaleAndAddConstraint(
-              mp_model_wrapper.constraints(constraints[i]), *states, cp_model,
-              modular.empty() ? std::nullopt : std::make_optional(modular[i]));
-          if (!status.ok()) {
-            SOLVER_LOG(logger, status.message());
-            return false;
-          }
-        }
-        return true;
-      };
+  const auto convert_constraints = [&](absl::Span<const int> constraints) {
+    for (const int c : constraints) {
+      const absl::Status status = scaler.ScaleAndAddConstraint(
+          mp_model_wrapper.constraints(c), *states, cp_model);
+      if (!status.ok()) {
+        SOLVER_LOG(logger, status.message());
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Finalize the variables that are already integer upfront since the
   // constraints of the components may reference them.
@@ -253,55 +268,37 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
                                 "Failed to convert model into CP-SAT model");
   }
 
-  std::optional<sat::GlobalObjectivePrecision> global_obj_precision;
-  if (params.mip_scale_for_precision()) {
-    global_obj_precision.emplace(params, mp_model);
-  }
   std::vector<int> var_to_local_col_buffer(num_variables, -1);
   for (sat::ResidualContinuousComponent& compo : components.components) {
     const sat::ScopedVarToLocalCol scoped(&compo, &var_to_local_col_buffer);
-    bool compo_has_obj_var = false;
-    for (const int var : compo.continuous_vars) {
-      if (mp_model.variable(var).objective_coefficient() != 0.0) {
-        compo_has_obj_var = true;
-        break;
-      }
-    }
-    const auto mark_objective_dirty_if_changed = [&](int64_t before,
-                                                     int64_t after) {
-      if (global_obj_precision.has_value() && compo_has_obj_var &&
-          after > before) {
-        global_obj_precision->MarkDirty();
-      }
-    };
 
-    // Detects if at optimality some variables could always be made integer.
+    // Detects if at optimality some variables could always be made integer. A
+    // totally unimodular (or 2-modular) component that can be made integral
+    // is converted right away.
     // Ignoring constraint enforcement is still valid after
     // ExtractEnforcementLiterals() because all extracted enforcement variables
     // are integer and therefore external here.
-    std::vector<sat::ModularConstraintScaling> modular_scalings;
     if (compo.continuous_vars.size() == 1) {
-      sat::ScaleOneVariableResidualMatrix(
-          params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-          global_obj_precision.has_value() ? &*global_obj_precision : nullptr,
-          &one_var_stats);
-    } else {
-      modular_scalings = sat::MarkComponentTotallyUnimodularAsInteger(
-          params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-          global_obj_precision.has_value() ? &*global_obj_precision : nullptr,
-          &tum_stats);
+      sat::ScaleOneVariableResidualMatrix(params, compo, mp_model_wrapper,
+                                          absl::MakeSpan(*states),
+                                          &one_var_stats);
+    } else if (sat::DetectAndConvertTotallyUnimodularComponent(
+                   params, compo, mp_model_wrapper, absl::MakeSpan(*states),
+                   &scaler, cp_model, &tum_stats)) {
+      // The variables are in their final state and the constraints were added.
+      if (!convert_variables(compo.continuous_vars)) {
+        return InvalidModelResponse(
+            *logger, "Failed to convert model into CP-SAT model");
+      }
+      continue;
     }
 
     // Same as MakeBoundsInteger() for the newly detected integers.
-    {
-      const int64_t before = num_int_bound_changes;
-      if (!sat::MakeBoundsOfIntegerVariablesInteger(
-              params, compo.continuous_vars, absl::MakeSpan(*states),
-              &num_int_bound_changes, logger)) {
-        return InfeasibleResponse(
-            *logger, "A detected integer variable has an empty domain");
-      }
-      mark_objective_dirty_if_changed(before, num_int_bound_changes);
+    if (!sat::MakeBoundsOfIntegerVariablesInteger(
+            params, compo.continuous_vars, absl::MakeSpan(*states),
+            &num_int_bound_changes, logger)) {
+      return InfeasibleResponse(
+          *logger, "A detected integer variable has an empty domain");
     }
 
     bool compo_has_continuous = false;
@@ -321,17 +318,14 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
 
     if (params.mip_scale_for_precision()) {
-      const int64_t before = before_scaling_shift_stats.num_shifted;
       sat::ShiftVariables(shift_before_scaling, compo.continuous_vars,
                           absl::MakeSpan(*states), &before_scaling_shift_stats);
-      mark_objective_dirty_if_changed(before,
-                                      before_scaling_shift_stats.num_shifted);
     }
     if (compo_has_continuous) {
       if (params.mip_scale_for_precision()) {
         sat::ScaleComponentContinuousVariablesForGivenPrecision(
             params, compo, mp_model_wrapper, absl::MakeSpan(*states),
-            &*global_obj_precision, &precision_scaling_stats);
+            &precision_scaling_stats);
       } else if (params.mip_var_scaling() != 1.0) {
         sat::ScaleComponentContinuousVariables(params, compo,
                                                absl::MakeSpan(*states));
@@ -347,15 +341,11 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     }
 
     // Final shift before the conversion.
-    {
-      const int64_t before = final_shift_stats.num_shifted;
-      sat::ShiftVariables(final_shift, compo.continuous_vars,
-                          absl::MakeSpan(*states), &final_shift_stats);
-      mark_objective_dirty_if_changed(before, final_shift_stats.num_shifted);
-    }
+    sat::ShiftVariables(final_shift, compo.continuous_vars,
+                        absl::MakeSpan(*states), &final_shift_stats);
 
     if (!convert_variables(compo.continuous_vars) ||
-        !convert_constraints(compo.constraints, modular_scalings)) {
+        !convert_constraints(compo.constraints)) {
       return InvalidModelResponse(*logger,
                                   "Failed to convert model into CP-SAT model");
     }
@@ -366,8 +356,11 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
-  sat::PopulateCpModelFloatingPointObjective(mp_model_wrapper, *states,
-                                             cp_model);
+  if (!sat::PopulateCpModelFloatingPointObjective(mp_model_wrapper, *states,
+                                                  cp_model)) {
+    return InvalidModelResponse(*logger,
+                                "Objective overflow during CP-SAT conversion");
+  }
 
   // Display all the stats.
   sat::LogOneVariableComponentStats(one_var_stats, logger);
@@ -386,9 +379,15 @@ std::optional<MPSolutionResponse> ConvertComponentsToCpModelProto(
                static_cast<int64_t>(std::round(params.mip_max_bound())), ".");
   }
   sat::DisplayVariableStatistics(*states, logger);
+  final_shift_stats.num_shifted += tum_stats.shift_stats.num_shifted;
+  final_shift_stats.max_shift =
+      std::max(final_shift_stats.max_shift, tum_stats.shift_stats.max_shift);
   sat::LogShiftStats(final_shift_stats, logger);
-  sat::DisplayConstraintScalingStats(
-      params, scaler, num_clamped + num_extra_clamp, num_small_domains, logger);
+  const double max_var_unscaling_error = sat::ComputeMaxVariableUnscalingError(
+      mp_model_wrapper, *states, *cp_model, pre_var_scaling);
+  sat::DisplayConstraintScalingStats(params, max_var_unscaling_error, scaler,
+                                     num_clamped + num_extra_clamp,
+                                     num_small_domains, logger);
   return std::nullopt;
 }
 
@@ -421,8 +420,8 @@ MPSolutionResponse SatSolveProtoInternal(
     return response;
   }
 
-  // We will presolve directly on the MPModelProto, so get a copy or transfer
-  // ownership from the LazyMutableCopy<MPModelProto>().
+  // We will wrap the MPModelProto, so get a copy or transfer ownership from the
+  // LazyMutableCopy<MPModelProto>().
   std::unique_ptr<MPModelProto> mp_model =
       std::move(optional_model).value().copy_or_move_as_unique_ptr();
 
@@ -446,24 +445,34 @@ MPSolutionResponse SatSolveProtoInternal(
     return InvalidModelResponse(*logger, "Extra CP-SAT validation failed.");
   }
 
+  // Note that as we wrap the model, each general constraint get their own
+  // new basic linear constraint, so the number of constraint can grow.
+  auto mp_model_wrapper =
+      std::make_unique<sat::MPModelProtoWrapper>(std::move(*mp_model), logger);
+  mp_model.reset();  // Prevent using empty mp_model.
+  const bool is_maximize = mp_model_wrapper->is_original_model_maximize();
+
   // This is good to do before any presolve.
-  if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
-                                                logger)) {
+  if (!sat::MakeBoundsOfIntegerVariablesInteger(
+          params, mp_model_wrapper->mutable_underlying_model(), logger)) {
     return InfeasibleResponse(*logger,
                               "An integer variable has an empty domain");
   }
 
   // Coefficients really close to zero can cause issues.
   // We remove them right away according to our parameters.
-  RemoveNearZeroTerms(params, mp_model.get(), logger);
+  RemoveNearZeroTerms(params, mp_model_wrapper->mutable_underlying_model(),
+                      logger);
 
   // NOTE(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
+  int old_num_constraints = mp_model_wrapper->num_constraints();
   if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
-    const glop::ProblemStatus status = ApplyMipPresolveSteps(
-        glop_params, mp_model.get(), &for_postsolve, logger);
+    const glop::ProblemStatus status =
+        ApplyMipPresolveSteps(glop_params, mp_model_wrapper.get(),
+                              &for_postsolve, &old_num_constraints, logger);
     switch (status) {
       case glop::ProblemStatus::INIT:
         // Continue with the solve.
@@ -493,14 +502,9 @@ MPSolutionResponse SatSolveProtoInternal(
     }
   }
 
-  // Note that as we wrap the model, each general constraint get their own
-  // new basic linear constraint, so the number of constraint can grow.
-  const int old_num_variables = mp_model->variable().size();
-  const int old_num_constraints = mp_model->constraint().size();
-  const bool is_maximize = mp_model->maximize();
-  auto mp_model_wrapper =
-      std::make_unique<sat::MPModelProtoWrapper>(std::move(*mp_model), logger);
-  mp_model.reset();  // Prevent using empty mp_model.
+  // Note that the Glop presolve can remove variables, so this must be computed
+  // after it.
+  const int old_num_variables = mp_model_wrapper->num_variables();
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Scaling to pure integer problem.");
@@ -612,8 +616,8 @@ MPSolutionResponse SatSolveProtoInternal(
   sat::CpModelProto cp_model;
   if (std::optional<MPSolutionResponse> error_response =
           ConvertComponentsToCpModelProto(params, num_clamped,
-                                          *mp_model_wrapper, &states, &cp_model,
-                                          logger);
+                                          *mp_model_wrapper, var_scaling,
+                                          &states, &cp_model, logger);
       error_response.has_value()) {
     return *std::move(error_response);
   }
@@ -625,8 +629,8 @@ MPSolutionResponse SatSolveProtoInternal(
   //   original_value = cp_value / var_scaling + var_shifts.
   if (var_shifts.empty()) var_shifts.resize(num_variables, 0.0);
   for (int var = 0; var < num_variables; ++var) {
-    var_shifts[var] += states[var].shift / var_scaling[var];
     var_scaling[var] *= states[var].scaling;
+    var_shifts[var] += states[var].shift / var_scaling[var];
   }
 
   // Copy the hint if there is one.
@@ -642,7 +646,7 @@ MPSolutionResponse SatSolveProtoInternal(
       // input values.
       const sat::MipVariableState& state = states[var];
       double value = underlying_model.solution_hint().var_value(i);
-      value = (value - state.shift) * state.scaling;
+      value = value * state.scaling - state.shift;
       value = std::max(value, state.lb);
       value = std::min(value, state.ub);
 
@@ -709,8 +713,7 @@ MPSolutionResponse SatSolveProtoInternal(
       // are not integral, and we use the default tolerance of zero for these.
       //
       // Note that we ignore the checker result, this is just for informative
-      // display. We also use a low tolerance to have an idea of the
-      // max-violation, even if it is small.
+      // display.
       //
       // TODO(user): What I would actually prefer is just to always display
       // the maximum violation if it is non-zero.
@@ -718,7 +721,7 @@ MPSolutionResponse SatSolveProtoInternal(
       logger->SetLoggingPrefix(
           absl::StrCat(old_prefix, "[MIP solution checker] "));
       CheckerOptions options;
-      options.constraint_tolerance = params.mip_tight_precision();
+      options.constraint_tolerance = params.mip_wanted_precision();
       options.logger = logger;
       absl::StatusOr<bool> status_or_verified = SolutionIsFeasible(
           copy_for_solution_check.value(), response.variable_value(), options);
@@ -730,7 +733,7 @@ MPSolutionResponse SatSolveProtoInternal(
         const bool verified = *status_or_verified;
         if (verified) {
           SOLVER_LOG(logger, "The solution passed verification with tolerance ",
-                     params.mip_tight_precision());
+                     params.mip_wanted_precision());
         } else {
           SOLVER_LOG(logger, "The solution FAILED verification.");
         }

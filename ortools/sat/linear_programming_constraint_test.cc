@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -118,6 +119,50 @@ TEST(ScatteredIntegerVectorTest, OverflowChecks) {
   EXPECT_FALSE(v.AddLinearExpressionMultiple(
       IntegerValue(-(int64_t{1} << 62)), {glop::ColIndex(0)}, {IntegerValue(1)},
       IntegerValue(1)));
+}
+
+TEST(ScatteredIntegerVectorTest,
+     ConvertToLinearConstraintWithInt128UpperBound) {
+  const std::vector<IntegerVariable> vars = {IntegerVariable(0),
+                                             IntegerVariable(2)};
+  ScatteredIntegerVector v;
+  v.ClearAndResize(2);
+  ASSERT_TRUE(v.Add(glop::ColIndex(0), IntegerValue(6)));
+  ASSERT_TRUE(v.Add(glop::ColIndex(1), IntegerValue(-6)));
+
+  // 12 * 10^18 - 5 exceeds int64_t, while dividing by gcd(6, 6) = 6 yields
+  // floor((12 * 10^18 - 5) / 6) = 2 * 10^18 - 1 in int64_t.
+  const absl::int128 large_ub =
+      absl::int128(12) * absl::int128(1'000'000'000'000'000'000LL) - 5;
+  LinearConstraint ct;
+  ASSERT_TRUE(v.ConvertToLinearConstraint(vars, large_ub, &ct));
+  ASSERT_EQ(ct.num_terms, 2);
+  EXPECT_EQ(ct.coeffs[0], IntegerValue(1));
+  EXPECT_EQ(ct.coeffs[1], IntegerValue(-1));
+  EXPECT_EQ(ct.ub, IntegerValue(2'000'000'000'000'000'000LL - 1));
+
+  // Negative floor-division in int128: floor((-12 * 10^18 - 1) / 6) =
+  // -2 * 10^18 - 1.
+  const absl::int128 large_neg_ub =
+      -absl::int128(12) * absl::int128(1'000'000'000'000'000'000LL) - 1;
+  ASSERT_TRUE(v.ConvertToLinearConstraint(vars, large_neg_ub, &ct));
+  EXPECT_EQ(ct.ub, IntegerValue(-2'000'000'000'000'000'000LL - 1));
+
+  // Bounds that remain >= kMaxIntegerValue or <= kMinIntegerValue after GCD
+  // reduction are rejected.
+  EXPECT_FALSE(v.ConvertToLinearConstraint(
+      vars, absl::int128(6) * absl::int128(kMaxIntegerValue.value()), &ct));
+  EXPECT_FALSE(v.ConvertToLinearConstraint(
+      vars, absl::int128(6) * absl::int128(kMinIntegerValue.value()), &ct));
+
+  // Empty vectors preserve finite upper bounds (including negative infeasible
+  // ones) and reject out-of-range bounds.
+  v.ClearAndResize(2);
+  ASSERT_TRUE(v.ConvertToLinearConstraint(vars, absl::int128(-5), &ct));
+  EXPECT_EQ(ct.num_terms, 0);
+  EXPECT_EQ(ct.ub, IntegerValue(-5));
+  EXPECT_FALSE(v.ConvertToLinearConstraint(
+      vars, absl::int128(kMaxIntegerValue.value()), &ct));
 }
 
 // TODO(user): Check that SAT solutions respect linear equations.
@@ -866,6 +911,82 @@ TEST(LinearProgrammingConstraintTest,
   EXPECT_TRUE(lp->Propagate());
   EXPECT_EQ(m.GetOrCreate<IntegerTrail>()->LowerBound(NegationOf(y)),
             IntegerValue(-10'000));
+}
+
+TEST(LinearProgrammingConstraintTest,
+     CutSucceedsWhenAggregatedRowRhsExceedsInt64) {
+  struct RootResult {
+    IntegerValue lower_bound;
+    int64_t num_cut_overflows = 0;
+  };
+  auto solve_root_lb = [](int cut_level) -> RootResult {
+    Model m;
+    auto* params = m.GetOrCreate<SatParameters>();
+    params->set_add_lp_constraints_lazily(false);
+    params->set_linearization_level(10);
+    params->set_cut_level(cut_level);
+    params->set_max_cut_rounds_at_level_zero(5);
+
+    constexpr int64_t kShift = int64_t{1} << 48;
+    constexpr int64_t kUnit = int64_t{1} << 12;
+    constexpr int64_t kBigCoeff = 5 * kUnit;  // kBigCoeff * kShift = 5 * 2^60.
+    constexpr int64_t kSlackCoeff = 3 * kUnit + 1;  // Odd so row GCD is 1.
+    const IntegerVariable x0 = m.Add(NewIntegerVariable(kShift, kShift + 1));
+    const IntegerVariable x1 = m.Add(NewIntegerVariable(kShift, kShift + 1));
+    const IntegerVariable z0 = m.Add(NewIntegerVariable(0, 1));
+    const IntegerVariable z1 = m.Add(NewIntegerVariable(0, 1));
+    const IntegerVariable z2 = m.Add(NewIntegerVariable(0, 1));
+    const IntegerVariable s = m.Add(NewIntegerVariable(0, 10));
+    const IntegerVariable obj = m.Add(NewIntegerVariable(0, 300));
+
+    LinearProgrammingConstraint* lp =
+        new LinearProgrammingConstraint(&m, {x0, x1, z0, z1, z2, s});
+    m.TakeOwnership(lp);
+
+    // Minimize 100*(z0 + z1 + z2). At the LP optimum x0 = x1 = 2^48,
+    // z0 + z1 + z2 = 11/8 (objective 137.5), and s = 45056 / 12289. Without
+    // cuts, any positive integer combination of both rows has RHS >= 10 * 2^60
+    // - 11 * 2^12 > kint64max, so exact LP propagation stays at 0. Eliminating
+    // s sums both rows with RHS > kint64max; accumulating the RHS in
+    // absl::int128 lets variable shifting and MIR rounding derive the cut
+    // z0 + z1 + z2 >= 2, raising the root bound to 200 with zero cut overflows.
+    LinearConstraintBuilder ct0(kMinIntegerValue,
+                                IntegerValue(kBigCoeff * kShift));
+    ct0.AddTerm(x0, IntegerValue(kBigCoeff));
+    ct0.AddTerm(z0, IntegerValue(-8 * kUnit));
+    ct0.AddTerm(z1, IntegerValue(-8 * kUnit));
+    ct0.AddTerm(s, IntegerValue(kSlackCoeff));
+    lp->AddLinearConstraint(ct0.Build());
+
+    LinearConstraintBuilder ct1(kMinIntegerValue,
+                                IntegerValue(kBigCoeff * kShift - 11 * kUnit));
+    ct1.AddTerm(x1, IntegerValue(kBigCoeff));
+    ct1.AddTerm(z2, IntegerValue(-8 * kUnit));
+    ct1.AddTerm(s, IntegerValue(-kSlackCoeff));
+    lp->AddLinearConstraint(ct1.Build());
+
+    lp->SetObjectiveCoefficient(z0, IntegerValue(100));
+    lp->SetObjectiveCoefficient(z1, IntegerValue(100));
+    lp->SetObjectiveCoefficient(z2, IntegerValue(100));
+    lp->SetMainObjectiveVariable(obj);
+
+    lp->RegisterWith(&m);
+    auto* sat_solver = m.GetOrCreate<SatSolver>();
+    for (int round = 0; round < 5; ++round) {
+      CHECK(sat_solver->Propagate());
+      CHECK(lp->Propagate());
+    }
+    return {.lower_bound = m.GetOrCreate<IntegerTrail>()->LowerBound(obj),
+            .num_cut_overflows = lp->num_cut_overflows()};
+  };
+
+  const RootResult no_cuts = solve_root_lb(/*cut_level=*/0);
+  EXPECT_EQ(no_cuts.lower_bound, IntegerValue(0));
+  EXPECT_EQ(no_cuts.num_cut_overflows, 0);
+
+  const RootResult with_cuts = solve_root_lb(/*cut_level=*/1);
+  EXPECT_EQ(with_cuts.lower_bound, IntegerValue(200));
+  EXPECT_EQ(with_cuts.num_cut_overflows, 0);
 }
 }  // namespace
 }  // namespace sat

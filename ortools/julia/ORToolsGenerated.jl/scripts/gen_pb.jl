@@ -1,8 +1,3 @@
-# Run this script as:
-#     hgd / g4d ...
-#     cd ortools/julia/ORToolsGenerated.jl/scripts/
-#     julia gen_pb.jl
-
 using ORTools_jll
 using ProtoBuf
 using Pkg

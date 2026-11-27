@@ -21,11 +21,11 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer_base.h"
@@ -120,11 +120,11 @@ class VariablesShavingSolver : public SubSolver {
 
   bool FindNextVar(State* state) ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  // Returns false if the model is infeasible.
-  ABSL_MUST_USE_RESULT bool CopyModelConnectedToVar(State* state,
-                                                    Model* local_model,
-                                                    CpModelProto* shaving_proto,
-                                                    bool* has_no_overlap_2d)
+  // Returns kUnsat if the submodel is infeasible, kCopyTimeLimitReached if
+  // the time limit is reached, or kOk otherwise.
+  CopyStatus CopyModelConnectedToVar(State* state, Model* local_model,
+                                     CpModelProto* shaving_proto,
+                                     bool* has_no_overlap_2d)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_model,

@@ -582,9 +582,6 @@ class BaseRoutingTest : public testing::Test {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE);
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_log_search(true);
     return parameters;
   }
@@ -1085,7 +1082,7 @@ TEST(DisjunctionsTest, SingleNodeInMultipleDisjunctions) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(2, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1131,7 +1128,7 @@ TEST(DisjunctionsTest, SingleNodeInSingleDisjunction) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(1, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1158,7 +1155,7 @@ TEST(DisjunctionsTest, MultipleNodesInSingleDisjunctionWithMaxCardinality) {
   const Assignment* assignment = model.Solve();
   ASSERT_NE(assignment, nullptr);
   EXPECT_EQ(0, assignment->ObjectiveValue());
-  std::vector<DisjunctionIndex> indices =
+  absl::Span<const DisjunctionIndex> indices =
       model.GetDisjunctionIndices(manager.NodeToIndex(NodeIndex(1)));
   EXPECT_EQ(1, indices.size());
   EXPECT_EQ(0, indices[0].value());
@@ -1261,7 +1258,7 @@ TEST(DisjunctionsTest, DisjunctionSettersGetters) {
   // Reset for the struct check below.
   model.SetDisjunctionHardMinimum(disj_index, 1);
 
-  const std::vector<int64_t>& node_indices =
+  const absl::Span<const int64_t> node_indices =
       model.GetDisjunctionNodeIndices(disj_index);
   EXPECT_EQ(3, node_indices.size());
   EXPECT_EQ(1, node_indices[0]);
@@ -2615,6 +2612,7 @@ TEST_P(DimensionNodePrecedenceTest,
       {true, {1, 2, 3, 4}}, {false, {3, 2, 1, 4}}, {true, {2, 3, 4}}};
   accept_all_arcs_ = true;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2639,6 +2637,7 @@ TEST_P(DimensionNodePrecedenceTest, ValidateNodePrecedencesSecondImpliesFirst) {
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kSecondImpliesFirst;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2662,6 +2661,7 @@ TEST_P(DimensionNodePrecedenceTest, ValidateNodePrecedencesFirstImpliesSecond) {
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kFirstImpliesSecond;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -2686,6 +2686,7 @@ TEST_P(DimensionNodePrecedenceTest,
   performed_constraint_ =
       Dimension::NodePrecedence::PerformedConstraint::kFirstAndSecondEqual;
   for (const auto& test_route : test_routes) {
+    SCOPED_TRACE(DUMP_VARS(test_route.second));
     std::unique_ptr<Model> model(CreateModel(DefaultRoutingModelParameters()));
     const Dimension* const dimension =
         model->GetMutableDimension(dimension_name_);
@@ -6486,10 +6487,6 @@ TEST(CachedCallbackTest, CachedCallbackReuse) {
   RoutingSearchParameters search_parameters = DefaultRoutingSearchParameters();
   search_parameters.set_first_solution_strategy(
       FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE);
-  search_parameters.mutable_local_search_operators()->set_use_path_lns(
-      BOOL_TRUE);
-  search_parameters.mutable_local_search_operators()->set_use_inactive_lns(
-      BOOL_TRUE);
   model.CloseModelWithParameters(search_parameters);
   model.SolveWithParameters(search_parameters);
   // Verify that the callback was called once for each index pair. In this test,
@@ -6907,9 +6904,6 @@ class CompactAssignmentTest : public BaseRoutingTest,
   int VehicleCostCount() const override { return 1; }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
     return parameters;
   }
@@ -7161,9 +7155,6 @@ class CompactAssignmentWithMultipleDepotsTest
   int VehicleCostCount() const override { return 1; }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::PATH_CHEAPEST_ARC);
     return parameters;
@@ -7706,14 +7697,6 @@ TEST_P(RoutingLocalSearchOperatorsTest, SWAPACTIVECHAIN) {
 
 TEST_P(RoutingLocalSearchOperatorsTest, EXTENDEDSWAPACTIVE) {
   TestLocalSearchOperator(Solver::EXTENDEDSWAPACTIVE);
-}
-
-TEST_P(RoutingLocalSearchOperatorsTest, PATHLNS) {
-  TestLocalSearchOperator(Solver::PATHLNS);
-}
-
-TEST_P(RoutingLocalSearchOperatorsTest, UNACTIVELNS) {
-  TestLocalSearchOperator(Solver::UNACTIVELNS);
 }
 
 TEST_P(RoutingLocalSearchOperatorsTest, LK) {
@@ -8362,9 +8345,6 @@ class VariableCapacityTest : public BaseRoutingTest,
   }
   RoutingSearchParameters GetSearchParameters() override {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.mutable_local_search_operators()->set_use_path_lns(BOOL_TRUE);
-    parameters.mutable_local_search_operators()->set_use_inactive_lns(
-        BOOL_TRUE);
     parameters.set_first_solution_strategy(
         FirstSolutionStrategy::PATH_CHEAPEST_ARC);
     return parameters;
@@ -13634,6 +13614,38 @@ TEST(NodeNeighborsTest, ZeroNeighborsZeroNonStartEndNodes) {
   }
 }
 
+TEST(NodeNeighborsTest, ZeroNonStartEndNodes) {
+  // Create a model with only the depot.
+  IndexManager manager(1, 1, NodeIndex(0));
+  Model model(manager);
+  model.SetArcCostEvaluatorOfAllVehicles(
+      model.RegisterTransitCallback([](int i, int) { return i; }));
+  model.CloseModel();
+  double used_ratio = 0;
+  for (const bool add_vehicle_starts_to_neighbors : {true, false}) {
+    for (const bool add_vehicle_ends_to_neighbors : {true, false}) {
+      for (bool only_sort_neighbors_for_partial_neighborhoods : {true, false}) {
+        const Model::NodeNeighborsByCostClass* const node_neighbors =
+            model.GetOrCreateNodeNeighborsByCostClass(
+                0.5, 2, 3, used_ratio, add_vehicle_starts_to_neighbors,
+                add_vehicle_ends_to_neighbors,
+                only_sort_neighbors_for_partial_neighborhoods);
+        EXPECT_EQ(used_ratio, 1);
+        EXPECT_EQ(
+            node_neighbors
+                ->GetIncomingNeighborsOfNodeForCostClass(1, /*node_index=*/1)
+                .size(),
+            add_vehicle_starts_to_neighbors ? 1 : 0);
+        EXPECT_EQ(
+            node_neighbors
+                ->GetOutgoingNeighborsOfNodeForCostClass(1, /*node_index=*/0)
+                .size(),
+            add_vehicle_ends_to_neighbors ? 1 : 0);
+      }
+    }
+  }
+}
+
 void TestZeroNeighborsWithSingleVehicle(
     const Model& model, const Model::NodeNeighborsByCostClass& node_neighbors,
     bool add_vehicle_starts_to_neighbors, bool add_vehicle_ends_to_neighbors) {
@@ -13721,13 +13733,13 @@ TEST(NodeNeighborsTest, ZeroNeighborsRatio) {
       for (bool only_sort_neighbors_for_partial_neighborhoods : {true, false}) {
         const Model::NodeNeighborsByCostClass* const node_neighbors =
             model.GetOrCreateNodeNeighborsByCostClass(
-                0, 0, ratio, add_vehicle_starts_to_neighbors,
+                0, 0, 0, ratio, add_vehicle_starts_to_neighbors,
                 add_vehicle_ends_to_neighbors,
                 only_sort_neighbors_for_partial_neighborhoods);
         EXPECT_EQ(ratio, 0);
         EXPECT_EQ(node_neighbors,
                   model.GetOrCreateNodeNeighborsByCostClass(
-                      0, 0, ratio, add_vehicle_starts_to_neighbors,
+                      0, 0, 0, ratio, add_vehicle_starts_to_neighbors,
                       add_vehicle_ends_to_neighbors,
                       only_sort_neighbors_for_partial_neighborhoods));
         TestZeroNeighborsWithSingleVehicle(model, *node_neighbors,
@@ -13865,13 +13877,13 @@ TEST(NodeNeighborsTest, TooManyNeighborsRatio) {
       for (bool only_sort_neighbors_for_partial_neighborhoods : {true, false}) {
         const Model::NodeNeighborsByCostClass* const node_neighbors =
             model.GetOrCreateNodeNeighborsByCostClass(
-                0.5, 100, ratio, add_vehicle_starts_to_neighbors,
+                0.5, 100, 150, ratio, add_vehicle_starts_to_neighbors,
                 add_vehicle_ends_to_neighbors,
                 only_sort_neighbors_for_partial_neighborhoods);
         EXPECT_EQ(ratio, 1);
         EXPECT_EQ(node_neighbors,
                   model.GetOrCreateNodeNeighborsByCostClass(
-                      0.5, 100, ratio, add_vehicle_starts_to_neighbors,
+                      0.5, 100, 200, ratio, add_vehicle_starts_to_neighbors,
                       add_vehicle_ends_to_neighbors,
                       only_sort_neighbors_for_partial_neighborhoods));
         TestFullNeighborhood(model, *node_neighbors,
@@ -13977,10 +13989,29 @@ TEST(NodeNeighborsTest, SomeNeighborsRatio) {
   model.CloseModel();
   double ratio = -1;
   const Model::NodeNeighborsByCostClass* const node_neighbors =
-      model.GetOrCreateNodeNeighborsByCostClass(0.5, 3, ratio);
+      model.GetOrCreateNodeNeighborsByCostClass(0.5, 3, 12, ratio);
   EXPECT_EQ(ratio, 0.5);
   EXPECT_EQ(node_neighbors,
-            model.GetOrCreateNodeNeighborsByCostClass(0.5, 3, ratio));
+            model.GetOrCreateNodeNeighborsByCostClass(0.5, 3, 15, ratio));
+
+  TestNodeNeighborhoodsForIndexDiffCostFunction(kNumNodes, 10, *node_neighbors);
+}
+
+TEST(NodeNeighborsTest, MaxNumNeighbors) {
+  const int kNumNodes = 21;  // 20 non-vehicle nodes + depot.
+  IndexManager manager(kNumNodes, 1, NodeIndex(0));
+  Model model(manager);
+  // NOTE: An offset is added to the cost function to make sure arc costs are
+  // positive.
+  model.SetArcCostEvaluatorOfAllVehicles(
+      model.RegisterTransitCallback([](int i, int j) { return 100 + i - j; }));
+  model.CloseModel();
+  double ratio = -1;
+  const Model::NodeNeighborsByCostClass* const node_neighbors =
+      model.GetOrCreateNodeNeighborsByCostClass(0.7, 3, 10, ratio);
+  EXPECT_EQ(ratio, 0.5);
+  EXPECT_EQ(node_neighbors,
+            model.GetOrCreateNodeNeighborsByCostClass(1, 3, 10, ratio));
 
   TestNodeNeighborhoodsForIndexDiffCostFunction(kNumNodes, 10, *node_neighbors);
 }
@@ -14061,12 +14092,12 @@ TEST(NodeNeighborsTest, AllNodesRatio) {
     double ratio = -1;
     const Model::NodeNeighborsByCostClass* const node_neighbors =
         model.GetOrCreateNodeNeighborsByCostClass(
-            1, 3, ratio, true, false,
+            1, 3, 25, ratio, true, false,
             only_sort_neighbors_for_partial_neighborhoods);
     EXPECT_EQ(ratio, 1);
     EXPECT_EQ(node_neighbors,
               model.GetOrCreateNodeNeighborsByCostClass(
-                  1, 3, ratio, true, false,
+                  1, 3, 40, ratio, true, false,
                   only_sort_neighbors_for_partial_neighborhoods));
     TestFullIncreasingNeighborhood(
         model, *node_neighbors, only_sort_neighbors_for_partial_neighborhoods);
@@ -14084,13 +14115,13 @@ TEST(NodeNeighborsTest, AllNodesHighRatio) {
     double ratio = -1;
     const Model::NodeNeighborsByCostClass* const node_neighbors =
         model.GetOrCreateNodeNeighborsByCostClass(
-            0.9, 3, ratio, true, false,
+            0.9, 3, 15, ratio, true, false,
             only_sort_neighbors_for_partial_neighborhoods);
     // 0.9 of 10 is 9 = num non-vehicle nodes: switching to all nodes.
     EXPECT_EQ(ratio, 1);
     EXPECT_EQ(node_neighbors,
               model.GetOrCreateNodeNeighborsByCostClass(
-                  0.9, 3, ratio, true, false,
+                  0.9, 3, 10, ratio, true, false,
                   only_sort_neighbors_for_partial_neighborhoods));
     TestFullIncreasingNeighborhood(
         model, *node_neighbors, only_sort_neighbors_for_partial_neighborhoods);

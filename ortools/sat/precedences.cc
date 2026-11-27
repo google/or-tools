@@ -1623,6 +1623,7 @@ bool Linear2Bounds::MaybePropagate(LinearExpression2Index index,
                                    const LinearExpression2& expr,
                                    IntegerValue expr_ub) {
   DCHECK(expr.IsCanonicalizedAndGcdReduced());
+  if (index == kNoLinearExpression2Index) return true;
 
   const IntegerValue trail_lb = integer_trail_->LowerBound(expr);
   const IntegerValue slack = expr_ub - trail_lb;
@@ -1630,7 +1631,8 @@ bool Linear2Bounds::MaybePropagate(LinearExpression2Index index,
     const IntegerVariable var = expr.vars[i];
     const IntegerValue coeff = expr.coeffs[i];
     if (coeff == 0) continue;
-    const IntegerValue new_ub = integer_trail_->LowerBound(var) + slack / coeff;
+    const IntegerValue new_ub =
+        integer_trail_->LowerBound(var) + FloorRatio(slack, coeff);
     if (new_ub >= integer_trail_->UpperBound(var)) continue;
 
     std::vector<Literal> literal_reason;

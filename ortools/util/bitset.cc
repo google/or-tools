@@ -20,33 +20,37 @@
 
 namespace operations_research {
 
+namespace {
+// Clears bits strictly below `start % 64` in `bucket` (keeps [start % 64, 63]).
+uint64_t ClearBitsBefore(uint64_t bucket, uint64_t start) {
+  const int shift = BitPos64(start);
+  return (bucket >> shift) << shift;
+}
+
+// Clears bits strictly above `end % 64` in `bucket` (keeps [0, end % 64]).
+uint64_t ClearBitsAfter(uint64_t bucket, uint64_t end) {
+  const int shift = 63 - BitPos64(end);
+  return (bucket << shift) >> shift;
+}
+}  // namespace
+
 uint64_t BitCountRange64(const uint64_t* const bits, uint64_t start,
                          uint64_t end) {
   DCHECK_LE(start, end);
   uint64_t offset = BitOffset64(start);
   const uint64_t offset_end = BitOffset64(end);
-  uint64_t bucket = bits[offset] & IntervalUp64(BitPos64(start));
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
   uint64_t bit_count = 0;
   while (offset < offset_end) {
     bit_count += std::popcount(bucket);
     bucket = bits[++offset];
   }
-  bucket &= IntervalDown64(BitPos64(end));
+  bucket = ClearBitsAfter(bucket, end);
   return bit_count + std::popcount(bucket);
 }
 
 bool IsEmptyRange64(const uint64_t* const bits, uint64_t start, uint64_t end) {
-  DCHECK_LE(start, end);
-  uint64_t offset = BitOffset64(start);
-  const uint64_t offset_end = BitOffset64(end);
-  uint64_t bucket = bits[offset] & IntervalUp64(BitPos64(start));
-  while (bucket == 0 && offset < offset_end) {
-    bucket = bits[++offset];
-  }
-  if (offset == offset_end) {
-    bucket &= IntervalDown64(BitPos64(end));
-  }
-  return bucket == 0;
+  return LeastSignificantBitPosition64(bits, start, end) == -1;
 }
 
 int64_t LeastSignificantBitPosition64(const uint64_t* const bits,
@@ -54,12 +58,12 @@ int64_t LeastSignificantBitPosition64(const uint64_t* const bits,
   DCHECK_LE(start, end);
   uint64_t offset = BitOffset64(start);
   const uint64_t offset_end = BitOffset64(end);
-  uint64_t bucket = bits[offset] & IntervalUp64(BitPos64(start));
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
   while (bucket == 0 && offset < offset_end) {
     bucket = bits[++offset];
   }
   if (offset == offset_end) {
-    bucket &= IntervalDown64(BitPos64(end));
+    bucket = ClearBitsAfter(bucket, end);
   }
   if (bucket == 0) return -1;
   return BitShift64(offset) + LeastSignificantBitPosition64(bucket);
@@ -70,12 +74,12 @@ int64_t MostSignificantBitPosition64(const uint64_t* const bits, uint64_t start,
   DCHECK_LE(start, end);
   const uint64_t offset_start = BitOffset64(start);
   uint64_t offset = BitOffset64(end);
-  uint64_t bucket = bits[offset] & IntervalDown64(BitPos64(end));
+  uint64_t bucket = ClearBitsAfter(bits[offset], end);
   while (bucket == 0 && offset > offset_start) {
     bucket = bits[--offset];
   }
   if (offset == offset_start) {
-    bucket &= IntervalUp64(BitPos64(start));
+    bucket = ClearBitsBefore(bucket, start);
   }
   if (bucket == 0) return -1;
   return BitShift64(offset) + MostSignificantBitPosition64(bucket);
@@ -86,7 +90,7 @@ int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* const bits,
   DCHECK_LE(start, end);
   DCHECK(IsBitSet64(bits, end));
   uint64_t offset = BitOffset64(start);
-  uint64_t bucket = bits[offset] & IntervalUp64(BitPos64(start));
+  uint64_t bucket = ClearBitsBefore(bits[offset], start);
   while (bucket == 0) {
     bucket = bits[++offset];
   }
@@ -98,7 +102,7 @@ int64_t UnsafeMostSignificantBitPosition64(const uint64_t* const bits,
   DCHECK_LE(start, end);
   DCHECK(IsBitSet64(bits, start));
   uint64_t offset = BitOffset64(end);
-  uint64_t bucket = bits[offset] & IntervalDown64(BitPos64(end));
+  uint64_t bucket = ClearBitsAfter(bits[offset], end);
   while (bucket == 0) {
     bucket = bits[--offset];
   }

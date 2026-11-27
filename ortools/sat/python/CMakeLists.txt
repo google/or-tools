@@ -43,6 +43,7 @@ install(TARGETS gen_proto_builder_pybind11)
 add_custom_command(
      OUTPUT proto_builder_pybind11.h
      COMMAND gen_proto_builder_pybind11 > proto_builder_pybind11.h
+     DEPENDS gen_proto_builder_pybind11
      COMMENT "Generate C++ proto_builder_pybind11.h"
      VERBATIM)
 

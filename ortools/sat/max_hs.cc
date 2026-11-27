@@ -599,6 +599,9 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     inner_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
     response_ =
         solve_cp_model_callback_(hitting_set_linear_model_, &inner_model);
+    if (response_.status() == CpSolverStatus::INFEASIBLE) {
+      return SatSolver::INFEASIBLE;
+    }
     if (response_.status() != CpSolverStatus::OPTIMAL) {
       // We currently abort if we have a non-optimal result.
       // This is correct if we had a limit reached, but not in the other

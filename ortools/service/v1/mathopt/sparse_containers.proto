@@ -22,12 +22,11 @@ package operations_research.service.v1.mathopt;
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1.mathopt";
 
-option csharp_namespace = "Google.OrTools.Service";
-
 // A sparse representation of a vector of doubles.
 message SparseDoubleVectorProto {
   // Must be sorted (in increasing ordering) with all elements distinct.
   repeated int64 ids = 1;
+
   // Must have equal length to ids. May not contain NaN.
   repeated double values = 2;
 }
@@ -36,6 +35,7 @@ message SparseDoubleVectorProto {
 message SparseBoolVectorProto {
   // Should be sorted (in increasing ordering) with all elements distinct.
   repeated int64 ids = 1;
+
   // Must have equal length to ids.
   repeated bool values = 2;
 }
@@ -44,6 +44,7 @@ message SparseBoolVectorProto {
 message SparseInt32VectorProto {
   // Should be sorted (in increasing ordering) with all elements distinct.
   repeated int64 ids = 1;
+
   // Must have equal length to ids.
   repeated int32 values = 2;
 }
@@ -55,9 +56,11 @@ message SparseInt32VectorProto {
 message SparseVectorFilterProto {
   // For SparseBoolVectorProto "zero" is `false`.
   bool skip_zero_values = 1;
+
   // When true, return only the values corresponding to the IDs listed in
   // filtered_ids.
   bool filter_by_ids = 2;
+
   // The list of IDs to use when filter_by_ids is true. Must be empty when
   // filter_by_ids is false.
   // NOTE: if this is empty, and filter_by_ids is true, you are saying that
@@ -73,6 +76,7 @@ message SparseVectorFilterProto {
 message SparseDoubleMatrixProto {
   repeated int64 row_ids = 1;
   repeated int64 column_ids = 2;
+
   // May not contain NaN.
   repeated double coefficients = 3;
 }
@@ -83,8 +87,10 @@ message LinearExpressionProto {
   // Ids of variables. Must be sorted (in increasing ordering) with all elements
   // distinct.
   repeated int64 ids = 1;
+
   // Must have equal length to ids. Values must be finite may not be NaN.
   repeated double coefficients = 2;
+
   // Must be finite and may not be NaN.
   double offset = 3;
 }

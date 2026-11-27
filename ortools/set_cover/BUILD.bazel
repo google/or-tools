@@ -347,33 +347,6 @@ or_cc_binary(
 )
 
 or_cc_test(
-    name = "set_cover_cft_test",
-    size = "large",
-    timeout = "eternal",
-    srcs = ["set_cover_cft_test.cc"],
-    data = [
-        "//operations_research_data/operations_research_data/SET_COVERING:rail",
-        "//operations_research_data/operations_research_data/SET_COVERING:scp",
-    ],
-    shard_count = 50,  # June 2026: about 180 test cases.
-    tags = ["manual"],
-    deps = [
-        ":base_types",
-        ":set_cover_cft",
-        ":set_cover_invariant",
-        ":set_cover_model",
-        ":set_cover_reader",
-        "//ortools/base:gmock_main",
-        "//ortools/base:path",
-        "//ortools/base:timer",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/time",
-    ],
-)
-
-or_cc_test(
     name = "set_cover_test",
     size = "medium",
     timeout = "eternal",

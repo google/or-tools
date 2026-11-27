@@ -12,7 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import argparse
+import datetime
 import random
+import sys
 
 from ortools.constraint_solver.python import constraint_solver as cp
 
@@ -50,8 +52,7 @@ def BinPacking(solver, binvars, weights, loadvars):
     constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
     """
     pack = solver.add_pack(binvars, len(binvars))
-    pack.AddWeightedSumEqualVarDimension(weights, loadvars)
-    solver.add(pack)
+    pack.add_weighted_sum_equal_var_dimension(weights, loadvars)
     solver.add_sum_equality(loadvars, sum(weights))
 
 
@@ -60,14 +61,14 @@ def BinPacking(solver, binvars, weights, loadvars):
 
 def ReadData(filename):
     """Read data from <filename>."""
-    f = open(filename)
-    capacity = [int(nb) for nb in f.readline().split()]
-    capacity.pop(0)
-    capacity = [0] + capacity
-    max_capacity = max(capacity)
-    nb_colors = int(f.readline())
-    nb_slabs = int(f.readline())
-    wc = [[int(j) for j in f.readline().split()] for i in range(nb_slabs)]
+    with open(filename) as f:
+        capacity = [int(nb) for nb in f.readline().split()]
+        capacity.pop(0)
+        capacity = [0] + capacity
+        max_capacity = max(capacity)
+        nb_colors = int(f.readline())
+        nb_slabs = int(f.readline())
+        wc = [[int(j) for j in f.readline().split()] for _ in range(nb_slabs)]
     weights = [x[0] for x in wc]
     colors = [x[1] for x in wc]
     loss = [min([x for x in capacity if x >= c]) - c for c in range(max_capacity + 1)]
@@ -81,7 +82,7 @@ def ReadData(filename):
 # ---------- dedicated search for this problem ----------
 
 
-class SteelDecisionBuilder(cp.PyDecisionBuilder):
+class SteelDecisionBuilder(cp.DecisionBuilder):
     """Dedicated Decision Builder for steel mill slab.
 
     Search for the steel mill slab problem with Dynamic Symmetry
@@ -95,7 +96,7 @@ class SteelDecisionBuilder(cp.PyDecisionBuilder):
     """
 
     def __init__(self, x, nb_slabs, weights, loss_array, loads):
-        cp.PyDecisionBuilder.__init__(self)
+        cp.DecisionBuilder.__init__(self)
         self.__x = x
         self.__nb_slabs = nb_slabs
         self.__weights = weights
@@ -103,26 +104,32 @@ class SteelDecisionBuilder(cp.PyDecisionBuilder):
         self.__loads = loads
         self.__max_capacity = len(loss_array) - 1
 
-    def Next(self, solver):
+    def next(self, solver):
         var, weight = self.NextVar()
         if var:
             v = self.MaxBound()
             if v + 1 == var.min():
                 # Symmetry breaking. If you need to assign to a new bin,
                 # select the first one.
-                solver.add(var == v + 1)
-                return self.Next(solver)
+                var.set_value(v + 1)
+                return self.next(solver)
             else:
                 # value heuristic (important for difficult problem):
                 #   try first to place the order in the slab that will induce
                 #   the least increase of the loss
                 loads = self.getLoads()
-                l, v = min(
-                    (self.__loss_array[loads[i] + weight], i)
-                    for i in range(var.min(), var.max() + 1)
-                    if var.Contains(i) and loads[i] + weight <= self.__max_capacity
+                best = min(
+                    (
+                        (self.__loss_array[loads[i] + weight], i)
+                        for i in range(var.min(), var.max() + 1)
+                        if var.contains(i) and loads[i] + weight <= self.__max_capacity
+                    ),
+                    default=None,
                 )
-                decision = solver.AssignVariabl.value(var, v)
+                if best is None:
+                    return solver.fail_decision()
+                _, v = best
+                decision = solver.assign_variable_value(var, v)
                 return decision
         else:
             return None
@@ -130,7 +137,7 @@ class SteelDecisionBuilder(cp.PyDecisionBuilder):
     def getLoads(self):
         load = [0] * len(self.__loads)
         for w, x in zip(self.__weights, self.__x):
-            if x.Bound():
+            if x.bound():
                 load[x.min()] += w
         return load
 
@@ -138,15 +145,15 @@ class SteelDecisionBuilder(cp.PyDecisionBuilder):
         """returns the max value bound to a variable, -1 if no variables bound"""
         return max(
             [-1]
-            + [self.__x[o].min() for o in range(self.__nb_slabs) if self.__x[o].Bound()]
+            + [self.__x[o].min() for o in range(self.__nb_slabs) if self.__x[o].bound()]
         )
 
     def NextVar(self):
         """mindom size heuristic with tie break on the weights of orders"""
         res = [
-            (self.__x[o].Size(), -self.__weights[o], self.__x[o])
+            (self.__x[o].size(), -self.__weights[o], self.__x[o])
             for o in range(self.__nb_slabs)
-            if self.__x[o].Size() > 1
+            if self.__x[o].size() > 1
         ]
         if res:
             res.sort()
@@ -154,7 +161,7 @@ class SteelDecisionBuilder(cp.PyDecisionBuilder):
         else:
             return (None, None)
 
-    def DebugString(self):
+    def __str__(self):
         return "SteelMillDecisionBuilder(" + str(self.__x) + ")"
 
 
@@ -169,13 +176,13 @@ class SteelRandomLns(cp.BaseLns):
         self.__random = rand
         self.__lns_size = lns_size
 
-    def InitFragments(self):
+    def init_fragments(self):
         pass
 
-    def NextFragment(self):
-        while self.FragmentSize() < self.__lns_size:
-            pos = self.__random.randint(0, self.Size() - 1)
-            self.AppendToFragment(pos)
+    def next_fragment(self):
+        while self.fragment_size() < self.__lns_size:
+            pos = self.__random.randint(0, self.size() - 1)
+            self.append_to_fragment(pos)
         return True
 
 
@@ -184,14 +191,11 @@ class SteelRandomLns(cp.BaseLns):
 
 def main(args):
     # ----- solver and variable declaration -----
-    nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders = ReadData(
-        args.data
-    )
-    nb_colors = len(color_orders)
+    nb_slabs, _, max_capacity, weights, _, loss, color_orders = ReadData(args.data)
     solver = cp.Solver("Steel Mill Slab")
     x = [solver.new_int_var(0, nb_slabs - 1, "x" + str(i)) for i in range(nb_slabs)]
     load_vars = [
-        solver.new_int_var(0, max_capacity - 1, "load_vars" + str(i))
+        solver.new_int_var(0, max_capacity, "load_vars" + str(i))
         for i in range(nb_slabs)
     ]
 
@@ -201,21 +205,19 @@ def main(args):
     BinPacking(solver, x, weights, load_vars)
     # At most two colors per slab.
     for s in range(nb_slabs):
-        solver.add(
-            solver.SumLessOrEqual(
-                [
-                    solver.max([solver.add_is_equal_cst_var(x[c], s) for c in o])
-                    for o in color_orders
-                ],
-                2,
-            )
+        solver.add_sum_less_or_equal(
+            [
+                solver.max([solver.add_is_equal_cst_var(x[c], s) for c in o])
+                for o in color_orders
+            ],
+            2,
         )
 
     # ----- Objective -----
 
     objective_var = solver.sum(
         [load_vars[s].index_of(loss) for s in range(nb_slabs)]
-    ).Var()
+    ).var()
     objective = solver.minimize(objective_var, 1)
 
     # ----- start the search and optimization -----
@@ -224,11 +226,11 @@ def main(args):
     first_solution = solver.assignment()
     first_solution.add(x)
     first_solution.add_objective(objective_var)
-    store_db = solver.StoreAssignment(first_solution)
-    first_solution_db = solver.Compose([assign_db, store_db])
+    store_db = solver.make_store_assignment(first_solution)
+    first_solution_db = solver.compose([assign_db, store_db])
     print("searching for initial solution,", end=" ")
     solver.solve(first_solution_db)
-    print("initial cost =", first_solution.Objectiv.value())
+    print("initial cost =", first_solution.objective_value())
 
     # To search a fragment, we use a basic randomized decision builder.
     # We can also use assign_db instead of inner_db.
@@ -236,22 +238,32 @@ def main(args):
         x, cp.IntVarStrategy.CHOOSE_RANDOM, cp.IntValueStrategy.ASSIGN_MIN_VALUE
     )
     # The most important aspect is to limit the time exploring each fragment.
-    inner_limit = solver.failuresLimit(args.lns_fail_limit)
-    continuation_db = solver.SolveOnce(inner_db, [inner_limit])
+    inner_limit = solver.limit(
+        datetime.timedelta(days=365),
+        sys.maxsize,
+        args.lns_fail_limit,
+        sys.maxsize,
+    )
+    continuation_db = solver.solve_once(inner_db, [inner_limit])
 
     # Now, we create the LNS objects.
     rand = random.Random()
     rand.seed(args.lns_random_seed)
     local_search_operator = SteelRandomLns(x, rand, args.lns_fragment_size)
     # This is in fact equivalent to the following predefined LNS operator:
-    # local_search_operator = solver.RandomLNSOperator(x,
-    #                                                  args.lns_fragment_size,
-    #                                                  args.lns_random_seed)
-    local_search_parameters = solver.LocalSearchPhaseParameters(
+    # local_search_operator = solver.random_lns_operator(x,
+    #                                                    args.lns_fragment_size,
+    #                                                    args.lns_random_seed)
+    local_search_parameters = solver.local_search_phase_parameters(
         objective_var, local_search_operator, continuation_db
     )
-    local_search_db = solver.LocalSearc.phase(first_solution, local_search_parameters)
-    global_limit = solver.TimeLimit(args.time_limit)
+    local_search_db = solver.local_search_phase(first_solution, local_search_parameters)
+    global_limit = solver.limit(
+        datetime.timedelta(milliseconds=args.time_limit),
+        sys.maxsize,
+        sys.maxsize,
+        sys.maxsize,
+    )
 
     print("using LNS to improve the initial solution")
 

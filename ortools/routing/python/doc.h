@@ -1435,7 +1435,9 @@ static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeig
 R"doc(Returns neighbors of all nodes for every cost class. The result is
 cached and is computed once. The number of neighbors considered is
 based on a ratio of non-vehicle nodes, specified by neighbors_ratio,
-with a minimum of min-neighbors node considered.)doc";
+with a minimum of min_neighbors and a maximum of max_neighbors nodes
+considered. Note that min_neighbors should be less than or equal to
+max_neighbors.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_GetOrCreateNodeNeighborsByCostClass_2 =
 R"doc(Returns parameters.num_neighbors neighbors of all nodes for every cost
@@ -2063,8 +2065,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_EXTENDED_SWAP_ACTIVE = R"doc()doc";
 
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_FULL_PATH_LNS = R"doc()doc";
-
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS = R"doc()doc";
@@ -2072,8 +2072,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_INACTIVE_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_LIGHT_RELOCATE_PAIR = R"doc()doc";
 
@@ -2100,8 +2098,6 @@ static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchO
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_NODE_PAIR_SWAP = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_OR_OPT = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_PATH_LNS = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_Model_RoutingLocalSearchOperator_RELOCATE = R"doc()doc";
 
@@ -2995,8 +2991,6 @@ visited on the route. If positive, the type is considered on the
 vehicle from the start of the route until this position.)doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_TypeRegulationsChecker = R"doc()doc";
-
-static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_current_route_visits = R"doc()doc";
 
 static const char *mkd_doc_operations_research_routing_TypeRegulationsChecker_model = R"doc()doc";
 

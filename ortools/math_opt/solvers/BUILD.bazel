@@ -702,9 +702,9 @@ or_cc_library(
 
 or_cc_test(
     name = "highs_solver_test",
+    timeout = "long",
     srcs = ["highs_solver_test.cc"],
-    flaky = 1,
-    shard_count = 10,
+    shard_count = 20,
     # Highs fails to build with WASM in //third_party/zstr.
     tags = [
         "no_test_wasm",

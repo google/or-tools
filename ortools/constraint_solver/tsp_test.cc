@@ -681,7 +681,6 @@ int64_t TSPTest::Solve(DecisionBuilder* first_solution,
     operators.push_back(solver_->MakeOperator(nexts_, Solver::OROPT));
     operators.push_back(solver_->MakeOperator(nexts_, Solver::EXCHANGE));
   } else {
-    operators.push_back(solver_->MakeOperator(nexts_, Solver::PATHLNS));
     operators.push_back(solver_->MakeOperator(nexts_, Solver::TWOOPT));
     operators.push_back(solver_->MakeOperator(nexts_, Solver::OROPT));
   }

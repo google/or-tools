@@ -524,7 +524,7 @@ bool VariablesShavingSolver::FindNextVar(State* state)
   return false;
 }
 
-bool VariablesShavingSolver::CopyModelConnectedToVar(
+CopyStatus VariablesShavingSolver::CopyModelConnectedToVar(
     State* state, Model* local_model, CpModelProto* shaving_proto,
     bool* has_no_overlap_2d) ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   auto var_to_node = [](int var) { return var; };
@@ -579,10 +579,11 @@ bool VariablesShavingSolver::CopyModelConnectedToVar(
   };
 
   std::vector<int> interval_mapping;
-  if (!CopyModelAdvanced(model_proto_, /*clear_internal_fields=*/false,
-                         var_domains_, active_constraints, &interval_mapping,
-                         shaving_proto, local_model)) {
-    return false;
+  const CopyStatus copy_status = CopyModelAdvanced(
+      model_proto_, /*clear_internal_fields=*/false, var_domains_,
+      active_constraints, &interval_mapping, shaving_proto, local_model);
+  if (!copy_status.ok()) {
+    return copy_status;
   }
 
   // Now copy the ignored constraints "partially".
@@ -660,7 +661,7 @@ bool VariablesShavingSolver::CopyModelConnectedToVar(
                       shaving_proto->mutable_variables(state->var_index));
   }
 
-  return true;
+  return kOk;
 }
 
 bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
@@ -682,8 +683,10 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   {
     absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
-    if (!CopyModelConnectedToVar(state, local_model, shaving_proto,
-                                 &has_no_overlap_2d)) {
+    const CopyStatus copy_status = CopyModelConnectedToVar(
+        state, local_model, shaving_proto, &has_no_overlap_2d);
+    if (copy_status.time_limit_reached()) return false;
+    if (copy_status.unsat()) {
       unsat_during_copy = true;  // Report unsat after releasing lock.
     }
     ++num_vars_tried_;
@@ -744,7 +747,9 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     CpModelProto mapping_proto;
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,
                                                      &mapping_proto);
-    context->InitializeNewDomains();
+    if (context->InitializeNewDomains().unsat()) {
+      return report_unsat();
+    }
     const int num_constraints = shaving_proto->constraints().size();
     std::vector<bool> useful_interval(num_constraints, false);
     std::vector<int> no_overalp_2d;

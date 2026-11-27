@@ -21,6 +21,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -71,13 +72,12 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 //   2/ Only do transformations that preserve them
 // To investigate. It seems disabling find_big_linear_overlap helps on
 // mas74.pb.gz, or the square??.mps for instance. But it is less good overall.
-bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
+FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
+    PresolveContext* context);
 
 // This makes sure all variables from the same orbit have the same domain.
 // We also remove from the generator cycles on fixed or removed variables.
-//
-// Returns false on UNSAT.
-bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+void FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
                                          PresolveContext* context);
 
 }  // namespace sat

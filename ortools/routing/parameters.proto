@@ -330,16 +330,6 @@ message RoutingSearchParameters {
     //   1 -> [4] -> [5] -> 3 with 2 inactive
     OptionalBoolean use_node_pair_swap_active = 20;
     // --- Large neighborhood search operators ---
-    // Operator which relaxes two sub-chains of three consecutive arcs each.
-    // Each sub-chain is defined by a start node and the next three arcs. Those
-    // six arcs are relaxed to build a new neighbor.
-    // PATH_LNS explores all possible pairs of starting nodes and so defines
-    // n^2 neighbors, n being the number of nodes.
-    // Note that the two sub-chains can be part of the same path; they even may
-    // overlap.
-    OptionalBoolean use_path_lns = 16;
-    // Operator which relaxes one entire path and all inactive nodes.
-    OptionalBoolean use_full_path_lns = 17;
     // TSP-base LNS.
     // Randomly merges consecutive nodes until n "meta"-nodes remain and solves
     // the corresponding TSP.
@@ -347,10 +337,6 @@ message RoutingSearchParameters {
     // limits. To force diversification, the operator iteratively forces each
     // node to serve as base of a meta-node.
     OptionalBoolean use_tsp_lns = 18;
-    // Operator which relaxes all inactive nodes and one sub-chain of six
-    // consecutive arcs. That way the path can be improved by inserting inactive
-    // nodes or swapping arcs.
-    OptionalBoolean use_inactive_lns = 19;
     // --- LNS-like large neighborhood search operators using heuristics ---
     // Operator which makes all nodes on a route unperformed, and reinserts them
     // using the GlobalCheapestInsertion heuristic.
@@ -385,6 +371,8 @@ message RoutingSearchParameters {
     // Same as above, but insertion positions for nodes are determined by the
     // LocalCheapestInsertion heuristic.
     OptionalBoolean use_local_cheapest_insertion_visit_types_lns = 40;
+
+    reserved 16, 17, 19;
   }
   LocalSearchNeighborhoodOperators local_search_operators = 3;
 

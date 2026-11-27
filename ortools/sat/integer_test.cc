@@ -338,6 +338,65 @@ TEST(IntegerTrailTest, LazyReason) {
   EXPECT_TRUE(mock.called);
 }
 
+TEST(IntegerTrailTest, SameLazyLinearReason) {
+  Model model;
+  IntegerTrail* p = model.GetOrCreate<IntegerTrail>();
+  const IntegerVariable a = p->AddIntegerVariable(0, 10);
+  const IntegerVariable b = p->AddIntegerVariable(0, 10);
+  const IntegerVariable c = p->AddIntegerVariable(0, 10);
+  const IntegerVariable d = p->AddIntegerVariable(0, 10);
+
+  Trail* trail = model.GetOrCreate<Trail>();
+  trail->Resize(10);
+  trail->EnqueueSearchDecision(Literal(+1));
+  EXPECT_TRUE(p->Propagate(trail));
+
+  LazyReasonForTest explainer1;
+  LazyReasonForTest explainer2;
+  const int start = p->Index();
+
+  // Same explainer, id, and explicit trail_index_with_same_linear_reason.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(a, 1),
+                                       /*id=*/0, 0, &explainer1, start));
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(b, 1),
+                                       /*id=*/0, 0, &explainer1, start));
+
+  // Same explainer and id, but no trail_index_with_same_linear_reason.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(c, 1),
+                                       /*id=*/0, 0, &explainer1));
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(d, 1),
+                                       /*id=*/0, 0, &explainer1));
+
+  // Second propagation of explainer1/id=0 with a new start index.
+  const int start2 = p->Index();
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(a, 2),
+                                       /*id=*/0, 0, &explainer1, start2));
+  // Different id with same start2.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(b, 2),
+                                       /*id=*/1, 0, &explainer1, start2));
+  // Different explainer with same start2 and id.
+  EXPECT_TRUE(p->EnqueueWithLazyReason(IntegerLiteral::GreaterOrEqual(c, 2),
+                                       /*id=*/0, 0, &explainer2, start2));
+  // Non-lazy reason.
+  EXPECT_TRUE(
+      p->Enqueue(IntegerLiteral::GreaterOrEqual(d, 2), {Literal(-1)}, {}));
+  ASSERT_EQ(p->Index(), start + 8);
+
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start));
+  EXPECT_TRUE(p->SameLazyLinearReason(start, start + 1));
+  EXPECT_TRUE(p->SameLazyLinearReason(start + 1, start));
+
+  // Without explicit trail_index_with_same_linear_reason, never matches.
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start + 2));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 2, start + 3));
+
+  // Different propagation start index, id, explainer, or non-lazy reason.
+  EXPECT_FALSE(p->SameLazyLinearReason(start, start + 4));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 5));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 6));
+  EXPECT_FALSE(p->SameLazyLinearReason(start + 4, start + 7));
+}
+
 TEST(IntegerTrailTest, LazyReasonAtLevelZeroDoesNotLeak) {
   Model model;
   IntegerTrail* p = model.GetOrCreate<IntegerTrail>();

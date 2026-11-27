@@ -1340,9 +1340,11 @@ message SatParameters {
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
 
-  // Parameters for an heuristic similar to the one described in the paper:
-  // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
-  // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
+  // Enables the find-first-solution (pre-incumbent) phase of the violation
+  // local search subsolvers (a heuristic similar to "Feasibility Jump: an
+  // LP-free Lagrangian MIP heuristic", Bjørnar Luteberget, Giorgio Sartor,
+  // 2023, Mathematical Programming Computation). Note: post-incumbent solution
+  // improvement is controlled separately by `num_violation_ls`.
   optional bool use_feasibility_jump = 265 [default = true];
 
   // Disable every other type of subsolver, setting this turns CP-SAT into a
@@ -1393,13 +1395,18 @@ message SatParameters {
   // Whether LNS ignores redundant constraints from scheduling relaxation.
   optional bool lns_ignore_redundant_constraints = 716 [default = true];
 
-  // This will create incomplete subsolvers (that are not LNS subsolvers)
-  // that use the feasibility jump code to find improving solution, treating
-  // the objective improvement as a hard constraint.
+  // Controls the improve-solutions (post-incumbent) phase of the violation
+  // local search subsolvers, which reuse the feasibility jump engine by
+  // treating objective improvement as a hard constraint. Setting this to 0
+  // disables post-incumbent local search; a positive value also sets the
+  // number of violation local search workers.
   optional int32 num_violation_ls = 244 [default = 0];
 
   // How long violation_ls should wait before perturbating a solution.
   optional int32 violation_ls_perturbation_period = 249 [default = 100];
+
+  // Probability of using compound move search each restart.
+  optional double violation_ls_compound_move_probability = 259 [default = 0.5];
 
   // Enables shared tree search.
   // If positive, start this many complete worker threads to explore a shared
@@ -2020,13 +2027,10 @@ message SatParameters {
   // model, but it is not always behaving nicely.
   optional int32 mip_presolve_level = 261 [default = 2];
 
-  // Experimental. If true, we do not change how the scaling is done, but:
-  // - We compute tighter error bounds on the result.
-  // - We try to relax the constraint bound just enough so that a feasible
-  //   solution of the original problem with mip_tight_precision is not lost.
-  // - But we still do not relax more than mip_wanted_precision and hope for the
-  //   best.
-  optional bool mip_use_tight_bounds = 370 [default = true];
+  // When solving a MIP, we try to preserve epsilon-feasible solutions of the
+  // original problem, with epsilon being this parameter. Note that unless
+  // mip_proper_relaxation is true, we still do not relax constraint bounds for
+  // scaling errors by more than mip_wanted_precision and hope for the best.
   optional double mip_tight_precision = 371 [default = 1e-9];
 
   // If true, we check that the returned solution is feasible with respect to

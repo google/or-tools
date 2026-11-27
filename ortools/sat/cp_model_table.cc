@@ -33,8 +33,6 @@ namespace operations_research {
 namespace sat {
 
 void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct) {
-  if (context->ModelIsUnsat()) return;
-
   DCHECK(ct->table().vars().empty());
   if (ct->table().exprs().empty()) {
     CHECK(ct->table().values().empty());

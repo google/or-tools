@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -24,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -38,7 +40,6 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/protobuf_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -47,22 +48,24 @@
 #include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
-bool ModelCopyHelper::InitializeDomains(std::vector<Domain> domains,
-                                        absl::Span<const int> mapping) {
+FeasibilityStatus ModelCopyHelper::InitializeDomains(
+    std::vector<Domain> domains, absl::Span<const int> mapping) {
   mapping_.assign(mapping.begin(), mapping.end());
 
   input_variable_is_fixed_.assign(domains.size(), false);
   input_variable_fixed_values_.resize(domains.size());
   for (int var = 0; var < domains.size(); ++var) {
-    if (domains[var].IsEmpty()) return false;
+    if (domains[var].IsEmpty()) return kUnsat;
     if (domains[var].IsFixed()) {
       input_variable_is_fixed_[var] = true;
       input_variable_fixed_values_[var] = domains[var].FixedValue();
@@ -71,7 +74,7 @@ bool ModelCopyHelper::InitializeDomains(std::vector<Domain> domains,
 
   if (mapping.empty()) {
     mapped_domains_ = std::move(domains);
-    return true;
+    return kOk;
   }
   CHECK_EQ(mapping.size(), domains.size());
 
@@ -85,7 +88,7 @@ bool ModelCopyHelper::InitializeDomains(std::vector<Domain> domains,
   // If many variables are mapped to the same one, the domain will be the
   // intersection of all initial domains. Note, that we start with empty
   // domains to mean unset. This works since after each operation if we are
-  // empty, we return false right away (UNSAT).
+  // empty, we return kUnsat right away.
   mapped_domains_.resize(mapped_size);
   const auto update_domain = [this](int image, const Domain& domain) {
     DCHECK(!domain.IsEmpty());
@@ -110,15 +113,15 @@ bool ModelCopyHelper::InitializeDomains(std::vector<Domain> domains,
       DCHECK_LE(domain.Max(), 1);
       if (domain.IsFixed()) {
         const Domain fixed_value = Domain(1 - domain.FixedValue());
-        if (!update_domain(image, fixed_value)) return false;
+        if (!update_domain(image, fixed_value)) return kUnsat;
         continue;
       }
     }
 
-    if (!update_domain(image, domain)) return false;
+    if (!update_domain(image, domain)) return kUnsat;
   }
 
-  return true;
+  return kOk;
 }
 
 bool ModelCopyHelper::InputIsFixed(int ref) const {
@@ -200,28 +203,30 @@ int64_t ModelCopyHelper::MappedMinOf(const LinearExpressionProto& expr) const {
   return result;
 }
 
-bool ModelCopyHelper::IntersectMappedDomainWith(int var, const Domain& domain) {
-  if (mapped_domains_[var].IsIncludedIn(domain)) return true;
+FeasibilityStatus ModelCopyHelper::IntersectMappedDomainWith(
+    int var, const Domain& domain) {
+  if (mapped_domains_[var].IsIncludedIn(domain)) return kOk;
   UpdateRuleStats("domain: changed");
 
   const Domain intersection = mapped_domains_[var].IntersectionWith(domain);
   mapped_domains_[var] = intersection;
-  if (intersection.IsEmpty()) return false;
+  if (intersection.IsEmpty()) return kUnsat;
   if (mapping_.empty()) {
     solution_crush_.SetOrUpdateVarToDomain(var, intersection);
   }
-  return true;
+  return kOk;
 }
 
 ModelCopy::ModelCopy(CpModelProto* out_proto, Model* model,
                      absl::Span<const int> variable_mapping)
     : params_(*model->GetOrCreate<SatParameters>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       logger_(model->GetOrCreate<SolverLogger>()),
       working_model_(out_proto),
       variable_mapping_(variable_mapping),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
-bool ModelCopy::ImportVariables(const CpModelProto& in_model) {
+FeasibilityStatus ModelCopy::ImportVariables(const CpModelProto& in_model) {
   std::vector<Domain> domains;
   domains.reserve(in_model.variables().size());
   for (const IntegerVariableProto& var_proto : in_model.variables()) {
@@ -230,7 +235,8 @@ bool ModelCopy::ImportVariables(const CpModelProto& in_model) {
   return helper_.InitializeDomains(std::move(domains), variable_mapping_);
 }
 
-bool ModelCopy::CreateVariablesFromDomains(absl::Span<const Domain> domains) {
+FeasibilityStatus ModelCopy::CreateVariablesFromDomains(
+    absl::Span<const Domain> domains) {
   std::vector<Domain> copy(domains.begin(), domains.end());
   return helper_.InitializeDomains(std::move(copy), variable_mapping_);
 }
@@ -240,7 +246,7 @@ bool ModelCopy::CreateVariablesFromDomains(absl::Span<const Domain> domains) {
 // TODO(user): It seems easy to forget to update this if any new constraint
 // contains an interval or if we add a field to an existing constraint. Find a
 // way to remind contributors to not forget this.
-bool ModelCopy::ImportAndSimplifyConstraints(
+CopyStatus ModelCopy::ImportAndSimplifyConstraints(
     const CpModelProto& in_model, bool first_copy,
     const std::function<bool(int)>& active_constraints) {
   const bool ignore_names = params_.ignore_names();
@@ -298,11 +304,14 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         literals->Add(GetRefFromPositiveIndex(idx));
       }
     }
-    return true;
+    return kOk;
   }
 
   starting_constraint_index_ = working_model_->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
+    if (!first_copy && (c % 1024) == 0 && time_limit_->LimitReached()) {
+      return kCopyTimeLimitReached;
+    }
     if (active_constraints != nullptr && !active_constraints(c)) {
       continue;
     }
@@ -321,11 +330,11 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         break;
       case ConstraintProto::kBoolOr:
         if (first_copy) {
-          if (!CopyBoolOrWithDupSupport(ct, c + 1)) {
+          if (CopyBoolOrWithDupSupport(ct, c + 1).unsat()) {
             return CreateUnsatModel(c, ct);
           }
         } else {
-          if (!CopyBoolOr(ct)) return CreateUnsatModel(c, ct);
+          if (CopyBoolOr(ct).unsat()) return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kBoolAnd:
@@ -336,72 +345,84 @@ bool ModelCopy::ImportAndSimplifyConstraints(
               if (helper_.InputFixedLiteralIsTrue(lit)) continue;
               return CreateUnsatModel(c, ct);
             }
-            if (!helper_.SetMappedLiteralToTrue(MapLiteral(lit))) {
+            if (helper_.SetMappedLiteralToTrue(MapLiteral(lit)).unsat()) {
               return CreateUnsatModel(c, ct);
             }
           }
         } else if (first_copy) {
-          if (!CopyBoolAndWithDupSupport(ct)) return CreateUnsatModel(c, ct);
+          if (CopyBoolAndWithDupSupport(ct).unsat()) {
+            return CreateUnsatModel(c, ct);
+          }
         } else {
-          if (!CopyBoolAnd(ct)) return CreateUnsatModel(c, ct);
+          if (CopyBoolAnd(ct).unsat()) return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kLinear:
-        if (!CopyLinear(ct, /*canonicalize=*/first_copy ||
-                                !variable_mapping_.empty())) {
+        if (CopyLinear(
+                ct, /*canonicalize=*/first_copy || !variable_mapping_.empty())
+                .unsat()) {
           return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kIntProd:
-        if (!CopyIntProd(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        if (CopyIntProd(ct, ignore_names).unsat()) {
+          return CreateUnsatModel(c, ct);
+        }
         break;
       case ConstraintProto::kIntDiv:
-        if (!CopyIntDiv(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        if (CopyIntDiv(ct, ignore_names).unsat()) {
+          return CreateUnsatModel(c, ct);
+        }
         break;
       case ConstraintProto::kIntMod:
-        if (!CopyIntMod(ct, ignore_names)) return CreateUnsatModel(c, ct);
+        if (CopyIntMod(ct, ignore_names).unsat()) {
+          return CreateUnsatModel(c, ct);
+        }
         break;
       case ConstraintProto::kElement:
-        if (!CopyElement(ct)) return CreateUnsatModel(c, ct);
+        if (CopyElement(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kTable:
-        if (!CopyTable(ct)) return CreateUnsatModel(c, ct);
+        if (CopyTable(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kAutomaton:
-        if (!CopyAutomaton(ct)) return CreateUnsatModel(c, ct);
+        if (CopyAutomaton(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kAllDiff:
-        if (!CopyAllDiff(ct)) return CreateUnsatModel(c, ct);
+        if (CopyAllDiff(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kLinMax:
-        if (!CopyLinMax(ct)) return CreateUnsatModel(c, ct);
+        if (CopyLinMax(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kCircuit:
-        if (!CopyCircuit(ct)) return CreateUnsatModel(c, ct);
+        if (CopyCircuit(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kRoutes:
-        if (!CopyRoutes(ct)) return CreateUnsatModel(c, ct);
+        if (CopyRoutes(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kInverse:
-        if (!CopyInverse(ct)) return CreateUnsatModel(c, ct);
+        if (CopyInverse(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kReservoir:
-        if (!CopyReservoir(ct)) return CreateUnsatModel(c, ct);
+        if (CopyReservoir(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kAtMostOne:
-        if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
+        if (CopyAtMostOne(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kExactlyOne:
-        if (!CopyExactlyOne(ct)) return CreateUnsatModel(c, ct);
+        if (CopyExactlyOne(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kBoolXor:
-        if (!CopyBoolXor(ct)) return CreateUnsatModel(c, ct);
+        if (CopyBoolXor(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kInterval:
-        if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
+        if (CopyInterval(ct, c, ignore_names).unsat()) {
+          return CreateUnsatModel(c, ct);
+        }
         if (first_copy) {
-          if (!AddLinearConstraintForInterval(ct))
+          if (AddLinearConstraintForInterval(ct).unsat()) {
             return CreateUnsatModel(c, ct);
+          }
         }
         break;
       case ConstraintProto::kNoOverlap:
@@ -422,7 +443,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         if (first_copy) {
           constraints_using_intervals.push_back(c);
         } else {
-          if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
+          if (CopyAndMapCumulative(ct).unsat()) return CreateUnsatModel(c, ct);
         }
         break;
       default:
@@ -444,7 +465,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         CopyAndMapNoOverlap2D(ct);
         break;
       case ConstraintProto::kCumulative:
-        if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
+        if (CopyAndMapCumulative(ct).unsat()) return CreateUnsatModel(c, ct);
         break;
       default:
         LOG(DFATAL) << "Shouldn't be here.";
@@ -455,15 +476,15 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     ExpandNonAffineExpressions();
   }
 
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::ImportObjective(const CpModelProto& in_model,
-                                const bool clear_internal_fields) {
+FeasibilityStatus ModelCopy::ImportObjective(const CpModelProto& in_model,
+                                             const bool clear_internal_fields) {
   if (in_model.has_objective()) {
     return CopyObjective(in_model.objective(), clear_internal_fields);
   }
-  return true;
+  return kOk;
 }
 
 // We have two modes:
@@ -542,16 +563,18 @@ void ModelCopy::ImportSolutionHint(const CpModelProto& in_model) {
   }
 }
 
-bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
+FeasibilityStatus ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
     const CpModelProto& in_model, const bool clear_internal_fields,
     const bool copy_symmetry) {
   if (!in_model.name().empty()) {
     working_model_->set_name(in_model.name());
   }
   if (in_model.has_objective()) {
-    if (!CopyObjective(in_model.objective(),
-                       /*clear_internal_fields=*/clear_internal_fields))
-      return false;
+    if (CopyObjective(in_model.objective(),
+                      /*clear_internal_fields=*/clear_internal_fields)
+            .unsat()) {
+      return kUnsat;
+    }
   }
   if (in_model.has_floating_point_objective()) {
     CopyFloatingPointObjective(in_model.floating_point_objective());
@@ -600,10 +623,10 @@ bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
       *working_model_->mutable_symmetry() = in_model.symmetry();
     }
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::FinishCopy(const CpModelProto& in_model) {
+FeasibilityStatus ModelCopy::FinishCopy(const CpModelProto& in_model) {
   // Copy the mapped domains to the proto.
   absl::Span<const Domain> domains = helper_.MappedDomains();
   working_model_->mutable_variables()->Clear();
@@ -643,7 +666,7 @@ bool ModelCopy::FinishCopy(const CpModelProto& in_model) {
   }
 
   helper_.DisplaySummary(logger_);
-  return true;
+  return kOk;
 }
 
 bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
@@ -692,9 +715,9 @@ void ModelCopy::FinishEnforcementCopy(ConstraintProto* ct) {
                                          temp_enforcement_literals_.end());
 }
 
-bool ModelCopy::FinishBoolOrCopy() {
+FeasibilityStatus ModelCopy::FinishBoolOrCopy() {
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
-  if (lit_refs.empty()) return false;
+  if (lit_refs.empty()) return kUnsat;
 
   if (lit_refs.size() == 1) {
     helper_.UpdateRuleStats("bool_or: only one literal");
@@ -707,28 +730,28 @@ bool ModelCopy::FinishBoolOrCopy() {
   for (const PositiveOnlyLitIndex idx : lit_refs) {
     bool_or_lits->Add(GetRefFromPositiveIndex(idx));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyFalseConstraint() {
-  if (temp_enforcement_literals_.empty()) return false;
+FeasibilityStatus ModelCopy::CopyFalseConstraint() {
+  if (temp_enforcement_literals_.empty()) return kUnsat;
   google::protobuf::RepeatedField<int>& literals =
       *working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
   literals.Reserve(temp_enforcement_literals_.size());
   for (const int literal : temp_enforcement_literals_) {
     literals.Add(NegatedRef(literal));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
   temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : temp_enforcement_literals_) {
     temp_literals_.Set(GetPositiveRefIndex(NegatedRef(lit)));
   }
   for (const int lit : ct.bool_or().literals()) {
     if (helper_.InputIsFixed(lit)) {
-      if (helper_.InputFixedLiteralIsTrue(lit)) return true;
+      if (helper_.InputFixedLiteralIsTrue(lit)) return kOk;
       continue;
     }
     temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
@@ -753,8 +776,8 @@ int LiteralToRef(Literal lit) {
 
 }  // namespace
 
-bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
-                                         int one_based_cnf_index) {
+FeasibilityStatus ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
+                                                      int one_based_cnf_index) {
   temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int enforcement_lit : temp_enforcement_literals_) {
     // Having an enforcement literal is the same as having its negation on
@@ -769,7 +792,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) {
         helper_.UpdateRuleStats("bool_or: always true");
-        return true;
+        return kOk;
       }
       continue;
     }
@@ -777,7 +800,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     const int mapped_lit = MapLiteral(lit);
     if (temp_literals_[GetPositiveRefIndex(NegatedRef(mapped_lit))]) {
       helper_.UpdateRuleStats("bool_or: always true");
-      return true;
+      return kOk;
     }
     temp_literals_.Set(GetPositiveRefIndex(mapped_lit));
   }
@@ -820,7 +843,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
   return FinishBoolOrCopy();
 }
 
-bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
   bool at_least_one_false = false;
   int num_non_fixed_literals = 0;
   for (const int lit : ct.bool_and().literals()) {
@@ -844,10 +867,11 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
       bool_and->add_literals(MapLiteral(lit));
     }
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyBoolAndWithDupSupport(
+    const ConstraintProto& ct) {
   DCHECK(!temp_enforcement_literals_.empty());
 
   bool at_least_one_false = false;
@@ -886,7 +910,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
   if (lit_refs.empty()) {
     helper_.UpdateRuleStats("bool and: empty");
-    return true;
+    return kOk;
   }
 
   // Copy.
@@ -897,7 +921,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   for (const PositiveOnlyLitIndex idx : lit_refs) {
     bool_and_lits->Add(GetRefFromPositiveIndex(idx));
   }
-  return true;
+  return kOk;
 }
 
 template <typename T>
@@ -915,7 +939,7 @@ int64_t ModelCopy::FillNonFixedTermsAndReturnOffset(
   return offset;
 }
 
-bool ModelCopy::CopyLinearExpression(
+void ModelCopy::CopyLinearExpression(
     const LinearExpressionProto& expr, LinearExpressionProto* dst,
     const absl::flat_hash_set<int>* mapped_enforcement_literals) {
   int64_t offset = FillNonFixedTermsAndReturnOffset(expr, expr.offset());
@@ -927,10 +951,10 @@ bool ModelCopy::CopyLinearExpression(
     dst->add_vars(var);
     dst->add_coeffs(coeff);
   }
-  return true;
 }
 
-bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
+FeasibilityStatus ModelCopy::CopyLinear(const ConstraintProto& ct,
+                                        bool canonicalize) {
   int64_t offset = FillNonFixedTermsAndReturnOffset(ct.linear());
   if (canonicalize) {
     // TODO(user): In practice we always do because this is either user-given
@@ -959,7 +983,7 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
   // Trivial constraint?
   if (implied.IsIncludedIn(new_rhs)) {
     helper_.UpdateRuleStats("linear: always true");
-    return true;
+    return kOk;
   }
 
   // Constraint is false?
@@ -987,7 +1011,7 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
     linear->add_coeffs(coeff);
   }
   FillDomainInProto(tight_domain, linear);
-  return true;
+  return kOk;
 }
 
 template <typename T>
@@ -1055,7 +1079,7 @@ void ModelCopy::ConvertSingleVarFormatToExpr(int var,
   }
 }
 
-bool ModelCopy::CopyElement(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyElement(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (ct.element().vars().empty() && !ct.element().exprs().empty()) {
     // New format, just copy and remap variables.
@@ -1067,7 +1091,7 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
     for (const LinearExpressionProto& expr : ct.element().exprs()) {
       CopyLinearExpression(expr, new_ct->mutable_element()->add_exprs());
     }
-    return true;
+    return kOk;
   }
 
   FinishEnforcementCopy(new_ct);
@@ -1079,10 +1103,10 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
   for (const int var : ct.element().vars()) {
     ConvertSingleVarFormatToExpr(var, new_ct->mutable_element()->add_exprs());
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   new_ct->mutable_automaton()->set_starting_state(
       ct.automaton().starting_state());
@@ -1103,10 +1127,10 @@ bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
     ConvertSingleVarFormatToExpr(var, new_ct->mutable_automaton()->add_exprs());
   }
 
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyTable(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyTable(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
     // New format, just copy and remap variables.
@@ -1116,7 +1140,7 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
       CopyLinearExpression(expr, new_ct->mutable_table()->add_exprs());
     }
     new_ct->mutable_table()->set_negated(ct.table().negated());
-    return true;
+    return kOk;
   }
 
   FinishEnforcementCopy(new_ct);
@@ -1126,20 +1150,20 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   *new_ct->mutable_table()->mutable_values() = ct.table().values();
   new_ct->mutable_table()->set_negated(ct.table().negated());
 
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
-  if (ct.all_diff().exprs().size() <= 1) return true;
+FeasibilityStatus ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
+  if (ct.all_diff().exprs().size() <= 1) return kOk;
   ConstraintProto* new_ct = working_model_->add_constraints();
   for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
     CopyLinearExpression(expr, new_ct->mutable_all_diff()->add_exprs());
   }
   FinishEnforcementCopy(new_ct);
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   // A lin max must have some rhs, or it is not satisfiable.
   if (ct.lin_max().exprs().empty()) return CopyFalseConstraint();
 
@@ -1182,7 +1206,7 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
     // coeff * var + offset == max_of_fixed_terms.
     absl::int128 rhs = absl::int128(max_of_fixed_terms) - target.offset();
     if (target.vars().empty()) {
-      return rhs == 0;  // Unsat otherwise.
+      return FeasibilityStatus(rhs == 0);  // Unsat otherwise.
     }
 
     int var = target.vars(0);
@@ -1192,15 +1216,15 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
     rhs -= offset;
 
     if (coeff == 0) {
-      return rhs == 0;  // Unsat otherwise.
+      return FeasibilityStatus(rhs == 0);  // Unsat otherwise.
     }
 
-    if (rhs % coeff != 0) return false;
+    if (rhs % coeff != 0) return kUnsat;
     rhs /= coeff;
     if (rhs > absl::int128(kint64max) || rhs < absl::int128(kint64min)) {
       helper_.UpdateRuleStats(
           "lin_max: target must take value outside int64_t range");
-      return false;
+      return kUnsat;
     }
 
     return helper_.IntersectMappedDomainWith(var,
@@ -1216,20 +1240,16 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   }
 
   // Finish by copying the target.
-  if (new_ct == nullptr) return false;  // No expr == unsat.
+  if (new_ct == nullptr) return kUnsat;  // No expr == unsat.
   CopyLinearExpression(ct.lin_max().target(),
                        new_ct->mutable_lin_max()->mutable_target(),
                        &temp_enforcement_literals_set_);
-  absl::c_sort(*new_ct->mutable_lin_max()->mutable_exprs(),
-               LinearExpressionProtoLessThan);
   FinishEnforcementCopy(new_ct);
-  gtl::STLSortAndRemoveDuplicates(new_ct->mutable_enforcement_literal());
-  DCHECK(LinMaxIsCanonical(*new_ct));
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
-  if (ct.circuit().tails().empty()) return true;
+FeasibilityStatus ModelCopy::CopyCircuit(const ConstraintProto& ct) {
+  if (ct.circuit().tails().empty()) return kOk;
 
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
@@ -1240,10 +1260,10 @@ bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
   for (const int lit : ct.circuit().literals()) {
     new_ct->mutable_circuit()->add_literals(MapLiteralEvenIfFixed(lit));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyRoutes(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyRoutes(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
   *new_ct->mutable_routes()->mutable_tails() = ct.routes().tails();
@@ -1264,10 +1284,10 @@ bool ModelCopy::CopyRoutes(const ConstraintProto& ct) {
       CopyLinearExpression(expr, new_exprs->Add());
     }
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyInverse(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyInverse(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (ct.inverse().f_direct().empty() &&
       !ct.inverse().f_expr_direct().empty()) {
@@ -1281,7 +1301,7 @@ bool ModelCopy::CopyInverse(const ConstraintProto& ct) {
       CopyLinearExpression(expr,
                            new_ct->mutable_inverse()->add_f_expr_inverse());
     }
-    return true;
+    return kOk;
   }
 
   FinishEnforcementCopy(new_ct);
@@ -1293,10 +1313,10 @@ bool ModelCopy::CopyInverse(const ConstraintProto& ct) {
     ConvertSingleVarFormatToExpr(
         f, new_ct->mutable_inverse()->add_f_expr_inverse());
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyReservoir(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyReservoir(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
   new_ct->mutable_reservoir()->set_min_level(ct.reservoir().min_level());
@@ -1318,10 +1338,10 @@ bool ModelCopy::CopyReservoir(const ConstraintProto& ct) {
     new_ct->mutable_reservoir()->add_active_literals(
         MapLiteralEvenIfFixed(lit));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
     FinishEnforcementCopy(&new_ct);
@@ -1337,24 +1357,26 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
       continue;
     }
     if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
-      if (!helper_.SetMappedLiteralToFalse(MapLiteral(lit))) {
-        return false;
+      if (helper_.SetMappedLiteralToFalse(MapLiteral(lit)).unsat()) {
+        return kUnsat;
       }
     } else {
       temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
     }
   }
 
-  if (num_true > 1) return false;
+  if (num_true > 1) return kUnsat;
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
   if (num_true == 1) {
     for (const PositiveOnlyLitIndex idx : lit_refs) {
-      if (!helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx)))
-        return false;
+      if (helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))
+              .unsat()) {
+        return kUnsat;
+      }
     }
-    return true;
+    return kOk;
   }
-  if (lit_refs.size() <= 1) return true;
+  if (lit_refs.size() <= 1) return kOk;
 
   ConstraintProto* new_ct = working_model_->add_constraints();
   auto* amo_literals = new_ct->mutable_at_most_one()->mutable_literals();
@@ -1362,10 +1384,10 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   for (const PositiveOnlyLitIndex idx : lit_refs) {
     amo_literals->Add(GetRefFromPositiveIndex(idx));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
     FinishEnforcementCopy(&new_ct);
@@ -1381,25 +1403,26 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
       continue;
     }
     if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
-      if (!helper_.SetMappedLiteralToFalse(MapLiteral(lit))) {
-        return false;
+      if (helper_.SetMappedLiteralToFalse(MapLiteral(lit)).unsat()) {
+        return kUnsat;
       }
     } else {
       temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
     }
   }
 
-  if (num_true > 1) return false;
+  if (num_true > 1) return kUnsat;
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
   if (num_true == 1) {
     for (const PositiveOnlyLitIndex idx : lit_refs) {
-      if (!helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))) {
-        return false;
+      if (helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))
+              .unsat()) {
+        return kUnsat;
       }
     }
-    return true;
+    return kOk;
   }
-  if (lit_refs.empty()) return false;
+  if (lit_refs.empty()) return kUnsat;
   if (lit_refs.size() == 1) {
     return helper_.SetMappedLiteralToTrue(GetRefFromPositiveIndex(lit_refs[0]));
   }
@@ -1410,10 +1433,10 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   for (const PositiveOnlyLitIndex idx : lit_refs) {
     exo_literals->Add(GetRefFromPositiveIndex(idx));
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
 
@@ -1430,11 +1453,11 @@ bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
   if (num_true % 2 == 1) {
     xor_literals->Add(GetTrueMappedLiteral());
   }
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
-                             bool ignore_names) {
+FeasibilityStatus ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
+                                          bool ignore_names) {
   CHECK_EQ(starting_constraint_index_, 0)
       << "Adding new interval constraints to a partially filled model is not "
          "supported.";
@@ -1458,10 +1481,11 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
   CopyLinearExpression(ct.interval().end(),
                        new_ct->mutable_interval()->mutable_end(),
                        &temp_enforcement_literals_set_);
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
+FeasibilityStatus ModelCopy::CopyIntProd(const ConstraintProto& ct,
+                                         bool ignore_names) {
   // Check if everything is fixed.
   const auto fixed_linear_argument =
       helper_.InputFixedLinearArgumentOrNullopt(ct.int_prod());
@@ -1483,10 +1507,11 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
   }
   CopyLinearExpression(ct.int_prod().target(),
                        new_ct->mutable_int_prod()->mutable_target());
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
+FeasibilityStatus ModelCopy::CopyIntDiv(const ConstraintProto& ct,
+                                        bool ignore_names) {
   // Check if everything is fixed.
   const auto fixed_linear_argument =
       helper_.InputFixedLinearArgumentOrNullopt(ct.int_div());
@@ -1506,10 +1531,11 @@ bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
   }
   CopyLinearExpression(ct.int_div().target(),
                        new_ct->mutable_int_div()->mutable_target());
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyIntMod(const ConstraintProto& ct, bool ignore_names) {
+FeasibilityStatus ModelCopy::CopyIntMod(const ConstraintProto& ct,
+                                        bool ignore_names) {
   // Check if everything is fixed.
   const auto fixed_linear_argument =
       helper_.InputFixedLinearArgumentOrNullopt(ct.int_mod());
@@ -1529,10 +1555,11 @@ bool ModelCopy::CopyIntMod(const ConstraintProto& ct, bool ignore_names) {
   }
   CopyLinearExpression(ct.int_mod().target(),
                        new_ct->mutable_int_mod()->mutable_target());
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::AddLinearConstraintForInterval(
+    const ConstraintProto& ct) {
   // Add the linear constraint enforcement => (start + size == end).
   //
   // We rely on the presolve for simplification, but deal with the trivial
@@ -1555,7 +1582,7 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
     AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
-    if (!CopyLinear(tmp_constraint_, true)) return false;
+    if (CopyLinear(tmp_constraint_, true).unsat()) return kUnsat;
   }
 
   // An enforced interval must have its size non-negative.
@@ -1572,10 +1599,10 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
     *tmp_constraint_.mutable_linear()->mutable_coeffs() = size_expr.coeffs();
     tmp_constraint_.mutable_linear()->add_domain(-size_expr.offset());
     tmp_constraint_.mutable_linear()->add_domain(kint64max);
-    if (!CopyLinear(tmp_constraint_, true)) return false;
+    if (CopyLinear(tmp_constraint_, true).unsat()) return kUnsat;
   }
 
-  return true;
+  return kOk;
 }
 
 int ModelCopy::GetOrCreateVariableForConjunction(std::vector<int>* literals) {
@@ -1640,7 +1667,7 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
   }
 }
 
-bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
+FeasibilityStatus ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   const std::optional<int64_t> fixed_capa =
       helper_.InputFixedValueOrNullopt(ct.cumulative().capacity());
   if (ct.cumulative().intervals().empty() && fixed_capa != std::nullopt) {
@@ -1666,11 +1693,11 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
     }
   }
 
-  return true;
+  return kOk;
 }
 
-bool ModelCopy::CopyObjective(const CpObjectiveProto& objective,
-                              const bool clear_internal_fields) {
+FeasibilityStatus ModelCopy::CopyObjective(const CpObjectiveProto& objective,
+                                           const bool clear_internal_fields) {
   int64_t offset = FillNonFixedTermsAndReturnOffset(objective);
   CanonicalizeLinearExpression(/*enforcement_literals=*/nullptr,
                                non_fixed_terms_, offset);
@@ -1709,12 +1736,12 @@ bool ModelCopy::CopyObjective(const CpObjectiveProto& objective,
     Domain domain =
         ReadDomainFromProto(objective).AdditionWith(Domain(-offset));
     domain = domain.IntersectionWith(Domain(min_activity, max_activity));
-    if (domain.IsEmpty()) return false;
+    if (domain.IsEmpty()) return kUnsat;
     FillDomainInProto(domain, &new_objective);
   }
   new_objective.set_integer_before_offset(
       new_objective.integer_before_offset() + offset);
-  return true;
+  return kOk;
 }
 
 void ModelCopy::CopyFloatingPointObjective(
@@ -1744,7 +1771,7 @@ void ModelCopy::CopyFloatingPointObjective(
   new_objective.set_offset(new_objective.offset() + offset);
 }
 
-bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
+UnsatStatus ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
   working_model_->mutable_constraints()->Clear();
   working_model_->add_constraints()->mutable_bool_or();
 
@@ -1770,7 +1797,7 @@ bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
 
   helper_.DisplaySummary(logger_);
   SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
-  return false;
+  return kUnsat;
 }
 
 void ModelCopy::ExpandNonAffineExpressions() {
@@ -1989,53 +2016,65 @@ int ModelCopy::GetTrueMappedLiteral() {
   return *true_mapped_literal_;
 }
 
-bool CopyModel(const CpModelProto& in_proto, const bool clear_internal_fields,
-               CpModelProto* out_proto, Model* model) {
+FeasibilityStatus CopyModel(const CpModelProto& in_proto,
+                            const bool clear_internal_fields,
+                            CpModelProto* out_proto, Model* model) {
   out_proto->Clear();
+  const auto advance_dtime = absl::MakeCleanup([&in_proto, model] {
+    // TODO(user) to remove this and replace it with DeterministicTimer(s)?
+    model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
+        EstimateCopyDeterministicTime(ComputeModelStats(in_proto)));
+  });
   ModelCopy copier(out_proto, model);
-  if (!copier.ImportVariables(in_proto)) return false;
+  if (copier.ImportVariables(in_proto).unsat()) return kUnsat;
   copier.ImportSolutionHint(in_proto);
-  if (!copier.ImportAndSimplifyConstraints(in_proto, /*first_copy=*/true)) {
-    return false;
+  const CopyStatus copy_status =
+      copier.ImportAndSimplifyConstraints(in_proto, /*first_copy=*/true);
+  DCHECK(!copy_status.time_limit_reached());
+  if (copy_status.unsat()) return kUnsat;
+  if (copier
+          .ImportEverythingExceptVariablesConstraintsAndHint(
+              in_proto, /*clear_internal_fields=*/clear_internal_fields)
+          .unsat()) {
+    return kUnsat;
   }
-  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-          in_proto, /*clear_internal_fields=*/clear_internal_fields)) {
-    return false;
-  }
-  if (!copier.FinishCopy(in_proto)) {
-    return false;
+  if (copier.FinishCopy(in_proto).unsat()) {
+    return kUnsat;
   }
 
-  return true;
+  return kOk;
 }
 
-bool CopyModelAdvanced(const CpModelProto& in_proto,
-                       const bool clear_internal_fields,
-                       absl::Span<const Domain> domains,
-                       const std::function<bool(int)>& active_constraints,
-                       std::vector<int>* interval_mapping,
-                       CpModelProto* out_proto, Model* model) {
+CopyStatus CopyModelAdvanced(const CpModelProto& in_proto,
+                             const bool clear_internal_fields,
+                             absl::Span<const Domain> domains,
+                             const std::function<bool(int)>& active_constraints,
+                             std::vector<int>* interval_mapping,
+                             CpModelProto* out_proto, Model* model) {
   out_proto->Clear();
   CHECK_EQ(domains.size(), in_proto.variables_size());
 
   ModelCopy copier(out_proto, model);
-  if (!copier.CreateVariablesFromDomains(domains)) return false;
+  if (copier.CreateVariablesFromDomains(domains).unsat()) return kUnsat;
   copier.ImportSolutionHint(in_proto);
-  if (!copier.ImportAndSimplifyConstraints(in_proto, /*first_copy=*/false,
-                                           active_constraints)) {
-    return false;
+  const CopyStatus copy_status = copier.ImportAndSimplifyConstraints(
+      in_proto, /*first_copy=*/false, active_constraints);
+  if (!copy_status.ok()) {
+    return copy_status;
   }
-  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-          in_proto, /*clear_internal_fields=*/clear_internal_fields)) {
-    return false;
+  if (copier
+          .ImportEverythingExceptVariablesConstraintsAndHint(
+              in_proto, /*clear_internal_fields=*/clear_internal_fields)
+          .unsat()) {
+    return kUnsat;
   }
-  if (!copier.FinishCopy(in_proto)) {
-    return false;
+  if (copier.FinishCopy(in_proto).unsat()) {
+    return kUnsat;
   }
 
   interval_mapping->assign(copier.InternalIntervalMapping().begin(),
                            copier.InternalIntervalMapping().end());
-  return true;
+  return kOk;
 }
 
 void VariableDomains::Reset(int num_vars) {
@@ -2057,6 +2096,162 @@ void VariableDomains::Set(int var, Domain d) {
   domains_[var] = std::move(d);
 }
 
+ModelStats ComputeModelStats(const CpModelProto& model_proto) {
+  ModelStats stats;
+  stats.num_variables = model_proto.variables_size();
+  stats.num_constraints = model_proto.constraints_size();
+  const auto add_expr = [&stats](const LinearExpressionProto& expr) {
+    ++stats.num_linear_expressions;
+    stats.num_linear_terms += expr.vars_size();
+  };
+  const auto add_exprs =
+      [&add_expr](
+          const google::protobuf::RepeatedPtrField<LinearExpressionProto>&
+              exprs) {
+        for (const LinearExpressionProto& expr : exprs) {
+          add_expr(expr);
+        }
+      };
+  const auto add_linear_argument =
+      [&add_expr, &add_exprs](const LinearArgumentProto& arg) {
+        add_expr(arg.target());
+        add_exprs(arg.exprs());
+      };
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    stats.num_enforcement_literals += ct.enforcement_literal_size();
+    switch (ct.constraint_case()) {
+      case ConstraintProto::CONSTRAINT_NOT_SET:
+      case ConstraintProto::kDummyConstraint:
+        break;
+      case ConstraintProto::kBoolOr:
+        stats.num_literals += ct.bool_or().literals_size();
+        break;
+      case ConstraintProto::kBoolAnd:
+        stats.num_literals += ct.bool_and().literals_size();
+        break;
+      case ConstraintProto::kAtMostOne:
+        stats.num_literals += ct.at_most_one().literals_size();
+        break;
+      case ConstraintProto::kExactlyOne:
+        stats.num_literals += ct.exactly_one().literals_size();
+        break;
+      case ConstraintProto::kBoolXor:
+        stats.num_literals += ct.bool_xor().literals_size();
+        break;
+      case ConstraintProto::kIntDiv:
+        add_linear_argument(ct.int_div());
+        break;
+      case ConstraintProto::kIntMod:
+        add_linear_argument(ct.int_mod());
+        break;
+      case ConstraintProto::kIntProd:
+        add_linear_argument(ct.int_prod());
+        break;
+      case ConstraintProto::kLinMax:
+        add_linear_argument(ct.lin_max());
+        break;
+      case ConstraintProto::kLinear:
+        stats.num_linear_terms += ct.linear().vars_size();
+        break;
+      case ConstraintProto::kAllDiff:
+        add_exprs(ct.all_diff().exprs());
+        break;
+      case ConstraintProto::kElement:
+        if (ct.element().vars().empty() && !ct.element().exprs().empty()) {
+          add_expr(ct.element().linear_index());
+          add_expr(ct.element().linear_target());
+          add_exprs(ct.element().exprs());
+        } else {
+          stats.num_linear_expressions += 2 + ct.element().vars_size();
+          stats.num_linear_terms += 2 + ct.element().vars_size();
+        }
+        break;
+      case ConstraintProto::kCircuit:
+        stats.num_literals += ct.circuit().literals_size();
+        break;
+      case ConstraintProto::kRoutes:
+        stats.num_literals += ct.routes().literals_size();
+        for (const RoutesConstraintProto::NodeExpressions& dim :
+             ct.routes().dimensions()) {
+          add_exprs(dim.exprs());
+        }
+        break;
+      case ConstraintProto::kTable:
+        stats.num_table_values += ct.table().values_size();
+        if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
+          add_exprs(ct.table().exprs());
+        } else {
+          stats.num_linear_expressions += ct.table().vars_size();
+          stats.num_linear_terms += ct.table().vars_size();
+        }
+        break;
+      case ConstraintProto::kAutomaton:
+        stats.num_automaton_transitions +=
+            ct.automaton().transition_tail_size() +
+            ct.automaton().final_states_size();
+        add_exprs(ct.automaton().exprs());
+        stats.num_linear_expressions += ct.automaton().vars_size();
+        stats.num_linear_terms += ct.automaton().vars_size();
+        break;
+      case ConstraintProto::kInverse:
+        if (ct.inverse().f_direct().empty() &&
+            !ct.inverse().f_expr_direct().empty()) {
+          add_exprs(ct.inverse().f_expr_direct());
+          add_exprs(ct.inverse().f_expr_inverse());
+        } else {
+          const int64_t n =
+              ct.inverse().f_direct_size() + ct.inverse().f_inverse_size();
+          stats.num_linear_expressions += n;
+          stats.num_linear_terms += n;
+        }
+        break;
+      case ConstraintProto::kReservoir:
+        add_exprs(ct.reservoir().time_exprs());
+        add_exprs(ct.reservoir().level_changes());
+        stats.num_literals += ct.reservoir().active_literals_size();
+        break;
+      case ConstraintProto::kInterval:
+        ++stats.num_intervals;
+        add_expr(ct.interval().start());
+        add_expr(ct.interval().size());
+        add_expr(ct.interval().end());
+        break;
+      case ConstraintProto::kNoOverlap:
+        stats.num_interval_references += ct.no_overlap().intervals_size();
+        break;
+      case ConstraintProto::kNoOverlap2D:
+        stats.num_interval_references +=
+            2 * ct.no_overlap_2d().x_intervals_size();
+        break;
+      case ConstraintProto::kCumulative:
+        stats.num_interval_references += ct.cumulative().intervals_size();
+        add_expr(ct.cumulative().capacity());
+        add_exprs(ct.cumulative().demands());
+        break;
+    }
+  }
+  if (model_proto.has_objective()) {
+    stats.num_linear_terms += model_proto.objective().vars_size();
+  }
+  if (model_proto.has_floating_point_objective()) {
+    stats.num_linear_terms +=
+        model_proto.floating_point_objective().vars_size();
+  }
+  return stats;
+}
+
+double EstimateCopyDeterministicTime(const ModelStats& stats) {
+  constexpr double kBaseRebuildDeterministicTime = 4.4e-7;
+  const double dtime =
+      1.2e-8 * stats.num_variables + 1.8e-8 * stats.num_constraints +
+      3.6e-8 * stats.num_enforcement_literals + 2.5e-8 * stats.num_literals +
+      5.5e-8 * stats.num_linear_expressions + 5.9e-8 * stats.num_linear_terms +
+      4.8e-8 * stats.num_intervals + 2.7e-8 * stats.num_interval_references +
+      1.3e-8 * stats.num_table_values +
+      2.0e-8 * stats.num_automaton_transitions;
+  return kBaseRebuildDeterministicTime + dtime;
+}
+
 DenseModelCopy::DenseModelCopy(absl::string_view name,
                                const CpModelProto& input_model_proto,
                                SharedBoundsManager* shared_bounds,
@@ -2067,8 +2262,7 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
       shared_bounds_(shared_bounds),
       active_constraints_(std::move(active_constraints)),
       shared_bounds_id_(
-          shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)),
-      model_proto_(input_model_proto) {
+          shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)) {
   const int num_vars = input_model_proto_.variables_size();
   input_var_mapping_.resize(num_vars);
   reverse_mapping_.resize(num_vars);
@@ -2077,55 +2271,113 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
     reverse_mapping_[i] = i;
   }
   ResetVarDomains();
+  fixed_vars_at_last_rebuild_ = var_domains_.FixedVariables().size();
   input_var_domains_.reserve(num_vars);
   for (int v = 0; v < num_vars; ++v) {
     input_var_domains_.push_back(var_domains_[v]);
   }
 }
 
-bool DenseModelCopy::MaybeUpdate(bool& updated) {
+FeasibilityStatus DenseModelCopy::MaybeUpdate(
+    bool& updated, double min_variable_reduction_ratio) {
   updated = false;
-  int64_t new_bounds_timestamp = bounds_timestamp_;
-  int64_t new_equivalences_timestamp = equivalences_timestamp_;
-  if (!UpdateFromSharedBounds(new_bounds_timestamp)) {
-    return false;
+  if (is_unsat_) return kUnsat;
+  if (UpdateFromSharedBounds().unsat()) {
+    return kUnsat;
   }
+  if (!ShouldRebuild(min_variable_reduction_ratio)) {
+    first_update_ = false;
+    return kOk;
+  }
+
+  first_update_ = false;
+  int64_t new_equivalences_timestamp = equivalences_timestamp_;
   std::vector<int> input_var_representatives;
   if (shared_clauses_ != nullptr) {
     input_var_representatives =
         shared_clauses_->GetRepresentatives(&new_equivalences_timestamp);
   }
-
-  // TODO(user): throttle this to avoid recomputing too often?
-  if (new_bounds_timestamp != bounds_timestamp_ ||
-      new_equivalences_timestamp != equivalences_timestamp_) {
-    updated = true;
-    bounds_timestamp_ = new_bounds_timestamp;
-    equivalences_timestamp_ = new_equivalences_timestamp;
-    if (!ComputeVariableMapping(input_var_representatives) ||
-        !ApplyVariableMapping()) {
-      return false;
-    }
+  if (ComputeVariableMapping(input_var_representatives).unsat() ||
+      ApplyVariableMapping().unsat()) {
+    is_unsat_ = true;
+    return kUnsat;
   }
-  return true;
+
+  updated = true;
+  bounds_timestamp_ = shared_bounds_ == nullptr ? 0 : latest_bounds_timestamp_;
+  equivalences_timestamp_ = new_equivalences_timestamp;
+  fixed_vars_at_last_rebuild_ = var_domains_.FixedVariables().size();
+  return kOk;
 }
 
-bool DenseModelCopy::UpdateFromSharedBounds(int64_t& timestamp) {
-  if (shared_bounds_ == nullptr) return true;
-  shared_bounds_->GetChangedBounds(shared_bounds_id_, &tmp_variables_,
-                                   &tmp_new_lower_bounds_,
-                                   &tmp_new_upper_bounds_, &timestamp);
+FeasibilityStatus DenseModelCopy::UpdateFromSharedBounds() {
+  if (shared_bounds_ == nullptr) return kOk;
+  shared_bounds_->GetChangedBounds(
+      shared_bounds_id_, &tmp_variables_, &tmp_new_lower_bounds_,
+      &tmp_new_upper_bounds_, &latest_bounds_timestamp_);
   for (int i = 0; i < tmp_variables_.size(); ++i) {
     const int input_var = tmp_variables_[i];
-    input_var_domains_[input_var] =
-        input_var_domains_[input_var].IntersectionWith(
-            Domain(tmp_new_lower_bounds_[i], tmp_new_upper_bounds_[i]));
-    if (input_var_domains_[input_var].IsEmpty()) return false;
+    const Domain new_domain = input_var_domains_[input_var].IntersectionWith(
+        Domain(tmp_new_lower_bounds_[i], tmp_new_upper_bounds_[i]));
+    if (new_domain.IsEmpty()) {
+      is_unsat_ = true;
+      return kUnsat;
+    }
+    if (new_domain == input_var_domains_[input_var]) continue;
+    input_var_domains_[input_var] = new_domain;
+
+    const int ref = input_var_mapping_[input_var];
+    if (ref == kNoVariableMapping) continue;
+    const int dense_var = PositiveRef(ref);
+    const Domain mapped_domain =
+        RefIsPositive(ref) ? new_domain
+                           : Domain(1 - new_domain.Max(), 1 - new_domain.Min());
+    const Domain updated_dense_domain =
+        var_domains_[dense_var].IntersectionWith(mapped_domain);
+    if (updated_dense_domain.IsEmpty()) {
+      is_unsat_ = true;
+      return kUnsat;
+    }
+    if (updated_dense_domain != var_domains_[dense_var]) {
+      var_domains_.Set(dense_var, updated_dense_domain);
+    }
   }
-  return true;
+  return kOk;
 }
 
-bool DenseModelCopy::ComputeVariableMapping(
+bool DenseModelCopy::ShouldRebuild(double min_variable_reduction_ratio) const {
+  if (first_update_ && active_constraints_ != nullptr) {
+    return true;
+  }
+  if (min_variable_reduction_ratio > 1.0) {
+    return false;
+  }
+  const int64_t num_unfixed_dense_vars =
+      static_cast<int64_t>(var_domains_.size()) - fixed_vars_at_last_rebuild_;
+  if (num_unfixed_dense_vars <= 0) {
+    return false;
+  }
+  const int64_t newly_fixed =
+      static_cast<int64_t>(var_domains_.FixedVariables().size()) -
+      fixed_vars_at_last_rebuild_;
+  const int64_t last_equivalences =
+      std::max<int64_t>(0, equivalences_timestamp_);
+  const int64_t new_equivalences =
+      shared_clauses_ == nullptr
+          ? 0
+          : std::max<int64_t>(
+                0, shared_clauses_->NumEquivalences() - last_equivalences);
+  const int64_t num_reduced_vars =
+      std::min(num_unfixed_dense_vars, newly_fixed + new_equivalences);
+  if (num_reduced_vars <= 0) {
+    return false;
+  }
+  return static_cast<double>(num_reduced_vars) >=
+         min_variable_reduction_ratio *
+             static_cast<double>(num_unfixed_dense_vars);
+}
+
+FeasibilityStatus DenseModelCopy::ComputeVariableMapping(
     absl::Span<const int> input_var_representatives) {
   const auto get_representative = [&](int var) {
     if (var >= input_var_representatives.size()) return var;
@@ -2157,14 +2409,14 @@ bool DenseModelCopy::ComputeVariableMapping(
       if (input_var_domains_[i].IsFixed()) {
         const int rep = get_representative(i);
         if (rep != i) {
-          if (!fix_literal(rep, fixed_value(i))) return false;
+          if (!fix_literal(rep, fixed_value(i))) return kUnsat;
         }
       }
     }
     for (int i = 0; i < num_input_vars; ++i) {
       const int rep = get_representative(i);
       if (rep != i && input_var_domains_[PositiveRef(rep)].IsFixed()) {
-        if (!fix_literal(i, fixed_value(rep))) return false;
+        if (!fix_literal(i, fixed_value(rep))) return kUnsat;
       }
     }
   }
@@ -2201,39 +2453,47 @@ bool DenseModelCopy::ComputeVariableMapping(
       }
     }
   }
-  return true;
+  return kOk;
 }
 
-bool DenseModelCopy::ApplyVariableMapping() {
-  model_proto_.Clear();
+FeasibilityStatus DenseModelCopy::ApplyVariableMapping() {
+  auto next_arena = std::make_unique<google::protobuf::Arena>();
+  CpModelProto* next_proto =
+      google::protobuf::Arena::Create<CpModelProto>(next_arena.get());
 
   Model local_model;
-  ModelCopy copier(&model_proto_, &local_model, input_var_mapping_);
-  if (!copier.CreateVariablesFromDomains(input_var_domains_)) {
-    return false;
+  ModelCopy copier(next_proto, &local_model, input_var_mapping_);
+  if (copier.CreateVariablesFromDomains(input_var_domains_).unsat()) {
+    return kUnsat;
   }
-  if (!copier.ImportAndSimplifyConstraints(input_model_proto_,
-                                           /*first_copy=*/false,
-                                           active_constraints_)) {
-    return false;
+  const CopyStatus copy_status = copier.ImportAndSimplifyConstraints(
+      input_model_proto_, /*first_copy=*/false, active_constraints_);
+  DCHECK(!copy_status.time_limit_reached());
+  if (copy_status.unsat()) {
+    return kUnsat;
   }
-  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-          input_model_proto_, /*clear_internal_fields=*/false,
-          /*copy_symmetry=*/false)) {
-    return false;
+  if (copier
+          .ImportEverythingExceptVariablesConstraintsAndHint(
+              input_model_proto_, /*clear_internal_fields=*/false,
+              /*copy_symmetry=*/false)
+          .unsat()) {
+    return kUnsat;
   }
-  if (!copier.FinishCopy(input_model_proto_)) {
-    return false;
+  if (copier.FinishCopy(input_model_proto_).unsat()) {
+    return kUnsat;
   }
+  arena_ = std::move(next_arena);
+  model_proto_ = next_proto;
   ResetVarDomains();
-  return true;
+  return kOk;
 }
 
 void DenseModelCopy::ResetVarDomains() {
-  const int num_vars = model_proto_.variables_size();
+  const CpModelProto& current_proto = proto();
+  const int num_vars = current_proto.variables_size();
   var_domains_.Reset(num_vars);
   for (int v = 0; v < num_vars; ++v) {
-    var_domains_.Set(v, ReadDomainFromProto(model_proto_.variables(v)));
+    var_domains_.Set(v, ReadDomainFromProto(current_proto.variables(v)));
   }
 }
 
@@ -2273,9 +2533,10 @@ std::vector<int64_t> DenseModelCopy::ReverseMapSolution(
 
 int64_t DenseModelCopy::MapInnerObjectiveValue(
     int64_t input_inner_objective_value) const {
-  CHECK_EQ(model_proto_.objective().integer_scaling_factor(),
+  const CpObjectiveProto& dense_objective = proto().objective();
+  CHECK_EQ(dense_objective.integer_scaling_factor(),
            input_model_proto_.objective().integer_scaling_factor());
-  CHECK_EQ(model_proto_.objective().integer_after_offset(),
+  CHECK_EQ(dense_objective.integer_after_offset(),
            input_model_proto_.objective().integer_after_offset());
   // We have (see cp_model.proto):
   //   input_outer =
@@ -2286,7 +2547,7 @@ int64_t DenseModelCopy::MapInnerObjectiveValue(
   //   dense_inner = input_inner + input_before_offset - dense_before_offset
   return input_inner_objective_value +
          input_model_proto_.objective().integer_before_offset() -
-         model_proto_.objective().integer_before_offset();
+         dense_objective.integer_before_offset();
 }
 
 }  // namespace sat

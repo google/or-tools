@@ -352,7 +352,8 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   if (num_unassigned_enforcement_literal > 0) return true;
 
   // The lower bound of all the variables except one can be used to update the
-  // upper bound of the last one.
+  // upper bound of the last one. All these pushes share the same linear reason.
+  const int trail_index_at_start = shared_->integer_trail->Index();
   for (int i = num_fixed_vars; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
@@ -381,7 +382,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
     }
     if (!shared_->integer_trail->EnqueueWithLazyReason(
             IntegerLiteral::LowerOrEqual(var, new_ub), 0, propagation_slack,
-            this)) {
+            this, trail_index_at_start)) {
       // TODO(user): this is never supposed to happen since if we didn't have a
       // conflict above, we should be able to reduce the upper bound. It might
       // indicate an issue with our Boolean <-> integer encoding.

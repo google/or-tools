@@ -2104,6 +2104,65 @@ TEST(IntegerRoundingCutTest, LpSlackInfinityNormBoundsTheUnscaledScaling) {
             "8388607*I0 -1*I1 <= 0");
 }
 
+TEST(IntegerRoundingCutTest,
+     UnscaledSafetyCacheHandlesDivisorsComplementsAndSpanOverflow) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable slack = model.Add(NewIntegerVariable(0, 10000));
+
+  // Multiple candidate divisors (1000 and 600) hit NeedsUnscaledRounding() due
+  // to the negative large-domain slack -S, followed by trial post-complements
+  // on the relevant terms.
+  {
+    const IntegerVariable shifted =
+        model.Add(NewIntegerVariable(10'000, 10'010));
+    CutData data;
+    ASSERT_TRUE(data.FillFromParallelVectors(
+        IntegerValue(4'000'500), {x0, x1, shifted, slack},
+        IntegerValueVector({1000, 600, 400, -1}), {0.5, 0.2, 10'000.3, 0.0},
+        IntegerValueVector({0, 0, 10'000, 0}),
+        IntegerValueVector({10, 10, 10'010, 10000})));
+    data.ComplementForSmallerLpValues();
+
+    RoundingOptions options;
+    options.max_scaling = IntegerValue(60);
+    IntegerRoundingCutHelper helper(&model);
+    ASSERT_TRUE(helper.ComputeCut(options, data, /*ib_processor=*/nullptr));
+    EXPECT_GT(helper.cut().ComputeViolation(), 1e-3);
+  }
+
+  // When a shifted variable has an offset large enough that coeff * |offset|
+  // exceeds kMaxIntegerValue / 4, ComputeMaxSafeUnscaledScaling() must cap
+  // safe_scaling to 1 (falling back to default max_scaling = 60) without
+  // signed-integer overflow.
+  {
+    constexpr int64_t kHugeShift = int64_t{1} << 53;
+    const IntegerVariable huge_shifted =
+        model.Add(NewIntegerVariable(kHugeShift, kHugeShift + 10));
+    CutData data;
+    const absl::int128 base_rhs =
+        absl::int128(400) * absl::int128(kHugeShift) + absl::int128(500);
+    ASSERT_TRUE(data.FillFromParallelVectors(
+        IntegerValue(static_cast<int64_t>(base_rhs)),
+        {x0, x1, huge_shifted, slack}, IntegerValueVector({1000, 600, 400, -1}),
+        {0.5, 0.2, static_cast<double>(kHugeShift) + 0.3, 0.0},
+        {IntegerValue(0), IntegerValue(0), IntegerValue(kHugeShift),
+         IntegerValue(0)},
+        {IntegerValue(10), IntegerValue(10), IntegerValue(kHugeShift + 10),
+         IntegerValue(10000)}));
+    data.ComplementForSmallerLpValues();
+
+    RoundingOptions options;
+    options.max_scaling = IntegerValue(60);
+    IntegerRoundingCutHelper helper(&model);
+    ASSERT_TRUE(helper.ComputeCut(options, data, /*ib_processor=*/nullptr));
+    LinearConstraint converted;
+    CutDataBuilder builder;
+    EXPECT_TRUE(builder.ConvertToLinearConstraint(helper.cut(), &converted));
+  }
+}
+
 TEST(CoverCutHelperTest, SingleNodeFlowRejectsCoverNotStrengthenedByF) {
   Model model;
   std::vector<IntegerVariable> vars;

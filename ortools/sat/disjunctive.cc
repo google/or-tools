@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -26,6 +27,7 @@
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
@@ -46,19 +48,43 @@ namespace sat {
 void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
                     const std::vector<IntervalVariable>& intervals,
                     Model* model) {
+  IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+
+  // Having duplicate here can happen with cp_model_presolve:false.
+  std::vector<IntervalVariable> unique_intervals;
+  unique_intervals.reserve(intervals.size());
+  {
+    absl::flat_hash_set<IntervalVariable> seen_intervals;
+    for (const IntervalVariable var : intervals) {
+      const auto [_, inserted] = seen_intervals.insert(var);
+      if (inserted) {
+        unique_intervals.push_back(var);
+      } else {
+        std::vector<Literal> enforcements = enforcement_literals;
+        if (repository->IsOptional(var)) {
+          enforcements.push_back(repository->PresenceLiteral(var));
+        }
+        AddConditionalAffinePrecedence(enforcements, repository->Size(var),
+                                       IntegerValue(0), model);
+        AddConditionalAffinePrecedence(enforcements, repository->End(var),
+                                       repository->Start(var), model);
+      }
+    }
+  }
+  if (unique_intervals.size() <= 1) return;
+
   // Depending on the parameters, create all pairs of conditional precedences.
   // TODO(user): create them dynamically instead?
   const auto& params = *model->GetOrCreate<SatParameters>();
-  if (intervals.size() <=
+  if (unique_intervals.size() <=
           params.max_size_to_create_precedence_literals_in_disjunctive() &&
       params.use_strong_propagation_in_disjunctive() &&
       enforcement_literals.empty()) {
-    AddDisjunctiveWithBooleanPrecedencesOnly(intervals, model);
+    AddDisjunctiveWithBooleanPrecedencesOnly(unique_intervals, model);
   }
 
   bool is_all_different = true;
-  IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  for (const IntervalVariable var : intervals) {
+  for (const IntervalVariable var : unique_intervals) {
     if (repository->IsOptional(var) || repository->MinSize(var) != 1 ||
         repository->MaxSize(var) != 1) {
       is_all_different = false;
@@ -67,8 +93,8 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
   }
   if (is_all_different) {
     std::vector<AffineExpression> starts;
-    starts.reserve(intervals.size());
-    for (const IntervalVariable interval : intervals) {
+    starts.reserve(unique_intervals.size());
+    for (const IntervalVariable interval : unique_intervals) {
       starts.push_back(repository->Start(interval));
     }
     AddAllDifferentOnBounds(enforcement_literals, starts, model);
@@ -76,20 +102,23 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
   }
 
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  if (intervals.size() > 2 && params.use_combined_no_overlap() &&
+  if (unique_intervals.size() > 2 && params.use_combined_no_overlap() &&
       enforcement_literals.empty()) {
-    model->GetOrCreate<CombinedDisjunctive<true>>()->AddNoOverlap(intervals);
-    model->GetOrCreate<CombinedDisjunctive<false>>()->AddNoOverlap(intervals);
+    model->GetOrCreate<CombinedDisjunctive<true>>()->AddNoOverlap(
+        unique_intervals);
+    model->GetOrCreate<CombinedDisjunctive<false>>()->AddNoOverlap(
+        unique_intervals);
     return;
   }
 
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(
-      enforcement_literals, intervals, /*register_as_disjunctive_helper=*/true);
+      enforcement_literals, unique_intervals,
+      /*register_as_disjunctive_helper=*/enforcement_literals.empty());
 
   // Experiments to use the timetable only to propagate the disjunctive.
   if (/*DISABLES_CODE*/ (false && enforcement_literals.empty())) {
     const AffineExpression one(IntegerValue(1));
-    std::vector<AffineExpression> demands(intervals.size(), one);
+    std::vector<AffineExpression> demands(unique_intervals.size(), one);
     SchedulingDemandHelper* demands_helper =
         repository->GetOrCreateDemandHelper(helper, demands);
 
@@ -100,7 +129,7 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
     return;
   }
 
-  if (intervals.size() == 2) {
+  if (unique_intervals.size() == 2) {
     DisjunctiveWithTwoItems* propagator = new DisjunctiveWithTwoItems(helper);
     helper->Register(propagator, /*priority=*/1);
     model->TakeOwnership(propagator);

@@ -873,6 +873,12 @@ PYBIND11_MODULE(routing, m) {
   rm.def("is_vehicle_used", &Model::IsVehicleUsed, py::arg("assignment"),
          py::arg("vehicle"),
          DOC(operations_research, routing, Model, IsVehicleUsed));
+  rm.def("set_vehicle_used_when_empty", &Model::SetVehicleUsedWhenEmpty,
+         py::arg("is_used"), py::arg("vehicle"),
+         DOC(operations_research, routing, Model, SetVehicleUsedWhenEmpty));
+  rm.def("is_vehicle_used_when_empty", &Model::IsVehicleUsedWhenEmpty,
+         py::arg("vehicle"),
+         DOC(operations_research, routing, Model, IsVehicleUsedWhenEmpty));
 
   // Resource Group
   pybind11::class_<Model::ResourceGroup> resource_group(

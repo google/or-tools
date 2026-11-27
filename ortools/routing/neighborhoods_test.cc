@@ -26,6 +26,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -2405,6 +2406,7 @@ void ExpectEqualRoutes(const Model& model, absl::Span<const int> solution,
     ASSERT_GE(solution[i], 0);
     ASSERT_LT(solution[i], model.Size() + model.vehicles());
     ASSERT_TRUE(assignment.Contains(model.NextVar(i)));
+    SCOPED_TRACE(DUMP_VARS(i));
     EXPECT_EQ(solution[i], assignment.Value(model.NextVar(i)));
   }
 }
@@ -2425,6 +2427,7 @@ TEST(FilteredHeuristicPathLNSOperator, UseVehicleWithLowerFixedCost) {
 
   for (const bool use_gci_path_lns : {true, false}) {
     for (const bool use_lci_path_lns : {true, false}) {
+      SCOPED_TRACE(DUMP_VARS(use_gci_path_lns, use_lci_path_lns));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
       DisableAllLocalSearchOperators(
           parameters.mutable_local_search_operators());
@@ -2483,6 +2486,7 @@ TEST(RelocatePathAndHeuristicInsertOperator, InsertNodeOnAllowedVehicle) {
   const std::vector<int> expected_result_with_heuristic_lns = {5, 2, 7, 6, 1};
 
   for (const bool use_relocate_path_heuristic_insert : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(use_relocate_path_heuristic_insert));
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     parameters.mutable_local_search_operators()
         ->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
@@ -2562,6 +2566,7 @@ void TestMergingRoutesWithHeuristicLNS(
 
   for (const bool use_heuristic_lns : {true, false}) {
     for (const double neighbors_ratio : neighborhood_ratios) {
+      SCOPED_TRACE(DUMP_VARS(use_heuristic_lns, neighbors_ratio));
       RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
 
       RoutingSearchParameters::LocalSearchNeighborhoodOperators* operators =

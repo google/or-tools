@@ -949,7 +949,7 @@ or_cc_library(
 or_cc_test(
     name = "max_flow_test",
     srcs = ["max_flow_test.cc"],
-    data = ["//ortools/graph:testdata/max_flow_test1.pb.txt"],
+    data = ["testdata/max_flow_test1.pb.txt"],
     deps = [
         ":flow_problem_cc_proto",
         ":max_flow",

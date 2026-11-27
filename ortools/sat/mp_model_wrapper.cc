@@ -14,12 +14,14 @@
 #include "ortools/sat/mp_model_wrapper.h"
 
 #include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/logging.h"
@@ -36,6 +38,23 @@ bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
 }
 
 }  // namespace
+
+std::string EnforcedLinearConstraint::DebugString() const {
+  std::string result = absl::StrCat("lower_bound: ", lower_bound(),
+                                    " upper_bound: ", upper_bound(), " vars: [",
+                                    absl::StrJoin(vars(), ", "), "] coeffs: [",
+                                    absl::StrJoin(coeffs(), ", "), "]");
+  if (IsEnforced()) {
+    absl::StrAppend(&result, " enforcement: [");
+    for (int i = 0; i < enforcement_vars_.size(); ++i) {
+      absl::StrAppend(&result, i > 0 ? ", " : "", enforcement_vars_[i],
+                      " == ", enforcement_values_[i]);
+    }
+    absl::StrAppend(&result, "]");
+  }
+  if (!name().empty()) absl::StrAppend(&result, " name: \"", name(), "\"");
+  return result;
+}
 
 MPModelProtoWrapper::MPModelProtoWrapper(MPModelProto mp_model,
                                          SolverLogger* logger)

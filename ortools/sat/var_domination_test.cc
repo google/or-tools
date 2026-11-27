@@ -21,9 +21,12 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
+#include "ortools/sat/solution_crush.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -72,7 +75,7 @@ TEST(VarDominationTest, BasicExample1) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -124,10 +127,10 @@ TEST(VarDominationTest, ExploitDominanceRelation) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   // Because X--, Z++ is always ok, we can exclude some value from Z using
   // equation X + 2Z >= 2 we see that if Z=5, X >= -8, so we can decrease it,
@@ -174,10 +177,10 @@ TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   // With holes, if Z is 0, we will not be able to increase it up to 6, so we
   // can't remove 0. If it is lower, we can safely increase it to zero though.
@@ -219,11 +222,11 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
@@ -273,11 +276,11 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
@@ -318,11 +321,11 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
@@ -371,11 +374,11 @@ TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
@@ -416,11 +419,11 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   // Check that an implication between X and Y was added, and that the hint was
   // updated in consequence.
@@ -481,11 +484,11 @@ TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
 
   const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
@@ -532,7 +535,7 @@ TEST(VarDominationTest, BasicExample1Variation) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -585,7 +588,7 @@ TEST(VarDominationTest, BasicExample2) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -640,7 +643,7 @@ TEST(VarDominationTest, BasicExample3) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -696,7 +699,7 @@ TEST(VarDominationTest, BasicExample4) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -742,7 +745,7 @@ TEST(VarDominationTest, AllEquivalent) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -789,7 +792,7 @@ TEST(VarDominationTest, NegativeCoefficients) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDominanceDetection(context, &var_dom);
 
@@ -827,12 +830,12 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[10]");
@@ -865,12 +868,12 @@ TEST(DualBoundReductionTest, BasicTest) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
@@ -896,11 +899,11 @@ TEST(DualBoundReductionTest, CarefulWithHoles) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-5,5]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-5,0][7]");
@@ -929,12 +932,12 @@ TEST(DualBoundReductionTest, Choices) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-2]");
@@ -966,12 +969,12 @@ TEST(DualBoundReductionTest, AddImplication) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   // not(a) => not(b) and not(a) => not(c) should be added.
   ASSERT_EQ(context.NumConstraints(), 3);
@@ -989,6 +992,113 @@ TEST(DualBoundReductionTest, AddImplication) {
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 0);
   EXPECT_EQ(context.solution_crush().GetVarValues()[1], 0);
   EXPECT_EQ(context.solution_crush().GetVarValues()[2], 0);
+}
+
+TEST(DualBoundReductionTest, AddImplicationDoesNotDuplicateAcrossPasses) {
+  // Variables: a=0, b=1, c=2, d=3, e=4, f=5, g=6.
+  // - ct 0: a => (b == c), which is the unique constraint locking b and c from
+  //   decreasing.
+  // - Extra clauses give every other variable direction at least two locks so
+  //   only "dual: add implication" on b and c triggers.
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ -1, 1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints { bool_or { literals: [ 0, 3 ] } }
+    constraints { bool_or { literals: [ 0, 4 ] } }
+    constraints { bool_or { literals: [ -1, 3 ] } }
+    constraints { bool_or { literals: [ -2, 3 ] } }
+    constraints { bool_or { literals: [ -3, 4 ] } }
+    constraints { bool_or { literals: [ -4, -6 ] } }
+    constraints { bool_or { literals: [ -4, -7 ] } }
+    constraints { bool_or { literals: [ -5, -6 ] } }
+    constraints { bool_or { literals: [ -5, -7 ] } }
+    constraints { bool_or { literals: [ 5, 3 ] } }
+    constraints { bool_or { literals: [ 5, 4 ] } }
+    constraints { bool_or { literals: [ 6, 3 ] } }
+    constraints { bool_or { literals: [ 6, 4 ] } }
+    solution_hint {
+      vars: [ 0, 1, 2, 3, 4, 5, 6 ]
+      values: [ 0, 1, 1, 1, 1, 0, 0 ]
+    }
+  )pb");
+  ASSERT_EQ(ValidateCpModel(model_proto), "");
+  ASSERT_TRUE(SolutionIsFeasible(model_proto, {0, 1, 1, 1, 1, 0, 0}));
+
+  SolutionCrushProto crush_proto;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr, &crush_proto);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  context.LoadAndClampSolutionHint();
+  context.ReadObjectiveFromProto();
+
+  const int initial_num_constraints = context.NumConstraints();
+  const int initial_crush_steps = crush_proto.steps_size();
+  ASSERT_EQ(context.num_presolve_operations, 0);
+
+  // Pass 1 adds ~a => ~b and ~a => ~c once.
+  DualBoundStrengthening dual_bound_strengthening;
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
+  ASSERT_EQ(context.NumConstraints(), initial_num_constraints + 2);
+  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
+  EXPECT_THAT(context.solution_crush().GetVarValues(),
+              ElementsAre(0, 0, 0, 1, 1, 0, 0));
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+
+  // Pass 2 with the bool_and constraints still in place is a complete no-op.
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
+  EXPECT_EQ(context.NumConstraints(), initial_num_constraints + 2);
+  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
+
+  // Simulate PresolvePureSatPart merging ~a => ~b and ~a => ~c into a single
+  // bool_and ~a => (~b ^ ~c) and clearing the second bool_and.
+  context.MutableConstraint(initial_num_constraints)
+      ->mutable_bool_and()
+      ->add_literals(NegatedRef(2));
+  context.ClearConstraint(initial_num_constraints + 1);
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
+  EXPECT_EQ(context.NumConstraints(), initial_num_constraints + 2);
+  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
+
+  // Simulate clique presolve clearing the bool_and constraint and rewriting
+  // the implications into at_most_one cliques (~a + b <= 1 and ~a + c <= 1).
+  // Note that these cliques still do not lock b or c from decreasing, so ct 0
+  // remains the unique decrease lock for b and c.
+  context.ClearConstraint(initial_num_constraints);
+  ConstraintProto* amo1 = context.AddConstraint();
+  amo1->mutable_at_most_one()->add_literals(NegatedRef(0));
+  amo1->mutable_at_most_one()->add_literals(1);
+  ConstraintProto* amo2 = context.AddConstraint();
+  amo2->mutable_at_most_one()->add_literals(NegatedRef(0));
+  amo2->mutable_at_most_one()->add_literals(2);
+  const int constraints_after_clique_rewrite = context.NumConstraints();
+
+  // Subsequent pass still does not re-add ~a => ~b or ~a => ~c, bump
+  // num_presolve_operations, or append duplicate SolutionCrushProto steps.
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
+  EXPECT_EQ(context.NumConstraints(), constraints_after_clique_rewrite);
+  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
 }
 
 TEST(DualBoundReductionTest, EquivalenceDetection) {
@@ -1022,12 +1132,12 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
@@ -1095,7 +1205,7 @@ TEST(
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
@@ -1106,8 +1216,7 @@ TEST(
 
   // 4. ExploitDominanceRelations preserves satisfiability and keeps the unique
   //    feasible solution (1, 1, 0).
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
-  EXPECT_FALSE(context.ModelIsUnsat());
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
   context.WriteVariableDomainsToProto();
 
   EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(1, 1, 0));
@@ -1157,12 +1266,12 @@ TEST(DualBoundReductionTest, MultipleEquivalenceDetection) {
   DualBoundStrengthening dual_bound_strengthening;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
-  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
 
   // Both a1 and a2 should be made equivalent to b in a single pass.
   EXPECT_EQ(context.GetLiteralRepresentative(1),
@@ -1220,7 +1329,7 @@ TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraint) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
@@ -1229,7 +1338,7 @@ TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraint) {
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
   EXPECT_THAT(var_dom.DominatingVariables(Y), ElementsAre(X));
 
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(1, 0, 1, 0));
   EXPECT_TRUE(
@@ -1283,7 +1392,7 @@ TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraintUpperSlackClamp) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
@@ -1293,7 +1402,7 @@ TEST(VarDominationTest, DominanceAcrossBoxedLinearConstraintUpperSlackClamp) {
   const IntegerVariable Z = VarDomination::RefToIntegerVariable(2);
   EXPECT_THAT(var_dom.DominatingVariables(Y), ElementsAre(X, NegationOf(Z)));
 
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0]");
   EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(2, 0, 0));
   EXPECT_TRUE(
@@ -1367,7 +1476,7 @@ TEST(VarDominationTest, UnclampedBoxedLinearConstraintRefinesPartition) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ASSERT_TRUE(
@@ -1379,7 +1488,7 @@ TEST(VarDominationTest, UnclampedBoxedLinearConstraintRefinesPartition) {
       var_dom.DominatingVariables(VarDomination::RefToIntegerVariable(kY1)),
       ElementsAre(VarDomination::RefToIntegerVariable(kY0)));
 
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
   EXPECT_EQ(context.DomainOf(kY1).ToString(), "[0]");
   EXPECT_EQ(context.solution_crush().GetVarValues()[kY0], 1);
   EXPECT_EQ(context.solution_crush().GetVarValues()[kY1], 0);
@@ -1428,7 +1537,7 @@ TEST(VarDominationTest, DominanceAcrossUnpropagatedEqualityConstraint) {
   VarDomination var_dom;
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
@@ -1437,7 +1546,7 @@ TEST(VarDominationTest, DominanceAcrossUnpropagatedEqualityConstraint) {
   const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
   EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
 
-  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_EQ(ExploitDominanceRelations(var_dom, &context), kOk);
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(0, 0, 1));
   EXPECT_TRUE(

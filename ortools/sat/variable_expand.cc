@@ -29,8 +29,10 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -411,7 +413,13 @@ void OrderEncoding::CollectAllOrderEncodingValues() {
 }
 
 namespace {
-bool ProcessEncodingConstraints(
+enum class EncodingScanStatus {
+  kUnsat,
+  kAbort,
+  kOk,
+};
+
+EncodingScanStatus ProcessEncodingConstraints(
     int var, PresolveContext* context, ValueEncoding& values,
     OrderEncoding& order,
     std::vector<std::vector<EncodingLinear1>>& linear_ones_by_type,
@@ -489,14 +497,14 @@ bool ProcessEncodingConstraints(
     if (ct.enforcement_literal().size() != 1) {
       context->UpdateRuleStats(
           "TODO variables: linear1 with multiple enforcement literals");
-      return false;
+      return EncodingScanStatus::kAbort;
     }
 
     const auto [opt_lin, status] = ProcessLinear1(ct, c, var_domain);
     if (!opt_lin.has_value()) {
       if (status == EncodingLinear1Status::kFalse) {
-        if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
-          return false;
+        if (context->SetLiteralToFalse(ct.enforcement_literal(0)).unsat()) {
+          return EncodingScanStatus::kUnsat;
         }
         continue;
       }
@@ -565,12 +573,12 @@ bool ProcessEncodingConstraints(
            .empty();
   values.CanonicalizeEncodedValuesAndAddEscapeValue(
       push_down_when_unconstrained, has_le_ge_linear1);
-  return true;
+  return EncodingScanStatus::kOk;
 }
 }  // namespace
 
-void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
-                                       SolutionCrush& solution_crush) {
+FeasibilityStatus TryToReplaceVariableByItsEncoding(
+    int var, PresolveContext* context, SolutionCrush& solution_crush) {
   const Domain var_domain = context->DomainOf(var);
   std::vector<std::vector<EncodingLinear1>> linear_ones_by_type(
       kNumEncodingLinear1Types);
@@ -588,14 +596,14 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       context->VarToConstraints(var).size() < var_domain.Size()) {
     VLOG(2) << "Early abort. Large domain not fully encoded with objective "
                "constraining";
-    return;
+    return kOk;
   }
 
-  if (!ProcessEncodingConstraints(var, context, values, order,
-                                  linear_ones_by_type, constraint_indices,
-                                  var_has_positive_objective_coefficient)) {
-    return;
-  }
+  const EncodingScanStatus scan_status = ProcessEncodingConstraints(
+      var, context, values, order, linear_ones_by_type, constraint_indices,
+      var_has_positive_objective_coefficient);
+  if (scan_status == EncodingScanStatus::kUnsat) return kUnsat;
+  if (scan_status == EncodingScanStatus::kAbort) return kOk;
 
   // Helpers to get the linear1 of each type for var.
   const auto& lin_eq =
@@ -630,9 +638,11 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       lin_domain[0].enforcement_literal ==
           NegatedRef(lin_domain[1].enforcement_literal)) {
     bool modified = false;
-    if (!context->IntersectDomainWith(
-            var, lin_domain[0].rhs.UnionWith(lin_domain[1].rhs), &modified)) {
-      return;
+    if (context
+            ->IntersectDomainWith(
+                var, lin_domain[0].rhs.UnionWith(lin_domain[1].rhs), &modified)
+            .unsat()) {
+      return kUnsat;
     }
     if (modified) {
       context->UpdateRuleStats(
@@ -657,14 +667,14 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       var_domain.Size() > 16) {
     context->UpdateRuleStats(
         "TODO variables: only used in partition encodings");
-    return;
+    return kOk;
   }
 
   if (values.empty()) {
     // This variable has no value encoding. Either enforced_domains is
     // empty, and in that case, we will not do anything about it, or the
     // variable is not used anymore, and it will be removed later.
-    return;
+    return kOk;
   }
 
   VLOG(2) << "ProcessVariableOnlyUsedInEncoding(): var(" << var
@@ -698,7 +708,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       context->UpdateRuleStats(
           "TODO variables: only used in large complex encodings");
     }
-    return;
+    return kOk;
   }
 
   values.CreateAllValueEncodingLiterals();
@@ -850,7 +860,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
         VLOG(2) << "Abort - overflow when converting linear1 to clauses";
         context->UpdateRuleStats(
             "TODO variables: overflow when converting linear1 to clauses");
-        return;
+        return kOk;
       }
     }
 
@@ -877,12 +887,14 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     }
     linear->add_domain(rhs_value);
     linear->add_domain(rhs_value);
-    if (!context->SubstituteVariableInObjective(
-            var, coeff_in_equality, encoding_ct,
-            /*substitution_does_not_change_objective_domain=*/true)) {
+    const ChangeStatus status = context->SubstituteVariableInObjective(
+        var, coeff_in_equality, encoding_ct,
+        /*substitution_does_not_change_objective_domain=*/true);
+    if (status.unsat()) return kUnsat;
+    if (!status.modified()) {
       context->UpdateRuleStats(
           "TODO variables: cannot substitute encoded variable in objective");
-      return;
+      return kOk;
     }
     context->UpdateRuleStats(
         "variables: only used in objective and in encodings");
@@ -918,7 +930,6 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     absl::c_sort(to_clear);
     for (const int c : to_clear) {
       context->ClearConstraint(c);
-      context->UpdateConstraintVariableUsage(c);
     }
   }
 
@@ -928,32 +939,77 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   for (const auto& [value, literal] : values.encoding()) {
     arg->add_literals(literal);
   }
-  if (context->ModelIsUnsat()) return;
 
   // To simplify the postsolve, we output a single constraint to infer X from
-  // the bi:  X = sum bi * (Vi - min_value) + min_value
+  // the bi: X = sum bi * (Vi - min_value) + min_value, falling back to
+  // per-value enforced equalities when the combined linear constraint would
+  // overflow.
   const int64_t var_min = var_domain.Min();
-  ConstraintProto* mapping_ct =
-      context->NewMappingConstraint(__FILE__, __LINE__);
-  mapping_ct->mutable_linear()->add_vars(var);
-  mapping_ct->mutable_linear()->add_coeffs(1);
+  LinearOverflowChecker overflow_checker;
+  bool can_use_single_linear =
+      overflow_checker.AddTerm(1, context->MinOf(var), context->MaxOf(var));
   int64_t offset = var_min;
-  for (const auto& [value, literal] : values.encoding()) {
-    const int64_t coeff = value - var_min;
-    if (coeff == 0) continue;
-    if (RefIsPositive(literal)) {
-      mapping_ct->mutable_linear()->add_vars(literal);
-      mapping_ct->mutable_linear()->add_coeffs(-coeff);
-    } else {
-      offset += coeff;
-      mapping_ct->mutable_linear()->add_vars(PositiveRef(literal));
-      mapping_ct->mutable_linear()->add_coeffs(coeff);
+  if (can_use_single_linear) {
+    for (const auto& [value, literal] : values.encoding()) {
+      const int64_t coeff = CapSub(value, var_min);
+      if (AtMinOrMaxInt64(coeff)) {
+        can_use_single_linear = false;
+        break;
+      }
+      if (coeff == 0) continue;
+      const int64_t term_coeff = RefIsPositive(literal) ? -coeff : coeff;
+      if (!overflow_checker.AddTerm(term_coeff, 0, 1)) {
+        can_use_single_linear = false;
+        break;
+      }
+      if (!RefIsPositive(literal)) {
+        offset = CapAdd(offset, coeff);
+        if (AtMinOrMaxInt64(offset)) {
+          can_use_single_linear = false;
+          break;
+        }
+      }
+    }
+    if (offset < -kint64max / 2 || offset > kint64max / 2) {
+      can_use_single_linear = false;
     }
   }
-  mapping_ct->mutable_linear()->add_domain(offset);
-  mapping_ct->mutable_linear()->add_domain(offset);
+  if (can_use_single_linear) {
+    ConstraintProto* mapping_ct =
+        context->NewMappingConstraint(__FILE__, __LINE__);
+    mapping_ct->mutable_linear()->add_vars(var);
+    mapping_ct->mutable_linear()->add_coeffs(1);
+    for (const auto& [value, literal] : values.encoding()) {
+      const int64_t coeff = value - var_min;
+      if (coeff == 0) continue;
+      if (RefIsPositive(literal)) {
+        mapping_ct->mutable_linear()->add_vars(literal);
+        mapping_ct->mutable_linear()->add_coeffs(-coeff);
+      } else {
+        mapping_ct->mutable_linear()->add_vars(PositiveRef(literal));
+        mapping_ct->mutable_linear()->add_coeffs(coeff);
+      }
+    }
+    mapping_ct->mutable_linear()->add_domain(offset);
+    mapping_ct->mutable_linear()->add_domain(offset);
+  } else {
+    for (const auto& [value, literal] : values.encoding()) {
+      ConstraintProto* mapping_ct =
+          context->NewMappingConstraint(__FILE__, __LINE__);
+      mapping_ct->add_enforcement_literal(literal);
+      mapping_ct->mutable_linear()->add_vars(var);
+      mapping_ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(value, mapping_ct->mutable_linear());
+    }
+    ConstraintProto* mapping_exo =
+        context->NewMappingConstraint(__FILE__, __LINE__);
+    for (const auto& [unused_value, literal] : values.encoding()) {
+      mapping_exo->mutable_exactly_one()->add_literals(literal);
+    }
+  }
 
   context->MarkVariableAsRemoved(var);
+  return kOk;
 }
 
 }  // namespace sat

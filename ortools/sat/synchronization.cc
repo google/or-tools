@@ -804,6 +804,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
     response->clear_objective_value();
     response->clear_best_objective_bound();
     response->clear_inner_objective_lower_bound();
+    response->clear_inner_objective_value();
     return;
   }
 
@@ -815,6 +816,8 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
   } else {
     response->set_objective_value(
         ScaleObjectiveValue(obj, best_solution_objective_value_));
+    response->set_inner_objective_value(
+        PostsolveInnerObjectiveValue(obj, best_solution_objective_value_));
   }
 
   // Update the best bound in the response.
@@ -1553,6 +1556,12 @@ std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
     *timestamp = num_equivalences_;
   }
   return GetRepresentativesImpl();
+}
+
+int64_t SharedClausesManager::NumEquivalences() const {
+  absl::ReaderMutexLock mutex_lock(mutex_);
+  return always_synchronize_ ? num_equivalences_
+                             : synchronized_num_equivalences_;
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {

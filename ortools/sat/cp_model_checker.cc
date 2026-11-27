@@ -911,7 +911,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
     const int64_t demand_min = MinOfExpression(model, demand);
     const int64_t demand_max = MaxOfExpression(model, demand);
     sum_abs = CapAdd(sum_abs, std::max(CapAbs(demand_min), CapAbs(demand_max)));
-    if (sum_abs == kint64max) {
+    if (sum_abs > kint64max / 2) {
       return "Possible integer overflow in constraint: " +
              ProtobufDebugString(ct);
     }
@@ -1221,10 +1221,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateLinearExpression(model, ct.lin_max().target()));
         for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
           RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
-        }
-        if (after_presolve && !LinMaxIsCanonical(ct)) {
-          return absl::StrCat("LinMax constraint is not in canonical form: ",
-                              ProtobufShortDebugString(ct));
         }
         break;
       }

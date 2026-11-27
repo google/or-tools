@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 #include "absl/functional/function_ref.h"
@@ -31,10 +32,14 @@ namespace operations_research {
 // If check_bounds is true, it will CHECK that f(x_true) = true and
 // f(x_false) = false.
 //
-// EXAMPLE:
+// EXAMPLES:
 //   // Finds the value x in [0,Pi/2] such that cos(x)=2sin(x):
-//   BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/M_PI/2,
-//                        [](double x) { return cos(x) >= 2*sin(x); });
+//   BinarySearch(/*x_true=*/0.0, /*x_false=*/M_PI/2,
+//                [](double x) { return cos(x) >= 2*sin(x); });
+//
+//   // Returns 42.
+//   bool IsGreaterThan41(int x) { return x > 41; }
+//   BinarySearch(/*x_true=*/100, /*x_false=*/0, IsGreaterThan41);
 //
 // MONOTONIC FUNCTIONS: Suppose f is a monotonic boolean function. See below for
 // the NON-MONOTONIC case.
@@ -75,8 +80,8 @@ namespace operations_research {
 // Note also that even if f() is non-deterministic, i.e. f(X) can sometimes
 // return true and sometimes false for the same X, then the binary search will
 // still finish, but it's hard to say anything about the returned X.
-template <class Point, bool check_bounds = DEBUG_MODE>
-Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f);
+template <class Point, bool check_bounds = DEBUG_MODE, class Func>
+Point BinarySearch(Point x_true, Point x_false, Func&& f);
 
 // Used by BinarySearch(). This is just (x+y)/2, with some DCHECKs to catch
 // overflows. You should override (i.e. specialize) it if you risk getting
@@ -109,8 +114,7 @@ Point BinarySearchMidpoint(Point x, Point y);
 // - We technically do not need the points to be sorted and can use
 //   linear-time median computation to speed this up.
 //
-// TODO(user): replace std::function by absl::FunctionRef here and in
-// BinarySearch().
+// TODO(user): use a templated callable like BinarySearch()) here.
 template <class Point, class Value>
 std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
                                       std::function<Value(Point)> f);
@@ -214,11 +218,12 @@ Point BinarySearchMidpoint(Point x, Point y) {
   return midpoint;
 }
 
-template <class Point, bool check_bounds>
-Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f) {
+template <class Point, bool check_bounds, class Func>
+Point BinarySearch(Point x_true, Point x_false, Func&& f) {
+  static_assert(std::is_same_v<bool, std::invoke_result_t<Func, Point>>);
   if constexpr (check_bounds) {
-    CHECK(f(x_true)) << x_true;
-    CHECK(!f(x_false)) << x_false;
+    CHECK(std::invoke(f, std::as_const(x_true))) << x_true;
+    CHECK(!std::invoke(f, std::as_const(x_false))) << x_false;
   }
   int num_iterations = 0;
   constexpr int kMaxNumIterations = 1000000;
@@ -234,7 +239,7 @@ Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f) {
              " input types don't converge when repeatedly taking the midpoint";
       return x_true;
     }
-    if (f(x)) {
+    if (std::invoke(f, x)) {
       x_true = x;
     } else {
       x_false = x;

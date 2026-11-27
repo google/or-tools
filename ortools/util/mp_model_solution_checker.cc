@@ -60,22 +60,21 @@ class ConstraintChecker {
       const absl::Span<const double> solution ABSL_ATTRIBUTE_LIFETIME_BOUND)
       : add_violation_(add_violation), options_(options), solution_(solution) {}
 
-  absl::Status Check(const MPConstraintProto& constraint,
+  absl::Status Check(const sat::EnforcedLinearConstraint& constraint,
                      const absl::string_view message_prefix) {
     sum_.Clear();
-    for (int j = 0; j < constraint.var_index_size(); ++j) {
-      auto var_index = constraint.var_index(j);
+    for (int j = 0; j < constraint.num_terms(); ++j) {
+      const int var_index = constraint.vars(j);
       if (var_index < 0 || var_index >= solution_.size()) {
         return ortools::InvalidArgumentErrorBuilder()
                << "Invalid variable index " << var_index << " in "
                << message_prefix << " " << constraint.name();
       }
-      sum_.AddProd(constraint.coefficient(j),
-                   solution_[constraint.var_index(j)]);
+      sum_.AddProd(constraint.coeffs(j), solution_[var_index]);
     }
     sum_.Add(options_.constraint_tolerance);
 
-    if (constraint.has_lower_bound() && sum_ < constraint.lower_bound()) {
+    if (sum_ < constraint.lower_bound()) {
       // Skip tolerance.
       sum_.Add(-options_.constraint_tolerance);
 
@@ -93,7 +92,7 @@ class ConstraintChecker {
     // Subtract twice the tolerance in order to replace +tolerance by
     // -tolerance.
     sum_.AddProd(-2, options_.constraint_tolerance);
-    if (constraint.has_upper_bound() && sum_ > constraint.upper_bound()) {
+    if (sum_ > constraint.upper_bound()) {
       // Skip tolerance.
       sum_.Add(options_.constraint_tolerance);
 
@@ -208,7 +207,7 @@ absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
     }
     if (!is_active) continue;
     ABSL_RETURN_IF_ERROR(
-        checker.Check(ct.proto(), absl::StrCat("indicator constraint ", i)));
+        checker.Check(ct, absl::StrCat("indicator constraint ", i)));
   }
   if (num_violations > 0 && options.logger != nullptr) {
     if (num_violations > options.max_logged_violations) {

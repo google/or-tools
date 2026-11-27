@@ -51,6 +51,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/util/affine_relation.h"
@@ -707,8 +708,55 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
-      case ConstraintProto::kRoutes:
-        // TODO(user): Implement this.
+      case ConstraintProto::kRoutes: {
+        // Similar to kCircuit, except that node 0 (the depot) has a distinct
+        // role and cannot be permuted with non-depot nodes.
+        // Note that like kCircuit, we do not create a central constraint_node
+        // unless the constraint has enforcement literals, in which case the
+        // enforcement logic after the switch attaches the enforcement literals
+        // to constraint_node and we must link constraint_node to every arc of
+        // this constraint.
+        const int num_arcs = constraint.routes().literals().size();
+        absl::flat_hash_map<int, int> routes_node_to_symmetry_node;
+        if (!constraint.enforcement_literal().empty()) {
+          CHECK_EQ(constraint_node, new_node(color));
+        }
+        std::vector<int64_t> arc_color = color;
+        arc_color.push_back(1);
+        std::vector<int64_t> node_color = color;
+        node_color.push_back(2);
+        std::vector<int64_t> depot_color = color;
+        depot_color.push_back(3);
+        for (int i = 0; i < num_arcs; ++i) {
+          const int literal = constraint.routes().literals(i);
+          const int tail = constraint.routes().tails(i);
+          const int head = constraint.routes().heads(i);
+          const int arc_node = new_node(arc_color);
+          auto [head_it, head_inserted] =
+              routes_node_to_symmetry_node.insert({head, 0});
+          if (head_inserted) {
+            head_it->second = new_node(head == 0 ? depot_color : node_color);
+          }
+          const int head_node = head_it->second;
+          auto [tail_it, tail_inserted] =
+              routes_node_to_symmetry_node.insert({tail, 0});
+          if (tail_inserted) {
+            tail_it->second = new_node(tail == 0 ? depot_color : node_color);
+          }
+          const int tail_node = tail_it->second;
+          // Connect constraint_node (which holds the enforcement literals) to
+          // every arc of the route constraint so that the enforcement literals
+          // apply to the entire route graph, including any disconnected
+          // components or self-loops.
+          if (!constraint.enforcement_literal().empty()) {
+            all_arcs.emplace_back(constraint_node, arc_node);
+          }
+          all_arcs.emplace_back(tail_node, arc_node);
+          all_arcs.emplace_back(get_literal_node(literal), arc_node);
+          all_arcs.emplace_back(arc_node, head_node);
+        }
+        break;
+      }
       case ConstraintProto::kElement:
       case ConstraintProto::kTable:
       case ConstraintProto::kAutomaton:
@@ -747,8 +795,12 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
   std::pair<int, int> current_arc = {-1, -1};
   int multiplicity = 0;
+  std::vector<bool> has_incoming_arc(num_variables, false);
 
   auto flush_arc = [&](int tail, int head, int count) {
+    if (head < num_variables) {
+      has_incoming_arc[head] = true;
+    }
     if (count == 1) {
       builder.AddArc(tail, head);
     } else {
@@ -787,7 +839,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // nodes, but we will need a mapping to know the variable <-> node index.
   int next_id = color_id_generator.NextFreeId();
   for (int i = 0; i < num_variables; ++i) {
-    if ((*graph)[i].empty()) {
+    if ((*graph)[i].empty() && !has_incoming_arc[i]) {
       (*initial_equivalence_classes)[i] = next_id++;
     }
   }
@@ -989,13 +1041,13 @@ namespace {
 // TODO(user): The same reasoning can be done if fixing the variable to
 // zero leads to many propagations at one. For general variables, we might be
 // able to do something too.
-void OrbitAndPropagation(absl::Span<const int> orbits, int var,
-                         std::vector<int>* can_be_fixed_to_false,
-                         PresolveContext* context) {
+FeasibilityStatus OrbitAndPropagation(absl::Span<const int> orbits, int var,
+                                      std::vector<int>* can_be_fixed_to_false,
+                                      PresolveContext* context) {
   // Note that if a variable is fixed in the orbit, then everything should be
   // fixed.
-  if (context->IsFixed(var)) return;
-  if (!context->CanBeUsedAsLiteral(var)) return;
+  if (context->IsFixed(var)) return kOk;
+  if (!context->CanBeUsedAsLiteral(var)) return kOk;
 
   // Let's fix var to true and see what is propagated.
   //
@@ -1009,16 +1061,16 @@ void OrbitAndPropagation(absl::Span<const int> orbits, int var,
   // be duplicated to all the variables from an orbit! It is also why we just
   // need to propagate one variable here.
   Model model;
-  if (!LoadModelForProbing(context, &model)) return;
+  if (LoadModelForProbing(context, &model).unsat()) return kUnsat;
 
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   auto* mapping = model.GetOrCreate<CpModelMapping>();
   const Literal to_propagate = mapping->Literal(var);
 
   const VariablesAssignment& assignment = sat_solver->Assignment();
-  if (assignment.LiteralIsAssigned(to_propagate)) return;
+  if (assignment.LiteralIsAssigned(to_propagate)) return kOk;
   sat_solver->EnqueueDecisionAndBackjumpOnConflict(to_propagate);
-  if (sat_solver->CurrentDecisionLevel() != 1) return;
+  if (sat_solver->CurrentDecisionLevel() != 1) return kOk;
 
   // We can fix to false any variable that is in the orbit and set to false!
   can_be_fixed_to_false->clear();
@@ -1042,6 +1094,7 @@ void OrbitAndPropagation(absl::Span<const int> orbits, int var,
                "[Symmetry] Num fixable by binary propagation in orbit: ",
                can_be_fixed_to_false->size(), " / ", orbit_size);
   }
+  return kOk;
 }
 
 std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
@@ -1092,11 +1145,10 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
 
 }  // namespace
 
-bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
+FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
+    PresolveContext* context) {
   const SatParameters& params = context->params();
   const CpModelProto& proto = context->WorkingModel();
-
-  if (context->ModelIsUnsat()) return false;
 
   // We need to make sure the proto is up to date before computing symmetries!
   if (proto.has_objective()) {
@@ -1158,7 +1210,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // Remove temporary affine relations.
   mutable_model->mutable_constraints()->DeleteSubrange(initial_ct_index,
                                                        num_added);
-  if (generators.empty()) return true;
+  if (generators.empty()) return kOk;
 
   // Collect the at most ones.
   //
@@ -1205,8 +1257,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
   // First heuristic based on propagation, see the function comment.
   if (max_orbit_size > 2) {
-    OrbitAndPropagation(orbits, distinguished_var, &can_be_fixed_to_false,
-                        context);
+    if (OrbitAndPropagation(orbits, distinguished_var, &can_be_fixed_to_false,
+                            context)
+            .unsat()) {
+      return kUnsat;
+    }
   }
   const int first_heuristic_size = can_be_fixed_to_false.size();
 
@@ -1346,7 +1401,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         }
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
         context->solution_crush().SortOrbitopeColumns(orbitope, objective_row);
-        return true;
+        return kOk;
       }
     }
   }
@@ -1385,7 +1440,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       100 * num_fixable < sum_of_orbit_sizes) {
     SOLVER_LOG(context->logger(),
                "[Symmetry] Not fixing anything as gain seems too small.");
-    return true;
+    return kOk;
   }
 
   // Fix "can_be_fixed_to_false" instead of the orbitope if it is larger.
@@ -1425,7 +1480,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
-      if (!context->SetLiteralToFalse(var)) return false;
+      if (context->SetLiteralToFalse(var).unsat()) return kUnsat;
     }
 
     // Moreover, we can add the implication that in the orbit of
@@ -1444,9 +1499,9 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         bool_and->add_literals(NegatedRef(var));
       }
     }
-    return true;
+    return kOk;
   }
-  if (orbitope.empty()) return true;
+  if (orbitope.empty()) return kOk;
 
   // This will always be kept all zero after usage.
   std::vector<int> tmp_to_clear;
@@ -1584,14 +1639,15 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         if (num_cols == 2 && !row_is_all_equivalent[i]) {
           // We have [1, 0] or [0, 1].
           context->UpdateRuleStats("symmetry: equivalence in orbitope row");
-          if (!context->StoreBooleanEqualityRelation(
-                  orbitope[i][0], NegatedRef(orbitope[i][1]))) {
-            return false;
+          if (context
+                  ->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                 NegatedRef(orbitope[i][1]))
+                  .unsat()) {
+            return kUnsat;
           }
-          if (context->ModelIsUnsat()) return false;
         } else {
           // No solution.
-          return context->NotifyThatModelIsUnsat("orbitope and at most one");
+          return context->NotifyUnsat("orbitope and at most one");
         }
         continue;
       }
@@ -1607,21 +1663,26 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         if (row_has_at_most_one_false[i]) {
           context->UpdateRuleStats("symmetry: all true in orbitope row");
           for (int j = 0; j < num_cols; ++j) {
-            if (!context->SetLiteralToTrue(orbitope[i][j])) return false;
+            if (context->SetLiteralToTrue(orbitope[i][j]).unsat()) {
+              return kUnsat;
+            }
           }
         } else if (row_has_at_most_one_true[i]) {
           context->UpdateRuleStats("symmetry: all false in orbitope row");
           for (int j = 0; j < num_cols; ++j) {
-            if (!context->SetLiteralToFalse(orbitope[i][j])) return false;
+            if (context->SetLiteralToFalse(orbitope[i][j]).unsat()) {
+              return kUnsat;
+            }
           }
         } else {
           context->UpdateRuleStats("symmetry: all equivalent in orbitope row");
           for (int j = 1; j < num_cols; ++j) {
-            if (!context->StoreBooleanEqualityRelation(orbitope[i][0],
-                                                       orbitope[i][j])) {
-              return false;
+            if (context
+                    ->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                   orbitope[i][j])
+                    .unsat()) {
+              return kUnsat;
             }
-            if (context->ModelIsUnsat()) return false;
           }
         }
         continue;
@@ -1661,7 +1722,9 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         context->solution_crush().MaybeSwapOrbitopeColumns(
             orbitope, row, num_processed_rows - 1, true);
         for (int j = num_processed_rows; j < num_cols; ++j) {
-          if (!context->SetLiteralToFalse(orbitope[row][j])) return false;
+          if (context->SetLiteralToFalse(orbitope[row][j]).unsat()) {
+            return kUnsat;
+          }
         }
       } else {
         CHECK(row_has_at_most_one_false[row]);
@@ -1670,7 +1733,9 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         context->solution_crush().MaybeSwapOrbitopeColumns(
             orbitope, row, num_processed_rows - 1, false);
         for (int j = num_processed_rows; j < num_cols; ++j) {
-          if (!context->SetLiteralToTrue(orbitope[row][j])) return false;
+          if (context->SetLiteralToTrue(orbitope[row][j]).unsat()) {
+            return kUnsat;
+          }
         }
       }
     }
@@ -1700,7 +1765,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // The transformations below seem to hurt more than what they help.
   // Especially when we handle symmetry during the search like with max_lp_sym
   // worker. See for instance neos-948346.pb or map06.pb.gz.
-  if (params.symmetry_level() <= 3) return true;
+  if (params.symmetry_level() <= 3) return kOk;
 
   // If we are left with a set of variables that can all be permuted, let's
   // break the symmetry by ordering them.
@@ -1763,10 +1828,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
                      is_approximated ? "approximated " : "",
                      "inequality ordering orbitope columns"),
         orbitope[0].size());
-    return true;
+    return kOk;
   }
 
-  return true;
+  return kOk;
 }
 
 namespace {
@@ -1787,7 +1852,7 @@ std::vector<absl::Span<int>> GetCyclesAsSpan(
 
 }  // namespace
 
-bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
+void FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
                                          PresolveContext* context) {
   std::vector<absl::Span<int>> cycles;
   int num_problematic_generators = 0;
@@ -1942,8 +2007,6 @@ bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
     const std::vector<int> orbits = GetOrbits(num_vars, generators);
     LogOrbitInformation(orbits, context->logger());
   }
-
-  return true;
 }
 
 }  // namespace sat

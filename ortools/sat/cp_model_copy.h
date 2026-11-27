@@ -17,18 +17,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -37,19 +38,71 @@
 #include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
+// Returned by model copy operations that finish copying without proving
+// infeasibility (`kOk`), prove infeasibility (`kUnsat`), or abort early when
+// the time limit is reached (`kCopyTimeLimitReached`).
+class [[nodiscard]] CopyStatus {
+ public:
+  constexpr CopyStatus(UnsatStatus) : state_(State::kUnsat) {}
+  constexpr CopyStatus(FeasibilityStatus status)
+      : state_(status.unsat() ? State::kUnsat : State::kOk) {}
+  static constexpr CopyStatus TimeLimitReached() {
+    return CopyStatus(State::kTimeLimitReached);
+  }
+  constexpr bool ok() const { return state_ == State::kOk; }
+  constexpr bool unsat() const { return state_ == State::kUnsat; }
+  constexpr bool time_limit_reached() const {
+    return state_ == State::kTimeLimitReached;
+  }
+  friend constexpr bool operator==(CopyStatus, CopyStatus) = default;
+
+ private:
+  enum class State : uint8_t {
+    kOk,
+    kUnsat,
+    kTimeLimitReached,
+  };
+  explicit constexpr CopyStatus(State state) : state_(state) {}
+  State state_;
+};
+inline constexpr CopyStatus kCopyTimeLimitReached =
+    CopyStatus::TimeLimitReached();
+
 // A variable which is removed from the model during copy.
 // This can only be done if the variable is fixed.
 constexpr int kNoVariableMapping = kint32min;
+
+// Compact size summary of a CpModelProto used to estimate model copy
+// deterministic time.
+struct ModelStats {
+  int64_t num_variables = 0;
+  int64_t num_constraints = 0;
+  int64_t num_enforcement_literals = 0;
+  int64_t num_literals = 0;
+  int64_t num_linear_expressions = 0;
+  int64_t num_linear_terms = 0;
+  int64_t num_intervals = 0;
+  int64_t num_interval_references = 0;
+  int64_t num_table_values = 0;
+  int64_t num_automaton_transitions = 0;
+
+  bool operator==(const ModelStats& other) const = default;
+};
+
+ModelStats ComputeModelStats(const CpModelProto& model_proto);
+double EstimateCopyDeterministicTime(const ModelStats& stats);
 
 // A simpler version of PresolveContext with just a few helpers to query and
 // manipulate variable domains during the copy and handle remapping.
@@ -69,8 +122,8 @@ class ModelCopyHelper {
   // More than one variable can be mapped to the same index, in which case these
   // are assumed to be equivalent. And input variables with kNoVariableMapping
   // must be fixed, that is InputIsFixed() should return true.
-  bool InitializeDomains(std::vector<Domain> domains,
-                         absl::Span<const int> mapping);
+  FeasibilityStatus InitializeDomains(std::vector<Domain> domains,
+                                      absl::Span<const int> mapping);
 
   // All Input*() functions accept variable indices in the input space. Note
   // however that the "fixed" status might reflect changes we did in the mapped
@@ -90,15 +143,14 @@ class ModelCopyHelper {
 
   // All the *Mapped*() functions work in the mapped space, after the mapping
   // has been applied. All the mutable functions are in this category.
-  ABSL_MUST_USE_RESULT bool IntersectMappedDomainWith(int var,
-                                                      const Domain& domain);
+  FeasibilityStatus IntersectMappedDomainWith(int var, const Domain& domain);
 
-  ABSL_MUST_USE_RESULT bool SetMappedLiteralToTrue(int ref) {
+  FeasibilityStatus SetMappedLiteralToTrue(int ref) {
     const int value = RefIsPositive(ref) ? 1 : 0;
     return IntersectMappedDomainWith(PositiveRef(ref), Domain(value));
   }
 
-  ABSL_MUST_USE_RESULT bool SetMappedLiteralToFalse(int ref) {
+  FeasibilityStatus SetMappedLiteralToFalse(int ref) {
     const int value = RefIsPositive(ref) ? 0 : 1;
     return IntersectMappedDomainWith(PositiveRef(ref), Domain(value));
   }
@@ -190,12 +242,12 @@ class ModelCopy {
   // This must be done first before any other call here. Note that the actual
   // IntegerVariableProto will only be written to the out_model in FinishCopy().
   //
-  // Returns false iff the model was infeasible. This can happen if we map
+  // Returns kUnsat iff the model was infeasible. This can happen if we map
   // two incompatible variables to the same one, or if some domains were empty.
-  ABSL_MUST_USE_RESULT bool ImportVariables(const CpModelProto& in_model);
+  FeasibilityStatus ImportVariables(const CpModelProto& in_model);
 
   // Same as ImportVariables() but from a vector of Domain instead.
-  ABSL_MUST_USE_RESULT bool CreateVariablesFromDomains(
+  FeasibilityStatus CreateVariablesFromDomains(
       absl::Span<const Domain> domains);
 
   // This must be done before we import the constraints. The hint will be
@@ -211,7 +263,8 @@ class ModelCopy {
   // variables part copied. The hint must also be imported first so that it can
   // be updated during the simplification.
   //
-  // It returns false iff the model is proven infeasible.
+  // Returns kUnsat if the model is proven infeasible, kCopyTimeLimitReached
+  // if the time limit is reached, or kOk otherwise.
   //
   // It does not clear the constraints part of the working model of the context.
   //
@@ -219,25 +272,25 @@ class ModelCopy {
   // constraints so that they only use references to previously defined
   // intervals. This allows being more efficient later in a few preprocessing
   // steps.
-  ABSL_MUST_USE_RESULT bool ImportAndSimplifyConstraints(
+  CopyStatus ImportAndSimplifyConstraints(
       const CpModelProto& in_model, bool first_copy = false,
       const std::function<bool(int)>& active_constraints = nullptr);
 
   // Imports and writes the objective.
-  ABSL_MUST_USE_RESULT bool ImportObjective(const CpModelProto& in_model,
-                                            bool clear_internal_fields);
+  FeasibilityStatus ImportObjective(const CpModelProto& in_model,
+                                    bool clear_internal_fields);
 
   // Copies the non-constraint, non-variable part of the model. `copy_symmetry`
   // is only supported if there is no variable mapping.
-  ABSL_MUST_USE_RESULT bool ImportEverythingExceptVariablesConstraintsAndHint(
+  FeasibilityStatus ImportEverythingExceptVariablesConstraintsAndHint(
       const CpModelProto& in_model, bool clear_internal_fields,
       bool copy_symmetry = true);
 
   // This must be called to finish the copy. Note that variables proto will only
   // be filled at this stage in the out_model.
   //
-  // Returns false iff the model was infeasible.
-  ABSL_MUST_USE_RESULT bool FinishCopy(const CpModelProto& in_model);
+  // Returns kUnsat iff the model was infeasible.
+  FeasibilityStatus FinishCopy(const CpModelProto& in_model);
 
   // Advanced usage. When a model was copied, interval_mapping[i] will
   // contain for a copied interval with original index i, its new index.
@@ -249,46 +302,46 @@ class ModelCopy {
   // Write a summary of what happens to the logger_.
   void DisplaySummary();
 
-  // Overwrites the out_model to be unsat. Returns false.
+  // Overwrites the out_model to be unsat. Returns kUnsat.
   // The arguments are used to log which constraint caused unsat.
-  bool CreateUnsatModel(int c, const ConstraintProto& ct);
+  UnsatStatus CreateUnsatModel(int c, const ConstraintProto& ct);
 
   // Returns false if the constraint is never enforced and can be skipped.
   bool PrepareEnforcementCopy(const ConstraintProto& ct);
   bool PrepareEnforcementCopyWithDup(const ConstraintProto& ct);
   void FinishEnforcementCopy(ConstraintProto* ct);
 
-  // All these functions return false if the constraint is found infeasible.
+  // All these functions return kUnsat if the constraint is found infeasible.
 
-  // Copy a constraint that is always false, returning false if the enforcement
+  // Copy a constraint that is always false, returning kUnsat if the enforcement
   // literals are empty or creating a constraint forcing at least one of them to
   // be false.
-  bool CopyFalseConstraint();
+  FeasibilityStatus CopyFalseConstraint();
 
   // Copy a constraint that is either always or never satisfied.
-  bool CopyTrivialConstraint(bool is_always_satisfied) {
-    if (is_always_satisfied) return true;
+  FeasibilityStatus CopyTrivialConstraint(bool is_always_satisfied) {
+    if (is_always_satisfied) return kOk;
     return CopyFalseConstraint();
   }
 
-  bool CopyBoolOr(const ConstraintProto& ct);
-  bool CopyBoolOrWithDupSupport(const ConstraintProto& ct,
-                                int one_based_cnf_index);
-  bool FinishBoolOrCopy();
+  FeasibilityStatus CopyBoolOr(const ConstraintProto& ct);
+  FeasibilityStatus CopyBoolOrWithDupSupport(const ConstraintProto& ct,
+                                             int one_based_cnf_index);
+  FeasibilityStatus FinishBoolOrCopy();
 
-  bool CopyBoolAnd(const ConstraintProto& ct);
-  bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
+  FeasibilityStatus CopyBoolAnd(const ConstraintProto& ct);
+  FeasibilityStatus CopyBoolAndWithDupSupport(const ConstraintProto& ct);
 
-  bool CopyAtMostOne(const ConstraintProto& ct);
-  bool CopyExactlyOne(const ConstraintProto& ct);
-  bool CopyBoolXor(const ConstraintProto& ct);
+  FeasibilityStatus CopyAtMostOne(const ConstraintProto& ct);
+  FeasibilityStatus CopyExactlyOne(const ConstraintProto& ct);
+  FeasibilityStatus CopyBoolXor(const ConstraintProto& ct);
 
-  bool CopyElement(const ConstraintProto& ct);
-  bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
-  bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
-  bool CopyIntMod(const ConstraintProto& ct, bool ignore_names);
-  bool CopyLinear(const ConstraintProto& ct, bool canonicalize);
-  bool CopyLinearExpression(
+  FeasibilityStatus CopyElement(const ConstraintProto& ct);
+  FeasibilityStatus CopyIntProd(const ConstraintProto& ct, bool ignore_names);
+  FeasibilityStatus CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
+  FeasibilityStatus CopyIntMod(const ConstraintProto& ct, bool ignore_names);
+  FeasibilityStatus CopyLinear(const ConstraintProto& ct, bool canonicalize);
+  void CopyLinearExpression(
       const LinearExpressionProto& expr, LinearExpressionProto* dst,
       const absl::flat_hash_set<int>* mapped_enforcement_literals = nullptr);
   template <typename T>
@@ -301,22 +354,23 @@ class ModelCopy {
   int64_t FillNonFixedTermsAndReturnOffset(const T& proto_with_vars_and_coeffs,
                                            int64_t offset = 0);
 
-  bool CopyAutomaton(const ConstraintProto& ct);
-  bool CopyTable(const ConstraintProto& ct);
-  bool CopyAllDiff(const ConstraintProto& ct);
-  bool CopyLinMax(const ConstraintProto& ct);
-  bool CopyCircuit(const ConstraintProto& ct);
-  bool CopyRoutes(const ConstraintProto& ct);
-  bool CopyInverse(const ConstraintProto& ct);
-  bool CopyReservoir(const ConstraintProto& ct);
+  FeasibilityStatus CopyAutomaton(const ConstraintProto& ct);
+  FeasibilityStatus CopyTable(const ConstraintProto& ct);
+  FeasibilityStatus CopyAllDiff(const ConstraintProto& ct);
+  FeasibilityStatus CopyLinMax(const ConstraintProto& ct);
+  FeasibilityStatus CopyCircuit(const ConstraintProto& ct);
+  FeasibilityStatus CopyRoutes(const ConstraintProto& ct);
+  FeasibilityStatus CopyInverse(const ConstraintProto& ct);
+  FeasibilityStatus CopyReservoir(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allows simplifying
   // the input proto and client side code. If there are more than one
   // enforcement literals, we replace them with a new one, made equal to their
   // conjunction with two new constraints.
-  bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
-  bool AddLinearConstraintForInterval(const ConstraintProto& ct);
+  FeasibilityStatus CopyInterval(const ConstraintProto& ct, int c,
+                                 bool ignore_names);
+  FeasibilityStatus AddLinearConstraintForInterval(const ConstraintProto& ct);
   int GetOrCreateVariableForConjunction(std::vector<int>* literals);
 
   // These functions remove unperformed intervals. Note that they require
@@ -324,10 +378,10 @@ class ModelCopy {
   // if interval_mapping_ is empty.
   void CopyAndMapNoOverlap(const ConstraintProto& ct);
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
-  bool CopyAndMapCumulative(const ConstraintProto& ct);
+  FeasibilityStatus CopyAndMapCumulative(const ConstraintProto& ct);
 
-  bool CopyObjective(const CpObjectiveProto& objective,
-                     bool clear_internal_fields);
+  FeasibilityStatus CopyObjective(const CpObjectiveProto& objective,
+                                  bool clear_internal_fields);
   void CopyFloatingPointObjective(const FloatObjectiveProto& objective);
 
   // Expands linear expressions with more than one variable in constraints which
@@ -393,6 +447,7 @@ class ModelCopy {
 
   ModelCopyHelper helper_;
   const SatParameters& params_;
+  TimeLimit* time_limit_;
   SolverLogger* logger_;
   CpModelProto* working_model_;
 
@@ -431,23 +486,26 @@ class ModelCopy {
 };
 
 // Copy in_proto to out_proto.
-// It performs on the fly simplification, and returns false if the
+// It performs on the fly simplification, and returns kUnsat if the
 // model is proved infeasible. It reads the parameters 'ignore_names' and keeps
 // or deletes variables and constraints names accordingly.
 //
 // This should only be called on the first copy of the user given model.
 // Note that this reorders all constraints that use intervals last. We lose the
 // user-defined order, but hopefully that should not matter too much.
-bool CopyModel(const CpModelProto& in_proto, bool clear_internal_fields,
-               CpModelProto* out_proto, Model* model);
+FeasibilityStatus CopyModel(const CpModelProto& in_proto,
+                            bool clear_internal_fields, CpModelProto* out_proto,
+                            Model* model);
 
 // Same as CopyModel() except that variable domains are read from domains and
-// constraints might be filtered. Returns false if the model is infeasible.
-ABSL_MUST_USE_RESULT bool CopyModelAdvanced(
-    const CpModelProto& in_proto, bool clear_internal_fields,
-    absl::Span<const Domain> domains,
-    const std::function<bool(int)>& active_constraints,
-    std::vector<int>* interval_mapping, CpModelProto* out_proto, Model* model);
+// constraints might be filtered. Returns kUnsat if the model is infeasible,
+// kCopyTimeLimitReached if the time limit is reached, or kOk otherwise.
+CopyStatus CopyModelAdvanced(const CpModelProto& in_proto,
+                             bool clear_internal_fields,
+                             absl::Span<const Domain> domains,
+                             const std::function<bool(int)>& active_constraints,
+                             std::vector<int>* interval_mapping,
+                             CpModelProto* out_proto, Model* model);
 
 // Accessing Domain can be expensive, so we maintain a vector of bool for the
 // hot spots.
@@ -476,28 +534,41 @@ class VariableDomains {
 
 // A CpModelProto copy where fixed and non-representative variables are removed,
 // which can be dynamically updated when new bounds or equivalences are found.
+//
+// Non-fixing bound updates are applied incrementally in place to
+// `var_domains()`, while `proto()` is rebuilt once the fraction of unfixed
+// variables newly fixed or merged by equivalences reaches
+// `min_variable_reduction_ratio`.
 class DenseModelCopy {
  public:
-  // active_constraints() will be used in the initial copy of the
-  // input_model_proto into the dense model.
+  // active_constraints() will be used when copying input_model_proto into the
+  // dense model.
   DenseModelCopy(absl::string_view name, const CpModelProto& input_model_proto,
                  SharedBoundsManager* shared_bounds,
                  SharedClausesManager* shared_clauses,
                  std::function<bool(int)> active_constraints = nullptr);
 
-  // The timestamp of the shared bounds and equivalences used to compute this
-  // dense model copy.
+  // The timestamps of the shared bounds and equivalences used at the last full
+  // model build. Incremental domain updates do not change these timestamps.
   int64_t bounds_timestamp() const { return bounds_timestamp_; }
   int64_t equivalences_timestamp() const { return equivalences_timestamp_; }
 
   // The dense model proto and the domains of its variables.
-  const CpModelProto& proto() const { return model_proto_; }
+  const CpModelProto& proto() const {
+    return model_proto_ != nullptr ? *model_proto_ : input_model_proto_;
+  }
   const VariableDomains& var_domains() const { return var_domains_; }
 
-  // Updates the model with the latest bounds and equivalences from the
-  // SharedBoundsManager and SharedClausesManager. Returns false if the model is
-  // proven infeasible. Sets `updated` to true if the model was updated.
-  bool MaybeUpdate(bool& updated);
+  // Updates `var_domains()` incrementally with the latest shared bounds and,
+  // when the fraction of unfixed variables newly fixed or merged by
+  // equivalences is at least `min_variable_reduction_ratio` (or on the first
+  // call when `active_constraints` is set), rebuilds `proto()` to remove fixed
+  // and equivalent variables. Pass `min_variable_reduction_ratio > 1.0` to
+  // update domains in place without rebuilding. Returns kUnsat if the model is
+  // proven infeasible. Sets `updated` to true iff `proto()` and the variable
+  // mapping were rebuilt.
+  FeasibilityStatus MaybeUpdate(bool& updated,
+                                double min_variable_reduction_ratio = 0.0);
 
   // Maps a solution from the input model to the dense model, and vice versa.
   std::vector<int64_t> MapSolution(
@@ -509,42 +580,51 @@ class DenseModelCopy {
   int64_t MapInnerObjectiveValue(int64_t input_inner_objective_value) const;
 
  private:
-  // Return false if one of the domains becomes empty (UNSAT). This might happen
-  // while we are cleaning up all workers at the end of a search.
-  bool UpdateFromSharedBounds(int64_t& timestamp);
+  // Updates `input_var_domains_` and `var_domains_` in place from
+  // `shared_bounds_`. Returns kUnsat if any domain becomes empty (UNSAT).
+  FeasibilityStatus UpdateFromSharedBounds();
+  bool ShouldRebuild(double min_variable_reduction_ratio) const;
 
   // Computes and applies a dense mapping of the variables which removes fixed
-  // and non-representative variables. Returns false if UNSAT.
-  bool ComputeVariableMapping(absl::Span<const int> input_var_representatives);
-  bool ApplyVariableMapping();
+  // and non-representative variables. Returns kUnsat if UNSAT.
+  FeasibilityStatus ComputeVariableMapping(
+      absl::Span<const int> input_var_representatives);
+  FeasibilityStatus ApplyVariableMapping();
   void ResetVarDomains();
 
   const CpModelProto& input_model_proto_;
-  SharedClausesManager* shared_clauses_;
-  SharedBoundsManager* shared_bounds_;
+  SharedClausesManager* const shared_clauses_;
+  SharedBoundsManager* const shared_bounds_;
   const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
 
-  // Timestamps of the data used to compute the fields below.
+  bool first_update_ = true;
+  bool is_unsat_ = false;
+
+  // Timestamps of the data used at the last full model rebuild.
   int64_t bounds_timestamp_ = -1;
+  int64_t latest_bounds_timestamp_ = -1;
   int64_t equivalences_timestamp_ = -1;
+  int64_t fixed_vars_at_last_rebuild_ = 0;
 
   // A dense `input_model_proto_` copy, with fixed and non-representative
-  // variables removed. Unless stated otherwise with an explicit mention to the
-  // 'input' model, the fields, methods, and method parameters in this class
-  // operate on the variables and constraints of this model.
-  CpModelProto model_proto_;
+  // variables removed. Allocated lazily on `arena_` once the first rebuild
+  // occurs. Unless stated otherwise with an explicit mention to the 'input'
+  // model, the fields, methods, and method parameters in this class operate on
+  // the variables and constraints of `proto()`.
+  std::unique_ptr<google::protobuf::Arena> arena_;
+  CpModelProto* model_proto_ = nullptr;
 
-  // A mapping from the `input_model_proto_` to the `model_proto_` variables,
-  // which removes the fixed and non-representative variables. Removed variables
-  // are "mapped" to `kNoVariableMapping`.
+  // A mapping from the `input_model_proto_` to `proto()` variables, which
+  // removes the fixed and non-representative variables. Removed variables are
+  // "mapped" to `kNoVariableMapping`.
   std::vector<int> input_var_mapping_;
   // The reverse mapping from the dense to the input variables.
   std::vector<int> reverse_mapping_;
 
   // The domains of the `input_model_proto_` variables.
   std::vector<Domain> input_var_domains_;
-  // The domains of the `model_proto_` variables.
+  // The domains of the `proto()` variables.
   VariableDomains var_domains_;
 
   // Temporary data for UpdateFromSharedBounds().

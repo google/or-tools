@@ -2452,20 +2452,6 @@ LocalSearchOperator* Solver::MakeOperator(
     case Solver::EXTENDEDSWAPACTIVE: {
       return MakeExtendedSwapActive(this, vars, secondary_vars, nullptr);
     }
-    case Solver::PATHLNS: {
-      return MakePathLns(this, vars, secondary_vars, /*number_of_chunks=*/2,
-                         /*chunk_size=*/3, /*unactive_fragments=*/false);
-    }
-    case Solver::FULLPATHLNS: {
-      return MakePathLns(this, vars, secondary_vars,
-                         /*number_of_chunks=*/1,
-                         /*chunk_size=*/0,
-                         /*unactive_fragments=*/true);
-    }
-    case Solver::UNACTIVELNS: {
-      return MakePathLns(this, vars, secondary_vars, /*number_of_chunks=*/1,
-                         /*chunk_size=*/6, /*unactive_fragments=*/true);
-    }
     case Solver::INCREMENT: {
       if (!secondary_vars.empty()) {
         LOG(FATAL) << "Operator " << op
