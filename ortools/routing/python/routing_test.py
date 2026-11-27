@@ -400,28 +400,6 @@ class ModelTest(absltest.TestCase):
             [1, 3], routing_model.get_amortized_quadratic_cost_factors_of_vehicles()
         )
 
-    def test_vehicle_used_when_empty(self) -> None:
-        # One vehicle whose start (node 0) differs from its end (node 1), and
-        # no other node: the route is always empty.
-        def solve(used_when_empty: bool) -> int:
-            manager = routing.IndexManager(2, 1, [0], [1])
-            routing_model = routing.Model(manager)
-            transit_idx = routing_model.register_transit_callback(lambda i, j: 10)
-            routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-            self.assertFalse(routing_model.is_vehicle_used_when_empty(0))
-            routing_model.set_vehicle_used_when_empty(used_when_empty, 0)
-            self.assertEqual(
-                used_when_empty, routing_model.is_vehicle_used_when_empty(0)
-            )
-            assignment = routing_model.solve()
-            self.assertIsNotNone(assignment)
-            return assignment.objective_value()
-
-        # By default an empty route costs nothing; when the vehicle is used
-        # when empty, its start->end arc cost is counted.
-        self.assertEqual(0, solve(False))
-        self.assertEqual(10, solve(True))
-
     def test_pickup_and_delivery(self) -> None:
         manager = routing.IndexManager(num_nodes=10, num_vehicles=1, depot=0)
         routing_model = routing.Model(manager)
@@ -707,6 +685,40 @@ class ModelTest(absltest.TestCase):
 
         solution = model.solve_with_parameters(search_parameters)
         print(solution)
+
+    def test_vehicle_used_when_empty(self) -> None:
+        manager = routing.IndexManager(3, 2, [0, 1], [1, 2])
+        model = routing.Model(manager)
+        self.assertFalse(model.is_vehicle_used_when_empty(0))
+        self.assertFalse(model.is_vehicle_used_when_empty(1))
+
+        model.set_vehicle_used_when_empty(True, 0)
+        self.assertTrue(model.is_vehicle_used_when_empty(0))
+        self.assertFalse(model.is_vehicle_used_when_empty(1))
+
+        model.set_vehicle_used_when_empty(is_used=False, vehicle=0)
+        self.assertFalse(model.is_vehicle_used_when_empty(vehicle=0))
+
+        with self.assertRaisesRegex(IndexError, "vehicle index out of range"):
+            model.set_vehicle_used_when_empty(True, -1)
+        with self.assertRaisesRegex(IndexError, "vehicle index out of range"):
+            model.set_vehicle_used_when_empty(True, 2)
+        with self.assertRaisesRegex(IndexError, "vehicle index out of range"):
+            model.is_vehicle_used_when_empty(-1)
+        with self.assertRaisesRegex(IndexError, "vehicle index out of range"):
+            model.is_vehicle_used_when_empty(2)
+
+        # Empty route start -> end costs 0 by default, and arc cost when used.
+        for used_when_empty, expected_cost in [(False, 0), (True, 10)]:
+            empty_manager = routing.IndexManager(2, 1, [0], [1])
+            empty_model = routing.Model(empty_manager)
+            transit_idx = empty_model.register_transit_callback(lambda i, j: 10)
+            empty_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
+            empty_model.set_vehicle_used_when_empty(used_when_empty, 0)
+            self.assertEqual(used_when_empty, empty_model.is_vehicle_used_when_empty(0))
+            solution = empty_model.solve()
+            self.assertIsNotNone(solution)
+            self.assertEqual(expected_cost, solution.objective_value())
 
 
 if __name__ == "__main__":
