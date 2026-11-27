@@ -43,6 +43,42 @@ There are several tiers of behavior:
 -   **[32 workers and more]** Adds more LNS workers, and more first solution
     subsolvers.
 
+## Getting deterministic results
+
+By default, CP-SAT is not deterministic when using multiple workers. Two solves
+of the same model can explore the search space differently, and return
+different solutions. This is a problem if you want to compare a solve against a
+known result, or to replay it.
+
+To get reproducible results, use the following parameters:
+
+-   **[num_workers]** With `num_workers` set to 1, the search is deterministic.
+-   **[interleave_search]** To use multiple workers, set `interleave_search` to
+    true. The log will display `Starting deterministic search`. Be aware that
+    it is much slower than the default parallel search, and that some
+    subsolvers are disabled in this mode.
+-   **[max_deterministic_time]** With a time limit in seconds
+    (`max_time_in_seconds`), the amount of work done by the solver depends on
+    the speed and the load of the machine. Use `max_deterministic_time`
+    instead. Its unit is as close as possible to a second.
+-   **[random_seed]** The default seed is fixed. If you change it, the solver
+    may make different choices during the search.
+
+These parameters are described in
+[sat_parameters.proto](/ortools/sat/sat_parameters.proto).
+
+Note that the model must be the same too. The code that builds a model is not
+always deterministic, as it can depend on the order of a hash table. To check
+that two models are the same, compare the `model_fingerprint` displayed at the
+beginning of the log.
+
+Finally, be aware that results are only reproducible with the same version of
+OR-Tools on the same platform. Floating point operations and hashing do not
+behave the same on different platforms. Therefore, the same model can yield
+different solutions on two different operating systems, CPU architectures, or
+compilers, even with the parameters above. Do not write tests that expect one
+specific solution: it can change with any new version of OR-Tools.
+
 ## Solve status
 
 Solving a problem yields the following possible status (CpSolverStatus):
