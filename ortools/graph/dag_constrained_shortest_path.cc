@@ -38,7 +38,7 @@ void ApplyMapping(absl::Span<const int> mapping, std::vector<int>& values) {
 
 }  // namespace
 
-PathWithLength ConstrainedShortestPathsOnDag(
+PathWithLength<double> ConstrainedShortestPathsOnDag(
     const int num_nodes,
     absl::Span<const ArcWithLengthAndResources> arcs_with_length_and_resources,
     int source, int destination, const std::vector<double>& max_resources) {

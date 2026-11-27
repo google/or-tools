@@ -129,7 +129,7 @@ class SolverLogger {
 class ScopedTimeLogger {
  public:
   ScopedTimeLogger(std::string name, SolverLogger* logger,
-                   TimeLimit* time_limit, double work_limit = 1.0)
+                   TimeLimit* time_limit, double work_limit = 3.0)
       : name_(std::move(name)),
         dtime_at_start_(time_limit->GetElapsedDeterministicTime()),
         work_limit_(work_limit),

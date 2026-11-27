@@ -14,6 +14,7 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -21,6 +22,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/enforcement.h"
@@ -478,15 +480,18 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
 
 bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // Start by filling the cached bounds and sorting by increasing lb.
-  for (CachedBounds& entry : bounds_) {
-    entry.lb = integer_trail_.LowerBound(entry.expr);
-    entry.ub = integer_trail_.UpperBound(entry.expr);
+  {
+    DeterministicTimer<{.scale = 2.7e-08}> timer(time_limit_, bounds_.size());
+    for (CachedBounds& entry : bounds_) {
+      entry.lb = integer_trail_.LowerBound(entry.expr);
+      entry.ub = integer_trail_.UpperBound(entry.expr);
+    }
   }
 
   // TODO(user): The running time can be dominated by this sort. For the
   // "permutation" case where we have as many bounds as possible lb, maybe a
   // radix sort is more efficient.
-  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_, bounds_.size());
+  DeterministicTimer<{.scale = 3.0e-07}> timer(time_limit_, bounds_.size());
   IncrementalSort(
       bounds_.begin(), bounds_.end(),
       [](const CachedBounds& a, const CachedBounds& b) { return a.lb < b.lb; });
@@ -536,18 +541,23 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
 
 bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
     IntegerValue min_lb, absl::Span<CachedBounds> bounds) {
-  hall_starts_.clear();
-  hall_ends_.clear();
+  {
+    const uint64_t n = bounds.size();
+    DeterministicTimer<{.scale = 7.6e-10}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    hall_starts_.clear();
+    hall_ends_.clear();
 
-  // All cached lb in bounds will be in [min_lb, min_lb + bounds_.size()).
-  // Make sure we change our base_ so that GetIndex() fits in our buffers.
-  base_ = min_lb - IntegerValue(1);
+    // All cached lb in bounds will be in [min_lb, min_lb + bounds_.size()).
+    // Make sure we change our base_ so that GetIndex() fits in our buffers.
+    base_ = min_lb - IntegerValue(1);
 
-  index_is_present_.ResetAllToFalse();
+    index_is_present_.ResetAllToFalse();
 
-  // Sort bounds by increasing ub.
-  std::sort(bounds.begin(), bounds.end(),
-            [](CachedBounds a, CachedBounds b) { return a.ub < b.ub; });
+    // Sort bounds by increasing ub.
+    std::sort(bounds.begin(), bounds.end(),
+              [](CachedBounds a, CachedBounds b) { return a.ub < b.ub; });
+  }
   for (const CachedBounds entry : bounds) {
     const AffineExpression expr = entry.expr;
 

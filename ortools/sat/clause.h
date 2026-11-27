@@ -44,6 +44,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -338,6 +339,15 @@ class ClauseManager : public SatPropagator {
     return std::move(add_clause_callback_);
   }
 
+  // Exports a valid derived clause (such as a minimized UNSAT core) through
+  // the add-clause callback without attaching a redundant clause locally.
+  void ExportClause(absl::Span<const Literal> literals) {
+    if (add_clause_callback_ != nullptr) {
+      // Using a lbd of -1 currently bypasses any lbd check down the line.
+      add_clause_callback_(/*lbd=*/-1, kNullClausePtr, literals);
+    }
+  }
+
   // Returns the reason ClausePtr for the given literal, or kNullClausePtr if
   // there is none.
   ClausePtr ReasonClausePtr(Literal literal) const;
@@ -400,6 +410,7 @@ class ClauseManager : public SatPropagator {
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
   Trail* trail_;
+  TimeLimit* time_limit_;
 
   // For statistic reporting.
   std::vector<int64_t> deletion_counters_;
@@ -799,6 +810,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // by extracting bool_and constraint with many lhs terms.
   template <typename Output>
   void ExtractAllBinaryClauses(Output* out) const {
+    DeterministicTimer<{.scale = 1.6e-07}> timer(time_limit_);
+    uint64_t num_implications = 0;
     // TODO(user): Ideally we should just never have duplicate clauses in this
     // class. But it seems we do in some corner cases, so let's not output them
     // twice.
@@ -806,6 +819,7 @@ class BinaryImplicationGraph : public SatPropagator {
         duplicate_detection;
     for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
       const Literal a = Literal(i).Negated();
+      num_implications += implications_and_amos_[i].num_literals();
       for (const Literal b : implications_and_amos_[i].literals()) {
         // NOTE(user): We almost always have both a => b and not(b) => not(a) in
         // our implications_ database. Except if ComputeTransitiveReduction()
@@ -816,6 +830,7 @@ class BinaryImplicationGraph : public SatPropagator {
         }
       }
     }
+    timer.Advance(num_implications);
   }
 
   // Adds a binary clause and changes the reason of `a` as if it were propagated

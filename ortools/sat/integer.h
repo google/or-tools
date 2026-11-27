@@ -45,6 +45,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -155,6 +156,7 @@ class IntegerEncoder {
         trail_(model->GetOrCreate<Trail>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         delayed_to_fix_(model->GetOrCreate<DelayedRootLevelDeduction>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         domains_(*model->GetOrCreate<IntegerDomains>()),
         trivial_literals_(*model->GetOrCreate<TrivialLiterals>()),
         num_created_variables_(0) {}
@@ -365,6 +367,7 @@ class IntegerEncoder {
   Trail* trail_;
   LratProofHandler* lrat_proof_handler_;
   DelayedRootLevelDeduction* delayed_to_fix_;
+  TimeLimit* time_limit_;
   const IntegerDomains& domains_;
   const TrivialLiterals& trivial_literals_;
 
@@ -597,6 +600,8 @@ class IntegerTrail final : public SatPropagator {
   IntegerVariable NumIntegerVariables() const {
     return IntegerVariable(var_lbs_.size());
   }
+
+  TimeLimit* time_limit() const { return time_limit_; }
 
   // Optimization: you can call this before calling AddIntegerVariable()
   // num_vars times.
@@ -928,12 +933,21 @@ class IntegerTrail final : public SatPropagator {
     CHECK_GE(var, 0);
     CHECK_LT(var, var_trail_index_.size());
     int index = std::min(starting_integer_index, var_trail_index_[var]);
+    DeterministicTimer<{.scale = 6.3e-08}> timer(time_limit_);
+    uint64_t work_done = 0;
     while (true) {
+      ++work_done;
       // Did we reach root level?
-      if (index < static_cast<int>(var_lbs_.size())) return -1;
+      if (index < static_cast<int>(var_lbs_.size())) {
+        timer.Advance(work_done);
+        return -1;
+      }
       CHECK_LT(index, integer_trail_.size());
       CHECK_EQ(integer_trail_[index].var, var);
-      if (GlobalIndexAt(index) < source_index) return index;
+      if (GlobalIndexAt(index) < source_index) {
+        timer.Advance(work_done);
+        return index;
+      }
       index = integer_trail_[index].prev_trail_index;
     }
   }

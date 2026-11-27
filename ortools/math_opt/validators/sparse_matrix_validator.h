@@ -33,6 +33,12 @@ namespace operations_research::math_opt {
 absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
                                bool enforce_upper_triangular = false);
 
+// Same as above, with the matrix given as spans (e.g. from an LpModelView).
+absl::Status SparseMatrixValid(absl::Span<const int64_t> row_ids,
+                               absl::Span<const int64_t> column_ids,
+                               absl::Span<const double> coefficients,
+                               bool enforce_upper_triangular = false);
+
 // Verifies that:
 //   1. matrix.row_ids is a subset of row_ids.
 //   2. matrix.column_ids is a subset of column_ids.

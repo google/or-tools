@@ -372,7 +372,8 @@ class SatPresolver {
 
   int num_trivial_clauses_;
   SatParameters parameters_;
-  TimeLimit* time_limit_ = nullptr;
+  TimeLimit dummy_time_limit_;
+  TimeLimit* time_limit_ = &dummy_time_limit_;
   SolverLogger* logger_;
 };
 

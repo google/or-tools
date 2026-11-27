@@ -88,6 +88,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/sat/vivification.h"
 #include "ortools/sat/work_assignment.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -369,6 +370,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // variable nodes by [num_lp_constraints..num_lp_constraints+num_variables).
   //
   // TODO(user): look into biconnected components.
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
   const int num_lp_constraints =
       static_cast<int>(relaxation.linear_constraints.size());
   const int num_lp_cut_generators =
@@ -388,11 +390,17 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     return num_lp_constraints + num_lp_cut_generators +
            PositiveVariable(var).value();
   };
-  for (int i = 0; i < num_lp_constraints; i++) {
-    for (const IntegerVariable var :
-         relaxation.linear_constraints[i].VarsAsSpan()) {
-      components.AddEdge(get_constraint_index(i), get_var_index(var));
+  {
+    DeterministicTimer<{.scale = 1.9e-08, .offset = 5.3e-08}> timer(time_limit);
+    uint64_t num_edges = 0;
+    for (int i = 0; i < num_lp_constraints; i++) {
+      const auto vars = relaxation.linear_constraints[i].VarsAsSpan();
+      num_edges += vars.size();
+      for (const IntegerVariable var : vars) {
+        components.AddEdge(get_constraint_index(i), get_var_index(var));
+      }
     }
+    timer.Advance(num_edges);
   }
   for (int i = 0; i < num_lp_cut_generators; ++i) {
     for (const IntegerVariable var : relaxation.cut_generators[i].vars) {
@@ -438,23 +446,32 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     ++component_sizes[index_to_component[get_var_index(var)]];
   }
 
-  TimeLimitCheckEveryNCalls time_limit_check(100, m->GetOrCreate<TimeLimit>());
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit);
 
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::vector<LinearProgrammingConstraint*> lp_constraints(num_components,
                                                            nullptr);
-  for (int i = 0; i < num_lp_constraints; i++) {
-    if (time_limit_check.LimitReached()) break;
-    const int c = index_to_component[get_constraint_index(i)];
-    if (component_sizes[c] <= 1) continue;
-    if (lp_constraints[c] == nullptr) {
-      lp_constraints[c] =
-          new LinearProgrammingConstraint(m, component_to_var[c]);
-      m->TakeOwnership(lp_constraints[c]);
+  {
+    DeterministicTimer2<{
+        .scale1 = 3.8e-07, .scale2 = 3.8e-07, .offset = 3.4e-08}>
+        timer(time_limit);
+    uint64_t num_added = 0;
+    int i = 0;
+    for (; i < num_lp_constraints; i++) {
+      if (time_limit_check.LimitReached()) break;
+      const int c = index_to_component[get_constraint_index(i)];
+      if (component_sizes[c] <= 1) continue;
+      ++num_added;
+      if (lp_constraints[c] == nullptr) {
+        lp_constraints[c] =
+            new LinearProgrammingConstraint(m, component_to_var[c]);
+        m->TakeOwnership(lp_constraints[c]);
+      }
+      // Load the constraint.
+      lp_constraints[c]->AddLinearConstraint(
+          std::move(relaxation.linear_constraints[i]));
     }
-    // Load the constraint.
-    lp_constraints[c]->AddLinearConstraint(
-        std::move(relaxation.linear_constraints[i]));
+    timer.Advance(i, num_added);
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -589,25 +606,30 @@ void RegisterVariableBoundsLevelZeroExport(
         if (time_limit->LimitReached()) return;
 
         // Inspect the modified IntegerVariables.
-        for (const IntegerVariable& var : modified_vars) {
-          const IntegerVariable positive_var = PositiveVariable(var);
-          const int model_var =
-              mapping->GetProtoVariableFromIntegerVariable(positive_var);
+        {
+          DeterministicTimer<{.scale = 1.3e-07, .offset = 1.0e-08}> timer(
+              time_limit);
+          for (const IntegerVariable& var : modified_vars) {
+            const IntegerVariable positive_var = PositiveVariable(var);
+            const int model_var =
+                mapping->GetProtoVariableFromIntegerVariable(positive_var);
 
-          if (model_var == -1) continue;
-          const auto [_, inserted] = visited_variables.insert(model_var);
-          if (!inserted) continue;
+            if (model_var == -1) continue;
+            const auto [_, inserted] = visited_variables.insert(model_var);
+            if (!inserted) continue;
 
-          const int64_t new_lb =
-              integer_trail->LevelZeroLowerBound(positive_var).value();
-          const int64_t new_ub =
-              integer_trail->LevelZeroUpperBound(positive_var).value();
+            const int64_t new_lb =
+                integer_trail->LevelZeroLowerBound(positive_var).value();
+            const int64_t new_ub =
+                integer_trail->LevelZeroUpperBound(positive_var).value();
 
-          // TODO(user): We could imagine an API based on atomic<int64_t>
-          // that could preemptively check if these new bounds are improving.
-          model_variables.push_back(model_var);
-          new_lower_bounds.push_back(new_lb);
-          new_upper_bounds.push_back(new_ub);
+            // TODO(user): We could imagine an API based on atomic<int64_t>
+            // that could preemptively check if these new bounds are improving.
+            model_variables.push_back(model_var);
+            new_lower_bounds.push_back(new_lb);
+            new_upper_bounds.push_back(new_ub);
+          }
+          timer.Advance(modified_vars.size());
         }
 
         // Inspect the newly modified Booleans.
@@ -934,14 +956,23 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
                        next_batch_dtime = -1.0, clause = std::vector<int>()](
                           int lbd, ClausePtr clause_ptr,
                           absl::Span<const Literal> literals) mutable {
-    if (literals.size() >= UniqueClauseStream::kMinClauseSize &&
+    if ((lrat_proof_handler == nullptr || clause_ptr != kNullClausePtr) &&
+        literals.size() >= UniqueClauseStream::kMinClauseSize &&
         literals.size() <= UniqueClauseStream::kMaxClauseSize) {
       clause.clear();
-      for (const Literal& lit : literals) {
-        const int var =
-            mapping->GetProtoVariableFromBooleanVariable(lit.Variable());
-        if (var == -1) return;
-        clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
+      {
+        DeterministicTimer<{.scale = 1.4e-08, .offset = 9.3e-08}> timer(
+            time_limit);
+        for (const Literal& lit : literals) {
+          const int var =
+              mapping->GetProtoVariableFromBooleanVariable(lit.Variable());
+          if (var == -1) {
+            timer.Advance(clause.size() + 1);
+            return;
+          }
+          clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
+        }
+        timer.Advance(literals.size());
       }
       if (clause_stream->Add(clause, lbd) && lrat_proof_handler != nullptr) {
         lrat_proof_handler->ExportClause(clause_ptr);
@@ -960,10 +991,8 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
 
 // Registers a callback to import new clauses stored in the
 // shared_clauses_manager. These clauses are imported at level 0 of the search
-// in the linear scan minimize function.
+// in both linear scan and core-based optimization workers.
 // It returns the id of the worker in the shared clause manager.
-//
-// TODO(user): Can we import them in the core worker ?
 int RegisterClausesLevelZeroImport(int id,
                                    SharedClausesManager* shared_clauses_manager,
                                    Model* model) {
@@ -979,17 +1008,23 @@ int RegisterClausesLevelZeroImport(int id,
   const bool minimize_shared_clauses =
       model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_manager = model->GetOrCreate<ClauseManager>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
   const auto& import_level_zero_clauses =
       [shared_clauses_manager, id, mapping, sat_solver, vivifier, implications,
-       minimize_shared_clauses, clause_stream, clause_manager]() mutable {
+       minimize_shared_clauses, clause_stream, clause_manager,
+       time_limit]() mutable {
         std::vector<std::pair<int, int>> new_binary_clauses;
         shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
         implications->EnableSharing(false);
-        for (const auto& [ref1, ref2] : new_binary_clauses) {
-          const Literal l1 = mapping->Literal(ref1);
-          const Literal l2 = mapping->Literal(ref2);
-          if (!sat_solver->AddProblemClause({l1, l2})) {
-            return false;
+        {
+          DeterministicTimer<{.scale = 2.9e-07, .offset = 1.1e-07}> timer(
+              time_limit, new_binary_clauses.size());
+          for (const auto& [ref1, ref2] : new_binary_clauses) {
+            const Literal l1 = mapping->Literal(ref1);
+            const Literal l2 = mapping->Literal(ref2);
+            if (!sat_solver->AddProblemClause({l1, l2})) {
+              return false;
+            }
           }
         }
         implications->EnableSharing(true);
@@ -1000,22 +1035,29 @@ int RegisterClausesLevelZeroImport(int id,
         sat_solver->EnsureNewClauseIndexInitialized();
         // Temporarily disable clause sharing.
         auto callback = clause_manager->TakeAddClauseCallback();
-        while (true) {
-          auto batch = shared_clauses_manager->GetUnseenClauses(id);
-          if (batch.empty()) break;
-          for (const absl::Span<const int> shared_clause : batch) {
-            // Check this clause was not already learned by this worker.
-            if (!clause_stream->BlockClause(shared_clause)) continue;
-            ++new_clauses;
-            for (int i = 0; i < shared_clause.size(); ++i) {
-              local_clause[i] = mapping->Literal(shared_clause[i]);
-            }
-            if (!sat_solver->AddProblemClause(
-                    absl::MakeSpan(local_clause)
-                        .subspan(0, shared_clause.size()))) {
-              return false;
+        {
+          DeterministicTimer<{.scale = 3.2e-07, .offset = 5.4e-07}> timer(
+              time_limit);
+          uint64_t num_shared_clauses = 0;
+          while (true) {
+            auto batch = shared_clauses_manager->GetUnseenClauses(id);
+            if (batch.empty()) break;
+            num_shared_clauses += batch.size();
+            for (const absl::Span<const int> shared_clause : batch) {
+              // Check this clause was not already learned by this worker.
+              if (!clause_stream->BlockClause(shared_clause)) continue;
+              ++new_clauses;
+              for (int i = 0; i < shared_clause.size(); ++i) {
+                local_clause[i] = mapping->Literal(shared_clause[i]);
+              }
+              if (!sat_solver->AddProblemClause(
+                      absl::MakeSpan(local_clause)
+                          .subspan(0, shared_clause.size()))) {
+                return false;
+              }
             }
           }
+          timer.Advance(num_shared_clauses);
         }
         clause_manager->SetAddClauseCallback(std::move(callback));
         if (new_clauses > 0) {
@@ -1031,7 +1073,7 @@ int RegisterClausesLevelZeroImport(int id,
           // be relatively cheap, *if* regular vivification is keeping up with
           // new clauses. Use a tight dtime limit in case it isn't.
           return vivifier->MinimizeByPropagation(
-              /*log_info=*/false, /*dtime_budget=*/0.01,
+              /*log_info=*/false, /*dtime_budget=*/0.03,
               /*minimize_new_clauses_only=*/true);
         }
         return true;
@@ -1281,7 +1323,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   LoadBaseModel(model_proto, model);
 
-  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
@@ -1315,7 +1358,8 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
 void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   LoadBaseModel(model_proto, model);
 
-  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return;
 
   // We want to load the debug solution before the initial propagation.
   // But at this point the objective is not loaded yet, so we will not have
@@ -1344,7 +1388,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
 
   if (parameters.use_sat_inprocessing()) {
     if (parameters.inprocessing_detect_and_sweep_circuit()) {
-      auto solve_cp_model_callback = [](const CpModelProto& cp_model_proto) {
+      auto solve_cp_model_callback = [worker_time_limit =
+                                          model->GetOrCreate<TimeLimit>()](
+                                         const CpModelProto& cp_model_proto) {
         Model model;
         auto* params = model.GetOrCreate<SatParameters>();
         params->set_log_search_progress(false);
@@ -1354,7 +1400,12 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
         params->set_max_time_in_seconds(2);
         params->set_cp_model_probing_level(0);
         params->set_use_sat_inprocessing(false);
-        model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(*params);
+        TimeLimit* time_limit = model.GetOrCreate<TimeLimit>();
+        time_limit->ResetLimitFromParameters(*params);
+        time_limit->MergeWithGlobalTimeLimit(worker_time_limit);
+        // Count the deterministic time of this solve in the worker one.
+        ScopedDeterministicTimeAccounting dtime_accounting(worker_time_limit,
+                                                           time_limit);
         auto* response_manager = model.GetOrCreate<SharedResponseManager>();
         response_manager->InitializeObjective(cp_model_proto);
         LoadCpModel(cp_model_proto, &model);
@@ -1383,7 +1434,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // of them. We get away because of the time limit, but it might not be
     // good to just have more binary clauses for the first few variables we were
     // able to probe on large problems!
-    if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
+    if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/5.0)) {
       return unsat();
     }
     if (parameters.inprocessing_use_transitive_reduction() &&
@@ -1768,7 +1819,8 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
 void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   if (!model_proto.has_solution_hint()) return;
 
-  if (model->GetOrCreate<TimeLimit>()->LimitReached()) return;
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return;
 
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
@@ -1903,8 +1955,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   // like we do if the hint is complete.
   if (parameters->debug_crash_on_bad_hint() &&
       shared_response_manager->HasFeasibleSolution() &&
-      !model->GetOrCreate<TimeLimit>()->LimitReached() &&
-      status != SatSolver::Status::FEASIBLE) {
+      !time_limit->LimitReached() && status != SatSolver::Status::FEASIBLE) {
     LOG(FATAL) << "QuickSolveWithHint() didn't find a feasible solution."
                << " The model name is '" << model_proto.name() << "'."
                << " Status: " << status << ".";
@@ -1922,10 +1973,15 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 // copy of the model and loads a local Model object from the copied model.
 void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
   Model local_model;
+  TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
 
   // Pass the time limit and stop boolean to local limit.
   model->GetOrCreate<ModelSharedTimeLimit>()->UpdateLocalLimit(
-      local_model.GetOrCreate<TimeLimit>());
+      local_time_limit);
+  // Make sure we update the higher model with the timing info on all exit
+  // paths.
+  ScopedDeterministicTimeAccounting dtime_accounting(
+      model->GetOrCreate<TimeLimit>(), local_time_limit);
 
   if (!model_proto.has_solution_hint()) return;
 
@@ -2029,10 +2085,6 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
     shared_response_manager->NewSolution(
         solution, absl::StrCat(solution_info, " [repaired]"), &local_model);
   }
-
-  // Make sure we update the higher model with the timing info.
-  model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
-      local_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
 }
 
 // TODO(user): If this ever shows up in the profile, we could avoid copying

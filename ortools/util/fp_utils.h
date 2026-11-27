@@ -29,6 +29,7 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/util/full_precision_inequalities.h"
 
 namespace operations_research {
@@ -162,6 +163,42 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   return std::abs(x - std::round(x)) <= tolerance;
 }
 
+// Converts a double to int64_t and caps large magnitudes at kint64min/max.
+// We also arbitrarily return 0 for NaNs.
+inline int64_t SafeDoubleToInt64(double value) {
+  if (std::isnan(value)) return 0;
+  if (value >= static_cast<double>(kint64max)) {
+    return kint64max;
+  }
+  if (value <= static_cast<double>(kint64min)) {
+    return kint64min;
+  }
+  return static_cast<int64_t>(value);
+}
+
+// Rounds a scaled lower bound `y` outward to `floor(y)`, except when `y` is
+// within `tol >= 0` below `round(y)` (snapping to `round(y)`).
+double RoundScaledLowerBound(double y, double tol);
+
+// Symmetric version for a scaled upper bound `y`: rounds outward to `ceil(y)`,
+// except when `y` is within `tol >= 0` above `round(y)`.
+inline double RoundScaledUpperBound(double y, double tol) {
+  const double w = -RoundScaledLowerBound(-y, tol);
+  return w == 0.0 ? 0.0 : w;
+}
+
+// Returns the smallest factor f such that f * abs(x) is integer modulo the
+// given tolerance relative to f (we use f * tolerance). It is only looking
+// for f smaller than the given limit. Returns zero if no such factor exists
+// below the limit.
+//
+// The complexity is a lot less than O(limit), but it is possible that we might
+// miss the smallest such factor if the tolerance used is too low. This is
+// because we only rely on the best rational approximations of x with increasing
+// denominator.
+int64_t FindRationalFactor(double x, int64_t limit = 1e4,
+                           double tolerance = 1e-6);
+
 // Given an array of doubles, this computes a positive scaling factor such that
 // the scaled doubles can then be rounded to integers with little or no loss of
 // precision, and so that the L1 norm of these integers is <= max_sum. More
@@ -212,6 +249,68 @@ void ComputeScalingErrors(absl::Span<const double> input,
                           absl::Span<const double> ub, double scaling_factor,
                           double* max_relative_coeff_error,
                           double* max_scaled_sum_error);
+
+// A linear expression `sum_i coeffs[i] * X_i` together with the domain
+// `[var_lbs[i], var_ubs[i]]` of each variable `X_i`.
+struct BoundedLinearExpression {
+  std::vector<double> coeffs;
+  std::vector<double> var_lbs;
+  std::vector<double> var_ubs;
+
+  void Clear() {
+    coeffs.clear();
+    var_lbs.clear();
+    var_ubs.clear();
+  }
+  void AddTerm(double coeff, double var_lb, double var_ub) {
+    coeffs.push_back(coeff);
+    var_lbs.push_back(var_lb);
+    var_ubs.push_back(var_ub);
+  }
+};
+
+inline void ComputeScalingErrors(const BoundedLinearExpression& expr,
+                                 double scaling_factor,
+                                 double* max_relative_coeff_error,
+                                 double* max_scaled_sum_error) {
+  ComputeScalingErrors(expr.coeffs, expr.var_lbs, expr.var_ubs, scaling_factor,
+                       max_relative_coeff_error, max_scaled_sum_error);
+}
+
+// Given a linear expression Sum_i c_i * X_i with each X_i in [lb_i, ub_i],
+// this returns a scaling factor f such that
+// 1/ the rounded expression cannot overflow given the domains of the X_i:
+//    Sum |std::round(f * c_i) * X_i| <= max_absolute_activity
+// 2/ the error is bounded:
+//    | Sum_i (std::round(f * c_i) - f * c_i) * X_i |
+//         < f * wanted_absolute_activity_precision
+//
+// This also fills the exact errors made by using the returned scaling factor.
+// The heuristics try to minimize the magnitude of the scaled expression while
+// satisfying the requested precision.
+//
+// Returns 0.0 if no scaling factor can be found under the condition 1/. Note
+// that we try really hard to satisfy 2/ but we still return our best shot even
+// when 2/ is not satisfied. One can check this by comparing the returned
+// scaled_sum_error / f with wanted_absolute_activity_precision.
+//
+// TODO(user): Ideally the lower/upper should be int64_t so that we can have
+// an exact definition for the max_absolute_activity allowed.
+double FindBestScalingAndComputeErrors(
+    absl::Span<const double> coefficients,
+    absl::Span<const double> lower_bounds,
+    absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error, double* max_scaling_factor = nullptr);
+inline double FindBestScalingAndComputeErrors(
+    const BoundedLinearExpression& expr, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error, double* max_scaling_factor = nullptr) {
+  return FindBestScalingAndComputeErrors(
+      expr.coeffs, expr.var_lbs, expr.var_ubs, max_absolute_activity,
+      wanted_absolute_activity_precision, relative_coeff_error,
+      scaled_sum_error, max_scaling_factor);
+}
 
 // Given a constraint constraint_lb <= sum input_coeffs[i] Xi <= constraints_ub.
 // Where each Xi is an integer in [input_lbs[i], input_ubs[i]]. This assumes we

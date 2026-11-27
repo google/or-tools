@@ -36,7 +36,9 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -59,6 +61,7 @@ std::string PseudoCosts::ObjectiveInfo::DebugString() const {
 
 PseudoCosts::PseudoCosts(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       lp_values_(model->GetOrCreate<ModelLpValues>()),
@@ -79,6 +82,8 @@ PseudoCosts::PseudoCosts(Model* model)
 PseudoCosts::ObjectiveInfo PseudoCosts::GetCurrentObjectiveInfo() {
   ObjectiveInfo result;
   if (objective_var_ == kNoIntegerVariable) return result;
+  DeterministicTimer<{.scale = 1.9e-08, .offset = 1.1e-08}> timer(time_limit_,
+                                                                  lps_->size());
 
   result.lb = integer_trail_->LowerBound(objective_var_);
   result.ub = integer_trail_->UpperBound(objective_var_);
@@ -101,29 +106,37 @@ bool PseudoCosts::SaveLpInfo() {
 
 void PseudoCosts::SaveBoundChanges(Literal decision,
                                    absl::Span<const double> lp_values) {
-  bound_changes_.clear();
-  for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
-    PseudoCosts::VariableBoundChange entry;
-    entry.var = l.var;
-    entry.lower_bound_change = l.bound - integer_trail_->LowerBound(l.var);
-    if (l.var < lp_values.size()) {
-      entry.lp_increase =
-          std::max(0.0, ToDouble(l.bound) - lp_values[l.var.value()]);
+  {
+    const auto& int_literals = encoder_->GetIntegerLiterals(decision);
+    DeterministicTimer<{.scale = 2.5e-08, .offset = 1.3e-08}> timer(
+        time_limit_, int_literals.size());
+    bound_changes_.clear();
+    for (const IntegerLiteral l : int_literals) {
+      PseudoCosts::VariableBoundChange entry;
+      entry.var = l.var;
+      entry.lower_bound_change = l.bound - integer_trail_->LowerBound(l.var);
+      if (l.var < lp_values.size()) {
+        entry.lp_increase =
+            std::max(0.0, ToDouble(l.bound) - lp_values[l.var.value()]);
+      }
+      bound_changes_.push_back(entry);
     }
-    bound_changes_.push_back(entry);
   }
 
   // NOTE: We ignore literals associated with var != value.
-  for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
-    {
-      PseudoCosts::VariableBoundChange entry;
-      entry.var = var;
-      entry.lower_bound_change = value - integer_trail_->LowerBound(var);
-      bound_changes_.push_back(entry);
-    }
+  {
+    const auto& eq_literals = encoder_->GetEqualityLiterals(decision);
+    DeterministicTimer<{.scale = 8.8e-08, .offset = 1.3e-08}> timer(
+        time_limit_, eq_literals.size());
+    for (const auto [var, value] : eq_literals) {
+      {
+        PseudoCosts::VariableBoundChange entry;
+        entry.var = var;
+        entry.lower_bound_change = value - integer_trail_->LowerBound(var);
+        bound_changes_.push_back(entry);
+      }
 
-    // Also do the negation.
-    {
+      // Also do the negation.
       PseudoCosts::VariableBoundChange entry;
       entry.var = NegationOf(var);
       entry.lower_bound_change =
@@ -287,6 +300,7 @@ void PseudoCosts::AfterTakingDecision(bool conflict) {
 // TODO(user): Implement generic class to choose the randomized
 // solution, and support sub-linear variable selection.
 IntegerVariable PseudoCosts::GetBestDecisionVar() {
+  DeterministicTimer<{.scale = 6.6e-09}> timer(time_limit_);
   IntegerVariable chosen_var = kNoIntegerVariable;
   double best_score = -std::numeric_limits<double>::infinity();
 
@@ -308,6 +322,7 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
       GetCost(chosen_var) < GetCost(NegationOf(chosen_var))) {
     chosen_var = NegationOf(chosen_var);
   }
+  timer.Advance(relevant_variables_.size());
   return chosen_var;
 }
 

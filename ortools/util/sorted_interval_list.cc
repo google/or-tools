@@ -945,17 +945,20 @@ SortedDisjointIntervalList::SortedDisjointIntervalList(
 
 SortedDisjointIntervalList
 SortedDisjointIntervalList::BuildComplementOnInterval(int64_t start,
-                                                      int64_t end) {
+                                                      int64_t end) const {
   SortedDisjointIntervalList interval_list;
+  if (start > end) return interval_list;
   int64_t next_start = start;
   for (auto it = FirstIntervalGreaterOrEqual(start); it != this->end(); ++it) {
     const ClosedInterval& interval = *it;
-    const int64_t next_end = CapSub(interval.start, 1);
-    if (next_end > end) break;
-    if (next_start <= next_end) {
-      interval_list.InsertInterval(next_start, next_end);
+    if (interval.start > end) break;
+    if (next_start < interval.start) {
+      interval_list.InsertInterval(next_start, interval.start - 1);
     }
-    next_start = CapAdd(interval.end, 1);
+    if (interval.end >= end) {
+      return interval_list;
+    }
+    next_start = interval.end + 1;
   }
   if (next_start <= end) {
     interval_list.InsertInterval(next_start, end);

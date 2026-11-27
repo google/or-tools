@@ -27,6 +27,7 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.pb.h"
+#include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -1046,14 +1047,14 @@ TEST(DualBoundReductionTest, AddImplicationDoesNotDuplicateAcrossPasses) {
 
   const int initial_num_constraints = context.NumConstraints();
   const int initial_crush_steps = crush_proto.steps_size();
-  ASSERT_EQ(context.num_presolve_operations, 0);
+  ASSERT_EQ(context.num_presolve_operations(), 0);
 
   // Pass 1 adds ~a => ~b and ~a => ~c once.
   DualBoundStrengthening dual_bound_strengthening;
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
   EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
   ASSERT_EQ(context.NumConstraints(), initial_num_constraints + 2);
-  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(context.num_presolve_operations(), 2);
   EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
   EXPECT_THAT(context.solution_crush().GetVarValues(),
               ElementsAre(0, 0, 0, 1, 1, 0, 0));
@@ -1064,19 +1065,20 @@ TEST(DualBoundReductionTest, AddImplicationDoesNotDuplicateAcrossPasses) {
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
   EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
   EXPECT_EQ(context.NumConstraints(), initial_num_constraints + 2);
-  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(context.num_presolve_operations(), 2);
   EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
 
   // Simulate PresolvePureSatPart merging ~a => ~b and ~a => ~c into a single
   // bool_and ~a => (~b ^ ~c) and clearing the second bool_and.
-  context.MutableConstraint(initial_num_constraints)
-      ->mutable_bool_and()
-      ->add_literals(NegatedRef(2));
+  context.ModifyConstraint(
+      initial_num_constraints, [](ConstraintProto* mutable_ct) {
+        mutable_ct->mutable_bool_and()->add_literals(NegatedRef(2));
+      });
   context.ClearConstraint(initial_num_constraints + 1);
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
   EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
   EXPECT_EQ(context.NumConstraints(), initial_num_constraints + 2);
-  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(context.num_presolve_operations(), 2);
   EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
 
   // Simulate clique presolve clearing the bool_and constraint and rewriting
@@ -1084,12 +1086,14 @@ TEST(DualBoundReductionTest, AddImplicationDoesNotDuplicateAcrossPasses) {
   // Note that these cliques still do not lock b or c from decreasing, so ct 0
   // remains the unique decrease lock for b and c.
   context.ClearConstraint(initial_num_constraints);
-  ConstraintProto* amo1 = context.AddConstraint();
-  amo1->mutable_at_most_one()->add_literals(NegatedRef(0));
-  amo1->mutable_at_most_one()->add_literals(1);
-  ConstraintProto* amo2 = context.AddConstraint();
-  amo2->mutable_at_most_one()->add_literals(NegatedRef(0));
-  amo2->mutable_at_most_one()->add_literals(2);
+  context.AddConstraint([](ConstraintProto* new_ct) {
+    new_ct->mutable_at_most_one()->add_literals(NegatedRef(0));
+    new_ct->mutable_at_most_one()->add_literals(1);
+  });
+  context.AddConstraint([](ConstraintProto* new_ct) {
+    new_ct->mutable_at_most_one()->add_literals(NegatedRef(0));
+    new_ct->mutable_at_most_one()->add_literals(2);
+  });
   const int constraints_after_clique_rewrite = context.NumConstraints();
 
   // Subsequent pass still does not re-add ~a => ~b or ~a => ~c, bump
@@ -1097,7 +1101,7 @@ TEST(DualBoundReductionTest, AddImplicationDoesNotDuplicateAcrossPasses) {
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
   EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
   EXPECT_EQ(context.NumConstraints(), constraints_after_clique_rewrite);
-  EXPECT_EQ(context.num_presolve_operations, 2);
+  EXPECT_EQ(context.num_presolve_operations(), 2);
   EXPECT_EQ(crush_proto.steps_size(), initial_crush_steps + 2);
 }
 
@@ -1551,6 +1555,61 @@ TEST(VarDominationTest, DominanceAcrossUnpropagatedEqualityConstraint) {
   EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(0, 0, 1));
   EXPECT_TRUE(
       SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+}
+
+TEST(DualBoundReductionTest,
+     ImpliedDomainUsesEnforcementLiteralRepresentative) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 2 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 5, 100 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 5, 100 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 1
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 14, 100 ]
+      }
+    }
+    constraints { bool_or { literals: [ -1, -2 ] } }
+    objective {
+      vars: [ 2, 3 ]
+      coeffs: [ 1, 1 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  ASSERT_EQ(context.InitializeNewDomains(), kOk);
+  context.ReadObjectiveFromProto();
+  context.AddDeduction(0, 3, Domain(7));
+
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+  EXPECT_EQ(dual_bound_strengthening.Strengthen(&context), kOk);
+
+  // Near-duplicate constraints 0 and 1 equate b1 (var 1) == b0 (var 0), and
+  // inspecting var 3's locking constraint (enforced by b1) resolves b1 -> b0
+  // before querying ImpliedDomain(0, 3) == [7], establishing y = 7 * b0.
+  EXPECT_EQ(context.GetLiteralRepresentative(1), 0);
+  const AffineRelation::Relation r = context.GetAffineRelation(3);
+  EXPECT_EQ(r.representative, 0);
+  EXPECT_EQ(r.coeff, 7);
+  EXPECT_EQ(r.offset, 0);
 }
 
 }  // namespace

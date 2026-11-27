@@ -248,6 +248,7 @@ struct SampleStatistics {
   absl::uint128 x_times_x_sum = 0;
   absl::uint128 x_times_y_sum = 0;
   double y_fit_sum = 0.0;
+  absl::uint128 y_times_y_sum = 0;
 
   // y_fit is the value of the linear regression at x, using the current
   // linear regression parameters. It can be used to evaluate its deviation
@@ -261,6 +262,7 @@ struct SampleStatistics {
     x_times_x_sum += static_cast<absl::uint128>(x) * x;
     x_times_y_sum += static_cast<absl::uint128>(x) * y;
     y_fit_sum += y_fit;
+    y_times_y_sum += static_cast<absl::uint128>(y) * y;
   }
 
   void AddSamples(const SampleStatistics& other) {
@@ -270,11 +272,13 @@ struct SampleStatistics {
     x_times_x_sum += other.x_times_x_sum;
     x_times_y_sum += other.x_times_y_sum;
     y_fit_sum += other.y_fit_sum;
+    y_times_y_sum += other.y_times_y_sum;
   }
 
   std::string ToString() const {
-    return absl::StrFormat("%d,%d,%d,%d,%d,%e", num_samples, x_sum, y_sum,
-                           x_times_x_sum, x_times_y_sum, y_fit_sum);
+    return absl::StrFormat("%d,%d,%d,%d,%d,%e,%d", num_samples, x_sum, y_sum,
+                           x_times_x_sum, x_times_y_sum, y_fit_sum,
+                           y_times_y_sum);
   }
 };
 
@@ -318,6 +322,7 @@ struct SampleStatistics2 {
   absl::uint128 x1_times_y_sum = 0;
   absl::uint128 x2_times_y_sum = 0;
   double y_fit_sum = 0.0;
+  absl::uint128 y_times_y_sum = 0;
 
   // y_fit is the value of the linear regression at x, using the current
   // linear regression parameters. It can be used to evaluate its deviation
@@ -335,6 +340,7 @@ struct SampleStatistics2 {
     x1_times_y_sum += static_cast<absl::uint128>(x1) * y;
     x2_times_y_sum += static_cast<absl::uint128>(x2) * y;
     y_fit_sum += y_fit;
+    y_times_y_sum += static_cast<absl::uint128>(y) * y;
   }
 
   void AddSamples(const SampleStatistics2& other) {
@@ -348,13 +354,14 @@ struct SampleStatistics2 {
     x1_times_y_sum += other.x1_times_y_sum;
     x2_times_y_sum += other.x2_times_y_sum;
     y_fit_sum += other.y_fit_sum;
+    y_times_y_sum += other.y_times_y_sum;
   }
 
   std::string ToString() const {
-    return absl::StrFormat("%d,%d,%d,%d,%d,%d,%d,%d,%d,%e", num_samples, x1_sum,
-                           x2_sum, y_sum, x1_times_x1_sum, x1_times_x2_sum,
-                           x2_times_x2_sum, x1_times_y_sum, x2_times_y_sum,
-                           y_fit_sum);
+    return absl::StrFormat("%d,%d,%d,%d,%d,%d,%d,%d,%d,%e,%d", num_samples,
+                           x1_sum, x2_sum, y_sum, x1_times_x1_sum,
+                           x1_times_x2_sum, x2_times_x2_sum, x1_times_y_sum,
+                           x2_times_y_sum, y_fit_sum, y_times_y_sum);
   }
 };
 
@@ -417,6 +424,14 @@ class AllDeterministicTimeStats {
     }
   }
 
+  // Returns the statistics collected so far (from exited threads only) for the
+  // single scale timer at the given source location. For tests.
+  SampleStatistics GetStatsForTesting(std::string_view file, int line) {
+    absl::MutexLock lock(mutex_);
+    const auto it = all_stats_.find({file, line});
+    return it == all_stats_.end() ? SampleStatistics() : it->second;
+  }
+
  private:
   AllDeterministicTimeStats() = default;
 
@@ -477,11 +492,24 @@ class DeterministicTimeStats : public BaseDeterministicTimeStats {
 
 // An abstract deterministic timer, corresponding to a single source location
 // (defined in subclasses), and a single thread.
+//
+// The profiling bookkeeping of a timer (clock reads, timer stack updates,
+// statistics updates) does not exist in non-profiling builds, and must thus be
+// excluded from the measured durations. For this, each timer measures both its
+// own duration, from the end of its constructor to the start of its stats
+// update, and its "footprint", from the start of its constructor to the end of
+// its stats update. The footprint of a timer (plus one clock read) is
+// subtracted from the duration of its parent timer, and the cost of one clock
+// read is subtracted from its own duration.
 class AbstractDeterministicTimer {
  public:
   explicit AbstractDeterministicTimer(TimeLimit* time_limit)
-      : time_limit_(time_limit), start_time_(absl::GetCurrentTimeNanos()) {
+      : footprint_start_time_(absl::GetCurrentTimeNanos()),
+        time_limit_(time_limit) {
     timers_stack_.push(this);
+    // Must be last, to exclude the above bookkeeping from this timer's own
+    // duration.
+    start_time_ = absl::GetCurrentTimeNanos();
   }
 
   void SubtractNestedTimerDuration(uint64_t duration) {
@@ -490,10 +518,50 @@ class AbstractDeterministicTimer {
     start_time_ += duration;
   }
 
+  // Deducts the given duration from the innermost active timer of the current
+  // thread, if any. This can be used to exclude profiling bookkeeping done
+  // outside of AbstractDeterministicTimer subclasses.
+  static void SubtractFromInnermostTimer(uint64_t duration) {
+    if (!timers_stack_.empty()) {
+      timers_stack_.top()->SubtractNestedTimerDuration(duration);
+    }
+  }
+
+  // Returns the estimated duration in nanoseconds of one call to
+  // absl::GetCurrentTimeNanos(), computed once per thread.
+  static uint64_t ClockReadDuration();
+
  protected:
+  // Returns the own duration of this timer, i.e., the time elapsed since the
+  // end of its construction, minus the duration of its nested timers and of one
+  // clock read. Must be called at the start of AddStatsSample().
+  uint64_t GetOwnElapsedTime() const {
+    const uint64_t end_time = absl::GetCurrentTimeNanos();
+    // Signed, because the subtracted estimates of the nested timers' overhead
+    // can make start_time_ slightly larger than end_time.
+    const int64_t elapsed_time = static_cast<int64_t>(end_time - start_time_) -
+                                 static_cast<int64_t>(ClockReadDuration());
+    return elapsed_time > 0 ? static_cast<uint64_t>(elapsed_time) : 0;
+  }
+
+  // Removes this timer from the timers stack, and deducts its whole footprint
+  // from its parent timer, if any. Must be called at the end of
+  // AddStatsSample(). The footprint is measured between the timestamps of the
+  // first and last clock reads, which misses about half of each of these two
+  // reads, i.e., one clock read in total, which is thus added.
+  void PopAndSubtractFootprintFromParent() {
+    timers_stack_.pop();
+    SubtractFromInnermostTimer(absl::GetCurrentTimeNanos() -
+                               footprint_start_time_ + ClockReadDuration());
+  }
+
+  // The time in nanoseconds at the start of the construction of this timer.
+  // Must be declared first, to be initialized first.
+  const uint64_t footprint_start_time_;
   // The time limit to use for advancing the deterministic time.
   TimeLimit* const time_limit_;
-  // The time in nanoseconds when the timer was constructed.
+  // The time in nanoseconds at the end of the construction of this timer, plus
+  // the duration of the nested timers.
   uint64_t start_time_;
 #ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   std::vector<void*> call_stack_ = profiling::GetTimerStackTrace();
@@ -513,24 +581,19 @@ class BaseDeterministicTimer : public AbstractDeterministicTimer {
       : AbstractDeterministicTimer(time_limit) {}
 
  protected:
-  // Measures the elapsed time between the construction of this timer and this
-  // method call, and adds it to the given statistics (with the corresponding
-  // number of time units that were advanced by the timer).
+  // Measures the own duration of this timer (see AbstractDeterministicTimer),
+  // and adds it to the given statistics (with the corresponding number of time
+  // units that were advanced by the timer).
   void AddStatsSample(double fitted_elapsed_time,
                       BaseDeterministicTimeStats& stats) {
-    const uint64_t end_time = absl::GetCurrentTimeNanos();
-    const uint64_t elapsed_time = end_time - start_time_;
-    timers_stack_.pop();
-    if (!timers_stack_.empty()) {
-      // Deduct the time spent in this timer from the time spent in its parent.
-      timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
-    }
+    const uint64_t elapsed_time = GetOwnElapsedTime();
 #ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time,
                     &call_stack_);
 #else
     stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time);
 #endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
+    PopAndSubtractFootprintFromParent();
   }
 
   // The number of time units that were advanced by the timer.
@@ -545,9 +608,21 @@ class LinearDeterministicTimer {
   void Start() { start_time_ = absl::GetCurrentTimeNanos(); }
 
   void Stop(uint64_t time_units) {
-    const uint64_t elapsed_time = absl::GetCurrentTimeNanos() - start_time_;
+    const uint64_t stop_time = absl::GetCurrentTimeNanos();
+    const uint64_t elapsed_time = stop_time - start_time_;
+    const uint64_t clock_read_duration =
+        AbstractDeterministicTimer::ClockReadDuration();
     time_units_ += time_units;
-    stats_.AddSample(time_units, elapsed_time, spec.scale * time_units);
+    stats_.AddSample(time_units,
+                     elapsed_time > clock_read_duration
+                         ? elapsed_time - clock_read_duration
+                         : 0,
+                     spec.scale * time_units);
+    // Exclude the above bookkeeping from the enclosing timer, if any: the time
+    // since `stop_time`, plus about half of the `stop_time` clock read and half
+    // of the last one, plus the whole clock read in Start().
+    AbstractDeterministicTimer::SubtractFromInnermostTimer(
+        absl::GetCurrentTimeNanos() - stop_time + 2 * clock_read_duration);
   }
 
   double GetDeterministicTime() const { return spec.scale * time_units_; }
@@ -672,18 +747,12 @@ class BaseDeterministicTimer2 : public AbstractDeterministicTimer {
       : AbstractDeterministicTimer(time_limit) {}
 
  protected:
-  // Measures the elapsed time between the construction of this timer and this
-  // method call, and adds it to the given statistics (with the corresponding
-  // number of time units that were advanced by the timer).
+  // Measures the own duration of this timer (see AbstractDeterministicTimer),
+  // and adds it to the given statistics (with the corresponding number of time
+  // units that were advanced by the timer).
   void AddStatsSample(double fitted_elapsed_time,
                       BaseDeterministicTimeStats2& stats) {
-    const uint64_t end_time = absl::GetCurrentTimeNanos();
-    const uint64_t elapsed_time = end_time - start_time_;
-    timers_stack_.pop();
-    if (!timers_stack_.empty()) {
-      // Deduct the time spent in this timer from the time spent in its parent.
-      timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
-    }
+    const uint64_t elapsed_time = GetOwnElapsedTime();
 #ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     stats.AddSample(time_units1_, time_units2_, elapsed_time,
                     fitted_elapsed_time, &call_stack_);
@@ -691,6 +760,7 @@ class BaseDeterministicTimer2 : public AbstractDeterministicTimer {
     stats.AddSample(time_units1_, time_units2_, elapsed_time,
                     fitted_elapsed_time);
 #endif
+    PopAndSubtractFootprintFromParent();
   }
 
   // The number of time units that were advanced by the timer.

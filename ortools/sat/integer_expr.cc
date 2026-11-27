@@ -114,10 +114,13 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
   DCHECK(!HasDuplicateVariables(absl::MakeSpan(vars_.get(), size_)));
 
   // Handle negative coefficients.
-  for (int i = 0; i < size_; ++i) {
-    if (coeffs_[i] < 0) {
-      vars_[i] = NegationOf(vars_[i]);
-      coeffs_[i] = -coeffs_[i];
+  {
+    DeterministicTimer<{.scale = 2.0e-09}> timer(shared_->time_limit, size_);
+    for (int i = 0; i < size_; ++i) {
+      if (coeffs_[i] < 0) {
+        vars_[i] = NegationOf(vars_[i]);
+        coeffs_[i] = -coeffs_[i];
+      }
     }
   }
 
@@ -128,6 +131,8 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
 
 template <bool use_int128>
 void LinearConstraintPropagator<use_int128>::FillIntegerReason() {
+  DeterministicTimer<{.scale = 6.5e-09, .offset = 1.0e-09}> timer(
+      shared_->time_limit, size_);
   shared_->integer_reason.clear();
   shared_->reason_coeffs.clear();
   for (int i = 0; i < size_; ++i) {
@@ -278,8 +283,8 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   absl::int128 lb_128 = 0;
   IntegerValue lb_unfixed_vars = IntegerValue(0);
   {
-    DeterministicTimer<{.scale = 5e-9}> timer(shared_->time_limit,
-                                              size_ - num_fixed_vars);
+    DeterministicTimer<{.scale = 4.5e-09}> timer(shared_->time_limit,
+                                                 size_ - num_fixed_vars);
     for (int i = num_fixed_vars; i < size_; ++i) {
       const IntegerVariable var = vars_[i];
       const IntegerValue coeff = coeffs_[i];
@@ -354,40 +359,47 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one. All these pushes share the same linear reason.
   const int trail_index_at_start = shared_->integer_trail->Index();
-  for (int i = num_fixed_vars; i < size_; ++i) {
-    if (!use_int128 && max_variations_[i] <= slack) continue;
+  {
+    DeterministicTimer2<{.scale1 = 2.0e-08, .scale2 = 2.0e-08}> prop_timer(
+        shared_->time_limit);
+    uint64_t work_done = 0;
+    for (int i = num_fixed_vars; i < size_; ++i) {
+      if (!use_int128 && max_variations_[i] <= slack) continue;
+      ++work_done;
 
-    // TODO(user): If the new ub falls into a hole of the variable, we can
-    // actually relax the reason more by computing a better slack.
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = shared_->integer_trail->LowerBound(var);
+      // TODO(user): If the new ub falls into a hole of the variable, we can
+      // actually relax the reason more by computing a better slack.
+      const IntegerVariable var = vars_[i];
+      const IntegerValue coeff = coeffs_[i];
+      const IntegerValue lb = shared_->integer_trail->LowerBound(var);
 
-    IntegerValue new_ub;
-    IntegerValue propagation_slack;
-    if (use_int128) {
-      const absl::int128 coeff128 = absl::int128(coeff.value());
-      const absl::int128 div128 = slack128 / coeff128;
-      const IntegerValue ub = shared_->integer_trail->UpperBound(var);
-      if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
-        continue;
+      IntegerValue new_ub;
+      IntegerValue propagation_slack;
+      if (use_int128) {
+        const absl::int128 coeff128 = absl::int128(coeff.value());
+        const absl::int128 div128 = slack128 / coeff128;
+        const IntegerValue ub = shared_->integer_trail->UpperBound(var);
+        if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
+          continue;
+        }
+        new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
+        propagation_slack = static_cast<int64_t>(
+            std::min(max_slack, (div128 + 1) * coeff128 - slack128 - 1));
+      } else {
+        const IntegerValue div = slack / coeff;
+        new_ub = lb + div;
+        propagation_slack = (div + 1) * coeff - slack - 1;
       }
-      new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
-      propagation_slack = static_cast<int64_t>(
-          std::min(max_slack, (div128 + 1) * coeff128 - slack128 - 1));
-    } else {
-      const IntegerValue div = slack / coeff;
-      new_ub = lb + div;
-      propagation_slack = (div + 1) * coeff - slack - 1;
+      if (!shared_->integer_trail->EnqueueWithLazyReason(
+              IntegerLiteral::LowerOrEqual(var, new_ub), 0, propagation_slack,
+              this, trail_index_at_start)) {
+        // TODO(user): this is never supposed to happen since if we didn't have
+        // a conflict above, we should be able to reduce the upper bound. It
+        // might indicate an issue with our Boolean <-> integer encoding.
+        return false;
+      }
     }
-    if (!shared_->integer_trail->EnqueueWithLazyReason(
-            IntegerLiteral::LowerOrEqual(var, new_ub), 0, propagation_slack,
-            this, trail_index_at_start)) {
-      // TODO(user): this is never supposed to happen since if we didn't have a
-      // conflict above, we should be able to reduce the upper bound. It might
-      // indicate an issue with our Boolean <-> integer encoding.
-      return false;
-    }
+    prop_timer.Advance(size_ - num_fixed_vars, work_done);
   }
 
   return true;
@@ -403,7 +415,7 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
   absl::int128 lb_128 = 0;
   IntegerValue min_activity = IntegerValue(0);
   {
-    DeterministicTimer<{.scale = 1e-9}> timer(shared_->time_limit, size_);
+    DeterministicTimer<{.scale = 9.1e-09}> timer(shared_->time_limit, size_);
     for (int i = 0; i < size_; ++i) {
       const IntegerVariable var = vars_[i];
       const IntegerValue coeff = coeffs_[i];
@@ -436,30 +448,38 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  for (int i = 0; i < size_; ++i) {
-    if (!use_int128 && max_variations_[i] <= slack) continue;
+  {
+    DeterministicTimer2<{.scale1 = 5.1e-09, .scale2 = 5.1e-09}> prop_timer(
+        shared_->time_limit);
+    uint64_t work_done = 0;
+    for (int i = 0; i < size_; ++i) {
+      if (!use_int128 && max_variations_[i] <= slack) continue;
+      ++work_done;
 
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
+      const IntegerVariable var = vars_[i];
+      const IntegerValue coeff = coeffs_[i];
+      const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
 
-    IntegerValue new_ub;
-    if (use_int128) {
-      const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
-      if (absl::int128((ub - lb).value()) * absl::int128(coeff.value()) <=
-          slack128) {
-        continue;
+      IntegerValue new_ub;
+      if (use_int128) {
+        const IntegerValue ub =
+            shared_->integer_trail->LevelZeroUpperBound(var);
+        if (absl::int128((ub - lb).value()) * absl::int128(coeff.value()) <=
+            slack128) {
+          continue;
+        }
+        const absl::int128 div128 = slack128 / absl::int128(coeff.value());
+        new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
+      } else {
+        const IntegerValue div = slack / coeff;
+        new_ub = lb + div;
       }
-      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
-      new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
-    } else {
-      const IntegerValue div = slack / coeff;
-      new_ub = lb + div;
+      if (!shared_->integer_trail->Enqueue(
+              IntegerLiteral::LowerOrEqual(var, new_ub), {}, {})) {
+        return false;
+      }
     }
-    if (!shared_->integer_trail->Enqueue(
-            IntegerLiteral::LowerOrEqual(var, new_ub), {}, {})) {
-      return false;
-    }
+    prop_timer.Advance(size_, work_done);
   }
 
   return true;
@@ -653,9 +673,9 @@ GreaterThanMinOfExprsPropagator::GreaterThanMinOfExprsPropagator(
     std::vector<LinearExpression> exprs, IntegerVariable min_var, Model* model)
     : exprs_(std::move(exprs)),
       min_var_(min_var),
-      model_(model),
-      integer_trail_(*model_->GetOrCreate<IntegerTrail>()),
-      enforcement_helper_(*model_->GetOrCreate<EnforcementHelper>()) {
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()) {
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
                                                  RegisterWith(watcher));
@@ -663,6 +683,7 @@ GreaterThanMinOfExprsPropagator::GreaterThanMinOfExprsPropagator(
   // Precondition.
   for (const LinearExpression& expr : exprs_) {
     for (const IntegerValue coeff : expr.coeffs) CHECK_GT(coeff, 0);
+    num_terms_ += expr.vars.size();
   }
 }
 
@@ -697,8 +718,7 @@ bool GreaterThanMinOfExprsPropagator::PropagateLinearUpperBound(
   IntegerValue sum_lb = IntegerValue(0);
   const int num_vars = vars.size();
   {
-    DeterministicTimer<{.scale = 1e-9}> timer(model_->GetOrCreate<TimeLimit>(),
-                                              num_vars);
+    DeterministicTimer<{.scale = 1e-9}> timer(time_limit_, num_vars);
     max_variations_.resize(num_vars);
     for (int i = 0; i < num_vars; ++i) {
       const IntegerVariable var = vars[i];
@@ -776,13 +796,18 @@ bool GreaterThanMinOfExprsPropagator::Propagate() {
 
   expr_lbs_.clear();
   IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
-  for (int i = 0; i < exprs_.size(); ++i) {
-    const IntegerValue lb = exprs_[i].Min(integer_trail_);
-    expr_lbs_.push_back(lb);
-    min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
-    if (lb <= current_min_ub) {
-      ++num_intervals_that_can_be_min;
-      last_possible_min_interval = i;
+  {
+    DeterministicTimer2<{
+        .scale1 = 3.1e-08, .scale2 = 1.7e-09, .offset = 3.5e-08}>
+        timer(time_limit_, exprs_.size(), num_terms_);
+    for (int i = 0; i < exprs_.size(); ++i) {
+      const IntegerValue lb = exprs_[i].Min(integer_trail_);
+      expr_lbs_.push_back(lb);
+      min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
+      if (lb <= current_min_ub) {
+        ++num_intervals_that_can_be_min;
+        last_possible_min_interval = i;
+      }
     }
   }
 

@@ -485,9 +485,9 @@ message SatParameters {
   //
   // TODO(user): Clean up. The first one is used in CP-SAT, the other in pure
   // SAT presolve.
-  optional double probing_deterministic_time_limit = 226 [default = 1.0];
+  optional double probing_deterministic_time_limit = 226 [default = 5.0];
   optional double presolve_probing_deterministic_time_limit = 57
-      [default = 30.0];
+      [default = 60.0];
 
   // Whether we use an heuristic to detect some basic case of blocked clause
   // in the SAT presolve.
@@ -686,7 +686,7 @@ message SatParameters {
   optional double inprocessing_dtime_ratio = 273 [default = 0.2];
 
   // The amount of dtime we should spend on probing for each inprocessing round.
-  optional double inprocessing_probing_dtime = 274 [default = 1.0];
+  optional double inprocessing_probing_dtime = 274 [default = 3.0];
 
   // Parameters for an heuristic similar to the one described in "An effective
   // learnt clause minimization approach for CDCL Sat Solvers",
@@ -698,7 +698,7 @@ message SatParameters {
   // The minimization technique is the same as the one used to minimize core in
   // max-sat. We also minimize problem clauses and not just the learned clause
   // that we keep forever like in the paper.
-  optional double inprocessing_minimization_dtime = 275 [default = 1.0];
+  optional double inprocessing_minimization_dtime = 275 [default = 3.0];
   optional bool inprocessing_minimization_use_conflict_analysis = 297
       [default = true];
 
@@ -841,7 +841,7 @@ message SatParameters {
   optional bool minimize_shared_clauses = 300 [default = true];
 
   // The amount of dtime between each export of shared glue clauses.
-  optional double share_glue_clauses_dtime = 322 [default = 1.0];
+  optional double share_glue_clauses_dtime = 322 [default = 3.0];
 
   // ==========================================================================
   // Proofs
@@ -1264,11 +1264,11 @@ message SatParameters {
   // upper bound of a variable are infeasible) to the probing search. (<= 0
   // disables it).
   optional double shaving_deterministic_time_in_probing_search = 204
-      [default = 0.05];
+      [default = 0.15];
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.
-  optional double shaving_search_deterministic_time = 205 [default = 0.1];
+  optional double shaving_search_deterministic_time = 205 [default = 0.3];
 
   // Specify the search heuristic used in the shaving search.
   optional bool shaving_search_use_random_search = 366 [default = false];
@@ -1363,7 +1363,7 @@ message SatParameters {
   optional int32 feasibility_jump_restart_factor = 258 [default = 1];
 
   // How much dtime for each LS batch.
-  optional double feasibility_jump_batch_dtime = 292 [default = 0.1];
+  optional double feasibility_jump_batch_dtime = 292 [default = 0.3];
 
   // Probability for a variable to have a non default value upon restarts or
   // perturbations.
@@ -1442,7 +1442,7 @@ message SatParameters {
   // Minimum deterministic time before a shared tree worker will sync with the
   // shared tree.
   optional double shared_tree_worker_min_dtime_before_sync = 377
-      [default = 2.0];
+      [default = 6.0];
 
   // How many open leaf nodes should the shared tree maintain per worker.
   optional double shared_tree_open_leaves_per_worker = 281 [default = 2.0];
@@ -1487,7 +1487,7 @@ message SatParameters {
   // How much dtime a worker will wait between proposing splits.
   // This limits the contention in splitting the shared tree, and also reduces
   // the number of too-easy subtrees that are generates.
-  optional double shared_tree_split_min_dtime = 328 [default = 0.1];
+  optional double shared_tree_split_min_dtime = 328 [default = 0.3];
 
   // Whether we enumerate all solutions of a problem without objective.
   //
@@ -1553,10 +1553,10 @@ message SatParameters {
 
   // Initial parameters for neighborhood generation.
   optional double lns_initial_difficulty = 307 [default = 0.5];
-  optional double lns_initial_deterministic_limit = 308 [default = 0.1];
+  optional double lns_initial_deterministic_limit = 308 [default = 0.5];
   optional double lns_initial_presolve_deterministic_limit = 378
-      [default = 0.5];
-  optional double lns_max_presolve_deterministic_limit = 379 [default = 10.0];
+      [default = 1.5];
+  optional double lns_max_presolve_deterministic_limit = 379 [default = 30.0];
 
   // Testing parameters used to disable all lns workers.
   optional bool use_lns = 283 [default = true];
@@ -1715,7 +1715,7 @@ message SatParameters {
 
   // Deterministic time limit for symmetry detection.
   optional double symmetry_detection_deterministic_time_limit = 302
-      [default = 1.0];
+      [default = 3.0];
 
   // The new linear propagation code treat all constraints at once and use
   // an adaptation of Bellman-Ford-Tarjan to propagate constraint in a smarter

@@ -29,6 +29,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -63,6 +64,7 @@
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -104,6 +106,8 @@ bool ConstraintIsNEq(const LinearConstraintProto& proto,
 
 void LoadVariables(const CpModelProto& model_proto,
                    bool view_all_booleans_as_integers, Model* m) {
+  DeterministicTimer2<{.scale1 = 2.1e-08, .scale2 = 9.7e-08, .offset = 7.4e-08}>
+      dt(m->GetOrCreate<TimeLimit>());
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const int num_proto_variables = model_proto.variables_size();
 
@@ -122,6 +126,7 @@ void LoadVariables(const CpModelProto& model_proto,
 
     mapping->booleans_.resize(num_proto_variables, kNoBooleanVariable);
     mapping->reverse_boolean_map_.resize(num_proto_variables, -1);
+    dt.Advance(num_proto_variables, 0);
     for (int i = 0; i < num_proto_variables; ++i) {
       const auto& domain = model_proto.variables(i).domain();
       if (domain.size() != 2) continue;
@@ -145,6 +150,7 @@ void LoadVariables(const CpModelProto& model_proto,
     }
 
     sat_solver->SetNumVariables(new_var.value());
+    dt.Advance(true_variables.size() + false_variables.size(), 0);
     for (const BooleanVariable var : true_variables) {
       AddClauseConstraint({sat::Literal(var, true)}, m);
     }
@@ -181,6 +187,7 @@ void LoadVariables(const CpModelProto& model_proto,
   std::vector<int> var_to_instantiate_as_integer;
   if (view_all_booleans_as_integers) {
     var_to_instantiate_as_integer.resize(num_proto_variables);
+    dt.Advance(num_proto_variables, 0);
     for (int i = 0; i < num_proto_variables; ++i) {
       var_to_instantiate_as_integer[i] = i;
     }
@@ -192,9 +199,11 @@ void LoadVariables(const CpModelProto& model_proto,
         m->GetOrCreate<SatParameters>()->linearization_level() > 0;
 
     IndexReferences refs;
+    dt.Advance(model_proto.constraints_size(), 0);
     for (int c = 0; c < model_proto.constraints_size(); ++c) {
       const ConstraintProto& ct = model_proto.constraints(c);
       GetReferencesUsedByConstraint(ct, &refs.variables, &refs.literals);
+      dt.Advance(refs.variables.size(), 0);
       for (const int ref : refs.variables) {
         used_variables.insert(PositiveRef(ref));
       }
@@ -203,10 +212,12 @@ void LoadVariables(const CpModelProto& model_proto,
       // linearization level zero.
       if (some_linearization) {
         if (ct.constraint_case() == ConstraintProto::kCircuit) {
+          dt.Advance(ct.circuit().literals_size(), 0);
           for (const int ref : ct.circuit().literals()) {
             used_variables.insert(PositiveRef(ref));
           }
         } else if (ct.constraint_case() == ConstraintProto::kRoutes) {
+          dt.Advance(ct.routes().literals_size(), 0);
           for (const int ref : ct.routes().literals()) {
             used_variables.insert(PositiveRef(ref));
           }
@@ -217,6 +228,7 @@ void LoadVariables(const CpModelProto& model_proto,
     // Add the objective variables that need to be referenceable as integer
     // even if they are only used as Booleans.
     if (model_proto.has_objective()) {
+      dt.Advance(model_proto.objective().vars_size(), 0);
       for (const int obj_var : model_proto.objective().vars()) {
         used_variables.insert(PositiveRef(obj_var));
       }
@@ -224,6 +236,7 @@ void LoadVariables(const CpModelProto& model_proto,
 
     // Make sure any unused variable, that is not already a Boolean is
     // considered "used".
+    dt.Advance(num_proto_variables, 0);
     for (int i = 0; i < num_proto_variables; ++i) {
       if (mapping->booleans_[i] == kNoBooleanVariable) {
         used_variables.insert(i);
@@ -231,9 +244,14 @@ void LoadVariables(const CpModelProto& model_proto,
     }
 
     // We want the variable in the problem order.
+    dt.Advance(used_variables.size(), 0);
     var_to_instantiate_as_integer.assign(used_variables.begin(),
                                          used_variables.end());
-    gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
+    {
+      const uint64_t n = var_to_instantiate_as_integer.size();
+      dt.Advance(0, n * absl::bit_width(n));
+      gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
+    }
   }
   mapping->integers_.resize(num_proto_variables, kNoIntegerVariable);
 
@@ -242,6 +260,7 @@ void LoadVariables(const CpModelProto& model_proto,
   // IntegerVariable while loading large linear constraint, or when we have
   // disjoint LP components. So this is a best effort at a tight upper bound.
   int reservation_size = var_to_instantiate_as_integer.size();
+  dt.Advance(model_proto.constraints_size(), 0);
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const int ct_size = ct.linear().vars().size();
@@ -263,6 +282,7 @@ void LoadVariables(const CpModelProto& model_proto,
       reservation_size);
   mapping->reverse_integer_map_.resize(var_to_instantiate_as_integer.size(),
                                        -1);
+  dt.Advance(var_to_instantiate_as_integer.size(), 0);
   for (const int i : var_to_instantiate_as_integer) {
     const auto& var_proto = model_proto.variables(i);
     mapping->integers_[i] =
@@ -277,6 +297,7 @@ void LoadVariables(const CpModelProto& model_proto,
   auto* intervals_repository = m->GetOrCreate<IntervalsRepository>();
 
   // Link any variable that has both views.
+  dt.Advance(num_proto_variables, 0);
   for (int i = 0; i < num_proto_variables; ++i) {
     if (mapping->integers_[i] == kNoIntegerVariable) continue;
     if (mapping->booleans_[i] == kNoBooleanVariable) continue;
@@ -290,6 +311,7 @@ void LoadVariables(const CpModelProto& model_proto,
   // Create the interval variables.
   mapping->intervals_.resize(model_proto.constraints_size(),
                              kNoIntervalVariable);
+  dt.Advance(model_proto.constraints_size(), 0);
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
@@ -393,6 +415,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   auto* time_limit = m->GetOrCreate<TimeLimit>();
+  DeterministicTimer<{.scale = 2.3e-07, .offset = 1.2e-07}> dt(time_limit);
 
   // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->ModelIsUnsat()) return;
@@ -528,7 +551,11 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
 
   // Detect Literal <=> X >= value
   int num_inequalities = 0;
-  std::sort(inequalities.begin(), inequalities.end());
+  {
+    const uint64_t n = inequalities.size();
+    dt.Advance(n * absl::bit_width(n));
+    std::sort(inequalities.begin(), inequalities.end());
+  }
   for (int i = 0; i + 1 < inequalities.size(); i++) {
     if (inequalities[i].literal != inequalities[i + 1].literal.Negated()) {
       continue;
@@ -585,8 +612,12 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   int num_partially_encoded = 0;
   for (int i = 0; i < var_to_equalities.size(); ++i) {
     std::vector<EqualityDetectionHelper>& encoding = var_to_equalities[i];
-    std::sort(encoding.begin(), encoding.end());
     if (encoding.empty()) continue;
+    {
+      const uint64_t n = encoding.size();
+      dt.Advance(n * absl::bit_width(n));
+      std::sort(encoding.begin(), encoding.end());
+    }
 
     absl::flat_hash_set<int64_t> values;
     const IntegerVariable var = mapping->integers_[i];
@@ -1054,6 +1085,9 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
 // ============================================================================
 
 void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
+  DeterministicTimer<{.scale = 9.5e-09, .offset = 3.3e-07}> dt(
+      m->GetOrCreate<TimeLimit>(),
+      ct.bool_or().literals_size() + ct.enforcement_literal_size());
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   std::vector<Literal> literals = mapping->Literals(ct.bool_or().literals());
@@ -1067,6 +1101,9 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
 }
 
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
+  DeterministicTimer<{.scale = 3.4e-07}> dt(
+      m->GetOrCreate<TimeLimit>(),
+      ct.enforcement_literal_size() + ct.bool_and().literals_size());
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
@@ -1223,6 +1260,10 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
                                          std::vector<IntegerValue>* coeffs,
                                          Model* m) {
+  if (vars->empty()) return;
+  const uint64_t n = vars->size();
+  DeterministicTimer<{.scale = 2.4e-08, .offset = 1.6e-07}> dt(
+      m->GetOrCreate<TimeLimit>(), n * absl::bit_width(n));
   // If we enumerate all solutions, then we want intermediate variables to be
   // tight independently of what side is required.
   if (m->GetOrCreate<SatParameters>()->enumerate_all_solutions()) {

@@ -14,65 +14,16 @@
 #ifndef ORTOOLS_SAT_CP_MODEL_CANONICAL_CHECKER_H_
 #define ORTOOLS_SAT_CP_MODEL_CANONICAL_CHECKER_H_
 
-#include <cstdint>
 #include <functional>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
-
-// Returned by single-constraint presolve helpers that may either detect UNSAT
-// or mutate constraint `c` in place without updating its canonicality or
-// constraint-variable graph:
-// - `kUnsat`: model infeasibility was detected; caller must abort immediately.
-// - `kCanonical`: no infeasibility was detected, and `c` is untouched, cleared,
-//   already canonicalized, or already marked for lazy canonicalization.
-// - `kNeedsCanonicalization`: no infeasibility was detected, and caller must
-//   mark or canonicalize `c`.
-class [[nodiscard]] CanonicalizationStatus {
- public:
-  constexpr CanonicalizationStatus(UnsatStatus) : state_(State::kUnsat) {}
-  explicit constexpr CanonicalizationStatus(FeasibilityStatus status)
-      : state_(status.unsat() ? State::kUnsat : State::kCanonical) {}
-  explicit constexpr CanonicalizationStatus(ModificationStatus status)
-      : CanonicalizationStatus(status.modified()) {}
-  explicit constexpr CanonicalizationStatus(bool needs_canonicalization)
-      : state_(needs_canonicalization ? State::kNeedsCanonicalization
-                                      : State::kCanonical) {}
-  constexpr bool unsat() const { return state_ == State::kUnsat; }
-  constexpr bool needs_canonicalization() const {
-    return state_ == State::kNeedsCanonicalization;
-  }
-  constexpr CanonicalizationStatus& operator|=(ModificationStatus status) {
-    if (status.modified() && state_ == State::kCanonical) {
-      state_ = State::kNeedsCanonicalization;
-    }
-    return *this;
-  }
-  explicit constexpr operator FeasibilityStatus() const {
-    DCHECK(!needs_canonicalization());
-    return unsat() ? FeasibilityStatus(kUnsat) : kOk;
-  }
-  friend constexpr bool operator==(CanonicalizationStatus,
-                                   CanonicalizationStatus) = default;
-
- private:
-  enum class State : uint8_t {
-    kUnsat,
-    kCanonical,
-    kNeedsCanonicalization,
-  };
-  State state_;
-};
-inline constexpr CanonicalizationStatus kCanonical{false};
-inline constexpr CanonicalizationStatus kNeedsCanonicalization{true};
 
 // Compares two LinearExpressionProtos lexicographically by (vars, coeffs,
 // offset). Used as the canonical expression sort order in kLinMax, kIntProd,

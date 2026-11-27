@@ -13,7 +13,11 @@
 
 #include "ortools/sat/cp_model_lns.h"
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -35,6 +39,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -46,6 +51,7 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::testing::AnyOf;
 using ::testing::EqualsProto;
 
 TEST(NeighborhoodGeneratorHelperTest, ActiveVariables) {
@@ -268,7 +274,8 @@ TEST(GeneratorTest, UCBScore) {
   }
   generator.Synchronize();
 
-  EXPECT_NEAR(5.8255, generator.GetUCBScore(/*total_num_calls=*/200), 1e-4);
+  // 55 / (5.0 + 9.0) + exploration term.
+  EXPECT_NEAR(4.2541, generator.GetUCBScore(/*total_num_calls=*/200), 1e-4);
 }
 
 TEST(NeighborhoodGeneratorTest, AdaptivePresolveDeterministicLimit) {
@@ -363,10 +370,11 @@ TEST(NeighborhoodGeneratorTest,
   params.set_use_rins_lns(false);
   params.set_num_workers(2);
   params.set_interleave_search(true);
-  // Tiny search limit and tiny initial presolve limit: LNS can only improve
+  // Small search limit and tiny initial presolve limit: LNS can only improve
   // the initial hinted solution (400 -> < 400) if LNS presolve adapts its own
-  // limit past lns_initial_deterministic_limit up toward max!
-  params.set_lns_initial_deterministic_limit(1e-6);
+  // limit past lns_initial_deterministic_limit up toward max! Note that the
+  // search limit must be large enough to load the LNS model.
+  params.set_lns_initial_deterministic_limit(1e-4);
   params.set_lns_initial_presolve_deterministic_limit(1e-6);
   params.set_lns_max_presolve_deterministic_limit(1.0);
   params.set_max_deterministic_time(0.5);
@@ -375,6 +383,160 @@ TEST(NeighborhoodGeneratorTest,
   ASSERT_THAT(response.status(), testing::AnyOf(CpSolverStatus::FEASIBLE,
                                                 CpSolverStatus::OPTIMAL));
   EXPECT_LT(response.objective_value(), kNumVars);
+}
+
+// Advances shared deterministic time by a fixed step per Synchronize() so
+// LNS-only tests terminate deterministically even when early-aborted copies
+// accumulate zero subsolver dtime, and optionally exports variable bounds once.
+class DeterministicPacingSubsolver : public SubSolver {
+ public:
+  DeterministicPacingSubsolver(SharedClasses* shared, double dtime_per_sync,
+                               std::vector<int> fixed_zero_vars = {})
+      : SubSolver("pacing_helper", SubSolver::HELPER),
+        shared_(shared),
+        dtime_per_sync_(dtime_per_sync),
+        fixed_zero_vars_(std::move(fixed_zero_vars)) {}
+
+  bool TaskIsAvailable() override {
+    return !fixed_zero_vars_.empty() && !exported_.load();
+  }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    exported_.store(true);
+    return [this]() {
+      if (shared_->bounds != nullptr) {
+        const std::vector<int64_t> zeros(fixed_zero_vars_.size(), 0);
+        shared_->bounds->ReportPotentialNewBounds(
+            "pacing_helper", fixed_zero_vars_, zeros, zeros);
+      }
+    };
+  }
+
+  void Synchronize() override {
+    shared_->time_limit->AdvanceDeterministicTime(dtime_per_sync_);
+  }
+
+ private:
+  SharedClasses* const shared_;
+  const double dtime_per_sync_;
+  const std::vector<int> fixed_zero_vars_;
+  std::atomic<bool> exported_{false};
+};
+
+TEST(NeighborhoodGeneratorTest, CopyTimeLimitAdaptsPresolveLimit) {
+  CpModelProto proto;
+  constexpr int kNumVars = 40;
+  auto* hint = proto.mutable_solution_hint();
+  auto* obj = proto.mutable_objective();
+  for (int i = 0; i < kNumVars; ++i) {
+    auto* var = proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    hint->add_vars(i);
+    hint->add_values(1);
+    obj->add_vars(i);
+    obj->add_coeffs(1);
+  }
+  for (int i = 0; i < kNumVars; ++i) {
+    auto* ct = proto.add_constraints()->mutable_linear();
+    ct->add_vars(i);
+    ct->add_vars((i + 1) % kNumVars);
+    ct->add_coeffs(1);
+    ct->add_coeffs(1);
+    ct->add_domain(1);
+    ct->add_domain(2);
+  }
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_lns_only(true);
+  params.set_use_feasibility_jump(false);
+  params.set_num_violation_ls(0);
+  params.set_use_feasibility_pump(false);
+  params.set_use_rins_lns(false);
+  params.set_num_workers(2);
+  params.set_interleave_search(true);
+  // With an initial presolve limit of 0.0, ModelCopy immediately aborts with
+  // kCopyTimeLimitReached; LNS can only improve the hinted solution if copy
+  // timeouts report presolve_limit_reached = true via AddSolveData().
+  params.set_lns_initial_deterministic_limit(0.05);
+  params.set_lns_initial_presolve_deterministic_limit(0.0);
+  params.set_lns_max_presolve_deterministic_limit(1.0);
+  params.set_max_deterministic_time(0.5);
+
+  Model model;
+  model.Add(NewSatParameters(params));
+  model.Add(NewSubsolver([](SharedClasses* shared) {
+    return std::make_unique<DeterministicPacingSubsolver>(shared, 0.01);
+  }));
+  const CpSolverResponse response = SolveCpModel(proto, &model);
+  ASSERT_THAT(response.status(),
+              AnyOf(CpSolverStatus::FEASIBLE, CpSolverStatus::OPTIMAL));
+  EXPECT_LT(response.objective_value(), kNumVars);
+}
+
+TEST(NeighborhoodGeneratorTest,
+     CopyUnsatAdaptsDifficultyToReachFullNeighborhood) {
+  // Variables 0..10 in [0, 1], minimize sum(x_0..x_10).
+  // Clauses: x_i => x_0 for i = 1..10, plus 2-variable chain constraints
+  // x_i <= x_{i+1} (i = 1..9) connecting 1..10 without relaxing all at once.
+  // Initial hint (1, ..., 1) is feasible (obj = 11). Once x_0 is fixed to 0 in
+  // SharedBoundsManager, any reduced neighborhood fixing at least one x_i = 1
+  // (i >= 1) is proven UNSAT during ModelCopy::ImportAndSimplifyConstraints.
+  // Reporting INFEASIBLE via AddSolveData() adapts difficulty from 0.1 up to
+  // 1.0 (FullNeighborhood), finding the optimal solution (0, ..., 0) (obj = 0).
+  CpModelProto proto;
+  constexpr int kNumVars = 11;
+  auto* hint = proto.mutable_solution_hint();
+  auto* obj = proto.mutable_objective();
+  for (int i = 0; i < kNumVars; ++i) {
+    auto* var = proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    hint->add_vars(i);
+    hint->add_values(1);
+    obj->add_vars(i);
+    obj->add_coeffs(1);
+  }
+  for (int i = 1; i < kNumVars; ++i) {
+    auto* clause = proto.add_constraints()->mutable_bool_or();
+    clause->add_literals(NegatedRef(i));
+    clause->add_literals(0);
+  }
+  for (int i = 1; i + 1 < kNumVars; ++i) {
+    auto* chain = proto.add_constraints()->mutable_linear();
+    chain->add_vars(i);
+    chain->add_coeffs(1);
+    chain->add_vars(i + 1);
+    chain->add_coeffs(-1);
+    chain->add_domain(-1);
+    chain->add_domain(0);
+  }
+
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_use_feasibility_jump(false);
+  params.set_num_violation_ls(0);
+  params.set_use_feasibility_pump(false);
+  params.set_use_rins_lns(false);
+  params.set_use_lb_relax_lns(false);
+  params.add_filter_subsolvers("lns_rnd_var");
+  params.set_share_level_zero_bounds(true);
+  params.set_num_workers(2);
+  params.set_interleave_search(true);
+  params.set_lns_initial_difficulty(0.1);
+  params.set_max_deterministic_time(1.0);
+
+  Model model;
+  model.Add(NewSatParameters(params));
+  model.Add(NewSubsolver([](SharedClasses* shared) {
+    return std::make_unique<DeterministicPacingSubsolver>(
+        shared, 0.01, /*fixed_zero_vars=*/std::vector<int>{0});
+  }));
+  const CpSolverResponse response = SolveCpModel(proto, &model);
+  ASSERT_THAT(response.status(),
+              AnyOf(CpSolverStatus::FEASIBLE, CpSolverStatus::OPTIMAL));
+  EXPECT_EQ(response.objective_value(), 0);
 }
 
 TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRINS) {

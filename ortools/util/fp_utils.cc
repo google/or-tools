@@ -14,6 +14,7 @@
 #include "ortools/util/fp_utils.h"
 
 #include <algorithm>
+#include <bit>
 #include <cfenv>  // NOLINT
 #include <cmath>
 #include <cstdint>
@@ -28,6 +29,7 @@
 #include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/full_precision_inequalities.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 // To enable floating-point traps on Android/Bionic or BSD platforms, extend
 // the preprocessor guard below with the corresponding platform macros (such as
@@ -153,15 +155,16 @@ void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
     // Compute the greatest candidate such that
     // round(fabs(c).2^candidate) <= max_absolute_sum.
     const double c = std::max(-min_term, max_term);
-    int candidate = msb - ilogb(c);
+    int candidate = msb - FastILogB(c);
     if (candidate >= std::numeric_limits<double>::max_exponent) {
       candidate = std::numeric_limits<double>::max_exponent - 1;
     }
-    if (std::round(ldexp(std::abs(c), candidate)) > max_absolute_sum) {
+    if (std::round(FastLdExp(std::abs(c), candidate)) > max_absolute_sum) {
       --candidate;
     }
-    DCHECK_LE(std::abs(static_cast<int64_t>(round(ldexp(c, candidate)))),
-              max_absolute_sum);
+    DCHECK_LE(
+        std::abs(static_cast<int64_t>(std::round(FastLdExp(c, candidate)))),
+        max_absolute_sum);
 
     // Update factor_exponent which is the min of all the candidates.
     if (is_first_value || candidate < factor_exponent) {
@@ -170,10 +173,10 @@ void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
       recompute_sum = true;
     } else {
       // Update the sum of absolute values of the numbers seen so far.
-      sum_min -=
-          static_cast<int64_t>(std::round(ldexp(min_term, factor_exponent)));
-      sum_max +=
-          static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
+      sum_min -= static_cast<int64_t>(
+          std::round(FastLdExp(min_term, factor_exponent)));
+      sum_max += static_cast<int64_t>(
+          std::round(FastLdExp(max_term, factor_exponent)));
       if (sum_min > static_cast<uint64_t>(max_absolute_sum) ||
           sum_max > static_cast<uint64_t>(max_absolute_sum)) {
         factor_exponent--;
@@ -195,10 +198,10 @@ void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
         double min_term = use_bounds ? x * lb[j] : -x;
         double max_term = use_bounds ? x * ub[j] : x;
         ReorderAndCapTerms(&min_term, &max_term);
-        sum_min -=
-            static_cast<int64_t>(std::round(ldexp(min_term, factor_exponent)));
-        sum_max +=
-            static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
+        sum_min -= static_cast<int64_t>(
+            std::round(FastLdExp(min_term, factor_exponent)));
+        sum_max += static_cast<int64_t>(
+            std::round(FastLdExp(max_term, factor_exponent)));
       }
       if (sum_min > static_cast<uint64_t>(max_absolute_sum) ||
           sum_max > static_cast<uint64_t>(max_absolute_sum)) {
@@ -208,10 +211,195 @@ void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
       }
     }
   }
-  *scaling_factor = ldexp(1.0, factor_exponent);
+  *scaling_factor = FastTwoExp(factor_exponent);
+}
+
+// Tries to find an odd rational multiplier for `coefficients` within
+// `fp_limit`, shifting any coefficient with `frexp` exponent `exp <
+// min_target_exp` up by `2^(min_target_exp - exp)` before rational
+// approximation:
+// - `min_target_exp = k` (with a 7-bit ULP safety margin relative to
+//   `tolerance`) strips up to `k` bits of power-of-two denominator (e.g.
+//   recovering `5^6` from `1e-6 = 2^-6 * 5^-6`).
+// - `min_target_exp = 0` normalizes `< 0.5` coefficients into `[0.5, 1.0)`,
+//   making 8-to-10-digit decimals (such as `333.33333333` in `timtab1CUTS`)
+//   invariant to power-of-two variable down-scaling without amplifying their
+//   truncation error by `2^k`.
+// - `min_target_exp = int::min()` leaves raw fractional parts untouched so
+//   unscaled truncated rationals like `1/450` or `1/1440` are not shifted.
+double FindOddRationalScaling(absl::Span<const double> coefficients,
+                              double tolerance, double fp_limit,
+                              int min_target_exp) {
+  double multiplier = 1.0;
+  const int64_t limit =
+      static_cast<int64_t>(std::min(std::abs(fp_limit), 1e15));
+  for (const double coeff : coefficients) {
+    if (coeff == 0.0) continue;
+    const double abs_coeff = std::abs(coeff);
+    const int exp = FastILogB(abs_coeff) + 1;
+    const int shift = min_target_exp > exp ? min_target_exp - exp : 0;
+    const double scaled = FastLdExp(abs_coeff, shift);
+    const double frac = scaled - std::floor(scaled);
+    int64_t f =
+        FindRationalFactor(multiplier * frac, limit, multiplier * tolerance);
+    if (f == 0) return 0.0;
+    const int tz_f = std::countr_zero(static_cast<uint64_t>(f));
+    f >>= tz_f;
+    multiplier *= f;
+    if (multiplier > limit) return 0.0;
+    const int max_pow2 = MaxPowerOfTwoExponentWithinBound(multiplier, limit);
+    if (shift + tz_f > max_pow2) {
+      // `FindRationalFactor` relied on `2^(shift + tz_f)`, which exceeds
+      // `limit / multiplier`. Verify whether `multiplier * 2^r` already
+      // realizes an integer on `coeff` within `limit`.
+      const int r = std::min(max_pow2, std::max(0, 53 - exp));
+      double frac_r = FastLdExp(abs_coeff, r);
+      frac_r -= std::floor(frac_r);
+      const double prod = multiplier * frac_r;
+      if (std::abs(prod - std::round(prod)) >=
+          FastLdExp(multiplier * tolerance, r)) {
+        return 0.0;
+      }
+    }
+  }
+  return multiplier;
 }
 
 }  // namespace
+
+double RoundScaledLowerBound(double y, double tol) {
+  if (!std::isfinite(y)) return y;
+  const double r = std::round(y);
+  const double w = TightSum().Add(r).Add(-y) <= tol ? r : std::floor(y);
+  return w == 0.0 ? 0.0 : w;
+}
+
+// This uses the best rational approximation of x via continuous fractions.
+// It is probably not the best implementation, but according to the unit test,
+// it seems to do the job.
+int64_t FindRationalFactor(double x, int64_t limit, double tolerance) {
+  const double initial_x = x;
+  x = std::abs(x);
+  x -= std::floor(x);
+  int64_t current_q = 1;
+  int64_t prev_q = 0;
+  while (current_q < limit) {
+    const double q = static_cast<double>(current_q);
+    const double qx = q * initial_x;
+    const double qtolerance = q * tolerance;
+    if (std::abs(qx - std::round(qx)) < qtolerance) {
+      return current_q;
+    }
+    x = 1 / x;
+    const double floored_x = std::floor(x);
+    if (floored_x >= static_cast<double>(kint64max)) {
+      return 0;
+    }
+    const int64_t new_q =
+        CapAdd(prev_q, CapProd(static_cast<int64_t>(floored_x), current_q));
+    prev_q = current_q;
+    current_q = new_q;
+    x -= std::floor(x);
+  }
+  return 0;
+}
+
+double FindBestScalingAndComputeErrors(
+    absl::Span<const double> coefficients,
+    absl::Span<const double> lower_bounds,
+    absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error, double* max_scaling_factor) {
+  // Starts by computing the highest possible factor.
+  double scaling_factor = GetBestScalingOfDoublesToInt64(
+      coefficients, lower_bounds, upper_bounds, max_absolute_activity);
+  if (max_scaling_factor != nullptr) *max_scaling_factor = scaling_factor;
+  if (scaling_factor == 0.0) return scaling_factor;
+
+  // Returns the smallest factor of the form 2^i that gives us a relative sum
+  // error of wanted_absolute_activity_precision and still makes sure we will
+  // have no integer overflow.
+  //
+  // Important: the loop is written in such a way that ComputeScalingErrors()
+  // is called on the last factor.
+  //
+  // TODO(user): Make this faster.
+  double x = std::min(scaling_factor, 1.0);
+  for (; x <= scaling_factor; x *= 2) {
+    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
+                         relative_coeff_error, scaled_sum_error);
+    if (*scaled_sum_error < wanted_absolute_activity_precision * x) break;
+
+    // This could happen if we always have enough precision.
+    if (x == scaling_factor) break;
+  }
+  scaling_factor = x;
+  DCHECK(std::isfinite(scaling_factor));
+
+  // Because we deal with an approximate input, scaling with a power of 2 might
+  // not be the best choice. It is also possible the user used rational coeffs
+  // and then converted them to double (1/2, 1/3, 4/5, etc...). This scaling
+  // will recover such rational input and might result in a smaller overall
+  // coefficient which is good.
+  //
+  // Note that if our current precision is already above the requested one,
+  // we choose integer scaling if we get a better precision.
+  //
+  // We try two tolerances and three mantissa shift targets (`k`, `0`, and no
+  // shift). FindRationalFactor() accepts a denominator q as soon as
+  // |q * x - round(q * x)| < q * tolerance, so with a tolerance of 1e-8 any
+  // convergent with q >= 1e4 is accepted and we cannot reliably recover
+  // denominators like 15625 (i.e. coefficients that are multiples of 1e-6),
+  // the result even depends on the coefficient order. We thus first try a
+  // tight tolerance to recover exact rationals. But the loose tolerance also
+  // acts as a search for a smaller factor with an acceptable error when the
+  // coefficients are not exact rationals (this matters for the headroom of
+  // continuous variables), so we still try it afterwards.
+  for (const double rational_tolerance : {1e-10, 1e-8}) {
+    const int tol_exp = FastILogB(rational_tolerance) + 1;
+    const int k = std::clamp(53 + tol_exp - 7, 0, 52);
+    for (const int min_target_exp : {k, 0, std::numeric_limits<int>::min()}) {
+      double integer_factor = FindOddRationalScaling(
+          coefficients, rational_tolerance, scaling_factor, min_target_exp);
+      DCHECK(std::isfinite(integer_factor));
+      if (integer_factor == 0 || integer_factor >= scaling_factor) continue;
+
+      double local_relative_coeff_error;
+      double local_scaled_sum_error;
+
+      // As long as integer_factor * 2^x is smaller than scaling_factor,
+      // consider it!
+      bool use_rational = false;
+      while (true) {
+        ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
+                             integer_factor, &local_relative_coeff_error,
+                             &local_scaled_sum_error);
+
+        if (local_scaled_sum_error <
+            wanted_absolute_activity_precision * integer_factor) {
+          // Smaller factor under the wanted precision, select it.
+          use_rational = true;
+          break;
+        }
+
+        if (integer_factor * 2 >= scaling_factor) break;
+        integer_factor *= 2;
+      }
+
+      // If use_rational was set, or we have a smaller error, go for it.
+      DCHECK_LT(integer_factor, scaling_factor);
+      if (use_rational || local_scaled_sum_error * scaling_factor <=
+                              *scaled_sum_error * integer_factor) {
+        *relative_coeff_error = local_relative_coeff_error;
+        *scaled_sum_error = local_scaled_sum_error;
+        scaling_factor = integer_factor;
+      }
+    }
+  }
+
+  DCHECK(std::isfinite(scaling_factor));
+  return scaling_factor;
+}
 
 void ComputeScalingErrors(absl::Span<const double> input,
                           absl::Span<const double> lb,

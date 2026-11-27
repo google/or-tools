@@ -583,6 +583,12 @@ std::pair<double, double> ProdBounds(const int64_t a, const int64_t b,
 
 std::pair<double, double> ProdBounds(const int64_t a, const double b,
                                      const PowerOfTwo p) {
+  CHECK(!std::isnan(b)) << "NaN not supported";
+  if (!std::isfinite(b)) {
+    CHECK_NE(a, 0) << "inf * 0 would give NaN";
+    const double res = a > 0 ? b : -b;
+    return {res, res};
+  }
   return TermDoubleBounds(ProdAsTerm(a, b, p));
 }
 
@@ -593,6 +599,12 @@ std::pair<double, double> ProdBounds(const double a, const int64_t b,
 
 std::pair<double, double> ProdBounds(const double a, const double b,
                                      const PowerOfTwo p) {
+  CHECK(!std::isnan(a) && !std::isnan(b)) << "NaN not supported";
+  if (!std::isfinite(a) || !std::isfinite(b)) {
+    CHECK(a != 0.0 && b != 0.0) << "inf * 0 would give NaN";
+    const double res = (a < 0.0) != (b < 0.0) ? -kInf : kInf;
+    return {res, res};
+  }
   return TermDoubleBounds(ProdAsTerm(a, b, p));
 }
 
@@ -614,6 +626,80 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
 std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
     double a, double b, PowerOfTwo p) {
   return TermFloorCeil(ProdAsTerm(a, b, p));
+}
+
+std::pair<double, double> SumBounds(const int64_t a, const int64_t b) {
+  return TermDoubleBounds(
+      {.mantissa = absl::int128{a} + absl::int128{b}, .exponent = 0});
+}
+
+std::pair<double, double> SumBounds(const int64_t a, const double b) {
+  CHECK(!std::isnan(b)) << "NaN not supported";
+  if (!std::isfinite(b)) return {b, b};
+  if (b == 0.0) return Int64DoubleBounds(a);
+  if (a == 0) return {b, b};
+
+  const Term b_term = ToTerm(b);
+  if (b_term.exponent >= 65) {
+    // Here |b| >= 2^(52 + 65) = 2^117, so the gap to either adjacent double is
+    // at least 2^64 > 2^63 >= |a| > 0.
+    return a > 0 ? std::make_pair(b, FastStepUp(b))
+                 : std::make_pair(FastStepDown(b), b);
+  }
+  if (b_term.exponent >= 0) {
+    // `b_term.mantissa` is in (-2^53, 2^53) and `exponent` <= 64, so the sum
+    // lies well within (-2^118, 2^118).
+    return TermDoubleBounds(
+        {.mantissa = absl::int128{a} + (b_term.mantissa << b_term.exponent),
+         .exponent = 0});
+  }
+  if (b_term.exponent >= -52) {
+    // |a| <= 2^63 and -exponent <= 52, so the shifted sum lies within
+    // (-2^116, 2^116).
+    return TermDoubleBounds(
+        {.mantissa = (absl::int128{a} << -b_term.exponent) + b_term.mantissa,
+         .exponent = b_term.exponent});
+  }
+  // Here |b| < 1.0 (b_term.exponent <= -53, including subnormals).
+  const auto [a_lb, a_ub] = Int64DoubleBounds(a);
+  if (a_lb == a_ub) return SumBounds(a_lb, b);
+  // Since `a` is not representable as a double, `|a| > 2^53`, so both `a_lb`
+  // and `a_ub` are consecutive exact integers bracketing `a`: `a_lb <= a - 1`
+  // and `a + 1 <= a_ub`. Because `|b| < 1`, `a + b` stays strictly inside
+  // `(a_lb, a_ub)`.
+  return {a_lb, a_ub};
+}
+
+std::pair<double, double> SumBounds(const double a, const int64_t b) {
+  return SumBounds(b, a);
+}
+
+std::pair<double, double> SumBounds(double a, double b) {
+  CHECK(!std::isnan(a) && !std::isnan(b)) << "NaN not supported";
+  if (!std::isfinite(a) || !std::isfinite(b)) {
+    CHECK(std::isfinite(a) || std::isfinite(b) || a == b)
+        << "Inconsistent infinite values in sum";
+    const double res = !std::isfinite(a) ? a : b;
+    return {res, res};
+  }
+  if (std::abs(a) < std::abs(b)) std::swap(a, b);
+  const double s = a + b;
+  if (!std::isfinite(s)) {
+    return s > 0.0 ? std::make_pair(kDoubleMax, kInf)
+                   : std::make_pair(-kInf, -kDoubleMax);
+  }
+  // Whatever the IEEE-754 rounding mode, `s` is one of the two doubles
+  // bracketing `a + b` (or exact). Because `|a| >= |b|` and `s` is finite,
+  // `z = s - a` is always exact in every rounding mode (by Sterbenz's lemma and
+  // subnormal exactness): `s = a + z` in R, so comparing `z` against `b`
+  // compares `s` against `a + b` exactly.
+  const double z = s - a;
+  if (z == b) {
+    const double normalized = s == 0.0 ? 0.0 : s;
+    return {normalized, normalized};
+  }
+  if (z < b) return {s, FastStepUp(s)};
+  return {FastStepDown(s), s};
 }
 
 std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
@@ -709,13 +795,14 @@ std::pair<double, double> Int64DoubleBounds(const int64_t n) {
 }
 
 std::pair<double, double> QuotientBounds(double a, double b) {
-  DCHECK(std::isfinite(a));
+  DCHECK(!std::isnan(a));
   DCHECK(std::isfinite(b));
   DCHECK_NE(b, 0.0);
   if (b < 0.0) {
     a = -a;
     b = -b;
   }
+  if (b == 1.0 || !std::isfinite(a)) return {a, a};
 
   // Whatever the rounding mode, q is `a / b` if it is representable, and one of
   // the two doubles surrounding `a / b` otherwise.

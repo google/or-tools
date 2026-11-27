@@ -6435,8 +6435,6 @@ static const char *mkd_doc_operations_research_Solver_MakeLocalSearchPhase_2 = R
 
 static const char *mkd_doc_operations_research_Solver_MakeLocalSearchPhase_3 = R"doc(Variant with a sub_decison_builder specific to the first solution.)doc";
 
-static const char *mkd_doc_operations_research_Solver_MakeLocalSearchPhase_4 = R"doc()doc";
-
 static const char *mkd_doc_operations_research_Solver_MakeLocalSearchPhaseParameters = R"doc(Local Search Phase Parameters)doc";
 
 static const char *mkd_doc_operations_research_Solver_MakeLocalSearchPhaseParameters_2 = R"doc()doc";
@@ -6477,6 +6475,8 @@ R"doc(expr in set. Propagation is lazy, i.e. this constraint does not
 creates holes in the domain of the variable.)doc";
 
 static const char *mkd_doc_operations_research_Solver_MakeMemberCt_2 = R"doc()doc";
+
+static const char *mkd_doc_operations_research_Solver_MakeMemberCt_3 = R"doc(expr should be in the list of allowed intervals.)doc";
 
 static const char *mkd_doc_operations_research_Solver_MakeMin = R"doc(std::min(vars))doc";
 
@@ -7552,11 +7552,11 @@ static const char *mkd_doc_operations_research_Solver_true_constraint = R"doc(Ca
 
 static const char *mkd_doc_operations_research_Solver_unchecked_solutions = R"doc(The number of unchecked solutions found by local search.)doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3 = R"doc(interval of constants cached, inclusive:)doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3156_3 = R"doc(interval of constants cached, inclusive:)doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3_MAX_CACHED_INT_CONST = R"doc()doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3156_3_MAX_CACHED_INT_CONST = R"doc()doc";
 
-static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3154_3_MIN_CACHED_INT_CONST = R"doc()doc";
+static const char *mkd_doc_operations_research_Solver_unnamed_enum_at_third_party_ortools_ortools_constraint_solver_constraint_solver_h_3156_3_MIN_CACHED_INT_CONST = R"doc()doc";
 
 static const char *mkd_doc_operations_research_Solver_use_fast_local_search = R"doc(Local search mode)doc";
 

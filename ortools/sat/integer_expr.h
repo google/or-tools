@@ -281,10 +281,14 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
 
   const std::vector<LinearExpression> exprs_;
   const IntegerVariable min_var_;
+
+  // The total number of terms in exprs_, used for the dtime.
+  int64_t num_terms_ = 0;
+
   std::vector<IntegerValue> expr_lbs_;
-  Model* model_;
   IntegerTrail& integer_trail_;
   EnforcementHelper& enforcement_helper_;
+  TimeLimit* time_limit_;
   EnforcementId enforcement_id_;
   std::vector<IntegerValue> max_variations_;
   std::vector<IntegerValue> reason_coeffs_;

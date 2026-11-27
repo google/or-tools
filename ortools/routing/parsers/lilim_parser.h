@@ -57,10 +57,8 @@ namespace operations_research::routing {
 class LiLimParser {
  public:
   LiLimParser() = default;
-#ifndef SWIG
-  LiLimParser(LiLimParser&) = delete;
-  const LiLimParser& operator=(const LiLimParser&) = delete;
-#endif
+  LiLimParser(const LiLimParser&) = delete;
+  LiLimParser& operator=(const LiLimParser&) = delete;
 
   // Loading an instance. Both methods return false in case of failure to read
   // the instance. Loading a new instance clears the previously loaded instance.

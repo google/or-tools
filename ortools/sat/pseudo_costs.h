@@ -31,6 +31,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -121,6 +122,7 @@ class PseudoCosts {
 
   // Model object.
   const SatParameters& parameters_;
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ModelLpValues* lp_values_;

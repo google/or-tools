@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
@@ -30,6 +31,7 @@ namespace {
 
 using ::absl::StatusCode;
 using ::testing::AllOf;
+using ::testing::ContainsRegex;
 using ::testing::HasSubstr;
 using ::testing::status::StatusIs;
 
@@ -140,6 +142,85 @@ TEST(CheckIdsIdenticalTests, MissingId) {
           AllOf(HasSubstr("Id:"),
                 HasSubstr(
                     "first_description is missing from second_description"))));
+}
+
+TEST(CheckIdsSubsetHashSetTests, IdsAreSubset) {
+  const std::vector<int64_t> ids = {5, 0, 4, 5};
+  const absl::flat_hash_set<int64_t> universe = {0, 4, 5, 6};
+  EXPECT_OK(CheckIdsSubset(ids, universe, "ids", "universe"));
+}
+
+TEST(CheckIdsSubsetHashSetTests, NotInUniverse) {
+  const std::vector<int64_t> ids = {0, 4, 7};
+  const absl::flat_hash_set<int64_t> universe = {0, 4, 5, 8};
+  EXPECT_THAT(
+      CheckIdsSubset(ids, universe, "my_ids", "my_universe"),
+      StatusIs(StatusCode::kInvalidArgument, ContainsRegex("my_ids.*missing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, IdsAreSubset) {
+  const std::vector<int64_t> ids = {0, 4, 4, 6};
+  const std::vector<int64_t> universe = {0, 4, 5, 6};
+  EXPECT_OK(CheckSortedIdsSubset(ids, universe, "ids", "universe"));
+}
+
+TEST(CheckSortedIdsSubsetTests, EmptyIds) {
+  EXPECT_OK(CheckSortedIdsSubset({}, {}, "ids", "universe"));
+  EXPECT_OK(CheckSortedIdsSubset({}, {1, 2}, "ids", "universe"));
+}
+
+TEST(CheckSortedIdsSubsetTests, NotInUniverse) {
+  const std::vector<int64_t> ids = {0, 4, 7};
+  const std::vector<int64_t> universe = {0, 4, 5, 8};
+  EXPECT_THAT(
+      CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+      StatusIs(StatusCode::kInvalidArgument, ContainsRegex("my_ids.*missing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, PastEndOfUniverse) {
+  const std::vector<int64_t> ids = {0, 9};
+  const std::vector<int64_t> universe = {0, 4, 5, 8};
+  EXPECT_THAT(
+      CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+      StatusIs(StatusCode::kInvalidArgument, ContainsRegex("9.*missing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, EmptyUniverse) {
+  const std::vector<int64_t> ids = {0};
+  EXPECT_THAT(CheckSortedIdsSubset(ids, {}, "my_ids", "my_universe"),
+              StatusIs(StatusCode::kInvalidArgument, HasSubstr("missing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, IdsNotSorted) {
+  const std::vector<int64_t> ids = {4, 0};
+  const std::vector<int64_t> universe = {0, 4, 5, 8};
+  EXPECT_THAT(
+      CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+      StatusIs(StatusCode::kInvalidArgument, ContainsRegex("my_ids.*sorted")));
+}
+
+TEST(CheckSortedIdsSubsetTests, UniverseNotSorted) {
+  const std::vector<int64_t> ids = {0, 4};
+  const std::vector<int64_t> universe = {0, 5, 4, 8};
+  EXPECT_THAT(CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+              StatusIs(StatusCode::kInvalidArgument,
+                       ContainsRegex("my_universe.*strictly increasing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, UniverseNotSortedAfterLastId) {
+  const std::vector<int64_t> ids = {0};
+  const std::vector<int64_t> universe = {0, 5, 4};
+  EXPECT_THAT(CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+              StatusIs(StatusCode::kInvalidArgument,
+                       ContainsRegex("my_universe.*strictly increasing")));
+}
+
+TEST(CheckSortedIdsSubsetTests, UniverseHasDuplicates) {
+  const std::vector<int64_t> ids = {4};
+  const std::vector<int64_t> universe = {0, 4, 4};
+  EXPECT_THAT(CheckSortedIdsSubset(ids, universe, "my_ids", "my_universe"),
+              StatusIs(StatusCode::kInvalidArgument,
+                       ContainsRegex("my_universe.*strictly increasing")));
 }
 
 }  // namespace

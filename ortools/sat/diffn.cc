@@ -540,48 +540,56 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
               }
               return larger;
             });
-  std::vector<IntegerValue> sizes_x, sizes_y;
-  sizes_x.reserve(active_box_ranges.size());
-  sizes_y.reserve(active_box_ranges.size());
-  std::vector<RectangleInRange> filtered_items;
-  filtered_items.reserve(active_box_ranges.size());
-  for (const Rectangle& r : sampled_rectangles) {
-    sizes_x.clear();
-    sizes_y.clear();
-    filtered_items.clear();
-    for (int i = 0; i < active_box_ranges.size(); ++i) {
-      const RectangleInRange& box = active_box_ranges[i];
-      const Rectangle intersection = box.GetMinimumIntersection(r);
-      if (intersection.SizeX() > 0 && intersection.SizeY() > 0) {
-        sizes_x.push_back(intersection.SizeX());
-        sizes_y.push_back(intersection.SizeY());
-        filtered_items.push_back(box);
+  {
+    DeterministicTimer<{.scale = 8.7e-07, .offset = 8.3e-06}> timer(
+        time_limit_);
+    uint64_t filtered_boxes = 0;
+    std::vector<IntegerValue> sizes_x, sizes_y;
+    sizes_x.reserve(active_box_ranges.size());
+    sizes_y.reserve(active_box_ranges.size());
+    std::vector<RectangleInRange> filtered_items;
+    filtered_items.reserve(active_box_ranges.size());
+    for (const Rectangle& r : sampled_rectangles) {
+      sizes_x.clear();
+      sizes_y.clear();
+      filtered_items.clear();
+      for (int i = 0; i < active_box_ranges.size(); ++i) {
+        const RectangleInRange& box = active_box_ranges[i];
+        const Rectangle intersection = box.GetMinimumIntersection(r);
+        if (intersection.SizeX() > 0 && intersection.SizeY() > 0) {
+          sizes_x.push_back(intersection.SizeX());
+          sizes_y.push_back(intersection.SizeY());
+          filtered_items.push_back(box);
+        }
       }
+      filtered_boxes += filtered_items.size();
+      // This checks the feasibility of a related orthogonal packing problem
+      // where our rectangle is the bounding box, and we need to fit inside it a
+      // set of items corresponding to the minimum intersection of the original
+      // items with this bounding box.
+      const auto opp_result = orthogonal_packing_checker_.TestFeasibility(
+          sizes_x, sizes_y, {r.SizeX(), r.SizeY()},
+          OrthogonalPackingOptions{
+              .use_pairwise = true,
+              .use_dff_f0 = true,
+              .use_dff_f2 = true,
+              .brute_force_threshold = 7,
+              .dff2_max_number_of_parameters_to_check = 100});
+      if (opp_result.GetResult() ==
+              OrthogonalPackingResult::Status::INFEASIBLE &&
+          (best_conflict.opp_result.GetResult() !=
+               OrthogonalPackingResult::Status::INFEASIBLE ||
+           best_conflict.opp_result.GetItemsParticipatingOnConflict().size() >
+               opp_result.GetItemsParticipatingOnConflict().size())) {
+        best_conflict.items_for_opp = filtered_items;
+        best_conflict.opp_result = opp_result;
+        best_conflict.rectangle_with_too_much_energy = r;
+      }
+      // Use the fact that our rectangles are ordered in shrinking order to
+      // remove all items that will never contribute again.
+      filtered_items.swap(active_box_ranges);
     }
-    // This checks the feasibility of a related orthogonal packing problem where
-    // our rectangle is the bounding box, and we need to fit inside it a set of
-    // items corresponding to the minimum intersection of the original items
-    // with this bounding box.
-    const auto opp_result = orthogonal_packing_checker_.TestFeasibility(
-        sizes_x, sizes_y, {r.SizeX(), r.SizeY()},
-        OrthogonalPackingOptions{
-            .use_pairwise = true,
-            .use_dff_f0 = true,
-            .use_dff_f2 = true,
-            .brute_force_threshold = 7,
-            .dff2_max_number_of_parameters_to_check = 100});
-    if (opp_result.GetResult() == OrthogonalPackingResult::Status::INFEASIBLE &&
-        (best_conflict.opp_result.GetResult() !=
-             OrthogonalPackingResult::Status::INFEASIBLE ||
-         best_conflict.opp_result.GetItemsParticipatingOnConflict().size() >
-             opp_result.GetItemsParticipatingOnConflict().size())) {
-      best_conflict.items_for_opp = filtered_items;
-      best_conflict.opp_result = opp_result;
-      best_conflict.rectangle_with_too_much_energy = r;
-    }
-    // Use the fact that our rectangles are ordered in shrinking order to remove
-    // all items that will never contribute again.
-    filtered_items.swap(active_box_ranges);
+    timer.Advance(filtered_boxes);
   }
   if (best_conflict.opp_result.GetResult() ==
       OrthogonalPackingResult::Status::INFEASIBLE) {
@@ -866,7 +874,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // TODO(user): We might still propagate the x end in this setting, but the
   // current code will just abort below in SplitDisjointBoxes() anyway.
   {
-    DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
+    const size_t n = boxes.size();
+    DeterministicTimer<{.scale = 5.6e-09, .offset = 3.9e-07}> timer(
+        time_limit_, n * absl::bit_width(n));
     rectangles_.clear();
     rectangles_.reserve(boxes.size());
     for (const auto [box, y_mandatory_start, y_mandatory_end] : boxes) {
@@ -877,10 +887,6 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
            /*y_min=*/x->StartMin(box), /*y_max=*/x->EndMin(box)});
     }
     const auto opt_pair = FindOneIntersectionIfPresent(rectangles_);
-    {
-      const size_t n = rectangles_.size();
-      timer.Advance(n * absl::bit_width(n));
-    }
     if (opt_pair == std::nullopt) {
       return true;
     } else {
@@ -899,7 +905,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Split lists of boxes into disjoint sets of boxes (w.r.t. overlap).
   {
-    DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
+    DeterministicTimer<{.scale = 8.5e-09, .offset = 2.2e-07}> timer(
+        time_limit_);
     boxes_to_propagate_.clear();
     reduced_overlapping_boxes_.clear();
     int work_done = boxes.size();
@@ -983,8 +990,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
               y->AddEndMinReason(box, line_to_use_for_reason + 1);
             }
           } else {
-            // For small problems we can build a stronger explanation that only
-            // requires that each box must overlap on y with all the others.
+            // For small problems we can build a stronger explanation that
+            // only requires that each box must overlap on y with all the
+            // others.
             for (int i = 0; i < items.size(); ++i) {
               add_presence_reason_on_y_if_not_redundant_with_x(boxes[items[i]]);
               for (int j = i + 1; j < items.size(); ++j) {
@@ -1029,6 +1037,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   if (!helper_->IsEnforced()) return true;
   if (!helper_->SynchronizeAndSetDirection(true, true, false)) return false;
 
+  DeterministicTimer<{.scale = 7.5e-06, .offset = 6.2e-06}> timer(
+      time_limit_, helper_->connected_components().size());
   // If we are "diving" we maintain the set of fixed boxes for which we know
   // that they are not overlapping.
   const bool backtrack_since_last_call = !rev_is_in_dive_;

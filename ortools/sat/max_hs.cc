@@ -140,7 +140,7 @@ SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
     // too much time finding more.
     if (first_loop) {
       time_limit_->ChangeDeterministicLimit(std::min(
-          saved_dlimit, time_limit_->GetElapsedDeterministicTime() + 1.0));
+          saved_dlimit, time_limit_->GetElapsedDeterministicTime() + 3.0));
       first_loop = false;
     }
   } while (!assumptions.empty());
@@ -597,6 +597,9 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
 
     inner_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
     inner_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
+    // Count the deterministic time spent on the inner model.
+    ScopedDeterministicTimeAccounting dtime_accounting(
+        time_limit_, inner_model.GetOrCreate<TimeLimit>());
     response_ =
         solve_cp_model_callback_(hitting_set_linear_model_, &inner_model);
     if (response_.status() == CpSolverStatus::INFEASIBLE) {

@@ -20,6 +20,7 @@
 #ifndef ORTOOLS_GLOP_PREPROCESSOR_H_
 #define ORTOOLS_GLOP_PREPROCESSOR_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <memory>
@@ -31,6 +32,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -40,7 +42,9 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -197,6 +201,10 @@ class MainLpPreprocessor : public Preprocessor {
 // ColumnDeletionHelper
 // --------------------------------------------------------
 
+// Some presolve operation remap col/row index into a denser space for
+// efficiency.
+DEFINE_STRONG_INDEX_TYPE(LocalIndex);
+
 // Some preprocessors need to save columns/rows of the matrix for the postsolve.
 // This class helps them do that.
 //
@@ -206,13 +214,21 @@ class MainLpPreprocessor : public Preprocessor {
 // little as 1 columns, we already are at 4GB memory for nothing!
 class ColumnsSaver {
  public:
-  // Saves a column. The first version CHECKs that it is not already done.
+  // Saves a column. The first version CHECKs that it is not already done; the
+  // second returns its dense index for SavedColumnFromIndex().
   void SaveColumn(ColIndex col, const SparseColumn& column);
-  void SaveColumnIfNotAlreadyDone(ColIndex col, const SparseColumn& column);
+  LocalIndex SaveColumnIfNotAlreadyDone(ColIndex col,
+                                        const SparseColumn& column);
 
   // Returns the saved column. The first version CHECKs that it was saved.
   const SparseColumn& SavedColumn(ColIndex col) const;
   const SparseColumn& SavedOrEmptyColumn(ColIndex col) const;
+  const SparseColumn& SavedColumnFromIndex(LocalIndex index) const {
+    return saved_columns_[index.value()];
+  }
+  LocalIndex NumSavedColumns() const {
+    return LocalIndex{static_cast<int>(saved_columns_.size())};
+  }
 
  private:
   SparseColumn empty_column_;
@@ -431,6 +447,103 @@ struct MatrixEntry {
   Fractional coeff;
 };
 
+// Maintains the scalar products between a mutable dense vector (initialized to
+// zeros or to an initial vector of primal/dual values) and a set of registered
+// sparse vectors, while entries of the dense vector change one at a time.
+//
+// This is used by SingletonPreprocessor::RecoverSolutionImpl() where many undo
+// operations may need the activity of the same long saved row (or the reduced
+// cost of the same long saved column). Recomputing it from scratch every time
+// is quadratic in the length of the saved vector.
+//
+// For the first kMaxExactEvaluations queries of a registered sparse vector, the
+// scalar product is recomputed from scratch so vectors queried only a few times
+// incur no indexing or TightSum allocation. Afterwards, the scalar product is
+// maintained incrementally in exact binary precision via TightSum as entries
+// change via SetValue(): adding a term and later subtracting it gets back the
+// exact original sum without rounding drift, and Get() returns
+// TightSum::TightLowerBound() (exact when representable as a double, and within
+// 1 ULP otherwise).
+//
+// Overall, both time and memory are linear in the dense vector size, the
+// maximum registered vector index, the total size of the registered sparse
+// vectors, and the number of queries and updates.
+//
+// IndexType must be either RowIndex or ColIndex.
+template <typename IndexType>
+class IncrementalScalarProducts {
+ public:
+  static_assert(std::is_same_v<IndexType, RowIndex> ||
+                std::is_same_v<IndexType, ColIndex>);
+
+  // Number of times the scalar product with a registered sparse vector is
+  // computed from scratch before switching to TightSum incremental updates.
+  static constexpr int kMaxExactEvaluations = 10;
+  static_assert(kMaxExactEvaluations >= 0);
+
+  // Initializes the dense vector of size `size` to all zeros.
+  explicit IncrementalScalarProducts(int size);
+
+  // Initializes the dense vector to `initial_values`. All entries must be
+  // finite.
+  explicit IncrementalScalarProducts(
+      absl::Span<const Fractional> initial_values);
+
+  explicit IncrementalScalarProducts(
+      const StrictITIVector<IndexType, Fractional>& initial_values)
+      : IncrementalScalarProducts(absl::MakeConstSpan(
+            initial_values.data(), initial_values.size().value())) {}
+
+  IncrementalScalarProducts(const IncrementalScalarProducts&) = delete;
+  IncrementalScalarProducts& operator=(const IncrementalScalarProducts&) =
+      delete;
+
+  // Registers `sparse_vector` (which must outlive this object and remain
+  // unmodified) at `index` >= 0. `index` must not have been registered yet, and
+  // callers should use compact indices in [0, num_vectors) since internal
+  // metadata is indexed directly by `index`. All coefficients must be finite
+  // and row indices must lie in [0, size). A convenient method for getting
+  // columns with dense indexing is to use the ColumnSaver class.
+  void Add(LocalIndex index, const SparseColumn& sparse_vector);
+
+  // Sets entry `index` of the dense vector to `new_value` (must be finite).
+  void SetValue(IndexType index, Fractional new_value);
+
+  // Returns the scalar product between the sparse vector registered at `index`
+  // and the current dense vector.
+  Fractional Get(LocalIndex index) const;
+
+  // Total number of sparse vector entries scanned so far. This is a measure of
+  // the work done, used by tests.
+  int64_t num_scanned_entries() const { return num_scanned_entries_; }
+
+ private:
+  struct RegisteredColumn {
+    const SparseColumn* vector = nullptr;
+    int num_evaluations = 0;
+    LocalIndex sum_index = LocalIndex{-1};
+  };
+  struct OccurrenceNode {
+    LocalIndex sum_index;
+    int next_occurrence;
+    Fractional coefficient;
+  };
+
+  LocalIndex PromoteVector(const SparseColumn& vector) const;
+
+  // The dense vector we do the scalar product with.
+  StrictITIVector<IndexType, Fractional> values_;
+
+  // Mutable because Get() lazily promotes frequently queried vectors from
+  // direct evaluation to incremental TightSum maintenance without changing the
+  // logical state.
+  mutable StrictITIVector<LocalIndex, RegisteredColumn> vectors_;
+  mutable StrictITIVector<LocalIndex, TightSum> sums_;
+  mutable StrictITIVector<IndexType, int> first_occurrence_;
+  mutable std::vector<OccurrenceNode> occurrences_;
+  mutable int64_t num_scanned_entries_ = 0;
+};
+
 // Stores the information needed to undo a singleton row/column deletion.
 class SingletonUndo {
  public:
@@ -442,38 +555,51 @@ class SingletonUndo {
     MAKE_CONSTRAINT_AN_EQUALITY,
   } OperationType;
 
-  // Stores the information, which together with the field deleted_columns_ and
-  // deleted_rows_ of SingletonPreprocessor, are needed to undo an operation
-  // with the given type. Note that all the arguments must refer to the linear
-  // program BEFORE the operation is applied.
+  // Stores the information needed to undo an operation with the given type,
+  // where `saved_vector_index` is the index in the row or column
+  // IncrementalScalarProducts (or -1 if unused). Note that all the arguments
+  // must refer to the linear program BEFORE the operation is applied.
   SingletonUndo(OperationType type, const LinearProgram& lp, MatrixEntry e,
-                ConstraintStatus status);
+                ConstraintStatus status,
+                LocalIndex saved_vector_index = LocalIndex{-1});
 
-  // Undo the operation saved in this class, taking into account the saved
-  // column and row (at the row/col given by Entry()) passed by the calling
-  // instance of SingletonPreprocessor. Note that the operations must be undone
-  // in the reverse order of the one in which they were applied.
-  void Undo(const GlopParameters& parameters, const SparseColumn& saved_column,
-            const SparseColumn& saved_row, ProblemSolution* solution) const;
+  // Undoes the operation saved in this class. Note that the operations must be
+  // undone in the reverse order of the one in which they were applied.
+  //
+  // The row activities (scalar products between the primal values and the
+  // saved rows) and the column dual activities (scalar products between the
+  // dual values and the saved columns) are queried through the given
+  // IncrementalScalarProducts. The caller is responsible for updating them
+  // with the changes made by this function to
+  // solution->primal_values[Entry().col] and
+  // solution->dual_values[Entry().row].
+  void Undo(const GlopParameters& parameters,
+            const IncrementalScalarProducts<ColIndex>& row_activities,
+            const IncrementalScalarProducts<RowIndex>& column_dual_activities,
+            ProblemSolution* solution) const;
 
   const MatrixEntry& Entry() const { return e_; }
 
  private:
   // Actual undo functions for each OperationType.
   // Undo() just calls the correct one.
-  void SingletonRowUndo(const SparseColumn& saved_column,
-                        ProblemSolution* solution) const;
-  void ZeroCostSingletonColumnUndo(const GlopParameters& parameters,
-                                   const SparseColumn& saved_row,
-                                   ProblemSolution* solution) const;
-  void SingletonColumnInEqualityUndo(const GlopParameters& parameters,
-                                     const SparseColumn& saved_row,
-                                     ProblemSolution* solution) const;
+  void SingletonRowUndo(
+      const IncrementalScalarProducts<RowIndex>& column_dual_activities,
+      ProblemSolution* solution) const;
+  void ZeroCostSingletonColumnUndo(
+      const GlopParameters& parameters,
+      const IncrementalScalarProducts<ColIndex>& row_activities,
+      ProblemSolution* solution) const;
+  void SingletonColumnInEqualityUndo(
+      const GlopParameters& parameters,
+      const IncrementalScalarProducts<ColIndex>& row_activities,
+      ProblemSolution* solution) const;
   void MakeConstraintAnEqualityUndo(ProblemSolution* solution) const;
 
   // All the information needed during undo.
   OperationType type_;
   bool is_maximization_;
+  LocalIndex saved_vector_index_;
   MatrixEntry e_;
   Fractional cost_;
 

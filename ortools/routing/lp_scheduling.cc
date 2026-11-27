@@ -51,8 +51,8 @@
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/lp_utils.h"
 #include "ortools/util/flat_matrix.h"
+#include "ortools/util/fp_utils.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -1498,7 +1498,7 @@ bool DimensionCumulOptimizerCore::TightenRouteCumulBounds(
 
 namespace {
 // Find a "good" scaling factor for constraints with non-integers coefficients.
-// See sat::FindBestScalingAndComputeErrors() for more infos.
+// See FindBestScalingAndComputeErrors() for more infos.
 double FindBestScaling(absl::Span<const double> coefficients,
                        absl::Span<const double> lower_bounds,
                        absl::Span<const double> upper_bounds,
@@ -1506,7 +1506,7 @@ double FindBestScaling(absl::Span<const double> coefficients,
                        double wanted_absolute_activity_precision) {
   double unused_relative_coeff_error = 0;
   double unused_scaled_sum_error = 0;
-  return sat::FindBestScalingAndComputeErrors(
+  return FindBestScalingAndComputeErrors(
       coefficients, lower_bounds, upper_bounds, max_absolute_activity,
       wanted_absolute_activity_precision, &unused_relative_coeff_error,
       &unused_scaled_sum_error);

@@ -48,7 +48,13 @@ using ::testing::ElementsAre;
 
 MPModelProto ClampForTest(const SatParameters& params, MPModelProto mp_model) {
   SolverLogger logger;
-  CHECK(ClampVariableBounds(params, &mp_model, &logger));
+  MPModelProtoWrapper wrapper(mp_model);
+  CHECK(ClampVariableBounds(params, &wrapper, &logger));
+  for (int v = 0; v < mp_model.variable_size(); ++v) {
+    MPVariableProto* var = mp_model.mutable_variable(v);
+    var->set_lower_bound(wrapper.variables(v).lower_bound());
+    var->set_upper_bound(wrapper.variables(v).upper_bound());
+  }
   return mp_model;
 }
 
@@ -76,7 +82,6 @@ class ComponentPipeline {
     }
     scaler_.wanted_precision = params_.mip_wanted_precision();
     scaler_.use_proper_relaxation = params_.mip_proper_relaxation();
-    scaler_.tight_precision = params_.mip_tight_precision();
     scaler_.scaling_target = int64_t{1} << params_.mip_max_activity_exponent();
   }
 
@@ -125,6 +130,7 @@ class ComponentPipeline {
     const int num_vars = wrapper_.num_variables();
     int num_small_domains = 0;
     for (int v = 0; v < num_vars; ++v) {
+      if (!cp_model_.variables(v).domain().empty()) continue;
       if (!ConvertVariableToCpVariable(
               params_, v, wrapper_.variables(v).objective_coefficient(),
               &states_[v], cp_model_.mutable_variables(v),
@@ -134,7 +140,9 @@ class ComponentPipeline {
     }
     const auto add = [&](int c) {
       return scaler_
-          .ScaleAndAddConstraint(wrapper_.constraints(c), states_, &cp_model_)
+          .ScaleAndAddConstraint(wrapper_.constraints(c), states_, &cp_model_,
+                                 ConstraintScalingOptions::WithBoundTolerance(
+                                     params_.mip_tight_precision()))
           .ok();
     };
     for (const int c : components_.pure_integer_constraints) {
@@ -969,7 +977,7 @@ void TightenResidualTumBoundsOnProto(const SatParameters& params,
   MPModelProtoWrapper wrapper(*mp_model, logger);
   TightenResidualTotallyUnimodularVariableBounds(params, &wrapper, logger);
   for (int var = 0; var < mp_model->variable_size(); ++var) {
-    const MPVariableProto& wrapper_var = wrapper.variables(var);
+    const MipVariableProto& wrapper_var = wrapper.variables(var);
     MPVariableProto* mp_var = mp_model->mutable_variable(var);
     mp_var->set_lower_bound(wrapper_var.lower_bound());
     mp_var->set_upper_bound(wrapper_var.upper_bound());
@@ -1238,6 +1246,98 @@ TEST(DetectAndConvertTotallyUnimodularComponentTest,
           << "y=(" << y0 << ", " << y1 << ")";
     }
   }
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     SnapsExactRowAcrossSmallExternalImpliedIntegerErrors) {
+  SatParameters params;
+  params.set_mip_automatically_scale_variables(true);
+  params.set_mip_proper_relaxation(true);
+  params.set_mip_tight_precision(1e-8);
+  params.set_mip_wanted_precision(1e-6);
+  params.set_mip_check_precision(1e-5);
+
+  // `x0 - x1 + b0 + b1 + b2 + b3 == 2` with continuous `x0, x1 in [0, 2]` and
+  // four continuous `b_k` linked to binaries `z_k` via `b_k - z_k == 0`.
+  // `DetectImpliedIntegers` assigns each `b_k` an integerization error
+  // `[-1e-8, 1e-8]`, so the TUM row sees `disc_lb = -4e-8` (exceeding
+  // `tight_precision = 1e-8` while staying within `check_precision = 1e-5` and
+  // `total_tightening < 1.0`). TUM converts `(x0, x1)` at `s = 1` without
+  // falling back to power-of-two scaling, while accounting for the `5e-8` row
+  // tightening in `objective_error_bound`.
+  MPModelProto mp_model = ParseTestProto(R"pb(
+    variable {
+      lower_bound: 0.0
+      upper_bound: 2.0
+      objective_coefficient: 1.0
+      is_integer: false
+    }
+    variable {
+      lower_bound: 0.0
+      upper_bound: 2.0
+      objective_coefficient: 1.0
+      is_integer: false
+    }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: false }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: true }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: true }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: true }
+    variable { lower_bound: 0.0 upper_bound: 1.0 is_integer: true }
+    constraint {
+      lower_bound: 2.0
+      upper_bound: 2.0
+      var_index: [ 0, 1, 2, 3, 4, 5 ]
+      coefficient: [ 1.0, -1.0, 1.0, 1.0, 1.0, 1.0 ]
+    }
+  )pb");
+  for (int k = 0; k < 4; ++k) {
+    MPConstraintProto* eq = mp_model.add_constraint();
+    eq->set_lower_bound(0.0);
+    eq->set_upper_bound(0.0);
+    eq->add_var_index(2 + k);
+    eq->add_var_index(6 + k);
+    eq->add_coefficient(1.0);
+    eq->add_coefficient(-1.0);
+  }
+
+  SolverLogger logger;
+  MPModelProtoWrapper wrapper(std::move(mp_model), &logger);
+  std::vector<MipVariableState> states = InitialVariableStates(wrapper);
+  DetectImpliedIntegers(params, wrapper, absl::MakeSpan(states), &logger);
+  for (int b = 2; b < 6; ++b) {
+    ASSERT_TRUE(states[b].is_integer);
+    EXPECT_LE(states[b].error_lb, -1e-8);
+    EXPECT_GE(states[b].error_ub, 1e-8);
+  }
+
+  ResidualContinuousComponents components =
+      SplitIntoResidualContinuousComponents(wrapper, states);
+  ASSERT_EQ(components.components.size(), 1);
+  EXPECT_THAT(components.components[0].continuous_vars, ElementsAre(0, 1));
+
+  CpModelProto cp_model;
+  for (int v = 0; v < wrapper.num_variables(); ++v) cp_model.add_variables();
+  ConstraintScaler scaler{
+      .use_proper_relaxation = true,
+      .wanted_precision = params.mip_wanted_precision(),
+  };
+  std::vector<int> var_to_local_col(wrapper.num_variables(), -1);
+  const ScopedVarToLocalCol scoped(&components.components[0],
+                                   &var_to_local_col);
+  TumStats tum_stats;
+  ASSERT_TRUE(DetectAndConvertTotallyUnimodularComponent(
+      params, components.components[0], wrapper, absl::MakeSpan(states),
+      &scaler, &cp_model, &tum_stats));
+  EXPECT_EQ(states[0].scaling, 1.0);
+  EXPECT_EQ(states[1].scaling, 1.0);
+  EXPECT_EQ(tum_stats.num_new_tum_integers, 2);
+  EXPECT_EQ(tum_stats.num_relaxed_modular_components, 0);
+  EXPECT_GE(tum_stats.objective_error_bound, 2.0 * 5e-8);
+  ASSERT_EQ(cp_model.constraints_size(), 1);
+  EXPECT_THAT(cp_model.constraints(0).linear().domain(), ElementsAre(2, 2));
 }
 
 }  // namespace

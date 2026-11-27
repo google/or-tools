@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
@@ -71,6 +72,56 @@ absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
   for (int i = 0; i < ids.size(); ++i) {
     const int64_t id = ids[i];
     if (!universe.HasId(id)) {
+      return ortools::InvalidArgumentErrorBuilder()
+             << "Id: " << id << " (at index: " << i << ") in "
+             << ids_description << " is missing from " << universe_description;
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status CheckIdsSubset(const absl::Span<const int64_t> ids,
+                            const absl::flat_hash_set<int64_t>& universe,
+                            const absl::string_view ids_description,
+                            const absl::string_view universe_description) {
+  for (int64_t i = 0; i < ids.size(); ++i) {
+    const int64_t id = ids[i];
+    if (!universe.contains(id)) {
+      return ortools::InvalidArgumentErrorBuilder()
+             << "Id: " << id << " (at index: " << i << ") in "
+             << ids_description << " is missing from " << universe_description;
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status CheckSortedIdsSubset(
+    const absl::Span<const int64_t> ids,
+    const absl::Span<const int64_t> sorted_universe,
+    const absl::string_view ids_description,
+    const absl::string_view universe_description) {
+  for (int64_t u = 1; u < sorted_universe.size(); ++u) {
+    if (sorted_universe[u] <= sorted_universe[u - 1]) {
+      return ortools::InvalidArgumentErrorBuilder()
+             << "Expected " << universe_description
+             << " to be strictly increasing, but at index " << u
+             << " found id: " << sorted_universe[u] << " and at index " << u - 1
+             << " found id: " << sorted_universe[u - 1];
+    }
+  }
+  int64_t u = 0;
+  for (int64_t i = 0; i < ids.size(); ++i) {
+    const int64_t id = ids[i];
+    if (i > 0 && id < ids[i - 1]) {
+      return ortools::InvalidArgumentErrorBuilder()
+             << "Expected " << ids_description << " to be sorted, but at index "
+             << i << " found id: " << id << " and at index " << i - 1
+             << " found id: " << ids[i - 1];
+    }
+    while (u < sorted_universe.size() && sorted_universe[u] < id) {
+      ++u;
+    }
+    if (u == sorted_universe.size() || sorted_universe[u] != id) {
       return ortools::InvalidArgumentErrorBuilder()
              << "Id: " << id << " (at index: " << i << ") in "
              << ids_description << " is missing from " << universe_description;

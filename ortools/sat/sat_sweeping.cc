@@ -235,7 +235,7 @@ bool EquivalenceSatSweeping::DoOneRound(
   }
 
   TimeLimit sweep_time_limit;
-  sweep_time_limit.ChangeDeterministicLimit(1.0);
+  sweep_time_limit.ChangeDeterministicLimit(3.0);
   sweep_time_limit.MergeWithGlobalTimeLimit(global_time_limit_);
   std::vector<std::pair<Literal, Literal>> binary_clauses;
   std::vector<Literal> unary_clauses;

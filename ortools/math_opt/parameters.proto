@@ -133,6 +133,8 @@ enum SolverTypeProto {
   //  * All variables and constraints must have integer bounds and costs.
   //  * The objective must be linear.
   SOLVER_TYPE_MIN_COST_FLOW = 14;
+
+  reserved 15;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -391,6 +393,8 @@ message SolveParametersProto {
   HighsOptionsProto highs = 27;
 
   XpressParametersProto xpress = 28;
+
+  reserved 29;
 
   reserved 11;  // Deleted
 }

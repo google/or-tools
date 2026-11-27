@@ -347,16 +347,14 @@ TEST(ActivityBoundHelperTest, PresolveEnforcement) {
   helper.AddAtMostOne({+1, +2, +3});
   helper.AddAtMostOne({+4, +5, +6, +7});
 
-  ConstraintProto ct;
-  ct.add_enforcement_literal(+1);
-  ct.add_enforcement_literal(NegatedRef(+2));
-  ct.add_enforcement_literal(+6);
+  std::vector<int> enforcement = {+1, NegatedRef(+2), +6};
 
   absl::flat_hash_set<int> at_true;
-  EXPECT_TRUE(helper.PresolveEnforcement({1, 2, 3, 4, 5}, &ct, &at_true));
+  EXPECT_TRUE(
+      helper.PresolveEnforcement({1, 2, 3, 4, 5}, &enforcement, &at_true));
 
   // NegatedRef(+2) is a consequence of +1 (we process in order), so removed.
-  EXPECT_THAT(ct.enforcement_literal(), ElementsAre(+1, +6));
+  EXPECT_THAT(enforcement, ElementsAre(+1, +6));
   EXPECT_TRUE(at_true.contains(+1));
   EXPECT_TRUE(at_true.contains(NegatedRef(+2)));
   EXPECT_TRUE(at_true.contains(NegatedRef(+3)));
@@ -373,12 +371,11 @@ TEST(ActivityBoundHelperTest, PresolveEnforcementCornerCase) {
   ActivityBoundHelper helper;
   helper.AddAtMostOne({+1, -2});
 
-  ConstraintProto ct;
-  ct.add_enforcement_literal(+1);
+  std::vector<int> enforcement = {+1};
 
   absl::flat_hash_set<int> at_true;
-  EXPECT_TRUE(helper.PresolveEnforcement({}, &ct, &at_true));
-  EXPECT_THAT(ct.enforcement_literal(), ElementsAre(+1));
+  EXPECT_TRUE(helper.PresolveEnforcement({}, &enforcement, &at_true));
+  EXPECT_THAT(enforcement, ElementsAre(+1));
 }
 
 TEST(ClauseWithOneMissingHasherTest, BasicTest) {
@@ -400,14 +397,13 @@ TEST(ActivityBoundHelper, RemoveEnforcementThatCouldBeLifted) {
   ActivityBoundHelper helper;
   helper.AddAtMostOne({+1, +2});
 
-  ConstraintProto ct;
-  ct.add_enforcement_literal(NegatedRef(1));
+  std::vector<int> enforcement = {NegatedRef(1)};
   std::vector<std::pair<int, int64_t>> terms{{+2, 1}, {+3, 1}};
 
   const int num_removed = helper.RemoveEnforcementThatMakesConstraintTrivial(
-      terms, Domain(0), Domain(0, 1), &ct);
+      terms, Domain(0), Domain(0, 1), &enforcement);
   EXPECT_EQ(num_removed, 1);
-  EXPECT_TRUE(ct.enforcement_literal().empty());
+  EXPECT_TRUE(enforcement.empty());
 }
 
 // !X1 => 2 * X2 + X3 + X4 <= 2 and X1 + X2 + X3 <= 1
@@ -420,14 +416,13 @@ TEST(ActivityBoundHelper, RemoveEnforcementThatCouldBeLiftedCase2) {
   ActivityBoundHelper helper;
   helper.AddAtMostOne({+1, +2, +3});
 
-  ConstraintProto ct;
-  ct.add_enforcement_literal(NegatedRef(1));
+  std::vector<int> enforcement = {NegatedRef(1)};
   std::vector<std::pair<int, int64_t>> terms{{+2, 2}, {+3, 1}, {+4, 1}};
 
   const int num_removed = helper.RemoveEnforcementThatMakesConstraintTrivial(
-      terms, Domain(0), Domain(0, 2), &ct);
+      terms, Domain(0), Domain(0, 2), &enforcement);
   EXPECT_EQ(num_removed, 1);
-  EXPECT_TRUE(ct.enforcement_literal().empty());
+  EXPECT_TRUE(enforcement.empty());
 }
 
 TEST(ClauseIsEnforcementImpliesLiteralTest, BasicTest) {

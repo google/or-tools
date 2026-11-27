@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
 
   // The input graph, encoded as a list of arcs with distances.
-  std::vector<operations_research::ArcWithLength> arcs = {
+  std::vector<operations_research::ArcWithLength<double>> arcs = {
       {.from = 0, .to = 2, .length = 5},
       {.from = 0, .to = 3, .length = 4},
       {.from = 1, .to = 3, .length = 1},
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 
   const int source = 0;
   const int destination = 4;
-  const operations_research::PathWithLength path_with_length =
+  const operations_research::PathWithLength<double> path_with_length =
       operations_research::ShortestPathsOnDag(num_nodes, arcs, source,
                                               destination);
 

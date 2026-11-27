@@ -944,6 +944,41 @@ TEST_IN_PROPAGATION0(MemberCtTest, NoIntersection, s, false) {
   return nullptr;
 }
 
+TEST_F(MemberCtTest, SortedDisjointIntervalList) {
+  Solver solver("MemberCtTest::SortedDisjointIntervalList");
+  IntVar* const v = solver.MakeIntVar(0, 20, "v");
+  SortedDisjointIntervalList allowed(
+      std::vector<ClosedInterval>{{5, 9}, {13, 15}});
+  Constraint* const ct = solver.MakeMemberCt(v, allowed);
+  EXPECT_EQ(ct->DebugString(),
+            solver
+                .MakeNotMemberCt(
+                    v, SortedDisjointIntervalList(std::vector<ClosedInterval>{
+                           {0, 4}, {10, 12}, {16, 20}}))
+                ->DebugString());
+
+  // Empty allowed intervals forbid the entire range.
+  Constraint* const empty_ct =
+      solver.MakeMemberCt(v, SortedDisjointIntervalList());
+  EXPECT_EQ(empty_ct->DebugString(),
+            solver
+                .MakeNotMemberCt(v, SortedDisjointIntervalList(
+                                        std::vector<ClosedInterval>{{0, 20}}))
+                ->DebugString());
+
+  // Allowed intervals covering the full range up to kint64max.
+  IntVar* const big = solver.MakeIntVar(0, kint64max, "big");
+  SortedDisjointIntervalList big_allowed(
+      std::vector<ClosedInterval>{{0, 9}, {21, kint64max}});
+  Constraint* const big_ct = solver.MakeMemberCt(big, big_allowed);
+  EXPECT_EQ(
+      big_ct->DebugString(),
+      solver
+          .MakeNotMemberCt(big, SortedDisjointIntervalList(
+                                    std::vector<ClosedInterval>{{10, 20}}))
+          ->DebugString());
+}
+
 // ----- NotMemberCtTest -----
 
 TEST(NotMemberCtTest, Simplification) {

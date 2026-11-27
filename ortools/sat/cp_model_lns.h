@@ -727,7 +727,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
         shared_(shared) {
     // Given that we spend time generating a good neighborhood, it sounds
     // reasonable to spend a bit more time solving it too.
-    deterministic_limit_ = 0.5;
+    deterministic_limit_ = 2.5;
   }
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,

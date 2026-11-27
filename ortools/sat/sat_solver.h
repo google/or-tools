@@ -51,6 +51,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/recycled_var_guard.h"
 #include "ortools/util/stats.h"
@@ -421,6 +422,8 @@ class SatSolver {
     // currently processes the clauses in order.
     out->SetNumVariables(NumVariables());
     binary_implication_graph_->ExtractAllBinaryClauses(out);
+    DeterministicTimer<{.scale = 1.6e-07, .offset = 6.5e-08}> timer(
+        time_limit_, clauses_propagator_->AllClausesInCreationOrder().size());
     for (const SatClause* const clause :
          clauses_propagator_->AllClausesInCreationOrder()) {
       if (!clauses_propagator_->IsRemovable(clause)) {
@@ -529,8 +532,10 @@ class SatSolver {
   // elapsed since last call.
   void AdvanceDeterministicTime(TimeLimit* limit) {
     const double current = deterministic_time();
-    limit->AdvanceDeterministicTime(
-        current - deterministic_time_at_last_advanced_time_limit_);
+    if (limit != time_limit_) {
+      limit->AdvanceDeterministicTime(
+          current - deterministic_time_at_last_advanced_time_limit_);
+    }
     deterministic_time_at_last_advanced_time_limit_ = current;
   }
 

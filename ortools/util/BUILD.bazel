@@ -244,6 +244,7 @@ or_cc_library(
     deps = [
         ":bitset",
         ":full_precision_inequalities",
+        ":saturated_arithmetic",
         "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
@@ -1020,6 +1021,7 @@ or_cc_library(
         ":logging",
         "//ortools/base:status_builder",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/sat:mip_model_cc_proto",
         "//ortools/sat:mp_model_wrapper",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",

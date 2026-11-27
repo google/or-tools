@@ -1049,6 +1049,86 @@ TEST(DetectAndExploitSymmetriesInPresolveTest,
   EXPECT_EQ(working_model.constraints(5).linear().domain(0), 0);
 }
 
+TEST(DetectAndExploitSymmetriesInPresolveTest,
+     CanonicalizesAffineRelationsInConstraintsAndObjective) {
+  // 3 symmetric columns j in {0, 1, 2}:
+  // - vars 0..2: integer variables p_j in [0, 10]
+  // - vars 3..5: Boolean indicator variables x_j in [0, 1] in bool_or
+  // - vars 6..8: integer variables q_j in [1, 21] initially in the objective,
+  //   linked via q_j == 2 * p_j + 1 without pre-canonicalizing the objective
+  // - vars 9..11: Boolean variables u_j in [0, 1] initially enforcing
+  //   u_j => p_j >= 5, linked via u_j == x_j without pre-canonicalizing
+  //   constraints
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 21 ] }
+    variables { domain: [ 1, 21 ] }
+    variables { domain: [ 1, 21 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_or { literals: [ 3, 4, 5 ] } }
+    constraints {
+      enforcement_literal: [ 9 ]
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 10 ]
+      linear {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 11 ]
+      linear {
+        vars: [ 2 ]
+        coeffs: [ 1 ]
+        domain: [ 5, 10 ]
+      }
+    }
+    objective {
+      vars: [ 6, 7, 8 ]
+      coeffs: [ 1, 1, 1 ]
+    }
+  )pb");
+  CpModelProto mapping_model;
+  Model model;
+  PresolveContext context(&model, &working_model, &mapping_model);
+  ASSERT_EQ(context.InitializeNewDomains(), kOk);
+  context.ReadObjectiveFromProto();
+  ASSERT_EQ(context.CanonicalizeConstraintsLazily(), kOk);
+
+  for (int j = 0; j < 3; ++j) {
+    ASSERT_EQ(context.StoreAffineRelation(6 + j, j, /*coeff=*/2, /*offset=*/1),
+              kOk);
+    ASSERT_EQ(context.StoreBooleanEqualityRelation(9 + j, 3 + j), kOk);
+  }
+
+  ASSERT_EQ(DetectAndExploitSymmetriesInPresolve(&context), kOk);
+  ASSERT_EQ(working_model.constraints_size(), 6);
+  EXPECT_THAT(working_model.constraints(4).linear().vars(),
+              testing::ElementsAre(0, 1));
+  EXPECT_THAT(working_model.constraints(4).linear().coeffs(),
+              testing::ElementsAre(1, -1));
+  EXPECT_EQ(working_model.constraints(4).linear().domain(0), 0);
+  EXPECT_THAT(working_model.constraints(5).linear().vars(),
+              testing::ElementsAre(1, 2));
+  EXPECT_THAT(working_model.constraints(5).linear().coeffs(),
+              testing::ElementsAre(1, -1));
+  EXPECT_EQ(working_model.constraints(5).linear().domain(0), 0);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

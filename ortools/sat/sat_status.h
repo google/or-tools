@@ -20,8 +20,7 @@ namespace operations_research {
 namespace sat {
 
 // Tag type representing root-level infeasibility (UNSAT). Implicitly converts
-// to the UNSAT state of `FeasibilityStatus`, `ChangeStatus`, and
-// `CanonicalizationStatus`.
+// to the UNSAT state of `FeasibilityStatus` and `ChangeStatus`.
 class [[nodiscard]] UnsatStatus {
  public:
   friend constexpr bool operator==(UnsatStatus, UnsatStatus) = default;

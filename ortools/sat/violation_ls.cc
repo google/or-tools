@@ -190,15 +190,21 @@ bool ViolationLsSolver::ShouldStop() {
   return time_limit_crossed_;
 }
 
+void ViolationLsSolver::RefreshLocalTimeLimit() {
+  // UpdateLocalLimit() resets the elapsed deterministic time of time_limit_,
+  // which must thus be saved first.
+  dtime_.AdvanceDeterministicTime(time_limit_.GetElapsedDeterministicTime());
+  time_limit_.ResetLimitFromParameters(SatParameters());
+  shared_time_limit_->UpdateLocalLimit(&time_limit_);
+}
+
 bool ViolationLsSolver::Initialize() {
   if (evaluator_ != nullptr) {
     dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
     evaluator_.reset();
   }
 
-  TimeLimit time_limit;
-  shared_time_limit_->UpdateLocalLimit(&time_limit);
-  if (time_limit.LimitReached()) return false;
+  if (time_limit_.LimitReached()) return false;
 
   const CpModelProto& model_proto = dense_model_.proto();
   LinearModel linear_model(model_proto);
@@ -210,14 +216,14 @@ bool ViolationLsSolver::Initialize() {
   if (params_.feasibility_jump_linearization_level() == 0) {
     evaluator_ = std::make_unique<LsEvaluator>(
         model_proto, params_, ignored, absl::Span<const ConstraintProto>{},
-        &time_limit);
+        &time_limit_);
   } else {
     evaluator_ = std::make_unique<LsEvaluator>(
         model_proto, params_, ignored, linear_model.additional_constraints(),
-        &time_limit);
+        &time_limit_);
   }
 
-  if (time_limit.LimitReached()) {
+  if (time_limit_.LimitReached()) {
     dtime_.AdvanceDeterministicTime(evaluator_->DeterministicTime());
     evaluator_.reset();
     return false;
@@ -322,17 +328,21 @@ void ViolationLsSolver::ResetCurrentSolution(bool use_hint, bool use_objective,
   solution.resize(num_variables);
 
   // Starts with values closest to zero.
-  for (int var = 0; var < num_variables; ++var) {
-    if (var_domains[var].IsFixed()) {
-      solution[var] = var_domains[var].FixedValue();
-      continue;
-    }
+  {
+    DeterministicTimer<{.scale = 2.0e-08, .offset = 9.4e-08}> timer(
+        &dtime_, num_variables);
+    for (int var = 0; var < num_variables; ++var) {
+      if (var_domains[var].IsFixed()) {
+        solution[var] = var_domains[var].FixedValue();
+        continue;
+      }
 
-    if (absl::Bernoulli(random_, default_value_probability)) {
-      solution[var] = var_domains[var].SmallestValue();
-    } else {
-      solution[var] =
-          RandomValueNearValue(var_domains[var], 0, range_ratio, random_);
+      if (absl::Bernoulli(random_, default_value_probability)) {
+        solution[var] = var_domains[var].SmallestValue();
+      } else {
+        solution[var] =
+            RandomValueNearValue(var_domains[var], 0, range_ratio, random_);
+      }
     }
   }
 
@@ -481,6 +491,7 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
     if (state_ == nullptr) {
       return;
     }
+    RefreshLocalTimeLimit();
 
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
@@ -494,15 +505,12 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
       model_is_supported_ = false;
       return;
     }
-    if (updated) {
-      if (!model_stats_.has_value()) {
-        model_stats_ = ComputeModelStats(input_model_proto_);
-      }
-      dtime_.AdvanceDeterministicTime(
-          EstimateCopyDeterministicTime(*model_stats_));
-      model_stats_ = ComputeModelStats(dense_model_.proto());
-      search_dtime_since_rebuild_ = 0.0;
-    } else if (!model_stats_.has_value()) {
+    // Note that the deterministic time of the rebuild is counted in
+    // time_limit_.
+    if (updated) search_dtime_since_rebuild_ = 0.0;
+    if (updated || !model_stats_.has_value()) {
+      DeterministicTimer<{.scale = 3.2e-08}> timer(
+          &time_limit_, dense_model_.proto().constraints_size());
       model_stats_ = ComputeModelStats(dense_model_.proto());
     }
     if (updated || evaluator_ == nullptr) {
@@ -619,14 +627,18 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
       // Make sure the solution is within the potentially updated domain.
       const VariableDomains& var_domains = dense_model_.var_domains();
       const int num_vars = state_->solution.size();
-      for (int var = 0; var < num_vars; ++var) {
-        int64_t new_value = state_->solution[var];
-        new_value = var_domains[var].ClosestValue(new_value);
-        if (new_value != state_->solution[var]) {
-          state_->solution[var] = new_value;
-          recompute_compound_weights = true;
+      {
+        DeterministicTimer<{.scale = 1.6e-08, .offset = 4.7e-07}> timer(
+            &dtime_, num_vars);
+        for (int var = 0; var < num_vars; ++var) {
+          int64_t new_value = state_->solution[var];
+          new_value = var_domains[var].ClosestValue(new_value);
+          if (new_value != state_->solution[var]) {
+            state_->solution[var] = new_value;
+            recompute_compound_weights = true;
+          }
+          OnValueChange(var, new_value);
         }
-        OnValueChange(var, new_value);
       }
       // Check if compound move search might backtrack out of the new domains.
       if (!reset_weights &&
@@ -644,6 +656,8 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
       state_->bump_value = 1.0;
       state_->weights.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
       if (state_->options.start_with_random_weights) {
+        DeterministicTimer<{.scale = 1.3e-08}> timer(&dtime_,
+                                                     state_->weights.size());
         for (double& w : state_->weights) {
           w = absl::Uniform(random_, 1.0, 2.0);
         }
@@ -653,6 +667,8 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
     if (recompute_compound_weights) {
       state_->move->Clear();
       if (state_->options.use_compound_moves) {
+        DeterministicTimer<{.scale = 7.6e-09}> timer(&dtime_,
+                                                     state_->weights.size());
         state_->compound_weights.assign(state_->weights.begin(),
                                         state_->weights.end());
         for (int c = 0; c < state_->weights.size(); ++c) {
@@ -838,15 +854,20 @@ std::pair<int64_t, double> ViolationLsSolver::ComputeGeneralJump(int var) {
   domain = domain.IntersectionWith(
       Domain(current_value, current_value).Complement());
   std::pair<int64_t, double> result;
-  for (int i = 0; i < domain.NumIntervals(); ++i) {
-    const int64_t min_delta = domain[i].start - current_value;
-    const int64_t max_delta = domain[i].end - current_value;
-    const auto& [delta, score] = RangeConvexMinimum<int64_t, double>(
-        min_delta, max_delta + 1, [&](int64_t delta) -> double {
-          return ComputeScore(ScanWeights(), var, delta, /*linear_only=*/false);
-        });
-    if (i == 0 || score < result.second) {
-      result = std::make_pair(delta, score);
+  {
+    DeterministicTimer<{.scale = 8.1e-08, .offset = 4.1e-07}> timer(
+        &dtime_, domain.NumIntervals());
+    for (int i = 0; i < domain.NumIntervals(); ++i) {
+      const int64_t min_delta = domain[i].start - current_value;
+      const int64_t max_delta = domain[i].end - current_value;
+      const auto& [delta, score] = RangeConvexMinimum<int64_t, double>(
+          min_delta, max_delta + 1, [&](int64_t delta) -> double {
+            return ComputeScore(ScanWeights(), var, delta,
+                                /*linear_only=*/false);
+          });
+      if (i == 0 || score < result.second) {
+        result = std::make_pair(delta, score);
+      }
     }
   }
   DCHECK(domain.Contains(current_value + result.first))
@@ -874,7 +895,7 @@ void ViolationLsSolver::UpdateViolatedConstraintWeights() {
   // depending on how it was initialized and updated.
   bool rescale = false;
   {
-    DeterministicTimer<{.scale = 1e-8}> timer(
+    DeterministicTimer<{.scale = 2.6e-08}> timer(
         &dtime_, evaluator_->ViolatedConstraints().size());
     for (const int c : evaluator_->ViolatedConstraints()) {
       DCHECK(evaluator_->IsViolated(c));
@@ -915,7 +936,7 @@ void ViolationLsSolver::UpdateViolatedConstraintWeights() {
   linear_evaluator->ClearAffectedVariables();
   for_weight_update_.resize(num_variables);
   {
-    DeterministicTimer<{.scale = 1e-8}> timer(
+    DeterministicTimer<{.scale = 3.1e-08}> timer(
         &dtime_, evaluator_->ViolatedConstraints().size());
     for (const int c : evaluator_->ViolatedConstraints()) {
       if (c < evaluator_->NumLinearConstraints()) {
@@ -933,6 +954,8 @@ void ViolationLsSolver::UpdateViolatedConstraintWeights() {
   // Recompute the affected jumps.
   // Note that the constraint violations are unaffected.
   absl::Span<double> scores = jumps_.MutableScores();
+  DeterministicTimer<{.scale = 1.6e-08}> timer(
+      &dtime_, linear_evaluator->VariablesAffectedByLastUpdate().size());
   for (const int var : linear_evaluator->VariablesAffectedByLastUpdate()) {
     // Apply the delta.
     //
@@ -968,9 +991,11 @@ bool ViolationLsSolver::DoSomeLinearIterations() {
   const VariableDomains& var_domains = dense_model_.var_domains();
   const double dtime_threshold =
       DeterministicTime() + params_.feasibility_jump_batch_dtime();
+  DeterministicTimer<{.scale = 1.4e-07, .offset = 2.0e-06}> timer(&dtime_);
   while (DeterministicTime() < dtime_threshold) {
     // Inner loop: greedy descent.
     while (DeterministicTime() < dtime_threshold) {
+      timer.Advance(1);
       // Take the best jump score amongst some random candidates.
       // It is okay if we pick twice the same, we don't really care.
       int best_var;
@@ -1028,7 +1053,7 @@ void ViolationLsSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   // the known score/jump of undoing the move.
   jumps_.Recompute(changed_var);
 
-  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  DeterministicTimer<{.scale = 9.6e-09, .offset = 1.0e-09}> timer(&dtime_);
   uint64_t num_ops = 0;
 
   // Generic part.
@@ -1075,7 +1100,9 @@ bool ViolationLsSolver::DoSomeGeneralIterations() {
   const VariableDomains& var_domains = dense_model_.var_domains();
   const double dtime_threshold =
       DeterministicTime() + params_.feasibility_jump_batch_dtime();
+  DeterministicTimer<{.scale = 2.3e-07, .offset = 2.7e-06}> iter_timer(&dtime_);
   while (DeterministicTime() < dtime_threshold) {
+    iter_timer.Advance(1);
     if (ShouldStop()) return false;
     int var;
     int64_t new_value;
@@ -1105,6 +1132,9 @@ bool ViolationLsSolver::DoSomeGeneralIterations() {
         // `!backtrack` is just an optimisation - we can never break any new
         // constraints on backtrack, so we can never change any
         // compound_weight_.
+        DeterministicTimer<{.scale = 3.2e-09, .offset = 1.1e-07}> timer(
+            &dtime_);
+        uint64_t num_ops = evaluator_->last_update_violation_changes().size();
         for (const auto& c : evaluator_->last_update_violation_changes()) {
           if (evaluator_->IsViolated(c) &&
               state_->compound_weights[c] != state_->weights[c]) {
@@ -1113,6 +1143,7 @@ bool ViolationLsSolver::DoSomeGeneralIterations() {
               state_->in_compound_weight_changed[c] = true;
               state_->compound_weight_changed.push_back(c);
             }
+            num_ops += evaluator_->ConstraintToVars(c).size();
             for (const int v : evaluator_->ConstraintToVars(c)) {
               jumps_.Recompute(v);
               // Vars will be added in MarkJumpsThatNeedToBeRecomputed().
@@ -1124,6 +1155,7 @@ bool ViolationLsSolver::DoSomeGeneralIterations() {
             state_->compound_weight_changed.push_back(c);
           }
         }
+        timer.Advance(num_ops);
       }
 
       // Check that the score for undoing the move is -score with both the
@@ -1174,7 +1206,7 @@ bool ViolationLsSolver::DoSomeGeneralIterations() {
 void ViolationLsSolver::ResetChangedCompoundWeights() {
   if (!state_->options.use_compound_moves) return;
   DCHECK_EQ(state_->move->Size(), 0);
-  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  DeterministicTimer<{.scale = 1.6e-08, .offset = 2.5e-07}> timer(&dtime_);
   uint64_t num_ops = state_->compound_weight_changed.size();
   for (const int c : state_->compound_weight_changed) {
     state_->in_compound_weight_changed[c] = false;
@@ -1207,7 +1239,7 @@ bool ViolationLsSolver::ScanRelevantVariables(int num_to_scan, int* best_var,
   if (state_->move->Discrepancy() > state_->compound_move_max_discrepancy) {
     return false;
   }
-  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  DeterministicTimer<{.scale = 5.9e-08}> timer(&dtime_);
   uint64_t num_ops = 0;
   auto clearup =
       absl::MakeCleanup([&timer, &num_ops] { timer.Advance(num_ops); });
@@ -1335,7 +1367,7 @@ void ViolationLsSolver::RecomputeVarsToScan() {
     in_vars_to_scan_[var] = true;
   }
 
-  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  DeterministicTimer<{.scale = 3.1e-09, .offset = 5.9e-07}> timer(&dtime_);
   uint64_t num_ops = evaluator_->ViolatedConstraints().size();
   for (const int c : evaluator_->ViolatedConstraints()) {
     num_ops += evaluator_->ConstraintToVars(c).size();

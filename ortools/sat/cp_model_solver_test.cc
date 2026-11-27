@@ -3941,14 +3941,19 @@ TEST(PresolveCpModelTest, BadNoOverlap2d) {
 }
 
 TEST(PresolveCpModelTest, NoOverlapLinearizationOverflow) {
+  // The linear constraint passes PossibleIntegerOverflow() (6 + 3e18 +
+  // 1611686018427387890 + 7 = kint64max / 2), but the big-M linearization of
+  // its lower bound, (3e18 + 5) * (not(b0) + not(b4)) + x1 + x2 - x3 >= 0, can
+  // overflow.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
         variables { domain: 0 domain: 1 }
         variables { domain: 2 domain: 6 }
-        variables { domain: -3659321530269907407 domain: 3496689482055784131 }
+        variables { domain: -3000000000000000000 domain: 1611686018427387890 }
         variables { domain: 2 domain: 7 }
+        variables { domain: 0 domain: 1 }
         constraints {
-          enforcement_literal: 0
+          enforcement_literal: [ 0, 4 ]
           linear {
             vars: [ 1, 2, 3 ]
             coeffs: [ 1, 1, -1 ]
@@ -4038,9 +4043,11 @@ TEST(PresolveCpModelTest, LinearizationBug) {
 }
 
 TEST(PresolveCpModelTest, DetectDuplicateColumnsOverflow) {
+  // The objective range is kint64max / 2, but the definition x0 + x1 - x of the
+  // variable x replacing the duplicate columns x0 and x1 would overflow.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
-        variables { domain: -4611686018427387903 domain: 0 }
+        variables { domain: -4611686018427387898 domain: 0 }
         variables { domain: 0 domain: 5 }
         variables { domain: 0 domain: 5 }
         objective {
@@ -4160,6 +4167,7 @@ TEST(PresolveCpModelTest, PresolveOverflow) {
 }
 
 TEST(PresolveCpModelTest, InverseBug) {
+  // The domain of x2 is such that max(0, UB) - min(0, LB) <= kint64max / 2.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
         variables { domain: -3744721377111001386 domain: 0 }
@@ -4167,8 +4175,8 @@ TEST(PresolveCpModelTest, InverseBug) {
         variables {
           domain: -1
           domain: 0
-          domain: 4611686018427387903
-          domain: 4611686018427387903
+          domain: 4611686018427387902
+          domain: 4611686018427387902
         }
         variables { domain: 0 domain: 3 }
         variables { domain: 0 domain: 3 }
@@ -4691,10 +4699,12 @@ TEST(PresolveCpModelTest, IntervalThatCanOverflow) {
 }
 
 TEST(PresolveCpModelTest, ProdPotentialOverflow) {
+  // x2 = x1 * x0 with x0 Boolean: expanding it to x0 => (x1 - x2 == 0) would
+  // create a constraint whose activity range exceeds kint64max / 2.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
         variables { domain: 0 domain: 1 }
-        variables { domain: -4611686018427387903 domain: 1 }
+        variables { domain: -4611686018427387902 domain: 1 }
         variables { domain: 0 domain: 1 }
         variables { domain: 2 domain: 2 }
         variables { domain: 0 domain: 100 }
@@ -4744,12 +4754,40 @@ TEST(PresolveCpModelTest, CumulativeCornerCase) {
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
+TEST(PresolveCpModelTest, ReservoirTimeExprsNearOverflow) {
+  // The range of each time expression is 2.2e18 < kint64max / 4, so the
+  // range of the difference of two time expressions created by the reservoir
+  // expansion is less than kint64max / 2.
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: -1100000000000000000 domain: 1100000000000000000 }
+        variables { domain: -1100000000000000000 domain: 1100000000000000000 }
+        constraints {
+          reservoir {
+            min_level: 0
+            max_level: 1
+            time_exprs { vars: 0 coeffs: 1 }
+            time_exprs { vars: 1 coeffs: 1 }
+            level_changes { offset: 1 }
+            level_changes { offset: -1 }
+          }
+        }
+      )pb");
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_cp_model_presolve(true);
+  const CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 TEST(PresolveCpModelTest, ProdPotentialOverflow2) {
+  // x2 = x1 * x0 with x1 fixed to 2: replacing it by an affine relation would
+  // overflow since 2 * max(|x2|) >= kint64max / 2.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
         variables { domain: -2547768298502951547 domain: 0 }
         variables { domain: 2 domain: 2 }
-        variables { domain: -4611686018427387903 domain: 1 }
+        variables { domain: -4611686018427387902 domain: 1 }
         constraints {
           int_prod {
             target { vars: 2 coeffs: 1 }
@@ -5191,6 +5229,10 @@ TEST(PresolveCpModelTest, NoOverlap2dBug3) {
 }
 
 TEST(PresolveCpModelTest, ObjectiveOverflow) {
+  // The objective range is kint64max / 2. Shifting the cost
+  // -1771410674732262910 of the singleton x0 to the other literals of the
+  // exactly_one would increase it by 3 * 1771410674732262910, which
+  // ShiftCostInExactlyOne() refuses.
   const CpModelProto cp_model = ParseTestProto(
       R"pb(
         variables { domain: 0 domain: 1 }
@@ -5210,7 +5252,7 @@ TEST(PresolveCpModelTest, ObjectiveOverflow) {
         objective {
           vars: 1
           vars: 0
-          coeffs: 4611686018427387903
+          coeffs: 2840275343695124993
           coeffs: -1771410674732262910
         })pb");
 
@@ -7213,8 +7255,10 @@ TEST(SolveCpModelTest, ReservoirOverflowMatchesWithoutPresolve) {
 }
 
 TEST(SolveCpModelTest, EnforcedLinMaxRelaxationOverflow) {
+  // The range of x0 - 1 and -x0 - 1 is 2 * 2305843009213693951 + 1 =
+  // kint64max / 2.
   CpModelProto cp_model;
-  AddVariable(int64_t{-4611686018427387900}, int64_t{4611686018427387900},
+  AddVariable(int64_t{-2305843009213693951}, int64_t{2305843009213693951},
               &cp_model);
   AddVariable(0, 1, &cp_model);
   AddVariable(0, 1, &cp_model);
@@ -7357,6 +7401,98 @@ TEST(SolveCpModelTest, SchedulingUpperBoundsScalingOverflow) {
   const CpSolverResponse response = SolveWithParameters(cp_model, params);
   ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_TRUE(SolutionIsFeasible(cp_model, response.solution()));
+}
+
+TEST(SolveCpModelTest, LinMaxRelaxationLargeOffsets) {
+  CpModelProto cp_model;
+  AddVariable(0, int64_t{3000000000000000000}, &cp_model);  // target
+  AddVariable(0, 1, &cp_model);                             // b0
+  AddVariable(0, 1, &cp_model);                             // b1
+  AddVariable(0, 1, &cp_model);                             // b2
+  AddVariable(0, 1, &cp_model);                             // b3
+
+  LinearArgumentProto* lin_max = cp_model.add_constraints()->mutable_lin_max();
+  lin_max->mutable_target()->add_vars(0);
+  lin_max->mutable_target()->add_coeffs(1);
+  {
+    LinearExpressionProto* expr = lin_max->add_exprs();
+    expr->add_vars(1);
+    expr->add_coeffs(int64_t{-1500000000000000000});
+  }
+  for (const int var : {2, 3, 4}) {
+    LinearExpressionProto* expr = lin_max->add_exprs();
+    expr->add_vars(var);
+    expr->add_coeffs(int64_t{-1500000000000000000});
+    expr->set_offset(int64_t{4000000000000000000});
+  }
+
+  ASSERT_EQ(ValidateCpModel(cp_model), "");
+  SatParameters params;
+  params.set_num_workers(1);
+  params.set_linearization_level(2);
+  params.set_cp_model_presolve(false);
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(cp_model, response.solution()));
+
+  params.set_cp_model_presolve(true);
+  response = SolveWithParameters(cp_model, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(cp_model, response.solution()));
+}
+
+TEST(SolveCpModelTest, NoOverlapReasonLargeIntervalOffsets) {
+  constexpr int64_t kOffset = int64_t{4000000000000000000};
+  CpModelProto cp_model;
+  AddVariable(4, 5, &cp_model);  // 0: y1 (forces end_0 >= 4)
+  AddVariable(0, 5, &cp_model);  // 1: s1
+  AddVariable(kOffset - 5, kOffset + 5, &cp_model);    // 2: x1
+  AddVariable(-kOffset - 5, -kOffset + 5, &cp_model);  // 3: x2
+  AddVariable(0, 5, &cp_model);                        // 4: s2
+  AddVariable(1, 2, &cp_model);  // 5: y2 (forces start_1 <= 2)
+
+  {
+    IntervalConstraintProto* interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval->mutable_start()->add_vars(0);
+    interval->mutable_start()->add_coeffs(1);
+    interval->mutable_start()->set_offset(-kOffset);
+    interval->mutable_size()->add_vars(1);
+    interval->mutable_size()->add_coeffs(1);
+    interval->mutable_size()->set_offset(kOffset);
+    interval->mutable_end()->add_vars(2);
+    interval->mutable_end()->add_coeffs(1);
+    interval->mutable_end()->set_offset(-kOffset);
+  }
+  {
+    IntervalConstraintProto* interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval->mutable_start()->add_vars(3);
+    interval->mutable_start()->add_coeffs(1);
+    interval->mutable_start()->set_offset(kOffset);
+    interval->mutable_size()->add_vars(4);
+    interval->mutable_size()->add_coeffs(1);
+    interval->mutable_size()->set_offset(kOffset);
+    interval->mutable_end()->add_vars(5);
+    interval->mutable_end()->add_coeffs(1);
+    interval->mutable_end()->set_offset(kOffset);
+  }
+
+  NoOverlapConstraintProto* no_overlap =
+      cp_model.add_constraints()->mutable_no_overlap();
+  no_overlap->add_intervals(0);
+  no_overlap->add_intervals(1);
+
+  ASSERT_EQ(ValidateCpModel(cp_model), "");
+  SatParameters params;
+  params.set_num_workers(1);
+  params.set_cp_model_presolve(false);
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+
+  params.set_cp_model_presolve(true);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
 }  // namespace

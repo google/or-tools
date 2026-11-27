@@ -873,12 +873,6 @@ PYBIND11_MODULE(routing, m) {
   rm.def("is_vehicle_used", &Model::IsVehicleUsed, py::arg("assignment"),
          py::arg("vehicle"),
          DOC(operations_research, routing, Model, IsVehicleUsed));
-  rm.def("set_vehicle_used_when_empty", &Model::SetVehicleUsedWhenEmpty,
-         py::arg("is_used"), py::arg("vehicle"),
-         DOC(operations_research, routing, Model, SetVehicleUsedWhenEmpty));
-  rm.def("is_vehicle_used_when_empty", &Model::IsVehicleUsedWhenEmpty,
-         py::arg("vehicle"),
-         DOC(operations_research, routing, Model, IsVehicleUsedWhenEmpty));
 
   // Resource Group
   pybind11::class_<Model::ResourceGroup> resource_group(
@@ -964,6 +958,27 @@ PYBIND11_MODULE(routing, m) {
 
   rm.def("get_route_cost", &Model::GetRouteCost,
          py::arg("route"));  // missing doc. NOLINT
+
+  rm.def(
+      "set_vehicle_used_when_empty",
+      [](Model* model, bool is_used, int vehicle) {
+        if (vehicle < 0 || vehicle >= model->vehicles()) {
+          throw py::index_error("vehicle index out of range");
+        }
+        model->SetVehicleUsedWhenEmpty(is_used, vehicle);
+      },
+      py::arg("is_used"), py::arg("vehicle"),
+      DOC(operations_research, routing, Model, SetVehicleUsedWhenEmpty));
+  rm.def(
+      "is_vehicle_used_when_empty",
+      [](const Model& model, int vehicle) {
+        if (vehicle < 0 || vehicle >= model.vehicles()) {
+          throw py::index_error("vehicle index out of range");
+        }
+        return model.IsVehicleUsedWhenEmpty(vehicle);
+      },
+      py::arg("vehicle"),
+      DOC(operations_research, routing, Model, IsVehicleUsedWhenEmpty));
 
   rm.def("set_first_solution_evaluator", &Model::SetFirstSolutionEvaluator,
          py::arg("evaluator"),

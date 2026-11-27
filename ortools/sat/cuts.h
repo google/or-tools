@@ -50,6 +50,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -263,7 +264,9 @@ class ImpliedBoundsProcessor {
   //
   // This should lead to stronger cuts even if the norms might be worse.
   std::tuple<int, int, int> PostprocessWithImpliedBound(
-      const std::function<IntegerValue(IntegerValue)>& f, CutData* cut);
+      const std::function<IntegerValue(IntegerValue)>& f, CutData* cut,
+      IntegerValue max_safe_coeff =
+          IntegerValue(std::numeric_limits<int64_t>::max()));
 
   // Precomputes quantities used by all cut generation.
   // This allows doing that once rather than 6 times.
@@ -489,7 +492,8 @@ class GUBHelper {
       : implications_(model->GetOrCreate<BinaryImplicationGraph>()),
         integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
   ~GUBHelper();
 
   // Applies implied-bound substitutions, applies f() to all terms and the RHS,
@@ -535,6 +539,7 @@ class GUBHelper {
   IntegerEncoder* integer_encoder_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_;
+  TimeLimit* time_limit_;
 
   struct LiteralInCut {
     int index;
@@ -602,7 +607,8 @@ class IntegerRoundingCutHelper {
  public:
   explicit IntegerRoundingCutHelper(Model* model)
       : gub_helper_(model),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
   ~IntegerRoundingCutHelper();
 
@@ -624,6 +630,7 @@ class IntegerRoundingCutHelper {
   GUBHelper gub_helper_;
   ZeroLossCoefficientAdjuster zero_loss_adjuster_;
   SharedStatistics* shared_stats_;
+  TimeLimit* time_limit_;
 
   // The helper is just here to reuse the memory for these vectors.
   std::vector<IntegerValue> divisors_;
@@ -666,7 +673,8 @@ class CoverCutHelper {
   explicit CoverCutHelper(Model* model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         gub_helper_(model),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
   ~CoverCutHelper();
 
@@ -743,6 +751,7 @@ class CoverCutHelper {
   GUBHelper gub_helper_;
   ZeroLossCoefficientAdjuster zero_loss_adjuster_;
   SharedStatistics* shared_stats_;
+  TimeLimit* time_limit_;
 
   // Here to reuse memory, cut_ is both the input and the output.
   CutData cut_;
@@ -780,7 +789,8 @@ class BoolRLTCutHelper {
   explicit BoolRLTCutHelper(Model* model)
       : product_detector_(model->GetOrCreate<ProductDetector>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        lp_values_(model->GetOrCreate<ModelLpValues>()) {};
+        lp_values_(model->GetOrCreate<ModelLpValues>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {};
   ~BoolRLTCutHelper();
 
   // Precompute data according to the current lp relaxation.
@@ -812,6 +822,7 @@ class BoolRLTCutHelper {
   ProductDetector* product_detector_;
   SharedStatistics* shared_stats_;
   ModelLpValues* lp_values_;
+  TimeLimit* time_limit_;
 
   int64_t num_tried_ = 0;
   int64_t num_tried_factors_ = 0;

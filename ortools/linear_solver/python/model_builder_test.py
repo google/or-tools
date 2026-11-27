@@ -594,6 +594,43 @@ ENDATA
 
         self.assertEqual(status, mb.SolveStatus.OPTIMAL)
 
+    def test_add_enforced_false_ct(self):
+        # add_enforced(False, z, v) only forbids z == v.
+        # sum([]) >= 1 is a plain Python False (an empty sum), so it takes the
+        # same path as the literal False.
+        cases = [
+            ("literal_false", lambda m, z, v: m.add_enforced(False, z, v)),
+            ("empty_sum", lambda m, z, v: m.add_enforced(sum([]) >= 1, z, v)),
+        ]
+        for solver_name in ("sat", "scip"):
+            if not (
+                solver_name == "sat" or mb.Solver(solver_name).solver_is_supported()
+            ):
+                continue
+            for case_name, add_ct in cases:
+                for value in (False, True):
+                    with self.subTest(solver=solver_name, case=case_name, value=value):
+                        model = mb.Model()
+                        z = model.new_bool_var("z")
+                        ct = add_ct(model, z, value)
+                        self.assertTrue(ct.is_under_specified)
+                        self.assertRaises(ValueError, ct.add_term, z, 1)
+                        if value:
+                            model.maximize(z)
+                        else:
+                            model.minimize(z)
+
+                        solver = mb.Solver(solver_name)
+                        status = solver.solve(model)
+                        self.assertEqual(status, mb.SolveStatus.OPTIMAL)
+                        self.assertEqual(solver.value(z), 0.0 if value else 1.0)
+
+                        # Forcing z to the forbidden value makes the model infeasible.
+                        model.add(z == int(value))
+                        solver2 = mb.Solver(solver_name)
+                        status = solver2.solve(model)
+                        self.assertEqual(status, mb.SolveStatus.INFEASIBLE)
+
 
 class InternalHelperTest(absltest.TestCase):
 

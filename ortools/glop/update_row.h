@@ -161,7 +161,7 @@ class UpdateRow {
     RatioDistribution update_row_density;
   };
 
-  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  LinearDeterministicTimer<{.scale = 3.3e-09}> deterministic_timer_;
 
   // Glop standard classes.
   GlopParameters parameters_;

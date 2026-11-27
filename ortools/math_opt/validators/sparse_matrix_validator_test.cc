@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -157,6 +158,44 @@ TEST(SparseMatrixIdsAreKnownTest, ColumnUniverseMismatch) {
   EXPECT_THAT(
       SparseMatrixIdsAreKnown(matrix, MakeBiMap({3, 8}), MakeBiMap({3, 8})),
       SparseMatrixError("Unknown column_id"));
+}
+
+// The proto overload is implemented with the span overload, so the tests above
+// cover most of it. We only test a few cases with spans directly.
+TEST(SparseMatrixValidSpansTest, Ok) {
+  const std::vector<int64_t> row_ids = {3, 3, 8};
+  const std::vector<int64_t> column_ids = {3, 5, 5};
+  const std::vector<double> coefficients = {4.0, 3.0, 2.0};
+  EXPECT_OK(SparseMatrixValid(row_ids, column_ids, coefficients));
+  EXPECT_THAT(SparseMatrixValid(row_ids, column_ids, coefficients,
+                                /*enforce_upper_triangular=*/true),
+              SparseMatrixError("lower triangular"));
+  EXPECT_OK(SparseMatrixValid({}, {}, {}));
+}
+
+TEST(SparseMatrixValidSpansTest, SizeMismatch) {
+  const std::vector<int64_t> row_ids = {3, 3, 8};
+  const std::vector<int64_t> column_ids = {3, 5};
+  const std::vector<double> coefficients = {4.0, 3.0, 2.0};
+  EXPECT_THAT(SparseMatrixValid(row_ids, column_ids, coefficients),
+              SparseMatrixError("column_ids.size=2"));
+}
+
+TEST(SparseMatrixValidSpansTest, NotSorted) {
+  const std::vector<int64_t> row_ids = {3, 3};
+  const std::vector<int64_t> column_ids = {5, 3};
+  const std::vector<double> coefficients = {4.0, 3.0};
+  EXPECT_THAT(SparseMatrixValid(row_ids, column_ids, coefficients),
+              SparseMatrixError("strictly increasing within a row"));
+}
+
+TEST(SparseMatrixValidSpansTest, NotFinite) {
+  const std::vector<int64_t> row_ids = {3};
+  const std::vector<int64_t> column_ids = {5};
+  const std::vector<double> coefficients = {
+      std::numeric_limits<double>::quiet_NaN()};
+  EXPECT_THAT(SparseMatrixValid(row_ids, column_ids, coefficients),
+              SparseMatrixError("finite"));
 }
 
 }  // namespace

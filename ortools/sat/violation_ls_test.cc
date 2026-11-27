@@ -292,18 +292,23 @@ TEST(ViolationLsSolverTest,
       ct->add_domain(lb);
       ct->add_domain(ub);
     }
-    auto* ct = context.proto.add_constraints()->mutable_linear();
-    for (int i = 2; i < 10; ++i) {
-      ct->add_vars(i);
-      ct->add_coeffs(1);
+    // Make the model large enough that EstimateCopyDeterministicTime() keeps
+    // the second worker rate-limited across its 14 small batches despite the
+    // fixed per-batch timer offsets.
+    for (int c = 0; c < 60; ++c) {
+      auto* ct = context.proto.add_constraints()->mutable_linear();
+      for (int i = 2; i < 10; ++i) {
+        ct->add_vars(i);
+        ct->add_coeffs(1);
+      }
+      ct->add_domain(0);
+      ct->add_domain(80);
     }
-    ct->add_domain(0);
-    ct->add_domain(80);
 
     SharedBoundsManager shared_bounds(context.proto);
     SharedClausesManager shared_clauses(true);
     context.params.set_feasibility_jump_restart_factor(100);
-    context.params.set_feasibility_jump_batch_dtime(1e-4);
+    context.params.set_feasibility_jump_batch_dtime(1e-3);
     auto first = context.MakeSolver(/*improve_solutions=*/false, &shared_bounds,
                                     &shared_clauses);
     context.params.set_feasibility_jump_batch_dtime(1e-7);

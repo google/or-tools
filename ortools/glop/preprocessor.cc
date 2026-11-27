@@ -34,6 +34,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_data.h"
@@ -44,6 +45,7 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/return_macros.h"
 #include "ortools/util/stats.h"
@@ -260,11 +262,12 @@ void ColumnsSaver::SaveColumn(ColIndex col, const SparseColumn& column) {
   saved_columns_.push_back(column);
 }
 
-void ColumnsSaver::SaveColumnIfNotAlreadyDone(ColIndex col,
-                                              const SparseColumn& column) {
+LocalIndex ColumnsSaver::SaveColumnIfNotAlreadyDone(
+    ColIndex col, const SparseColumn& column) {
   const int index = saved_columns_.size();
-  const bool inserted = saved_columns_index_.insert({col, index}).second;
+  const auto [it, inserted] = saved_columns_index_.insert({col, index});
   if (inserted) saved_columns_.push_back(column);
+  return LocalIndex{it->second};
 }
 
 const SparseColumn& ColumnsSaver::SavedColumn(ColIndex col) const {
@@ -2308,10 +2311,123 @@ void EmptyConstraintPreprocessor::RecoverSolutionImpl(
 // SingletonPreprocessor
 // --------------------------------------------------------
 
+template <typename IndexType>
+IncrementalScalarProducts<IndexType>::IncrementalScalarProducts(int size)
+    : values_(IndexType{size}, 0.0) {
+  DCHECK_GE(size, 0);
+}
+
+template <typename IndexType>
+IncrementalScalarProducts<IndexType>::IncrementalScalarProducts(
+    absl::Span<const Fractional> initial_values)
+    : values_(initial_values.begin(), initial_values.end()) {
+  for (const Fractional value : values_) {
+    DCHECK(std::isfinite(value));
+  }
+}
+
+template <typename IndexType>
+void IncrementalScalarProducts<IndexType>::Add(
+    LocalIndex index, const SparseColumn& sparse_vector) {
+  DCHECK_GE(index, 0);
+  if (index == vectors_.size()) {
+    vectors_.push_back({&sparse_vector});
+    return;
+  }
+  if (index > vectors_.size()) {
+    if (index + 1 > vectors_.capacity()) {
+      vectors_.reserve(std::max(index + 1, 2 * vectors_.capacity()));
+    }
+    vectors_.resize(index + 1);
+  }
+  DCHECK_EQ(vectors_[index].vector, nullptr);
+  vectors_[index].vector = &sparse_vector;
+}
+
+template <typename IndexType>
+void IncrementalScalarProducts<IndexType>::SetValue(IndexType index,
+                                                    Fractional new_value) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, values_.size());
+  DCHECK(std::isfinite(new_value));
+  const Fractional old_value = values_[index];
+  if (old_value == new_value) return;
+  values_[index] = new_value;
+  if (first_occurrence_.empty() || first_occurrence_[index] == -1) return;
+
+  for (int node_index = first_occurrence_[index]; node_index != -1;
+       node_index = occurrences_[node_index].next_occurrence) {
+    const OccurrenceNode& node = occurrences_[node_index];
+    TightSum& sum = sums_[node.sum_index];
+    if (old_value != 0.0) {
+      sum.AddProd(-node.coefficient, old_value);
+    }
+    if (new_value != 0.0) {
+      sum.AddProd(node.coefficient, new_value);
+    }
+    ++num_scanned_entries_;
+  }
+}
+
+template <typename IndexType>
+Fractional IncrementalScalarProducts<IndexType>::Get(LocalIndex index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, vectors_.size());
+  RegisteredColumn& entry = vectors_[index];
+  DCHECK_NE(entry.vector, nullptr);
+  if (entry.num_evaluations < kMaxExactEvaluations) {
+    ++entry.num_evaluations;
+    num_scanned_entries_ += entry.vector->num_entries().value();
+    return ScalarProduct(values_, *entry.vector);
+  }
+  if (entry.sum_index == -1) {
+    entry.sum_index = PromoteVector(*entry.vector);
+  }
+  return sums_[entry.sum_index].TightLowerBound();
+}
+
+template <typename IndexType>
+LocalIndex IncrementalScalarProducts<IndexType>::PromoteVector(
+    const SparseColumn& vector) const {
+  const LocalIndex sum_index = sums_.size();
+  sums_.emplace_back();
+  TightSum& sum = sums_.back();
+  if (first_occurrence_.empty()) {
+    first_occurrence_.assign(values_.size(), -1);
+  }
+  const size_t needed_occurrences =
+      occurrences_.size() + vector.num_entries().value();
+  if (needed_occurrences > occurrences_.capacity()) {
+    occurrences_.reserve(
+        std::max(needed_occurrences, 2 * occurrences_.capacity()));
+  }
+  for (const SparseColumn::Entry e : vector) {
+    const IndexType index = IndexType{e.row().value()};
+    DCHECK_GE(index, 0);
+    DCHECK_LT(index, values_.size());
+    const Fractional coeff = e.coefficient();
+    DCHECK(std::isfinite(coeff));
+    const Fractional value = values_[index];
+    const int node_index = occurrences_.size();
+    occurrences_.push_back({sum_index, first_occurrence_[index], coeff});
+    first_occurrence_[index] = node_index;
+    if (value != 0.0) {
+      sum.AddProd(coeff, value);
+    }
+  }
+  num_scanned_entries_ += vector.num_entries().value();
+  return sum_index;
+}
+
+template class IncrementalScalarProducts<ColIndex>;
+template class IncrementalScalarProducts<RowIndex>;
+
 SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
-                             MatrixEntry e, ConstraintStatus status)
+                             MatrixEntry e, ConstraintStatus status,
+                             LocalIndex saved_vector_index)
     : type_(type),
       is_maximization_(lp.IsMaximizationProblem()),
+      saved_vector_index_(saved_vector_index),
       e_(e),
       cost_(lp.objective_coefficients()[e.col]),
       variable_lower_bound_(lp.variable_lower_bounds()[e.col]),
@@ -2320,19 +2436,20 @@ SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
       constraint_upper_bound_(lp.constraint_upper_bounds()[e.row]),
       constraint_status_(status) {}
 
-void SingletonUndo::Undo(const GlopParameters& parameters,
-                         const SparseColumn& saved_column,
-                         const SparseColumn& saved_row,
-                         ProblemSolution* solution) const {
+void SingletonUndo::Undo(
+    const GlopParameters& parameters,
+    const IncrementalScalarProducts<ColIndex>& row_activities,
+    const IncrementalScalarProducts<RowIndex>& column_dual_activities,
+    ProblemSolution* solution) const {
   switch (type_) {
     case SINGLETON_ROW:
-      SingletonRowUndo(saved_column, solution);
+      SingletonRowUndo(column_dual_activities, solution);
       break;
     case ZERO_COST_SINGLETON_COLUMN:
-      ZeroCostSingletonColumnUndo(parameters, saved_row, solution);
+      ZeroCostSingletonColumnUndo(parameters, row_activities, solution);
       break;
     case SINGLETON_COLUMN_IN_EQUALITY:
-      SingletonColumnInEqualityUndo(parameters, saved_row, solution);
+      SingletonColumnInEqualityUndo(parameters, row_activities, solution);
       break;
     case MAKE_CONSTRAINT_AN_EQUALITY:
       MakeConstraintAnEqualityUndo(solution);
@@ -2402,16 +2519,18 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     new_upper_bound = new_lower_bound;
   }
   row_deletion_helper_.MarkRowForDeletion(e.row);
+  const LocalIndex saved_col_index = columns_saver_.SaveColumnIfNotAlreadyDone(
+      e.col, lp->GetSparseColumn(e.col));
   undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,
-                                      ConstraintStatus::FREE));
-  columns_saver_.SaveColumnIfNotAlreadyDone(e.col, lp->GetSparseColumn(e.col));
+                                      ConstraintStatus::FREE, saved_col_index));
 
   lp->SetVariableBounds(e.col, new_lower_bound, new_upper_bound);
 }
 
 // The dual value of the row needs to be corrected to stay at the optimal.
-void SingletonUndo::SingletonRowUndo(const SparseColumn& saved_column,
-                                     ProblemSolution* solution) const {
+void SingletonUndo::SingletonRowUndo(
+    const IncrementalScalarProducts<RowIndex>& column_dual_activities,
+    ProblemSolution* solution) const {
   DCHECK_EQ(0, solution->dual_values[e_.row]);
 
   // If the variable is basic or free, we can just keep the constraint
@@ -2435,7 +2554,7 @@ void SingletonUndo::SingletonRowUndo(const SparseColumn& saved_column,
   // This is the reduced cost of the variable before the singleton constraint is
   // added back.
   const Fractional reduced_cost =
-      cost_ - ScalarProduct(solution->dual_values, saved_column);
+      cost_ - column_dual_activities.Get(saved_vector_index_);
   const Fractional reduced_cost_for_minimization =
       is_maximization_ ? -reduced_cost : reduced_cost;
 
@@ -2541,17 +2660,20 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
   const ColIndex transpose_col = RowToColIndex(e.row);
-  undo_stack_.push_back(SingletonUndo(SingletonUndo::ZERO_COST_SINGLETON_COLUMN,
-                                      *lp, e, ConstraintStatus::FREE));
   const SparseColumn& row_as_col = transpose.column(transpose_col);
-  rows_saver_.SaveColumnIfNotAlreadyDone(RowToColIndex(e.row), row_as_col);
+  const LocalIndex saved_row_index =
+      rows_saver_.SaveColumnIfNotAlreadyDone(transpose_col, row_as_col);
+  undo_stack_.push_back(SingletonUndo(SingletonUndo::ZERO_COST_SINGLETON_COLUMN,
+                                      *lp, e, ConstraintStatus::FREE,
+                                      saved_row_index));
   UpdateConstraintBoundsWithVariableBounds(e, lp);
   column_deletion_helper_.MarkColumnForDeletion(e.col);
 }
 
 // We need to restore the variable value in order to satisfy the constraint.
 void SingletonUndo::ZeroCostSingletonColumnUndo(
-    const GlopParameters& parameters, const SparseColumn& saved_row,
+    const GlopParameters& parameters,
+    const IncrementalScalarProducts<ColIndex>& row_activities,
     ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
   // possible case if the current constraint status is FIXED, except if the
@@ -2598,7 +2720,7 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
 
   // This is the activity of the constraint before the singleton variable is
   // added back to it.
-  const Fractional activity = ScalarProduct(solution->primal_values, saved_row);
+  const Fractional activity = row_activities.Get(saved_vector_index_);
 
   // First we try to fix the variable at its lower or upper bound and leave the
   // constraint VariableStatus::BASIC. Note that we use the same logic as in
@@ -2681,10 +2803,11 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
   // Save information for the undo.
   const ColIndex transpose_col = RowToColIndex(e.row);
   const SparseColumn& row_as_column = transpose.column(transpose_col);
+  const LocalIndex saved_row_index =
+      rows_saver_.SaveColumnIfNotAlreadyDone(transpose_col, row_as_column);
   undo_stack_.push_back(
       SingletonUndo(SingletonUndo::SINGLETON_COLUMN_IN_EQUALITY, *lp, e,
-                    ConstraintStatus::FREE));
-  rows_saver_.SaveColumnIfNotAlreadyDone(RowToColIndex(e.row), row_as_column);
+                    ConstraintStatus::FREE, saved_row_index));
 
   // Update the objective function using the equality constraint. We have
   //     v_col*coeff + expression = rhs,
@@ -2719,10 +2842,11 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
 }
 
 void SingletonUndo::SingletonColumnInEqualityUndo(
-    const GlopParameters& parameters, const SparseColumn& saved_row,
+    const GlopParameters& parameters,
+    const IncrementalScalarProducts<ColIndex>& row_activities,
     ProblemSolution* solution) const {
   // First do the same as a zero-cost singleton column.
-  ZeroCostSingletonColumnUndo(parameters, saved_row, solution);
+  ZeroCostSingletonColumnUndo(parameters, row_activities, solution);
 
   // Then, restore the dual optimal value taking into account the cost
   // modification.
@@ -3014,12 +3138,35 @@ void SingletonPreprocessor::RecoverSolutionImpl(
 
   // It is important to undo the operations in the correct order, i.e. in the
   // reverse order in which they were done.
+  //
+  // The Undo() functions only modify the primal value of Entry().col and the
+  // dual value of Entry().row, so we report these changes to the
+  // IncrementalScalarProducts to keep the row activities and column dual
+  // activities up to date. This avoids a quadratic complexity when many
+  // singleton columns are removed from the same long row.
+  //
+  // TODO(user): Maybe it make more sense to store the saved row directly in the
+  // IncrementalScalarProduct calls since I think the saved row are only used to
+  // compute scalar products.
+  IncrementalScalarProducts<ColIndex> row_activities(solution->primal_values);
+  const LocalIndex num_saved_rows = rows_saver_.NumSavedColumns();
+  for (LocalIndex i{0}; i < num_saved_rows; ++i) {
+    const SparseColumn& saved_row = rows_saver_.SavedColumnFromIndex(i);
+    row_activities.Add(i, saved_row);
+  }
+  IncrementalScalarProducts<RowIndex> column_dual_activities(
+      solution->dual_values);
+  const LocalIndex num_saved_cols = columns_saver_.NumSavedColumns();
+  for (LocalIndex i{0}; i < num_saved_cols; ++i) {
+    const SparseColumn& saved_col = columns_saver_.SavedColumnFromIndex(i);
+    column_dual_activities.Add(i, saved_col);
+  }
   for (int i = undo_stack_.size() - 1; i >= 0; --i) {
-    const SparseColumn& saved_col =
-        columns_saver_.SavedOrEmptyColumn(undo_stack_[i].Entry().col);
-    const SparseColumn& saved_row = rows_saver_.SavedOrEmptyColumn(
-        RowToColIndex(undo_stack_[i].Entry().row));
-    undo_stack_[i].Undo(parameters_, saved_col, saved_row, solution);
+    const MatrixEntry e = undo_stack_[i].Entry();
+    undo_stack_[i].Undo(parameters_, row_activities, column_dual_activities,
+                        solution);
+    row_activities.SetValue(e.col, solution->primal_values[e.col]);
+    column_dual_activities.SetValue(e.row, solution->dual_values[e.row]);
   }
 }
 

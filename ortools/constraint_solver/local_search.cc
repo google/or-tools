@@ -44,7 +44,6 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -3884,28 +3883,21 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, Assignment* delta,
 
 namespace {
 
-template <typename Container>
-void AddDeltaElements(const Container& old_container,
-                      const Container& new_container, Assignment* delta) {
-  for (const auto& new_element : new_container.elements()) {
-    const auto var = new_element.Var();
-    const auto old_element_ptr = old_container.ElementPtrOrNull(var);
-    if (old_element_ptr == nullptr || *old_element_ptr != new_element) {
-      delta->FastAdd(var)->Copy(new_element);
-    }
-  }
-}
-
 void MakeDelta(const Assignment* old_assignment,
                const Assignment* new_assignment, Assignment* delta) {
   DCHECK_NE(delta, nullptr);
   delta->Clear();
-  AddDeltaElements(old_assignment->IntVarContainer(),
-                   new_assignment->IntVarContainer(), delta);
-  AddDeltaElements(old_assignment->IntervalVarContainer(),
-                   new_assignment->IntervalVarContainer(), delta);
-  AddDeltaElements(old_assignment->SequenceVarContainer(),
-                   new_assignment->SequenceVarContainer(), delta);
+  const Assignment::IntContainer& old_container =
+      old_assignment->IntVarContainer();
+  for (const IntVarElement& new_element :
+       new_assignment->IntVarContainer().elements()) {
+    IntVar* const var = new_element.Var();
+    const IntVarElement* const old_element_ptr =
+        old_container.ElementPtrOrNull(var);
+    if (old_element_ptr == nullptr || *old_element_ptr != new_element) {
+      delta->FastAdd(var)->Copy(new_element);
+    }
+  }
 }
 }  // namespace
 
@@ -4062,11 +4054,6 @@ class LocalSearch : public DecisionBuilder {
               LocalSearchOperator* ls_operator,
               DecisionBuilder* sub_decision_builder, RegularLimit* limit,
               LocalSearchFilterManager* filter_manager);
-  LocalSearch(const std::vector<SequenceVar*>& vars, IntVar* objective,
-              SolutionPool* pool, DecisionBuilder* first_solution,
-              LocalSearchOperator* ls_operator,
-              DecisionBuilder* sub_decision_builder, RegularLimit* limit,
-              LocalSearchFilterManager* filter_manager);
   ~LocalSearch() override;
   Decision* Next(Solver* solver) override;
   std::string DebugString() const override { return "LocalSearch"; }
@@ -4171,33 +4158,6 @@ LocalSearch::LocalSearch(
   PushLocalSearchDecision();
 }
 
-LocalSearch::LocalSearch(const std::vector<SequenceVar*>& vars,
-                         IntVar* objective, SolutionPool* const pool,
-                         DecisionBuilder* const first_solution,
-                         LocalSearchOperator* const ls_operator,
-                         DecisionBuilder* const sub_decision_builder,
-                         RegularLimit* const limit,
-                         LocalSearchFilterManager* filter_manager)
-    : assignment_(nullptr),
-      objective_(objective),
-      pool_(pool),
-      ls_operator_(ls_operator),
-      first_solution_sub_decision_builder_(sub_decision_builder),
-      sub_decision_builder_(sub_decision_builder),
-      nested_decision_index_(0),
-      limit_(limit),
-      filter_manager_(filter_manager),
-      has_started_(false) {
-  CHECK(nullptr != first_solution);
-  CHECK(nullptr != ls_operator);
-  CHECK(!vars.empty());
-  Solver* const solver = vars[0]->solver();
-  assignment_ = solver->GetOrCreateLocalSearchState();
-  assignment_->Add(vars);
-  PushFirstSolutionDecision(first_solution);
-  PushLocalSearchDecision();
-}
-
 LocalSearch::~LocalSearch() {}
 
 // Model Visitor support.
@@ -4214,16 +4174,6 @@ void LocalSearch::Accept(ModelVisitor* const visitor) const {
     }
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars);
-  }
-  const std::vector<IntervalVarElement>& interval_elements =
-      assignment_->IntervalVarContainer().elements();
-  if (!interval_elements.empty()) {
-    std::vector<IntervalVar*> interval_vars;
-    for (const IntervalVarElement& elem : interval_elements) {
-      interval_vars.push_back(elem.Var());
-    }
-    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
-                                        interval_vars);
   }
   visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
 }
@@ -4375,16 +4325,6 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
       first_solution, first_solution_sub_decision_builder,
       parameters->ls_operator(), parameters->sub_decision_builder(),
       parameters->limit(), parameters->filter_manager()));
-}
-
-DecisionBuilder* Solver::MakeLocalSearchPhase(
-    const std::vector<SequenceVar*>& vars, DecisionBuilder* first_solution,
-    LocalSearchPhaseParameters* parameters) {
-  return RevAlloc(new LocalSearch(
-      vars, parameters->objective(), parameters->solution_pool(),
-      first_solution, parameters->ls_operator(),
-      parameters->sub_decision_builder(), parameters->limit(),
-      parameters->filter_manager()));
 }
 
 template <bool is_profile_active>

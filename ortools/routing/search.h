@@ -527,6 +527,7 @@ class GlobalCheapestInsertionFilteredHeuristic
       LocalSearchFilterManager* filter_manager,
       GlobalCheapestInsertionParameters parameters, bool is_sequential);
   ~GlobalCheapestInsertionFilteredHeuristic() override = default;
+  void Initialize() override;
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
     return "GlobalCheapestInsertionFilteredHeuristic";
@@ -616,6 +617,10 @@ class GlobalCheapestInsertionFilteredHeuristic
     std::vector<T*> free_entries_;
   };
 
+  /// Returns the maximum number of closest neighbors considered for insertion
+  /// for each node, based on the GlobalCheapestInsertionParameters.
+  int64_t MaxNumNeighborsPerNode() const;
+
   /// Inserts non-inserted single nodes or pickup/delivery pairs which have a
   /// visit type in the type requirement graph, i.e. required for or requiring
   /// another type for insertions.
@@ -638,7 +643,8 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// pickup insertion position, after the pickup position, after the delivery
   /// insertion position and after the delivery position.
   bool InsertPairs(
-      const std::map<int64_t, std::vector<int>>& pair_indices_by_bucket);
+      const std::map<int64_t, std::vector<int>>& pair_indices_by_bucket,
+      bool clear_pair_entry_allocator);
 
   /// Returns true iff the empty_vehicle_type_curator_ should be used to insert
   /// nodes/pairs on the given vehicle, i.e. iff the route of the given vehicle

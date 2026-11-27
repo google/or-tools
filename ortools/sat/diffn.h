@@ -47,6 +47,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
       : helper_(*helper),
         random_(*model->GetOrCreate<ModelRandomGenerator>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         orthogonal_packing_checker_(random_, shared_stats_) {}
 
   ~NonOverlappingRectanglesEnergyPropagator() override;
@@ -71,6 +72,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   NoOverlap2DConstraintHelper& helper_;
   absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
+  TimeLimit* time_limit_;
   OrthogonalPackingInfeasibilityDetector orthogonal_packing_checker_;
 
   int64_t num_calls_ = 0;

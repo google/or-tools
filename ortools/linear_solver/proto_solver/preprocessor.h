@@ -16,14 +16,17 @@
 
 #include <cmath>
 #include <functional>
+#include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
@@ -171,9 +174,12 @@ bool MakeBoundsInteger(double integer_solution_tolerance,
 // WARNING: this assumes tolerances have already been applied to constraint
 // and/or variable bounds and propagates all bounds EXACTLY.
 //
-// TODO(user): We could also remove fixed enforcement, and if there is a single
-// one, propagate it to false if the enforced constraint is infeasible. This is
-// not really important at this stage for conversion to CP-SAT though.
+// Enforced constraints are ignored. Note that ClearTrivialConstraints()
+// removes the enforcement literals on fixed variables beforehand.
+//
+// TODO(user): If there is a single enforcement literal, we could propagate it
+// to false if the enforced constraint is infeasible. This is not really
+// important at this stage for conversion to CP-SAT though.
 //
 // Returns false if the model is proven infeasible.
 bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
@@ -186,7 +192,9 @@ bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
 
 // Relaxes constraint bounds that are always satisfied within the variable
 // bounds to +/-infinity, and clears constraints whose lower and upper bounds
-// are both infinite.
+// are both infinite. This also removes the enforcement literals that always
+// hold, and clears the constraints with an enforcement literal that can never
+// hold.
 void ClearTrivialConstraints(sat::MPModelProtoWrapper* model,
                              SolverLogger* logger = nullptr);
 
@@ -211,6 +219,59 @@ bool ExactPresolve(const sat::SatParameters& params,
                    SolverLogger* logger = nullptr);
 
 // --------------------------------------------------------
+// MergeExactDuplicateColumns (work on the MPModelProtoWrapper)
+// --------------------------------------------------------
+
+// Postsolve data returned by MergeExactDuplicateColumns() to split the value of
+// each merged representative variable back across the original duplicate
+// variables.
+class DuplicateColumnsPostsolve {
+ public:
+  struct MergedVar {
+    int var;
+    double lb;
+    double ub;
+  };
+
+  DuplicateColumnsPostsolve() = default;
+  explicit DuplicateColumnsPostsolve(
+      std::vector<std::vector<MergedVar>> classes)
+      : classes_(std::move(classes)) {}
+
+  bool empty() const { return classes_.empty(); }
+  int num_classes() const { return classes_.size(); }
+
+  // Recovers the values of absorbed duplicate variables in-place from the
+  // value of each class's representative variable (`class_members[0].var`).
+  void Postsolve(absl::Span<double> solution) const;
+
+ private:
+  std::vector<std::vector<MergedVar>> classes_;
+};
+
+// Merges non-fixed continuous variables that have identical objective
+// coefficient and non-zero constraint coefficients into a single representative
+// variable; integer and Boolean duplicate columns are left to CP-SAT's integer
+// presolve.
+//
+// Summed bounds are computed via TightSum (`TightLowerBound()` /
+// `TightUpperBound()`), relaxing outward by at most 1 ULP when the exact sum is
+// not representable in IEEE-754 double precision so no feasible solution is
+// cut (unless finite bounds would overflow double).
+//
+// Because MPModelProtoWrapper preserves variable indices, absorbed variables
+// have their constraint entries and objective coefficient removed and become
+// unused [0, 0] integer placeholders in `model`; their values within their
+// original [lb, ub] bounds are recovered greedily via TightSum in
+// DuplicateColumnsPostsolve::Postsolve().
+//
+// Does nothing when params.keep_all_feasible_solutions_in_presolve() or
+// params.enumerate_all_solutions() is true.
+DuplicateColumnsPostsolve MergeExactDuplicateColumns(
+    const sat::SatParameters& params, sat::MPModelProtoWrapper* model,
+    SolverLogger* logger = nullptr);
+
+// --------------------------------------------------------
 // ShiftVariableBounds (work on the MPModelProtoWrapper)
 // --------------------------------------------------------
 
@@ -226,7 +287,7 @@ bool ExactPresolve(const sat::SatParameters& params,
 // If shifting would cause a floating point overflow in a constraint or the
 // objective, the model is left unchanged and an empty vector is returned.
 std::vector<double> ShiftVariableBounds(
-    const std::function<double(const MPVariableProto&)>& get_var_shift,
+    const std::function<double(const sat::MipVariableProto&)>& get_var_shift,
     sat::MPModelProtoWrapper* model, SolverLogger* logger = nullptr);
 
 // Internal function used by ShiftVariableBounds(), return true if the given
@@ -246,48 +307,32 @@ std::vector<double> ShiftToZeroAndMarkAsIntegerUnusedVariables(
 // This one moves domains that do not contain zero close to zero. It also only
 // use integer shifts, so that when we round to integer in CP-SAT we are using
 // integer in the original user space. This is also important for detected
-// implied integers
-inline std::function<double(const MPVariableProto& mp_var)> IntegerShifts() {
-  return [](const MPVariableProto& var) {
+// implied integers.
+//
+// Fixed variables are shifted to [0, 0] even if their value is not integer.
+// Note that integer variables have integer bounds at this point, so the shift
+// is still integer for them.
+inline std::function<double(const sat::MipVariableProto& mp_var)>
+IntegerShifts() {
+  return [](const sat::MipVariableProto& var) {
     const double lb = var.lower_bound();
     const double ub = var.upper_bound();
+    DCHECK(!std::isfinite(lb) || !var.is_integer() || lb == std::round(lb));
+    DCHECK(!std::isfinite(ub) || !var.is_integer() || ub == std::round(ub));
+    if (std::isfinite(lb) && lb == ub) return lb;
     if (std::isfinite(lb) && lb > 0.0) return std::floor(lb);
     if (std::isfinite(ub) && ub < 0.0) return std::ceil(ub);
     return 0.0;
   };
 }
 
-// This one should be done just before the final conversion to CP-SAT. We want
-// all domain to contain the integer 0! and to not shift more than necessary.
-// At this stage, we want to:
-// 1/ Shift small domain like [0.3, 0.4] to [0, 0.1] so at least the integer
-//    zero could be a solution.
-// 2/ Shift something like [1.5, 10] to [-0.5, 8] so that there is always the
-//    integer zero inside.
-//
-// After this, all "fixed" variable should be fixed at exactly zero for
-// instance. And our scaler correctly just skip these.
-inline double FinalCpSatShiftValue(double lb, double ub, bool is_integer,
-                                   double tolerance) {
-  if (!is_integer) {
-    // Case 1/
-    if (std::floor(ub) < std::ceil(lb)) {
-      if (std::isfinite(lb) && lb > 0.0) return lb;
-      if (std::isfinite(ub) && ub < 0.0) return ub;
-    }
-  }
-
-  // Case 2/
-  if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
-  if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
-
-  return 0.0;
-}
-inline std::function<double(const MPVariableProto& mp_var)> FinalCpSatShift(
-    double tolerance) {
-  return [tolerance](const MPVariableProto& var) {
-    return FinalCpSatShiftValue(var.lower_bound(), var.upper_bound(),
-                                var.is_integer(), tolerance);
+// This one should be done just before the final conversion to CP-SAT, see
+// sat::FinalCpSatShiftValue().
+inline std::function<double(const sat::MipVariableProto& mp_var)>
+FinalCpSatShift(double tolerance) {
+  return [tolerance](const sat::MipVariableProto& var) {
+    return sat::FinalCpSatShiftValue(var.lower_bound(), var.upper_bound(),
+                                     var.is_integer(), tolerance);
   };
 }
 
@@ -303,9 +348,9 @@ inline double ShiftBeforeScalingValue(double lb, double ub, bool is_integer) {
   }
   return 0.0;
 }
-inline std::function<double(const MPVariableProto& mp_var)>
+inline std::function<double(const sat::MipVariableProto& mp_var)>
 ShiftBeforeScaling() {
-  return [](const MPVariableProto& var) {
+  return [](const sat::MipVariableProto& var) {
     return ShiftBeforeScalingValue(var.lower_bound(), var.upper_bound(),
                                    var.is_integer());
   };

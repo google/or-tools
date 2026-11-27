@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_copy.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -30,6 +31,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -50,6 +52,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -64,11 +67,15 @@ FeasibilityStatus ModelCopyHelper::InitializeDomains(
 
   input_variable_is_fixed_.assign(domains.size(), false);
   input_variable_fixed_values_.resize(domains.size());
-  for (int var = 0; var < domains.size(); ++var) {
-    if (domains[var].IsEmpty()) return kUnsat;
-    if (domains[var].IsFixed()) {
-      input_variable_is_fixed_[var] = true;
-      input_variable_fixed_values_[var] = domains[var].FixedValue();
+  {
+    DeterministicTimer<{.scale = 9.4e-09, .offset = 7.6e-07}> timer(
+        time_limit_, domains.size());
+    for (int var = 0; var < domains.size(); ++var) {
+      if (domains[var].IsEmpty()) return kUnsat;
+      if (domains[var].IsFixed()) {
+        input_variable_is_fixed_[var] = true;
+        input_variable_fixed_values_[var] = domains[var].FixedValue();
+      }
     }
   }
 
@@ -102,23 +109,27 @@ FeasibilityStatus ModelCopyHelper::InitializeDomains(
     }
   };
 
-  for (int i = 0; i < mapping.size(); ++i) {
-    if (mapping[i] == kNoVariableMapping) continue;
-    const Domain& domain = domains[i];
-    const int image = PositiveRef(mapping[i]);
+  {
+    DeterministicTimer<{.scale = 1.4e-08, .offset = 1.7e-07}> timer(
+        time_limit_, mapping.size());
+    for (int i = 0; i < mapping.size(); ++i) {
+      if (mapping[i] == kNoVariableMapping) continue;
+      const Domain& domain = domains[i];
+      const int image = PositiveRef(mapping[i]);
 
-    // Special negative mapping for boolean.
-    if (!RefIsPositive(mapping[i])) {
-      DCHECK_GE(domain.Min(), 0);
-      DCHECK_LE(domain.Max(), 1);
-      if (domain.IsFixed()) {
-        const Domain fixed_value = Domain(1 - domain.FixedValue());
-        if (!update_domain(image, fixed_value)) return kUnsat;
-        continue;
+      // Special negative mapping for boolean.
+      if (!RefIsPositive(mapping[i])) {
+        DCHECK_GE(domain.Min(), 0);
+        DCHECK_LE(domain.Max(), 1);
+        if (domain.IsFixed()) {
+          const Domain fixed_value = Domain(1 - domain.FixedValue());
+          if (!update_domain(image, fixed_value)) return kUnsat;
+          continue;
+        }
       }
-    }
 
-    if (!update_domain(image, domain)) return kUnsat;
+      if (!update_domain(image, domain)) return kUnsat;
+    }
   }
 
   return kOk;
@@ -219,7 +230,8 @@ FeasibilityStatus ModelCopyHelper::IntersectMappedDomainWith(
 
 ModelCopy::ModelCopy(CpModelProto* out_proto, Model* model,
                      absl::Span<const int> variable_mapping)
-    : params_(*model->GetOrCreate<SatParameters>()),
+    : helper_(model->GetOrCreate<TimeLimit>()),
+      params_(*model->GetOrCreate<SatParameters>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       logger_(model->GetOrCreate<SolverLogger>()),
       working_model_(out_proto),
@@ -227,6 +239,8 @@ ModelCopy::ModelCopy(CpModelProto* out_proto, Model* model,
       lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
 FeasibilityStatus ModelCopy::ImportVariables(const CpModelProto& in_model) {
+  DeterministicTimer<{.scale = 6.0e-08, .offset = 3.9e-07}> dt(
+      time_limit_, in_model.variables().size());
   std::vector<Domain> domains;
   domains.reserve(in_model.variables().size());
   for (const IntegerVariableProto& var_proto : in_model.variables()) {
@@ -237,6 +251,7 @@ FeasibilityStatus ModelCopy::ImportVariables(const CpModelProto& in_model) {
 
 FeasibilityStatus ModelCopy::CreateVariablesFromDomains(
     absl::Span<const Domain> domains) {
+  DeterministicTimer<{.scale = 2.0e-08}> dt(time_limit_, domains.size());
   std::vector<Domain> copy(domains.begin(), domains.end());
   return helper_.InitializeDomains(std::move(copy), variable_mapping_);
 }
@@ -255,7 +270,11 @@ CopyStatus ModelCopy::ImportAndSimplifyConstraints(
   // they refer to intervals before them.
   std::vector<int> constraints_using_intervals;
 
-  interval_mapping_.assign(in_model.constraints().size(), -1);
+  {
+    DeterministicTimer<{.scale = 2.3e-09}> timer(time_limit_,
+                                                 in_model.constraints_size());
+    interval_mapping_.assign(in_model.constraints().size(), -1);
+  }
   boolean_product_encoding_.clear();
 
   if (first_copy && lrat_proof_handler_ != nullptr) {
@@ -308,13 +327,25 @@ CopyStatus ModelCopy::ImportAndSimplifyConstraints(
   }
 
   starting_constraint_index_ = working_model_->constraints_size();
+  // The scanned constraints are charged lazily, so that the time limit checks
+  // below only see the constraints scanned so far, and on all exit paths.
+  int num_scanned_constraints = 0;
+  int num_charged_constraints = 0;
+  DeterministicTimer<{.scale = 2.2e-07, .offset = 2.0e-07}> constraints_timer(
+      time_limit_);
+  const auto charge_scanned_constraints = [&]() {
+    constraints_timer.Advance(num_scanned_constraints -
+                              num_charged_constraints);
+    num_charged_constraints = num_scanned_constraints;
+  };
+  absl::Cleanup charge_on_exit = [&]() { charge_scanned_constraints(); };
   for (int c = 0; c < in_model.constraints_size(); ++c) {
-    if (!first_copy && (c % 1024) == 0 && time_limit_->LimitReached()) {
-      return kCopyTimeLimitReached;
+    num_scanned_constraints = c;
+    if (!first_copy && (c % 1024) == 0) {
+      charge_scanned_constraints();
+      if (time_limit_->LimitReached()) return kCopyTimeLimitReached;
     }
-    if (active_constraints != nullptr && !active_constraints(c)) {
-      continue;
-    }
+    if (active_constraints != nullptr && !active_constraints(c)) continue;
     const ConstraintProto& ct = in_model.constraints(c);
     if (first_copy) {
       if (!PrepareEnforcementCopyWithDup(ct)) continue;
@@ -340,6 +371,8 @@ CopyStatus ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kBoolAnd:
         if (temp_enforcement_literals_.empty()) {
           helper_.UpdateRuleStats("bool_and: non-reified");
+          DeterministicTimer<{.scale = 2.4e-08, .offset = 2.6e-08}>
+              bool_and_timer(time_limit_, ct.bool_and().literals_size());
           for (const int lit : ct.bool_and().literals()) {
             if (helper_.InputIsFixed(lit)) {
               if (helper_.InputFixedLiteralIsTrue(lit)) continue;
@@ -451,6 +484,7 @@ CopyStatus ModelCopy::ImportAndSimplifyConstraints(
         break;
     }
   }
+  num_scanned_constraints = in_model.constraints_size();
 
   // This should be empty if first_copy is false.
   DCHECK(first_copy || constraints_using_intervals.empty());
@@ -504,39 +538,43 @@ void ModelCopy::ImportSolutionHint(const CpModelProto& in_model) {
   // since the domain might be more precise then.
   int num_clamped = 0;
   std::vector<bool> hint_added(helper_.MappedDomains().size(), false);
-  for (int i = 0; i < hint.vars_size(); ++i) {
-    int mapped_ref = hint.vars(i);
-    if (!variable_mapping_.empty()) {
-      mapped_ref = variable_mapping_[mapped_ref];
-      if (mapped_ref == kNoVariableMapping) continue;
-    }
-
-    const int mapped_var = PositiveRef(mapped_ref);
-    if (hint_added[mapped_var]) continue;
-    hint_added[mapped_var] = true;
-
-    int64_t hint_value = hint.values(i);
-    if (!RefIsPositive(mapped_ref)) {
-      // We already checked that this must have been a literal.
-      // Note however that the hint value is from outside the solver, so
-      // we distinguish true / false with hint_value > 0 and we inverse it.
-      if (hint_value > 0) {
-        hint_value = 0;
-      } else {
-        hint_value = 1;
+  {
+    DeterministicTimer<{.scale = 1.4e-08}> timer(
+        time_limit_, helper_.MappedDomains().size() + hint.vars_size());
+    for (int i = 0; i < hint.vars_size(); ++i) {
+      int mapped_ref = hint.vars(i);
+      if (!variable_mapping_.empty()) {
+        mapped_ref = variable_mapping_[mapped_ref];
+        if (mapped_ref == kNoVariableMapping) continue;
       }
-    }
 
-    // We also clamp it.
-    const int64_t closest_domain_value =
-        helper_.MappedDomain(mapped_var).ClosestValue(hint_value);
-    if (closest_domain_value != hint_value) {
-      ++num_clamped;
-      hint_value = closest_domain_value;
-    }
+      const int mapped_var = PositiveRef(mapped_ref);
+      if (hint_added[mapped_var]) continue;
+      hint_added[mapped_var] = true;
 
-    new_hint.add_vars(mapped_var);
-    new_hint.add_values(hint_value);
+      int64_t hint_value = hint.values(i);
+      if (!RefIsPositive(mapped_ref)) {
+        // We already checked that this must have been a literal.
+        // Note however that the hint value is from outside the solver, so
+        // we distinguish true / false with hint_value > 0 and we inverse it.
+        if (hint_value > 0) {
+          hint_value = 0;
+        } else {
+          hint_value = 1;
+        }
+      }
+
+      // We also clamp it.
+      const int64_t closest_domain_value =
+          helper_.MappedDomain(mapped_var).ClosestValue(hint_value);
+      if (closest_domain_value != hint_value) {
+        ++num_clamped;
+        hint_value = closest_domain_value;
+      }
+
+      new_hint.add_vars(mapped_var);
+      new_hint.add_values(hint_value);
+    }
   }
   if (num_clamped > 0) {
     helper_.UpdateRuleStats("hint: moved var hint within its domain",
@@ -631,8 +669,15 @@ FeasibilityStatus ModelCopy::FinishCopy(const CpModelProto& in_model) {
   absl::Span<const Domain> domains = helper_.MappedDomains();
   working_model_->mutable_variables()->Clear();
   working_model_->mutable_variables()->Reserve(domains.size());
-  for (const Domain& domain : domains) {
-    FillDomainInProto(domain, working_model_->add_variables());
+  {
+    DeterministicTimer2<{.scale1 = 1.1e-09, .scale2 = 5.8e-08}> timer(
+        time_limit_);
+    int64_t num_intervals = 0;
+    for (const Domain& domain : domains) {
+      num_intervals += domain.NumIntervals();
+      FillDomainInProto(domain, working_model_->add_variables());
+    }
+    timer.Advance(domains.size(), num_intervals);
   }
 
   // Copy the names if requested.
@@ -670,18 +715,22 @@ FeasibilityStatus ModelCopy::FinishCopy(const CpModelProto& in_model) {
 }
 
 bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
+  DeterministicTimer<{.scale = 2.1e-08, .offset = 3.9e-08}> dt(time_limit_);
   temp_enforcement_literals_.clear();
   temp_enforcement_literals_set_.clear();
-  for (const int lit : ct.enforcement_literal()) {
+  for (int i = 0; i < ct.enforcement_literal_size(); ++i) {
+    const int lit = ct.enforcement_literal(i);
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) continue;
       helper_.UpdateRuleStats("enforcement: always false");
+      dt.Advance(i + 1);
       return false;
     }
     const int mapped_lit = MapLiteral(lit);
     temp_enforcement_literals_.push_back(mapped_lit);
     temp_enforcement_literals_set_.insert(mapped_lit);
   }
+  dt.Advance(ct.enforcement_literal_size());
   return true;  // Continue processing.
 }
 
@@ -727,6 +776,8 @@ FeasibilityStatus ModelCopy::FinishBoolOrCopy() {
   auto* bool_or_lits =
       working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
   bool_or_lits->Reserve(lit_refs.size());
+  DeterministicTimer<{.scale = 3.8e-09, .offset = 1.5e-08}> dt(time_limit_,
+                                                               lit_refs.size());
   for (const PositiveOnlyLitIndex idx : lit_refs) {
     bool_or_lits->Add(GetRefFromPositiveIndex(idx));
   }
@@ -846,13 +897,20 @@ FeasibilityStatus ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
 FeasibilityStatus ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
   bool at_least_one_false = false;
   int num_non_fixed_literals = 0;
-  for (const int lit : ct.bool_and().literals()) {
-    if (helper_.InputIsFixed(lit)) {
-      if (helper_.InputFixedLiteralIsTrue(lit)) continue;
-      at_least_one_false = true;
-      break;
+  {
+    DeterministicTimer<{.scale = 2.1e-08, .offset = 6.4e-08}> timer(
+        time_limit_);
+    int i = 0;
+    for (; i < ct.bool_and().literals_size(); ++i) {
+      const int lit = ct.bool_and().literals(i);
+      if (helper_.InputIsFixed(lit)) {
+        if (helper_.InputFixedLiteralIsTrue(lit)) continue;
+        at_least_one_false = true;
+        break;
+      }
+      num_non_fixed_literals++;
     }
-    num_non_fixed_literals++;
+    timer.Advance(std::min(i + 1, ct.bool_and().literals_size()));
   }
 
   if (at_least_one_false) {
@@ -862,6 +920,8 @@ FeasibilityStatus ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
     FinishEnforcementCopy(new_ct);
     BoolArgumentProto* bool_and = new_ct->mutable_bool_and();
     bool_and->mutable_literals()->Reserve(num_non_fixed_literals);
+    DeterministicTimer<{.scale = 2.1e-08, .offset = 1.9e-08}> timer(
+        time_limit_, ct.bool_and().literals_size());
     for (const int lit : ct.bool_and().literals()) {
       if (helper_.InputIsFixed(lit)) continue;  // we tested above for false.
       bool_and->add_literals(MapLiteral(lit));
@@ -927,6 +987,8 @@ FeasibilityStatus ModelCopy::CopyBoolAndWithDupSupport(
 template <typename T>
 int64_t ModelCopy::FillNonFixedTermsAndReturnOffset(
     const T& proto_with_vars_and_coeffs, int64_t offset) {
+  DeterministicTimer<{.scale = 2.0e-08, .offset = 1.6e-07}> dt(
+      time_limit_, proto_with_vars_and_coeffs.vars_size());
   non_fixed_terms_.clear();
   for (int i = 0; i < proto_with_vars_and_coeffs.vars_size(); ++i) {
     int ref = proto_with_vars_and_coeffs.vars(i);
@@ -965,15 +1027,19 @@ FeasibilityStatus ModelCopy::CopyLinear(const ConstraintProto& ct,
 
   int64_t min_activity = 0;
   int64_t max_activity = 0;
-  for (const auto& [var, coeff] : non_fixed_terms_) {
-    DCHECK_NE(coeff, 0);
-    const Domain& domain = helper_.MappedDomain(var);
-    if (coeff > 0) {
-      min_activity += coeff * domain.Min();
-      max_activity += coeff * domain.Max();
-    } else {
-      min_activity += coeff * domain.Max();
-      max_activity += coeff * domain.Min();
+  {
+    DeterministicTimer<{.scale = 1.0e-08, .offset = 1.3e-08}> timer(
+        time_limit_, non_fixed_terms_.size());
+    for (const auto& [var, coeff] : non_fixed_terms_) {
+      DCHECK_NE(coeff, 0);
+      const Domain& domain = helper_.MappedDomain(var);
+      if (coeff > 0) {
+        min_activity += coeff * domain.Min();
+        max_activity += coeff * domain.Max();
+      } else {
+        min_activity += coeff * domain.Max();
+        max_activity += coeff * domain.Min();
+      }
     }
   }
   const Domain implied(min_activity, max_activity);
@@ -1006,9 +1072,13 @@ FeasibilityStatus ModelCopy::CopyLinear(const ConstraintProto& ct,
   LinearConstraintProto* linear = new_ct->mutable_linear();
   linear->mutable_vars()->Reserve(non_fixed_terms_.size());
   linear->mutable_coeffs()->Reserve(non_fixed_terms_.size());
-  for (const auto& [var, coeff] : non_fixed_terms_) {
-    linear->add_vars(var);
-    linear->add_coeffs(coeff);
+  {
+    DeterministicTimer<{.scale = 8.6e-09, .offset = 1.6e-09}> timer(
+        time_limit_, non_fixed_terms_.size());
+    for (const auto& [var, coeff] : non_fixed_terms_) {
+      linear->add_vars(var);
+      linear->add_coeffs(coeff);
+    }
   }
   FillDomainInProto(tight_domain, linear);
   return kOk;
@@ -1018,6 +1088,10 @@ template <typename T>
 void ModelCopy::CanonicalizeLinearExpression(
     const absl::flat_hash_set<int>* enforcement_literals,
     std::vector<std::pair<int, T>>& terms, T& offset) {
+  if (terms.empty()) return;
+  const uint64_t n = terms.size();
+  DeterministicTimer<{.scale = 1.2e-09}> dt(time_limit_,
+                                            n * absl::bit_width(n));
   // Merge terms with the same variable, remove terms with a zero coefficient
   // and replace the enforcement literals with their value.
   int current_var = 0;
@@ -1342,6 +1416,8 @@ FeasibilityStatus ModelCopy::CopyReservoir(const ConstraintProto& ct) {
 }
 
 FeasibilityStatus ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
+  DeterministicTimer<{.scale = 2.6e-08}> timer(
+      time_limit_, ct.at_most_one().literals_size());
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
     FinishEnforcementCopy(&new_ct);
@@ -1367,6 +1443,7 @@ FeasibilityStatus ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
 
   if (num_true > 1) return kUnsat;
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+  timer.Advance(lit_refs.size());
   if (num_true == 1) {
     for (const PositiveOnlyLitIndex idx : lit_refs) {
       if (helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))
@@ -1388,6 +1465,8 @@ FeasibilityStatus ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
 }
 
 FeasibilityStatus ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
+  DeterministicTimer<{.scale = 2.3e-08, .offset = 2.3e-07}> timer(
+      time_limit_, ct.exactly_one().literals_size());
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
     FinishEnforcementCopy(&new_ct);
@@ -1413,6 +1492,7 @@ FeasibilityStatus ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
 
   if (num_true > 1) return kUnsat;
   const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+  timer.Advance(lit_refs.size());
   if (num_true == 1) {
     for (const PositiveOnlyLitIndex idx : lit_refs) {
       if (helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))
@@ -2020,11 +2100,6 @@ FeasibilityStatus CopyModel(const CpModelProto& in_proto,
                             const bool clear_internal_fields,
                             CpModelProto* out_proto, Model* model) {
   out_proto->Clear();
-  const auto advance_dtime = absl::MakeCleanup([&in_proto, model] {
-    // TODO(user) to remove this and replace it with DeterministicTimer(s)?
-    model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
-        EstimateCopyDeterministicTime(ComputeModelStats(in_proto)));
-  });
   ModelCopy copier(out_proto, model);
   if (copier.ImportVariables(in_proto).unsat()) return kUnsat;
   copier.ImportSolutionHint(in_proto);
@@ -2278,6 +2353,13 @@ DenseModelCopy::DenseModelCopy(absl::string_view name,
   }
 }
 
+void DenseModelCopy::SetTimeLimit(TimeLimit* time_limit) {
+  DCHECK_EQ(time_limit_, &default_time_limit_);
+  time_limit_ = time_limit;
+  time_limit_->AdvanceDeterministicTime(
+      default_time_limit_.GetElapsedDeterministicTime());
+}
+
 FeasibilityStatus DenseModelCopy::MaybeUpdate(
     bool& updated, double min_variable_reduction_ratio) {
   updated = false;
@@ -2315,6 +2397,7 @@ FeasibilityStatus DenseModelCopy::UpdateFromSharedBounds() {
   shared_bounds_->GetChangedBounds(
       shared_bounds_id_, &tmp_variables_, &tmp_new_lower_bounds_,
       &tmp_new_upper_bounds_, &latest_bounds_timestamp_);
+  DeterministicTimer<{.scale = 0.0}> timer(time_limit_, tmp_variables_.size());
   for (int i = 0; i < tmp_variables_.size(); ++i) {
     const int input_var = tmp_variables_[i];
     const Domain new_domain = input_var_domains_[input_var].IntersectionWith(
@@ -2462,6 +2545,8 @@ FeasibilityStatus DenseModelCopy::ApplyVariableMapping() {
       google::protobuf::Arena::Create<CpModelProto>(next_arena.get());
 
   Model local_model;
+  ScopedDeterministicTimeAccounting dtime_accounting(
+      time_limit_, local_model.GetOrCreate<TimeLimit>());
   ModelCopy copier(next_proto, &local_model, input_var_mapping_);
   if (copier.CreateVariablesFromDomains(input_var_domains_).unsat()) {
     return kUnsat;
@@ -2491,6 +2576,8 @@ FeasibilityStatus DenseModelCopy::ApplyVariableMapping() {
 void DenseModelCopy::ResetVarDomains() {
   const CpModelProto& current_proto = proto();
   const int num_vars = current_proto.variables_size();
+  DeterministicTimer<{.scale = 7.1e-08, .offset = 1.8e-07}> timer(time_limit_,
+                                                                  num_vars);
   var_domains_.Reset(num_vars);
   for (int v = 0; v < num_vars; ++v) {
     var_domains_.Set(v, ReadDomainFromProto(current_proto.variables(v)));
@@ -2499,6 +2586,8 @@ void DenseModelCopy::ResetVarDomains() {
 
 std::vector<int64_t> DenseModelCopy::MapSolution(
     absl::Span<const int64_t> input_solution) const {
+  DeterministicTimer<{.scale = 7.8e-09, .offset = 3.2e-07}> timer(
+      time_limit_, reverse_mapping_.size());
   std::vector<int64_t> solution;
   solution.reserve(reverse_mapping_.size());
   for (int var = 0; var < reverse_mapping_.size(); ++var) {
@@ -2516,6 +2605,8 @@ std::vector<int64_t> DenseModelCopy::MapSolution(
 std::vector<int64_t> DenseModelCopy::ReverseMapSolution(
     absl::Span<const int64_t> solution) const {
   const int num_input_vars = input_var_mapping_.size();
+  DeterministicTimer<{.scale = 9.5e-09, .offset = 3.5e-07}> timer(
+      time_limit_, num_input_vars);
   std::vector<int64_t> input_solution;
   input_solution.reserve(num_input_vars);
   for (int input_var = 0; input_var < num_input_vars; ++input_var) {

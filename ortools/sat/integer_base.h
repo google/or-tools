@@ -496,7 +496,8 @@ inline std::pair<LinearExpression2, IntegerValue> EncodeDifferenceLowerThan(
   expr.coeffs[0] = a.coeff;
   expr.vars[1] = b.var;
   expr.coeffs[1] = -b.coeff;
-  IntegerValue rhs = ub + b.constant - a.constant;
+  // The parentheses are needed to prevent overflow.
+  IntegerValue rhs = ub + (b.constant - a.constant);
 
   // Canonicalize.
   expr.SimpleCanonicalization();

@@ -398,7 +398,7 @@ class BasisFactorization {
   // mutable because the Solve() functions are const but need to update this.
   double last_factorization_deterministic_time_ = 0.0;
   double total_factorization_deterministic_time_ = 0.0;
-  mutable LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  mutable LinearDeterministicTimer<{.scale = 2.4e-09}> deterministic_timer_;
 };
 
 }  // namespace glop

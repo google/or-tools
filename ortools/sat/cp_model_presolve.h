@@ -45,23 +45,6 @@
 namespace operations_research {
 namespace sat {
 
-// Replaces all the instances of a variable i (and the literals referring to it)
-// by mapping[i] in the given cp_model. The definition of variables i is also
-// moved to its new index.
-//
-// If mapping[i] < 0 the variable can be ignored if there are no references to
-// it at all. If it is not possible (i.e. some field uses it), then we will use
-// a new index for it (at the end) and reverse_mapping will be updated to
-// reflect that. This is the only time we touch reverse_mapping.
-// The image of the mapping should be dense in [0, reverse_mapping->size()).
-//
-// If mapping[i] == mapping[j], the variables will be merged, but it will be the
-// IntegerVariableProto definition of max(i, j) that will be kept in the output.
-// TODO(user): This behavior is not well unit-tested.
-void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
-                          std::vector<int>* reverse_mapping,
-                          SolutionCrush& solution_crush);
-
 // Presolves the initial content of presolved_model.
 //
 // This also creates a mapping model that encodes the correspondence between the
@@ -204,7 +187,7 @@ class CpModelPresolver {
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.
   FeasibilityStatus ProcessAtMostOneAndLinear();
-  FeasibilityStatus ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
+  FeasibilityStatus ProcessOneLinearWithAmo(int ct_index,
                                             ActivityBoundHelper* helper);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
@@ -231,7 +214,7 @@ class CpModelPresolver {
   FeasibilityStatus PresolvePureSatProblem();
 
   // Extracts AtMostOne constraint from Linear constraint.
-  void ExtractAtMostOneFromLinear(ConstraintProto* ct);
+  void ExtractAtMostOneFromLinear(int c);
 
   // Extracts cliques from bool_and and small at_most_one constraints and
   // transforms them into maximal cliques.
@@ -360,9 +343,21 @@ class CpModelPresolver {
   absl::flat_hash_set<int> temp_set_;
   ConstraintProto temp_ct_;
 
+  // Used by ProcessOneLinearWithAmo().
+  std::vector<int> tmp_enforcement_;
+
+  // Reusable scratch buffers for in-place constraint updates.
+  std::vector<int> tmp_kept_literals_;
+  std::vector<std::pair<int, int64_t>> tmp_replacement_terms_;
+
   // Used by ProcessVariablesOnlyUsedInEncoding()
   int encoding_tmp_num_vars_ = 0;
   std::vector<int> encoding_tmp_vars_;
+
+  // Scratch storage for DetectIncludedEnforcement(), MergeClauses(), and
+  // ProcessVariableInTwoAtMostOrExactlyOne().
+  absl::flat_hash_set<int> tmp_literal_set_;
+  std::vector<int> tmp_literals_;
 };
 
 // Convenient wrapper to call the full presolve.
@@ -392,7 +387,8 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 // presolve where constraints have been canonicalized.
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
     const CpModelProto& model_proto, bool ignore_enforcement,
-    bool ignore_linear_domain, bool ignore_target_of_expression);
+    bool ignore_linear_domain, bool ignore_target_of_expression,
+    TimeLimit* time_limit);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -73,7 +73,7 @@ struct ArcWithLengthAndResources {
 
 // Returns {+inf, {}, {}} if there is no path of finite length from the source
 // to the destination. Dies if `arcs_with_length_and_resources` has a cycle.
-PathWithLength ConstrainedShortestPathsOnDag(
+PathWithLength<double> ConstrainedShortestPathsOnDag(
     int num_nodes,
     absl::Span<const ArcWithLengthAndResources> arcs_with_length_and_resources,
     int source, int destination, const std::vector<double>& max_resources);

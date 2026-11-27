@@ -13,6 +13,8 @@
 
 #include "ortools/glop/preprocessor.h"
 
+#include <cmath>
+#include <cstdint>
 #include <ios>
 #include <memory>
 #include <optional>
@@ -30,6 +32,9 @@
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -927,6 +932,281 @@ TEST(SingletonPreprocessorTest,
   preprocessor.UseInMipContext();
   CheckPreprocessorBehavior(kLinearProgram, kLinearProgram, kExpectedResult,
                             &preprocessor);
+}
+
+// Builds the LP 0 <= sum_i a_i x_i <= 3 with x_i in [-1, 1] and a_i in
+// [0.5, 1.5], where all the x_i have a zero cost. All the columns are removed
+// by the SingletonPreprocessor. In the postsolve, the constraint stays BASIC
+// and each restored variable is put at one of its bounds depending on the
+// activity of the constraint, so each undo needs this activity.
+LinearProgram BuildLongRowWithZeroCostSingletonColumns(int num_cols) {
+  std::mt19937 random(12345);
+  LinearProgram lp;
+  const RowIndex row = lp.CreateNewConstraint();
+  lp.SetConstraintBounds(row, 0.0, 3.0);
+  for (int i = 0; i < num_cols; ++i) {
+    const ColIndex col = lp.CreateNewVariable();
+    lp.SetVariableBounds(col, -1.0, 1.0);
+    lp.SetCoefficient(row, col, absl::Uniform<double>(random, 0.5, 1.5));
+  }
+  return lp;
+}
+
+// Runs the SingletonPreprocessor on the LP above and postsolves the solution
+// of the presolved LP, which has no columns and one empty BASIC row.
+ProblemSolution PresolveAndPostsolveLongRow(const LinearProgram& original_lp) {
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  LinearProgram lp;
+  lp.PopulateFromLinearProgram(original_lp);
+  GlopParameters params;
+  SingletonPreprocessor preprocessor(&params);
+  preprocessor.SetTimeLimit(time_limit.get());
+  const Preprocessor::Result result = preprocessor.Run(&lp);
+  EXPECT_TRUE(result.postsolve_is_needed);
+  EXPECT_EQ(result.solve_status, std::nullopt);
+  EXPECT_EQ(lp.num_variables(), ColIndex(0));
+  EXPECT_EQ(lp.num_constraints(), RowIndex(1));
+  ProblemSolution solution(lp.num_constraints(), lp.num_variables());
+  solution.constraint_statuses.assign(lp.num_constraints(),
+                                      ConstraintStatus::BASIC);
+  SolveStatus solve_status = OptimalSolveStatus();
+  preprocessor.RecoverSolution(solve_status, &solution);
+  return solution;
+}
+
+TEST(SingletonPreprocessorTest, ZeroCostSingletonColumnsInLongRowSmall) {
+  const LinearProgram lp = BuildLongRowWithZeroCostSingletonColumns(6);
+  const ProblemSolution solution = PresolveAndPostsolveLongRow(lp);
+  // The columns are restored in the order 0, 1, 2, 3, 4, 5. Each one is put at
+  // its lower bound if the activity of the already restored columns plus the
+  // lower bound contribution is within the constraint bounds at the time of
+  // its removal (these bounds were relaxed by the columns removed before), and
+  // at its upper bound otherwise.
+  EXPECT_THAT(solution.primal_values,
+              ContainerEq(DenseRow({-1.0, -1.0, 1.0, 1.0, 1.0, 1.0})));
+  EXPECT_EQ(solution.constraint_statuses[RowIndex(0)], ConstraintStatus::BASIC);
+}
+
+// The postsolve used to be quadratic in this case, because the activity of the
+// constraint was recomputed from scratch for each restored column. Note that if
+// we are quadratic, this test will just TIMEOUT.
+TEST(SingletonPreprocessorTest, ZeroCostSingletonColumnsInLongRowLarge) {
+  const int kNumCols = 300000;
+  const LinearProgram lp = BuildLongRowWithZeroCostSingletonColumns(kNumCols);
+  const ProblemSolution solution = PresolveAndPostsolveLongRow(lp);
+  ASSERT_EQ(solution.primal_values.size(), ColIndex(kNumCols));
+  EXPECT_EQ(solution.constraint_statuses[RowIndex(0)], ConstraintStatus::BASIC);
+  const SparseColumn& column =
+      lp.GetTransposeSparseMatrix().column(ColIndex(0));
+  EXPECT_EQ(column.num_entries(), EntryIndex(kNumCols));
+  for (ColIndex col(0); col < kNumCols; ++col) {
+    EXPECT_TRUE(solution.primal_values[col] == -1.0 ||
+                solution.primal_values[col] == 1.0);
+  }
+  const Fractional activity =
+      PreciseScalarProduct(solution.primal_values, column);
+  EXPECT_GE(activity, -1e-9);
+  EXPECT_LE(activity, 3.0 + 1e-9);
+}
+
+TEST(SingletonPreprocessorTest, EqualitySingletonColumnsInLongRowBasisFree) {
+  const int kNumCols = 1000;
+  LinearProgram original_lp;
+  const RowIndex row = original_lp.CreateNewConstraint();
+  original_lp.SetConstraintBounds(row, -kInfinity, 0.0);
+  for (int i = 0; i < kNumCols; ++i) {
+    const ColIndex col = original_lp.CreateNewVariable();
+    original_lp.SetVariableBounds(col, 0.0, 10.0);
+    original_lp.SetObjectiveCoefficient(col,
+                                        -static_cast<double>(kNumCols - i));
+    original_lp.SetCoefficient(row, col, 1.0);
+  }
+
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  LinearProgram lp;
+  lp.PopulateFromLinearProgram(original_lp);
+  GlopParameters params;
+  SingletonPreprocessor preprocessor(&params);
+  preprocessor.SetRequiresBasis(false);
+  preprocessor.SetTimeLimit(time_limit.get());
+  const Preprocessor::Result result = preprocessor.Run(&lp);
+  EXPECT_TRUE(result.postsolve_is_needed);
+  EXPECT_EQ(result.solve_status, std::nullopt);
+  EXPECT_EQ(lp.num_variables(), ColIndex(0));
+  EXPECT_EQ(lp.num_constraints(), RowIndex(1));
+
+  // With ConstraintStatus::FREE (basis-free solve), SingletonColumnInEquality
+  // undos keep the row status FREE across all kNumCols columns because x_i = 0
+  // satisfies the equality at every step.
+  ProblemSolution solution(lp.num_constraints(), lp.num_variables());
+  solution.constraint_statuses.assign(lp.num_constraints(),
+                                      ConstraintStatus::FREE);
+  SolveStatus solve_status = OptimalSolveStatus();
+  preprocessor.RecoverSolution(solve_status, &solution);
+
+  ASSERT_EQ(solution.primal_values.size(), ColIndex(kNumCols));
+  for (ColIndex col(0); col < kNumCols; ++col) {
+    EXPECT_EQ(solution.primal_values[col], 0.0);
+  }
+  EXPECT_DOUBLE_EQ(solution.dual_values[RowIndex(0)],
+                   -static_cast<double>(kNumCols));
+}
+
+// Verifies that postsolving a long row of zero-cost singleton columns does not
+// suffer from catastrophic cancellation when large opposite-sign contributions
+// (+2^60 and -2^60) are added after row_activities switches to TightSum.
+TEST(SingletonPreprocessorTest, CatastrophicCancellationInLongRowPostsolve) {
+  const int kNumCols = 120;
+  const Fractional kBig = std::ldexp(1.0, 60);
+  LinearProgram lp;
+  const RowIndex row = lp.CreateNewConstraint();
+  lp.SetConstraintBounds(row, 0.0, 0.5);
+
+  // Column 0 is fixed at 0.75. Columns 1..115 trigger > kMaxExactEvaluations
+  // queries so row_activities promotes the row to TightSum before column 116
+  // adds +2^60 and column 117 adds -2^60. Naive double incremental updates
+  // would round (0.75 + 2^60) - 2^60 to 0.0 and set column 119 to 0.0 instead
+  // of -0.5, violating the original row upper bound 0.5 by 0.25.
+  for (int i = 0; i < kNumCols; ++i) {
+    const ColIndex col = lp.CreateNewVariable();
+    if (i == 0) {
+      lp.SetVariableBounds(col, 0.75, 0.75);
+      lp.SetCoefficient(row, col, 1.0);
+    } else if (i <= 115) {
+      lp.SetVariableBounds(col, 0.0, 1.0);
+      lp.SetCoefficient(row, col, 1.0);
+    } else if (i == 116) {
+      lp.SetVariableBounds(col, kBig, kBig);
+      lp.SetCoefficient(row, col, 1.0);
+    } else if (i == 117) {
+      lp.SetVariableBounds(col, 0.0, kBig);
+      lp.SetCoefficient(row, col, -1.0);
+    } else if (i == 118) {
+      lp.SetVariableBounds(col, -255.0, 0.0);
+      lp.SetCoefficient(row, col, 1.0);
+    } else {
+      lp.SetVariableBounds(col, -0.5, 0.0);
+      lp.SetCoefficient(row, col, 1.0);
+    }
+  }
+
+  const ProblemSolution solution = PresolveAndPostsolveLongRow(lp);
+  ASSERT_EQ(solution.primal_values.size(), ColIndex(kNumCols));
+  EXPECT_EQ(solution.constraint_statuses[RowIndex(0)], ConstraintStatus::BASIC);
+  EXPECT_EQ(solution.primal_values[ColIndex(0)], 0.75);
+  EXPECT_EQ(solution.primal_values[ColIndex(116)], kBig);
+  EXPECT_EQ(solution.primal_values[ColIndex(117)], kBig);
+  EXPECT_EQ(solution.primal_values[ColIndex(118)], 0.0);
+  EXPECT_EQ(solution.primal_values[ColIndex(119)], -0.5);
+
+  TightSum exact_activity;
+  for (const SparseColumn::Entry e :
+       lp.GetTransposeSparseMatrix().column(ColIndex(0))) {
+    exact_activity.AddProd(e.coefficient(),
+                           solution.primal_values[RowToColIndex(e.row())]);
+  }
+  EXPECT_EQ(exact_activity.TightLowerBound(), 0.25);
+  EXPECT_EQ(exact_activity.TightUpperBound(), 0.25);
+}
+
+// --------------------------------------------------------
+// IncrementalScalarProducts
+// --------------------------------------------------------
+
+TEST(IncrementalScalarProductsTest, FirstEvaluationsAndIncrementalUpdates) {
+  const int kSize = 1000;
+  SparseColumn vector_a;
+  SparseColumn vector_b;
+  for (int i = 0; i < kSize; ++i) {
+    vector_a.SetCoefficient(RowIndex(i), 1.0 / (i + 1));
+    if (i % 2 == 0) {
+      vector_b.SetCoefficient(RowIndex(i), -0.5 * (i + 1));
+    }
+  }
+  DenseRow values(ColIndex(kSize), 0.0);
+  std::mt19937 random(12345);
+  IncrementalScalarProducts<ColIndex> products(kSize);
+  products.Add(LocalIndex{3}, vector_b);
+  products.Add(LocalIndex{0}, vector_a);
+
+  const IncrementalScalarProducts<ColIndex>& const_products = products;
+  for (int step = 0; step < kSize; ++step) {
+    const Fractional expected_a = ScalarProduct(values, vector_a);
+    const Fractional actual_a = const_products.Get(LocalIndex{0});
+    if (step < IncrementalScalarProducts<ColIndex>::kMaxExactEvaluations) {
+      EXPECT_EQ(actual_a, expected_a);
+      // During the first kMaxExactEvaluations calls, vector_a is not indexed
+      // yet, and vector_b is never queried, so no extra entries are scanned.
+      const int64_t expected_scanned =
+          static_cast<int64_t>(step + 1) * static_cast<int64_t>(kSize);
+      EXPECT_EQ(const_products.num_scanned_entries(), expected_scanned);
+    } else {
+      EXPECT_NEAR(actual_a, expected_a, 1e-12);
+    }
+
+    // Like in the postsolve, each value changes from zero exactly once.
+    const ColIndex col(step);
+    const Fractional new_value = absl::Uniform<double>(random, -1.0, 1.0);
+    products.SetValue(col, new_value);
+    values[col] = new_value;
+  }
+  EXPECT_NEAR(const_products.Get(LocalIndex{3}),
+              ScalarProduct(values, vector_b), 1e-9);
+}
+
+TEST(IncrementalScalarProductsTest, ExactCancellationWithoutDrift) {
+  const int kSize = 50;
+  SparseColumn vector;
+  for (int i = 0; i < kSize; ++i) {
+    vector.SetCoefficient(RowIndex(i), 1.0);
+  }
+  DenseRow initial_values(ColIndex(kSize), 0.0);
+  const Fractional initial_value = 0.75 + std::ldexp(1.0, -20);
+  initial_values[ColIndex(0)] = initial_value;
+
+  IncrementalScalarProducts<ColIndex> products(initial_values);
+  products.Add(LocalIndex{0}, vector);
+  const IncrementalScalarProducts<ColIndex>& const_products = products;
+  for (int q = 0;
+       q <= IncrementalScalarProducts<ColIndex>::kMaxExactEvaluations; ++q) {
+    EXPECT_EQ(const_products.Get(LocalIndex{0}), initial_value);
+  }
+
+  // Adding a 2^60 term and later subtracting it from the same entry restores
+  // the exact original value bit-for-bit.
+  const Fractional kBig = std::ldexp(1.0, 60);
+  products.SetValue(ColIndex{1}, kBig);
+  EXPECT_EQ(const_products.Get(LocalIndex{0}), kBig);
+  products.SetValue(ColIndex{1}, 0.0);
+  EXPECT_EQ(const_products.Get(LocalIndex{0}), initial_value);
+
+  // Adding cancelling huge terms across distinct entries also preserves the
+  // low-order bits without drift.
+  for (int pair = 0; pair < 20; ++pair) {
+    const ColIndex pos_idx = ColIndex{2 + 2 * pair};
+    const ColIndex neg_idx = ColIndex{3 + 2 * pair};
+    const Fractional magnitude = std::ldexp(1.0, 60 + pair);
+    products.SetValue(pos_idx, magnitude);
+    products.SetValue(neg_idx, -magnitude);
+    EXPECT_EQ(const_products.Get(LocalIndex{0}), initial_value);
+  }
+}
+
+TEST(IncrementalScalarProductsTest, LinearWork) {
+  const int kSize = 200000;
+  SparseColumn vector;
+  for (int i = 0; i < kSize; ++i) {
+    vector.SetCoefficient(RowIndex(i), 1.0);
+  }
+  IncrementalScalarProducts<RowIndex> products(kSize);
+  products.Add(LocalIndex{0}, vector);
+  for (int step = 0; step < kSize; ++step) {
+    EXPECT_EQ(products.Get(LocalIndex{0}), step);
+    products.SetValue(RowIndex{step}, 1.0);
+  }
+  EXPECT_LE(products.num_scanned_entries(),
+            (IncrementalScalarProducts<RowIndex>::kMaxExactEvaluations + 2) *
+                static_cast<int64_t>(kSize));
 }
 
 // --------------------------------------------------------

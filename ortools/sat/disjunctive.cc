@@ -505,27 +505,27 @@ bool DisjunctiveOverloadChecker::Propagate() {
 
   absl::Span<TaskTime> window_span =
       absl::MakeSpan(helper_->GetScratchTaskTimeVector1());
-
-  // We use this to detect precedences between tasks that must cause a push.
-  TaskTime task_with_max_end_min = {0, kMinIntegerValue};
-
-  // We will process the task by increasing shifted_end_max, thus consuming task
-  // from the end of that vector.
+  int window_size = 0;
+  TaskTime* const window = window_span.data();
   absl::Span<const CachedTaskBounds>
       task_by_increasing_negated_shifted_end_max =
           helper_->TaskByIncreasingNegatedShiftedEndMax();
 
+  // We use this to detect precedences between tasks that must cause a push.
+  TaskTime task_with_max_end_min = {0, kMinIntegerValue};
+
   // Split problem into independent parts.
   //
-  // Many propagators in this file use the same approach, we start by processing
-  // the tasks by increasing shifted start-min, packing everything to the left.
-  // We then process each "independent" set of tasks separately. A task is
-  // independent from the one before it, if its start-min wasn't pushed.
+  // Many propagators in this file use the same approach, we start by
+  // processing the tasks by increasing shifted start-min, packing everything
+  // to the left. We then process each "independent" set of tasks separately.
+  // A task is independent from the one before it, if its start-min wasn't
+  // pushed.
   //
-  // This way, we get one or more windows [window_start, window_end] so that for
-  // all tasks in the window, [start_min, end_min] is inside the window, and the
-  // end min of any set of tasks to the left is <= window_start, and the
-  // start_min of any task to the right is >= window_end.
+  // This way, we get one or more windows [window_start, window_end] so that
+  // for all tasks in the window, [start_min, end_min] is inside the window,
+  // and the end min of any set of tasks to the left is <= window_start, and
+  // the start_min of any task to the right is >= window_end.
 
   // We keep the best end_min for present tasks only and present tasks plus at
   // most a single optional task.
@@ -533,9 +533,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
   IntegerValue end_min_with_one_optional = kMinIntegerValue;
 
   IntegerValue relevant_end;
-  int window_size = 0;
   int relevant_size = 0;
-  TaskTime* const window = window_span.data();
   for (const auto [task, presence_lit, start_min] :
        helper_->TaskByIncreasingShiftedStartMin()) {
     if (helper_->IsAbsent(presence_lit)) continue;
@@ -610,7 +608,8 @@ bool DisjunctiveOverloadChecker::Propagate() {
 
     // Process current window.
     // We don't need to process the end of the window (after relevant_size)
-    // because these intervals can be greedily assembled in a feasible solution.
+    // because these intervals can be greedily assembled in a feasible
+    // solution.
     if (relevant_size > 0 &&
         !PropagateSubwindow(window_span.subspan(0, relevant_size), relevant_end,
                             &task_by_increasing_negated_shifted_end_max)) {
@@ -988,6 +987,11 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
                                             int t, TaskSet& task_set) {
   const int critical_index = task_set.GetCriticalIndex();
   const absl::Span<const TaskSet::Entry> sorted_tasks = task_set.SortedTasks();
+  DeterministicTimer<{.scale = 6.9e-07}> timer(
+      time_limit_,
+      (sorted_tasks.size() - critical_index) *
+          (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t) ? 2
+                                                                         : 1));
   helper_->ResetReason();
 
   // We need:
@@ -1256,7 +1260,7 @@ bool DisjunctivePrecedences::Propagate() {
 
 bool DisjunctivePrecedences::PropagateSubwindow(absl::Span<TaskTime> window) {
   // This function can be slow, so count it in the dtime.
-  DeterministicTimer<{.scale = 5e-8}> timer(time_limit_);
+  DeterministicTimer<{.scale = 1.9e-07}> timer(time_limit_);
   int64_t num_hash_lookup = 0;
   auto cleanup = ::absl::MakeCleanup(
       [&timer, &num_hash_lookup]() { timer.Advance(num_hash_lookup); });
@@ -1478,8 +1482,8 @@ bool DisjunctiveNotLast::Propagate() {
       const IntegerValue start_max = -negated_start_max;
 
       // Note that we add tasks whose presence is still unknown here.
-      if (start_max < window_start) continue;
       if (start_max >= window_end) break;
+      if (start_max < window_start) continue;
       if (helper_->IsAbsent(t)) continue;
       start_max_window.push_back({t, helper_->EndMax(t)});
     }
@@ -1774,19 +1778,22 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(
   // TODO(user): it should be faster to initialize it all at once rather
   // than calling AddOrUpdate() n times.
   const int window_size = window.size();
-  event_size_.clear();
-  theta_tree_.Reset(window_size);
-  for (int event = 0; event < window_size; ++event) {
-    const TaskTime task_time = window[event];
-    const int task = task_time.task_index;
-    const IntegerValue energy_min = helper_->SizeMin(task);
-    event_size_.push_back(energy_min);
-    if (is_gray_[task]) {
-      theta_tree_.AddOrUpdateOptionalEvent(event, task_time.time, energy_min);
-    } else {
-      non_gray_task_to_event_[task] = event;
-      theta_tree_.AddOrUpdateEvent(event, task_time.time, energy_min,
-                                   energy_min);
+  {
+    DeterministicTimer<{.scale = 7.3e-08}> timer(time_limit_, window_size);
+    event_size_.clear();
+    theta_tree_.Reset(window_size);
+    for (int event = 0; event < window_size; ++event) {
+      const TaskTime task_time = window[event];
+      const int task = task_time.task_index;
+      const IntegerValue energy_min = helper_->SizeMin(task);
+      event_size_.push_back(energy_min);
+      if (is_gray_[task]) {
+        theta_tree_.AddOrUpdateOptionalEvent(event, task_time.time, energy_min);
+      } else {
+        non_gray_task_to_event_[task] = event;
+        theta_tree_.AddOrUpdateEvent(event, task_time.time, energy_min,
+                                     energy_min);
+      }
     }
   }
 

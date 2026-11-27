@@ -1887,8 +1887,6 @@ INSTANTIATE_TEST_SUITE_P(WithParameters, DimensionVehicleSpanUpperBoundTest,
 // schedule; the MILP solver finds the optimal.
 TEST(RoutingFinalizerTest, DimensionLowerUpperBoundWithDisjointWindows) {
   const int64_t kOffset = 10;
-  const std::vector<int64_t> starts = {21 + kOffset};
-  const std::vector<int64_t> ends = {29 + kOffset};
   for (RoutingSearchParameters::SchedulingSolver solver_type :
        {RoutingSearchParameters::SCHEDULING_GLOP,
         RoutingSearchParameters::SCHEDULING_CP_SAT}) {
@@ -1909,13 +1907,12 @@ TEST(RoutingFinalizerTest, DimensionLowerUpperBoundWithDisjointWindows) {
     // Skewed towards the upper bound to make the LP schedule sub-optimal.
     dimension->SetCumulVarSoftLowerBound(1, 28 + kOffset, 1);
     dimension->SetCumulVarSoftUpperBound(1, 28 + kOffset, 100);
-    dimension->CumulVar(1)->SetRange(15 + kOffset, 35 + kOffset);
+    dimension->SetCumulVarDomain(
+        1, Domain::FromIntervals(
+               {{15 + kOffset, 20 + kOffset}, {30 + kOffset, 35 + kOffset}}));
     // Making the node optional to allow using ALL_UNPERFORMED which then can be
     // improved by local search.
     model.AddDisjunction({1}, 1000);
-    Solver* const solver = model.solver();
-    solver->AddConstraint(
-        solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
     const Assignment* const solution = model.SolveWithParameters(parameters);
     ASSERT_TRUE(solution != nullptr);
     if (solver_type == RoutingSearchParameters::SCHEDULING_GLOP) {
@@ -2321,11 +2318,8 @@ TEST(GlobalSpanCostCumulOptimizerPackingTest, DisjointTimeWindows) {
                        /*fix_start_cumul_to_zero*/ false, "dim");
     Dimension* const dimension = model.GetMutableDimension("dim");
     dimension->SetGlobalSpanCostCoefficient(263224087809000.0 / 3600.0);
-    Solver* const solver = model.solver();
-    const std::vector<int64_t> starts = {1};
-    const std::vector<int64_t> ends = {999};
-    solver->AddConstraint(
-        solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
+    dimension->SetCumulVarDomain(
+        1, Domain::FromIntervals({{0, 0}, {1000, 31536000}}));
     dimension->CumulVar(model.End(0))->SetMin(1000);
     model.SetVehicleUsedWhenEmpty(true, 0);
 
@@ -2466,13 +2460,10 @@ TEST_P(PackCumulsOfOptimizerDimensionsFromAssignmentTest,
       model.solver()->MakeFixedDurationIntervalVar(290, 295, 5, false, "break");
   time_dimension->SetBreakIntervalsOfVehicle({break_interval1, break_interval2},
                                              0, -1, -1);
-  model.CloseModelWithParameters(parameters);
-
   // Make the vehicle start either at 0 or after 200.
-  time_dimension->CumulVar(model.Start(0))->SetRange(0, 500);
-  model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
-      time_dimension->CumulVar(model.Start(0)), std::vector<int64_t>{1},
-      std::vector<int64_t>{199}));
+  time_dimension->SetCumulVarDomain(
+      model.Start(0), Domain::FromIntervals({{0, 0}, {200, 500}}));
+  model.CloseModelWithParameters(parameters);
 
   // Original solution: Start(t:200)->End(t:305), break happens from 290 to 295.
   Assignment* original_solution = BuildAssignmentFromSolution(model, {1});
@@ -3374,12 +3365,10 @@ TEST(SoftBoundsAndDisjointWindowsTest, RelaxedPackingReportingProperCost) {
                        /*fix_start_cumul_to_zero=*/false, "time");
     Dimension* const dimension = model.GetMutableDimension("time");
     dimension->CumulVar(1)->SetMin(24649461);
-    model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
-        dimension->CumulVar(2), std::vector<int64_t>{21497334},
-        std::vector<int64_t>{27068441}));
-    model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
-        dimension->CumulVar(3), std::vector<int64_t>{22080463},
-        std::vector<int64_t>{23657379}));
+    dimension->SetCumulVarDomain(
+        2, Domain::FromIntervals({{0, 21497333}, {27068442, 31500000}}));
+    dimension->SetCumulVarDomain(
+        3, Domain::FromIntervals({{0, 22080462}, {23657380, 31500000}}));
     dimension->SetCumulVarSoftUpperBound(5, 8419894, 5584);
     dimension->SetSpanCostCoefficientForAllVehicles(559);
     model.AddDisjunction({5}, 200000, /*max_cardinality=*/1);
@@ -3419,9 +3408,8 @@ TEST(SoftBoundsAndDisjointWindowsTest, PackWithLargeHorizon) {
     model.AddDimension(callback, 31500000, 31500000,
                        /*fix_start_cumul_to_zero=*/false, "time");
     Dimension* const dimension = model.GetMutableDimension("time");
-    model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
-        dimension->CumulVar(1), std::vector<int64_t>{8617379},
-        std::vector<int64_t>{28655562}));
+    dimension->SetCumulVarDomain(
+        1, Domain::FromIntervals({{0, 8617378}, {28655563, 31500000}}));
     dimension->SetCumulVarSoftLowerBound(2, 13394136, 192);
     model.AddPickupAndDelivery(1, 2);
     dimension->SetSpanCostCoefficientForAllVehicles(512);
@@ -3571,13 +3559,9 @@ TEST(OptimizeCumulsOfDimensionWithTargetsTest, WithTimeWindowShift) {
   Dimension* const dim = model->GetMutableDimension(kDimName);
 
   // Vehicle start time windows: [0, 10], [20]
-  dim->CumulVar(0)->SetRange(0, 20);
-  model->solver()->AddConstraint(model->solver()->MakeNotMemberCt(
-      dim->CumulVar(0), std::vector<int64_t>{11}, std::vector<int64_t>{19}));
+  dim->SetCumulVarDomain(0, Domain::FromIntervals({{0, 10}, {20, 20}}));
   // First node time windows: [0, 1], [30, 40]
-  dim->CumulVar(1)->SetRange(0, 40);
-  model->solver()->AddConstraint(model->solver()->MakeNotMemberCt(
-      dim->CumulVar(1), std::vector<int64_t>{2}, std::vector<int64_t>{29}));
+  dim->SetCumulVarDomain(1, Domain::FromIntervals({{0, 1}, {30, 40}}));
 
   const Assignment* const assignment = model->Solve();
   ASSERT_NE(assignment, nullptr);
@@ -4087,10 +4071,7 @@ TEST(VehicleResourceAssignmentTest, ResourcesAndMultipleTimeWindows) {
     Dimension* const dimension = model.GetMutableDimension(kDimName);
 
     // The node cannot be served between 10 and 15.
-    dimension->CumulVar(1)->SetRange(5, 20);
-    model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
-        dimension->CumulVar(1), std::vector<int64_t>{10},
-        std::vector<int64_t>{15}));
+    dimension->SetCumulVarDomain(1, Domain::FromIntervals({{5, 9}, {16, 20}}));
 
     // Add 2 resources:
     // - One which should start before 5 and end after 50. This resource
@@ -7824,7 +7805,6 @@ TEST_P(DimensionTest, Accessors) {
     for (bool has_forbidden_intervals : {true, false}) {
       IndexManager manager(5, 2, NodeIndex(0));
       Model model(manager);
-      Solver* const solver = model.solver();
       std::vector<Dimension*> dimensions;
       for (int i = 0; i < std::size(kDimensions); ++i) {
         if (GetParam()) {
@@ -7850,12 +7830,11 @@ TEST_P(DimensionTest, Accessors) {
         if (kHasGlobalSpanCost[i]) {
           dimension->SetGlobalSpanCostCoefficient(1);
         }
-        dimension->CumulVar(1)->SetRange(0, 10);
         if (has_forbidden_intervals) {
-          const std::vector<int64_t> starts = {5};
-          const std::vector<int64_t> ends = {7};
-          solver->AddConstraint(
-              solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
+          dimension->SetCumulVarDomain(
+              1, Domain::FromIntervals({{0, 4}, {8, 10}}));
+        } else {
+          dimension->CumulVar(1)->SetRange(0, 10);
         }
       }
       EXPECT_THAT(
@@ -8412,6 +8391,40 @@ TEST_P(ModelInspection, CumulNotMemberCt) {
   solver->AddConstraint(
       solver->MakeNotMemberCt(dimension->CumulVar(1), starts2, ends2));
   model.CloseModel();
+  EXPECT_EQ(3, dimension->forbidden_intervals().size());
+  EXPECT_EQ(std::size(kExpectedIntervals),
+            dimension->forbidden_intervals()[1].NumIntervals());
+  int index = 0;
+  for (const auto& interval : dimension->forbidden_intervals()[1]) {
+    EXPECT_EQ(kExpectedIntervals[index][0], interval.start);
+    EXPECT_EQ(kExpectedIntervals[index][1], interval.end);
+    ++index;
+  }
+}
+
+// Testing SetCumulVarDomain creating disjoint windows in a cumul variable.
+// Checks that forbidden intervals are computed on the current cumul range and
+// that a subsequent SetCumulVarDomain overwrites previous forbidden intervals.
+TEST_P(ModelInspection, SetCumulVarDomain) {
+  const char* kDimension = "dimension";
+  const int64_t kExpectedIntervals[][2] = {{10, 20}, {30, 40}};
+  IndexManager manager(2, 1, NodeIndex(0));
+  Model model(manager);
+  const int callback =
+      GetParam()
+          ? model.RegisterUnaryTransitCallback([](int64_t) { return 1LL; })
+          : model.RegisterTransitCallback([](int64_t, int64_t) { return 1LL; });
+  model.AddDimension(callback, kint64max, kint64max,
+                     /*fix_start_cumul_to_zero=*/true, kDimension);
+  Dimension* const dimension = model.GetMutableDimension(kDimension);
+  // First set a domain with a different forbidden interval, then overwrite it.
+  dimension->SetCumulVarDomain(1, Domain::FromIntervals({{0, 14}, {26, 60}}));
+  dimension->SetCumulVarDomain(
+      1, Domain::FromIntervals({{0, 9}, {21, 29}, {41, 50}}));
+  dimension->CumulVar(model.Start(0))->SetMin(0);
+  model.CloseModel();
+  EXPECT_EQ(dimension->GetCumulVarMin(1), 0);
+  EXPECT_EQ(dimension->GetCumulVarMax(1), 50);
   EXPECT_EQ(3, dimension->forbidden_intervals().size());
   EXPECT_EQ(std::size(kExpectedIntervals),
             dimension->forbidden_intervals()[1].NumIntervals());
@@ -13479,12 +13492,7 @@ TEST(DimensionAllowedIntervals, OneForbidden) {
   model.AddDimension(callback, kint64max, kint64max,
                      /*fix_start_cumul_to_zero=*/false, "dim");
   Dimension* const dimension = model.GetMutableDimension("dim");
-  dimension->CumulVar(1)->SetRange(5, 15);
-  const std::vector<int64_t> starts = {10};
-  const std::vector<int64_t> ends = {12};
-  Solver* const solver = model.solver();
-  solver->AddConstraint(
-      solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
+  dimension->SetCumulVarDomain(1, Domain::FromIntervals({{5, 9}, {13, 15}}));
   model.CloseModel();
   SortedDisjointIntervalList allowed =
       dimension->GetAllowedIntervalsInRange(1, 0, 20);
@@ -13529,12 +13537,8 @@ TEST(DimensionAllowedIntervals, TwoForbidden) {
   model.AddDimension(callback, kint64max, kint64max,
                      /*fix_start_cumul_to_zero=*/false, "dim");
   Dimension* const dimension = model.GetMutableDimension("dim");
-  dimension->CumulVar(1)->SetRange(5, 25);
-  const std::vector<int64_t> starts = {10, 20};
-  const std::vector<int64_t> ends = {12, 22};
-  Solver* const solver = model.solver();
-  solver->AddConstraint(
-      solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
+  dimension->SetCumulVarDomain(
+      1, Domain::FromIntervals({{5, 9}, {13, 19}, {23, 25}}));
   model.CloseModel();
   SortedDisjointIntervalList allowed =
       dimension->GetAllowedIntervalsInRange(1, 6, 24);

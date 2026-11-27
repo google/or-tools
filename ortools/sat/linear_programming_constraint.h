@@ -115,6 +115,9 @@ class ScatteredIntegerVector {
   }
 
   bool IsSparse() const { return is_sparse_; }
+  int num_non_zeros() const {
+    return is_sparse_ ? non_zeros_.size() : dense_vector_.size();
+  }
 
  private:
   void PopulateLinearConstraintTerms(

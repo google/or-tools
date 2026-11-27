@@ -90,11 +90,8 @@ namespace operations_research::routing {
 class NearpParser {
  public:
   NearpParser();
-
-#ifndef SWIG
   NearpParser(const NearpParser&) = delete;
-  const NearpParser& operator=(const NearpParser&) = delete;
-#endif
+  NearpParser& operator=(const NearpParser&) = delete;
 
   // Loads instance from a file into this parser object.
   bool LoadFile(absl::string_view file_name);

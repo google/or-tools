@@ -16,11 +16,13 @@
 
 #include <atomic>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 
@@ -67,10 +69,19 @@ MPSolutionResponse SatSolveProto(
 // Returns a string that describes the version of the CP-SAT solver.
 std::string SatSolverVersion();
 
-// Internal version of SatSolveProto that can configure a sat::Model object
-// before the solve and return the CpSolverResponse proto to extract statistics.
+// Validates the model of `request` (including the extra checks needed by
+// CP-SAT) and wraps it. Returns std::nullopt and fills `response` if the model
+// is invalid, or if its status could be decided without solving it (e.g. an
+// empty model). Note that the model is moved out of `request` when possible.
+std::optional<sat::MPModelProtoWrapper> WrapMPModelOrPopulateResponse(
+    LazyMutableCopy<MPModelRequest> request, SolverLogger* logger,
+    MPSolutionResponse* response);
+
+// Internal version of SatSolveProto that takes an already wrapped model (see
+// WrapMPModelOrPopulateResponse()), can configure a sat::Model object before
+// the solve, and returns the CpSolverResponse proto to extract statistics.
 MPSolutionResponse SatSolveProtoInternal(
-    LazyMutableCopy<MPModelRequest> request, sat::Model* sat_model,
+    sat::MPModelProtoWrapper model, sat::Model* sat_model,
     sat::CpSolverResponse* cp_response,
     std::function<void(const MPSolution&)> solution_callback = nullptr);
 

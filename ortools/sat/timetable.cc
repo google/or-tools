@@ -30,7 +30,9 @@
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -442,7 +444,8 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
       capacity_(capacity),
       helper_(helper),
       demands_(demands),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()) {
   // Each task may create at most two profile rectangles. Such patterns appear
   // if the profile is shaped like the Hanoi tower. The additional space is for
   // both extremities and the sentinels.
@@ -540,9 +543,9 @@ bool TimeTablingPerTask::BuildProfile() {
   IntegerValue height_at_start = IntegerValue(0);
   IntegerValue current_height = IntegerValue(0);
 
-  // Any profile height <= relevant_height is not really relevant since nothing
-  // can be pushed. So we artificially put zero or one (if there is a makespan
-  // interval) in the profile instead. This allows having a lot fewer
+  // Any profile height <= relevant_height is not really relevant since
+  // nothing can be pushed. So we artificially put zero or one (if there is a
+  // makespan interval) in the profile instead. This allows having a lot fewer
   // "rectangles" in a profile for exactly the same propagation!
   const IntegerValue relevant_height =
       integer_trail_->UpperBound(capacity_) - initial_max_demand_;
@@ -552,8 +555,8 @@ bool TimeTablingPerTask::BuildProfile() {
   const auto& by_negated_start_max = helper_->TaskByIncreasingNegatedStartMax();
   const auto& by_end_min = helper_->TaskByIncreasingEndMin();
 
-  // Next start/end of the compulsory parts to be processed. Note that only the
-  // tasks for which IsInProfile() is true must be considered.
+  // Next start/end of the compulsory parts to be processed. Note that only
+  // the tasks for which IsInProfile() is true must be considered.
   int next_start = num_tasks_ - 1;
   int next_end = 0;
   const int num_tasks = num_tasks_;
@@ -619,10 +622,12 @@ void TimeTablingPerTask::ReverseProfile() {
 }
 
 bool TimeTablingPerTask::SweepAllTasks() {
+  DeterministicTimer<{.scale = 3.5e-08, .offset = 4.9e-07}> timer(time_limit_);
   // We can start at one since the first sentinel can always be skipped.
   int profile_index = 1;
   const IntegerValue capa_max = CapacityMax();
   for (const auto& [t, time] : helper_->TaskByIncreasingStartMin()) {
+    timer.Advance(1);
     // TODO(user): On some problems, a big chunk of the time is spent just
     // checking these conditions below because it requires indirect memory
     // access to fetch the demand/size/presence/start ...
@@ -786,6 +791,8 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
                                           IntegerValue right,
                                           IntegerValue capacity_threshold) {
+  DeterministicTimer<{.scale = 5.8e-09, .offset = 4.7e-07}> timer(
+      time_limit_, num_profile_tasks_);
   IntegerValue sum_of_demand(0);
 
   // We optimize a bit the reason depending on the case.

@@ -1557,7 +1557,7 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
     // degrade the current average to forget old learnings.
     const double gain_per_time_unit =
         std::max(0.0, static_cast<double>(best_objective_improvement.value())) /
-        (1.0 + data.deterministic_time);
+        (5.0 + data.deterministic_time);
     if (num_calls_ <= 100) {
       current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
     } else {
@@ -1583,7 +1583,7 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
 
     // We do not want the limit to go too high. Intuitively, the goal is to try
     // out a lot of neighborhoods, not just spend a lot of time on a few.
-    deterministic_limit_ = std::min(60.0, deterministic_limit_);
+    deterministic_limit_ = std::min(300.0, deterministic_limit_);
   }
 
   solve_data_.clear();
@@ -2261,7 +2261,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
 
   // TODO(user): This is a lot longer than a normal LNS, so it might cause
   // issues with the current round-robin selection based on number of calls.
-  params->set_max_deterministic_time(10);
+  params->set_max_deterministic_time(30);
   model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(*params);
   if (global_time_limit_ != nullptr) {
     global_time_limit_->UpdateLocalLimit(model.GetOrCreate<TimeLimit>());
@@ -2314,6 +2314,8 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     if (response.status() == CpSolverStatus::INFEASIBLE) {
       data.status = CpSolverStatus::INFEASIBLE;
       AddSolveData(data);
+      // Already accounted for in AddSolveData().
+      data.deterministic_time = 0.0;
       return helper_.NoNeighborhood();
     }
 
@@ -2326,6 +2328,8 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
       // other neighborhoods for that. Let's abort early.
       data.status = CpSolverStatus::OPTIMAL;  // We cannot improve.
       AddSolveData(data);
+      // Already accounted for in AddSolveData().
+      data.deterministic_time = 0.0;
       return helper_.NoNeighborhood();
     }
   }

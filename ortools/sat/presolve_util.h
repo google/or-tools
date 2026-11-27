@@ -15,6 +15,7 @@
 #define ORTOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -218,22 +219,25 @@ class ActivityBoundHelper {
   // Computes relevant info to presolve a constraint with enforcement using
   // at most one information.
   //
-  // This returns false iff the enforcement list cannot be satisfied.
-  // It filters the enforcement list if some are consequences of others.
-  // It fills the given set with the literals that must be true due to the
-  // enforcement. Note that only literals or negated literals appearing in ref
-  // are filled.
-  bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
+  // This returns false iff `enforcement` cannot be satisfied. Otherwise it
+  // removes literals in `enforcement` that are consequences of previous ones,
+  // and fills `literals_at_true` with the literals that must be true due to
+  // `enforcement` (only literals or negated literals appearing in `refs` or in
+  // `enforcement` are filled).
+  bool PresolveEnforcement(absl::Span<const int> refs,
+                           std::vector<int>* enforcement,
                            absl::flat_hash_set<int>* literals_at_true);
 
-  // For each enforcement literal enf, if not(enf) implies that the constraint
-  // is trivial, then we can just remove enf from the list.
+  // For each literal `enf` in `enforcement`, if not(enf) implies that the
+  // constraint is trivial, then we can just remove `enf` from `enforcement`.
+  // Returns the number of removed literals.
   //
   // Actually, we could even "lift" such enforcement so that if it is negative
   // the constraint is still trivial but tighter.
   int RemoveEnforcementThatMakesConstraintTrivial(
       absl::Span<const std::pair<int, int64_t>> boolean_terms,
-      const Domain& other_terms, const Domain& rhs, ConstraintProto* ct);
+      const Domain& other_terms, const Domain& rhs,
+      std::vector<int>* enforcement);
 
   // Partition the list of literals into disjoint at most ones. The returned
   // spans are only valid until another function from this class is used.
@@ -379,6 +383,20 @@ bool ComputeCliqueShiftsAndSizes(int num_terms,
                                  absl::Span<const int64_t> offset_matrix,
                                  std::vector<int64_t>* shifts,
                                  std::vector<int64_t>* sizes);
+
+// Hash and equality functors for deduplicating kInterval constraints by index
+// during presolve (comparing enforcement literals and start/size/end linear
+// expressions). Note that mutating an interval constraint invalidates any hash
+// map storing its index.
+struct IntervalConstraintEq {
+  const CpModelProto* working_model;
+  bool operator()(int a, int b) const;
+};
+
+struct IntervalConstraintHash {
+  const CpModelProto* working_model;
+  std::size_t operator()(int ct_idx) const;
+};
 
 }  // namespace sat
 }  // namespace operations_research

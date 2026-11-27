@@ -42,8 +42,10 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -271,9 +273,11 @@ void ImpliedBounds::AddLiteralImpliesVarEqValue(Literal literal,
 bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
   if (!parameters_.use_implied_bounds()) return true;
 
+  DeterministicTimer<{.scale = 1.1e-07, .offset = 3.4e-07}> timer(time_limit_);
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 1);
   tmp_integer_literals_.clear();
   integer_trail_->AppendNewBounds(&tmp_integer_literals_);
+  timer.Advance(tmp_integer_literals_.size());
   for (const IntegerLiteral lit : tmp_integer_literals_) {
     if (!Add(first_decision, lit)) return false;
   }
@@ -488,7 +492,6 @@ std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
     terms.push_back({literal, left.ValueAt(left_encoding[i].value),
                      right.ValueAt(right_encoding[i].value)});
   }
-
   return terms;
 }
 
@@ -559,6 +562,7 @@ ProductDetector::ProductDetector(Model* model)
       rlt_enabled_(model->GetOrCreate<SatParameters>()->add_rlt_cuts() &&
                    model->GetOrCreate<SatParameters>()->linearization_level() >
                        1),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -905,42 +909,53 @@ void ProductDetector::InitializeBooleanRLTCuts(
   const int size = ternary_clauses_with_view_.size();
   if (size == 0) return;
 
-  // We space clear is_in_lp_vars_.
-  // TODO(user): Just switch to memclear() when dense, or use SparseBitset.
-  for (const IntegerVariable var : vars_in_lp_) {
-    is_in_lp_vars_.ClearBucket(var);
+  {
+    DeterministicTimer<{.scale = 4.2e-09, .offset = 1.6e-08}> timer(
+        time_limit_, lp_vars.size());
+    // We space clear is_in_lp_vars_.
+    // TODO(user): Just switch to memclear() when dense, or use SparseBitset.
+    for (const IntegerVariable var : vars_in_lp_) {
+      is_in_lp_vars_.ClearBucket(var);
+    }
+    vars_in_lp_.assign(lp_vars.begin(), lp_vars.end());
+    is_in_lp_vars_.resize(integer_trail_->NumIntegerVariables().value());
+    for (const IntegerVariable var : lp_vars) is_in_lp_vars_.Set(var);
   }
-  vars_in_lp_.assign(lp_vars.begin(), lp_vars.end());
-  is_in_lp_vars_.resize(integer_trail_->NumIntegerVariables().value());
-  for (const IntegerVariable var : lp_vars) is_in_lp_vars_.Set(var);
 
   // Process ternary clauses.
-  for (int i = 0; i < size; i += 3) {
-    const IntegerVariable var1 = ternary_clauses_with_view_[i];
-    const IntegerVariable var2 = ternary_clauses_with_view_[i + 1];
-    const IntegerVariable var3 = ternary_clauses_with_view_[i + 2];
+  {
+    DeterministicTimer<{.scale = 5.0e-08, .offset = 5.7e-08}> timer(
+        time_limit_);
+    uint64_t work_done = 0;
+    for (int i = 0; i < size; i += 3) {
+      const IntegerVariable var1 = ternary_clauses_with_view_[i];
+      const IntegerVariable var2 = ternary_clauses_with_view_[i + 1];
+      const IntegerVariable var3 = ternary_clauses_with_view_[i + 2];
 
-    if (!is_in_lp_vars_[PositiveVariable(var1)]) continue;
-    if (!is_in_lp_vars_[PositiveVariable(var2)]) continue;
-    if (!is_in_lp_vars_[PositiveVariable(var3)]) continue;
+      if (!is_in_lp_vars_[PositiveVariable(var1)]) continue;
+      if (!is_in_lp_vars_[PositiveVariable(var2)]) continue;
+      if (!is_in_lp_vars_[PositiveVariable(var3)]) continue;
+      ++work_done;
 
-    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pairs we have
-    // !li * !lj <= lk. We are looking for violations like this.
-    const double lp1 = GetLiteralLpValue(var1, lp_values);
-    const double lp2 = GetLiteralLpValue(var2, lp_values);
-    const double lp3 = GetLiteralLpValue(var3, lp_values);
+      // If we have l1 + l2 + l3 >= 1, then for all (i, j) pairs we have
+      // !li * !lj <= lk. We are looking for violations like this.
+      const double lp1 = GetLiteralLpValue(var1, lp_values);
+      const double lp2 = GetLiteralLpValue(var2, lp_values);
+      const double lp3 = GetLiteralLpValue(var3, lp_values);
 
-    UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var2),
-                  1.0 - lp2, var3, lp3);
-    UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var3),
-                  1.0 - lp3, var2, lp2);
-    UpdateRLTMaps(lp_values, NegationOf(var2), 1.0 - lp2, NegationOf(var3),
-                  1.0 - lp3, var1, lp1);
+      UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var2),
+                    1.0 - lp2, var3, lp3);
+      UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var3),
+                    1.0 - lp3, var2, lp2);
+      UpdateRLTMaps(lp_values, NegationOf(var2), 1.0 - lp2, NegationOf(var3),
+                    1.0 - lp3, var1, lp1);
+    }
+
+    // Build the actual data for BoolRLTCandidates().
+    dense_to_rlt_candidate_.ResetFromBuilder(dense_to_rlt_candidate_builder_);
+    DCHECK_EQ(dense_to_rlt_candidate_.size(), dense_index_to_var_.size());
+    timer.Advance(work_done);
   }
-
-  // Build the actual data for BoolRLTCandidates().
-  dense_to_rlt_candidate_.ResetFromBuilder(dense_to_rlt_candidate_builder_);
-  DCHECK_EQ(dense_to_rlt_candidate_.size(), dense_index_to_var_.size());
 }
 
 // This use the same encoding as in GetLiteralLpValue()

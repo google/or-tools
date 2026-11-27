@@ -19,7 +19,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -343,21 +342,6 @@ TEST(CpModelCanonicalCheckerTest, EmptyDomainAndLratMode) {
   )pb");
   EXPECT_FALSE(ModelProtoIsCanonical(lrat_model, /*lrat_mode=*/false));
   EXPECT_TRUE(ModelProtoIsCanonical(lrat_model, /*lrat_mode=*/true));
-}
-
-TEST(CpModelCanonicalCheckerTest, CanonicalizationStatusFromModification) {
-  EXPECT_EQ(CanonicalizationStatus(kUnchanged), kCanonical);
-  EXPECT_EQ(CanonicalizationStatus(kModified), kNeedsCanonicalization);
-
-  CanonicalizationStatus status = kCanonical;
-  status |= kUnchanged;
-  EXPECT_EQ(status, kCanonical);
-  status |= kModified;
-  EXPECT_EQ(status, kNeedsCanonicalization);
-
-  CanonicalizationStatus unsat = kUnsat;
-  unsat |= kModified;
-  EXPECT_EQ(unsat, kUnsat);
 }
 
 }  // namespace

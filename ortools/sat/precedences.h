@@ -169,7 +169,8 @@ class Linear2Indices {
 class Linear2Watcher {
  public:
   explicit Linear2Watcher(Model* model)
-      : watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {}
+      : watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
   // This assumes `expr` is canonicalized and divided by its gcd.
   void NotifyBoundChanged(LinearExpression2 expr);
@@ -184,6 +185,7 @@ class Linear2Watcher {
 
  private:
   GenericLiteralWatcher* watcher_;
+  TimeLimit* time_limit_;
 
   int64_t timestamp_ = 0;
   util_intops::StrongVector<IntegerVariable, int64_t> var_timestamp_;
@@ -201,6 +203,7 @@ class RootLevelLinear2Bounds {
         lin2_indices_(model->GetOrCreate<Linear2Indices>()),
         cp_model_mapping_(model->GetOrCreate<CpModelMapping>()),
         shared_linear2_bounds_(model->Mutable<SharedLinear2Bounds>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         shared_linear2_bounds_id_(
             shared_linear2_bounds_ == nullptr
                 ? 0
@@ -330,6 +333,7 @@ class RootLevelLinear2Bounds {
   Linear2Indices* lin2_indices_;
   CpModelMapping* cp_model_mapping_;
   SharedLinear2Bounds* shared_linear2_bounds_;  // Might be nullptr.
+  TimeLimit* time_limit_;
 
   const int shared_linear2_bounds_id_;
 

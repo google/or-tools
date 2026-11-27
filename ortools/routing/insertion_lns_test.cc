@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
@@ -94,7 +95,9 @@ std::vector<std::unique_ptr<RoutingFilteredHeuristic>> GetRoutingHeuristics(
             /*use_first_solution_hint=*/false)});
   }
 
-  GlobalCheapestInsertionParameters gci_params;
+  GlobalCheapestInsertionParameters gci_params =
+      DefaultRoutingSearchParameters()
+          .global_cheapest_insertion_ls_operator_parameters();
   gci_params.set_farthest_seeds_ratio(0.0);
   gci_params.set_neighbors_ratio(1.0);
   gci_params.set_min_neighbors(1);

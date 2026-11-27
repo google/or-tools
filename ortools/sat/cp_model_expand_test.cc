@@ -414,19 +414,24 @@ TEST(ReservoirExpandTest, FalseActive) {
 }
 
 TEST(ReservoirExpandTest, VariableDemandNearOverflow) {
+  // With c = kint64max / 6, the demand c * x0 + c passes
+  // PossibleIntegerOverflow() (c + 2c <= kint64max / 2), but the enforced
+  // constraint new_var - (c * x0 + c) == 0 of the expansion would not
+  // (2c + 2c > kint64max / 2). The max level is less than 2c so that the
+  // reservoir is not trivially satisfied.
   const CpModelProto model_positive = ParseTestProto(R"pb(
     variables { domain: [ -1, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
       reservoir {
         min_level: 0
-        max_level: 3500000000000000000
+        max_level: 2500000000000000000
         time_exprs { offset: 0 }
         active_literals: 1
         level_changes {
           vars: 0
-          coeffs: 2000000000000000000
-          offset: 2000000000000000000
+          coeffs: 1537228672809129301
+          offset: 1537228672809129301
         }
       }
     }
@@ -444,14 +449,14 @@ TEST(ReservoirExpandTest, VariableDemandNearOverflow) {
     variables { domain: [ 0, 1 ] }
     constraints {
       reservoir {
-        min_level: -3500000000000000000
+        min_level: -2500000000000000000
         max_level: 0
         time_exprs { offset: 0 }
         active_literals: 1
         level_changes {
           vars: 0
-          coeffs: 2000000000000000000
-          offset: -2000000000000000000
+          coeffs: 1537228672809129301
+          offset: -1537228672809129301
         }
       }
     }
@@ -464,19 +469,22 @@ TEST(ReservoirExpandTest, VariableDemandNearOverflow) {
       SolveWithParameters(model_negative, "cp_model_presolve:false").status(),
       CpSolverStatus::OPTIMAL);
 
+  // With c = kint64max / 8, the enforced constraint of the expansion passes
+  // PossibleIntegerOverflow() (2c + 2c <= kint64max / 2). The max level is
+  // again less than 2c.
   const CpModelProto model_within_limit = ParseTestProto(R"pb(
     variables { domain: [ -1, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints {
       reservoir {
         min_level: 0
-        max_level: 2500000000000000000
+        max_level: 2000000000000000000
         time_exprs { offset: 0 }
         active_literals: 1
         level_changes {
           vars: 0
-          coeffs: 1537228672809129301
-          offset: 1537228672809129301
+          coeffs: 1152921504606846975
+          offset: 1152921504606846975
         }
       }
     }
@@ -621,6 +629,44 @@ TEST(ReservoirExpandTest, CombinedSumOverflowDomainOffsetShift) {
   ASSERT_EQ(ValidateCpModel(model), "");
   EXPECT_EQ(SolveWithParameters(model, "cp_model_presolve:false").status(),
             CpSolverStatus::OPTIMAL);
+}
+
+TEST(ReservoirExpandTest, EncodeCumulativeAsReservoirKeepsVariableDemands) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      interval {
+        start { offset: 0 }
+        end { offset: 1 }
+        size { offset: 1 }
+      }
+    }
+    constraints {
+      interval {
+        start { offset: 0 }
+        end { offset: 1 }
+        size { offset: 1 }
+      }
+    }
+    constraints {
+      cumulative {
+        capacity { offset: 1 }
+        intervals: [ 0, 1 ]
+        demands { vars: 0 coeffs: 1 }
+        demands { vars: 1 coeffs: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response = SolveAndCheck(
+      initial_model,
+      "cp_model_presolve:false, encode_cumulative_as_reservoir:true, "
+      "expand_reservoir_using_circuit:false",
+      &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  const absl::btree_set<std::vector<int>> expected{{0, 0}, {0, 1}, {1, 0}};
+  EXPECT_EQ(solutions, expected);
 }
 
 TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitPreservesSolutionHint) {
@@ -1304,15 +1350,16 @@ TEST(ElementExpandTest, ConstantArrayWithEnforcementLiteral) {
 TEST(ElementExpandTest,
      EnforcedVariableElementWithLargeIndexDomainAndUnusedTarget) {
   // Regression test for enforced element with a huge index domain and a unique
-  // removable target variable.
+  // removable target variable. The index domain is such that max(0, UB) -
+  // min(0, LB) <= kint64max / 2.
   const CpModelProto fuzzer_model = ParseTextProtoOrDie(R"pb(
     variables { domain: [ 0, 1 ] }
     variables {
       domain: [
-        -4148831703394303963,
+        -2148831703394303963,
         2147483649,
-        2968198892542177682,
-        2968198892542177682
+        2462198892542177682,
+        2462198892542177682
       ]
     }
     variables { domain: [ -1, 1 ] }
@@ -2418,6 +2465,487 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
 
+TEST(ExpandAllDiffTest, KeepsAndDoesNotExpandWhenOnlyBoundsAreUsed) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_at_most_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      has_at_most_one = true;
+    }
+  }
+  EXPECT_TRUE(has_all_diff);
+  EXPECT_FALSE(has_at_most_one);
+}
+
+TEST(ExpandAllDiffTest, ExpandsWhenTableAndLinear3AreUsed) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 1, 1, 2, 2, 3, 3, 0 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  int num_exactly_one = 0;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      ++num_exactly_one;
+    }
+  }
+  EXPECT_FALSE(has_all_diff);
+  // 4 value constraints with slack + 1 exactly_one over the 4 slack variables.
+  EXPECT_EQ(num_exactly_one, 5);
+}
+
+TEST(ExpandAllDiffTest, ExpandsWithConstantArrayElementTargetAndLinear) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    constraints {
+      element {
+        linear_index { vars: 3 coeffs: 1 }
+        linear_target { vars: 0 coeffs: 1 }
+        exprs { offset: 0 }
+        exprs { offset: 1 }
+        exprs { offset: 2 }
+      }
+    }
+    constraints {
+      element {
+        linear_index { vars: 4 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 1 }
+        exprs { offset: 2 }
+        exprs { offset: 3 }
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  int num_exactly_one = 0;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      ++num_exactly_one;
+    }
+  }
+  EXPECT_FALSE(has_all_diff);
+  // 4 value constraints with slack + 1 exactly_one over the 4 slack variables.
+  EXPECT_EQ(num_exactly_one, 5);
+}
+
+TEST(ExpandAllDiffTest, DoesNotExpandUnencodedNearPermutationWithLinear2) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 3, 3 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  int num_exactly_one = 0;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      ++num_exactly_one;
+    }
+  }
+  EXPECT_TRUE(has_all_diff);
+  EXPECT_EQ(num_exactly_one, 0);
+}
+
+TEST(ExpandAllDiffTest, NearPermutationAddsSlacksAndLinearCardinality) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 4 ] }
+    variables { domain: [ 0, 4 ] }
+    variables { domain: [ 0, 4 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 1, 1, 2, 2, 3, 3, 4, 4, 0 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 0, 2, 4 ]
+    }
+  )pb");
+  SolutionCrushProto crush_proto;
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr, &crush_proto);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  context.LoadAndClampSolutionHint();
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  int num_exactly_one = 0;
+  bool has_slack_sum = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      ++num_exactly_one;
+    } else if (ct.constraint_case() == ConstraintProto::kLinear &&
+               ct.linear().vars_size() == 5 && ct.linear().domain_size() == 2 &&
+               ct.linear().domain(0) == 2 && ct.linear().domain(1) == 2) {
+      has_slack_sum = true;
+    }
+  }
+  EXPECT_EQ(num_exactly_one, 5);
+  EXPECT_TRUE(has_slack_sum);
+}
+
+TEST(ExpandAllDiffTest, ExpandsAndDoesNotKeepPermutationEvenWithLinear3) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 1, 1, 2, 2, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_exactly_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      has_exactly_one = true;
+    }
+  }
+  EXPECT_FALSE(has_all_diff);
+  EXPECT_TRUE(has_exactly_one);
+}
+
+TEST(ExpandAllDiffTest, DoesNotKeepLargerExpandedAllDiff) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 15 ] }
+    variables { domain: [ 0, 15 ] }
+    variables { domain: [ 0, 15 ] }
+    variables { domain: [ 0, 15 ] }
+    variables { domain: [ 0, 15 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 0, 1, 2, 1, 2, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 2, 3 ]
+        domain: [ 0, 10 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_at_most_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      has_at_most_one = true;
+    }
+  }
+  EXPECT_FALSE(has_all_diff);
+  EXPECT_TRUE(has_at_most_one);
+}
+
+TEST(ExpandAllDiffTest, DoesNotExpandUnencodedPermutation) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 1, 1, 2, 2, 3, 3, 0 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_exactly_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      has_exactly_one = true;
+    }
+  }
+  // 2 of 4 variables fully encoded => sum_encoded_values == sum_domain_sizes /
+  // 2, which is not strictly greater than half.
+  EXPECT_TRUE(has_all_diff);
+  EXPECT_FALSE(has_exactly_one);
+}
+
+TEST(ExpandAllDiffTest, ExpandsUnencodedIntersectingPermutations) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 4 coeffs: 1 }
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_exactly_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      has_exactly_one = true;
+    }
+  }
+  EXPECT_FALSE(has_all_diff);
+  EXPECT_TRUE(has_exactly_one);
+}
+
+TEST(ExpandAllDiffTest, NearPermutationAccountsForEmptyValueDomains) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 4, 5 ] }
+    variables { domain: [ 4, 5 ] }
+    constraints {
+      all_diff {
+        exprs { offset: 0 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 offset: 2 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        values: [ 1, 4, 5 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+  // Value 2 becomes empty after propagating fixed 0 onto var 0, consuming the
+  // single slack so slacks for 4 and 5 must both be false (feasible: y=1, z=4,
+  // w=5).
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      for (const int lit : ct.exactly_one().literals()) {
+        if (lit >= 3) {
+          EXPECT_FALSE(context.LiteralIsTrue(lit));
+        }
+      }
+    }
+  }
+}
+
+TEST(ExpandAllDiffTest, DoesNotExpandLargeDomainAllDiff) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 40 ] }
+    variables { domain: [ 0, 40 ] }
+    variables { domain: [ 0, 40 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      table {
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        values: [ 0, 1, 1, 2, 2, 0 ]
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
+
+  bool has_all_diff = false;
+  bool has_at_most_one = false;
+  for (const ConstraintProto& ct : initial_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) has_all_diff = true;
+    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      has_at_most_one = true;
+    }
+  }
+  EXPECT_TRUE(has_all_diff);
+  EXPECT_FALSE(has_at_most_one);
+}
+
 TEST(ExpandInverseTest, CountInvolution) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -2620,10 +3148,10 @@ TEST(TableExpandTest, LargeInt64ValuesInEnforcedTable) {
     variables { domain: [ 0, 1 ] }
     variables {
       domain: [
-        -4611686018427387903,
+        -2000000000000000000,
         1,
-        2862917735133603612,
-        2862917735133603613
+        2000000000000000000,
+        2000000000000000001
       ]
     }
     constraints {

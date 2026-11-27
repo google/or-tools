@@ -55,6 +55,7 @@
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/util/affine_relation.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -161,7 +162,8 @@ bool IsIntervalFixedSize(const IntervalConstraintProto& interval) {
 template <typename Graph>
 std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     const CpModelProto& problem, std::vector<int>* initial_equivalence_classes,
-    int64_t max_num_nodes, int64_t max_num_arcs, SolverLogger* logger) {
+    int64_t max_num_nodes, int64_t max_num_arcs, SolverLogger* logger,
+    TimeLimit* time_limit) {
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
@@ -341,450 +343,461 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   absl::flat_hash_map<int, int> interval_constraint_index_to_node;
 
   // Add constraints to the graph.
-  for (int constraint_index = 0; constraint_index < problem.constraints_size();
-       ++constraint_index) {
-    if (all_arcs.size() > max_num_arcs &&
-        initial_equivalence_classes->size() > max_num_nodes) {
-      SOLVER_LOG(logger, "[Symmetry] Graph too large, too many arcs (> ",
-                 FormatCounter(max_num_arcs), ") and too many nodes (> ",
-                 FormatCounter(max_num_nodes),
-                 "). Skipping. You can use "
-                 "symmetry_level:3 or more to force it.");
-      return nullptr;
-    }
-    const ConstraintProto& constraint = problem.constraints(constraint_index);
-    const int constraint_node = initial_equivalence_classes->size();
-    std::vector<int64_t> color = {CONSTRAINT_NODE,
-                                  constraint.constraint_case()};
+  {
+    DeterministicTimer2<{.scale1 = 9.6e-08, .scale2 = 1.6e-07}> timer(
+        time_limit);
+    for (int constraint_index = 0;
+         constraint_index < problem.constraints_size(); ++constraint_index) {
+      if (all_arcs.size() > max_num_arcs &&
+          initial_equivalence_classes->size() > max_num_nodes) {
+        SOLVER_LOG(logger, "[Symmetry] Graph too large, too many arcs (> ",
+                   FormatCounter(max_num_arcs), ") and too many nodes (> ",
+                   FormatCounter(max_num_nodes),
+                   "). Skipping. You can use "
+                   "symmetry_level:3 or more to force it.");
+        timer.Advance(constraint_index + 1, all_arcs.size());
+        return nullptr;
+      }
+      const ConstraintProto& constraint = problem.constraints(constraint_index);
+      const int constraint_node = initial_equivalence_classes->size();
+      std::vector<int64_t> color = {CONSTRAINT_NODE,
+                                    constraint.constraint_case()};
 
-    auto add_unordered_linear_argument_node =
-        [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
-         constraint_node](const LinearArgumentProto& linear_argument,
-                          const std::vector<int64_t>& color) {
-          const int target_node =
-              make_linear_expr_node(linear_argument.target(), color);
-          CHECK_EQ(constraint_node, target_node);
+      auto add_unordered_linear_argument_node =
+          [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
+           constraint_node](const LinearArgumentProto& linear_argument,
+                            const std::vector<int64_t>& color) {
+            const int target_node =
+                make_linear_expr_node(linear_argument.target(), color);
+            CHECK_EQ(constraint_node, target_node);
 
-          for (int i = 0; i < linear_argument.exprs_size(); ++i) {
-            const LinearExpressionProto& expr = linear_argument.exprs(i);
-            all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
+            for (int i = 0; i < linear_argument.exprs_size(); ++i) {
+              const LinearExpressionProto& expr = linear_argument.exprs(i);
+              all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
+            }
+          };
+
+      auto add_ordered_linear_argument2_node =
+          [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
+           constraint_node](const LinearArgumentProto& linear_argument2,
+                            const std::vector<int64_t>& color) {
+            const int target_node =
+                make_linear_expr_node(linear_argument2.target(), color);
+            CHECK_EQ(constraint_node, target_node);
+            CHECK_EQ(linear_argument2.exprs_size(), 2);
+            {
+              const LinearExpressionProto& expr = linear_argument2.exprs(0);
+              all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
+            }
+            {
+              const LinearExpressionProto& expr = linear_argument2.exprs(1);
+              all_arcs.emplace_back(target_node, shared_linear_expr_node(expr));
+            }
+          };
+
+      switch (constraint.constraint_case()) {
+        case ConstraintProto::CONSTRAINT_NOT_SET:
+          // TODO(user): We continue for the corner case of a constraint not set
+          // with enforcement literal. We should probably clear this constraint
+          // before reaching here.
+          continue;
+        case ConstraintProto::kLinear: {
+          // Special case for positive only constraint (quite common).
+          bool only_positive_coefficients = true;
+          for (int i = 0; i < constraint.linear().vars_size(); ++i) {
+            const int64_t coeff = constraint.linear().coeffs(i);
+            if (coeff < 0) {
+              only_positive_coefficients = false;
+              break;
+            }
           }
-        };
 
-    auto add_ordered_linear_argument2_node =
-        [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
-         constraint_node](const LinearArgumentProto& linear_argument2,
-                          const std::vector<int64_t>& color) {
-          const int target_node =
-              make_linear_expr_node(linear_argument2.target(), color);
-          CHECK_EQ(constraint_node, target_node);
-          CHECK_EQ(linear_argument2.exprs_size(), 2);
-          {
-            const LinearExpressionProto& expr = linear_argument2.exprs(0);
-            all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
-          }
-          {
-            const LinearExpressionProto& expr = linear_argument2.exprs(1);
-            all_arcs.emplace_back(target_node, shared_linear_expr_node(expr));
-          }
-        };
-
-    switch (constraint.constraint_case()) {
-      case ConstraintProto::CONSTRAINT_NOT_SET:
-        // TODO(user): We continue for the corner case of a constraint not set
-        // with enforcement literal. We should probably clear this constraint
-        // before reaching here.
-        continue;
-      case ConstraintProto::kLinear: {
-        // Special case for positive only constraint (quite common).
-        bool only_positive_coefficients = true;
-        for (int i = 0; i < constraint.linear().vars_size(); ++i) {
-          const int64_t coeff = constraint.linear().coeffs(i);
-          if (coeff < 0) {
-            only_positive_coefficients = false;
-            break;
-          }
-        }
-
-        // We want to consider both constraint and -constraint from a symmetry
-        // perspective. Note that this cannot be reached by canonicalization
-        // alone. For instance, if we have X - Y == 0 and A - B == 0, maybe
-        // (X,B) (Y,A) is a symmetry.
-        //
-        // In order to detect such symmetries, our encoding uses one
-        // constraint node, a positive coefficient node (of color that depends
-        // on the constraint rhs) and a negative coefficient node (of color that
-        // depends on -rhs). All terms are linked to one of these nodes
-        // according to their sign, and only use the magnitude of the
-        // coefficient since the sign is encoded by the connection.
-        int positive_node, negative_node;
-        if (only_positive_coefficients) {
-          // We use no extra node in this case. Just a single constraint node.
-          Append(constraint.linear().domain(), &color);
-          CHECK_EQ(constraint_node, new_node(color));
-          positive_node = constraint_node;
-          negative_node = constraint_node;  // not used.
-        } else {
-          // We use two extra nodes here.
-          CHECK_EQ(constraint_node, new_node(color));
-          const Domain domain = ReadDomainFromProto(constraint.linear());
-
-          color = {DOMAIN_NODE};
-          for (const int64_t value : domain.FlattenedIntervals()) {
-            color.push_back(value);
-          }
-          positive_node = new_node(color);
-          all_arcs.emplace_back(positive_node, constraint_node);
-
-          color = {DOMAIN_NODE};
-          for (const int64_t value : domain.Negation().FlattenedIntervals()) {
-            color.push_back(value);
-          }
-          negative_node = new_node(color);
-          all_arcs.emplace_back(negative_node, constraint_node);
-        }
-
-        // TODO(user): We can use the same trick as for the implications to
-        // encode relations of the form coeff * var_a <= coeff * var_b without
-        // creating a constraint node by directly adding an arc between the two
-        // var coefficient nodes. And encoding both the relation and its
-        // negation.
-        for (int i = 0; i < constraint.linear().vars_size(); ++i) {
-          const int variable_node = constraint.linear().vars(i);
-          const int64_t coeff = constraint.linear().coeffs(i);
-          if (coeff > 0) {
-            all_arcs.emplace_back(get_coefficient_node(variable_node, coeff),
-                                  positive_node);
+          // We want to consider both constraint and -constraint from a symmetry
+          // perspective. Note that this cannot be reached by canonicalization
+          // alone. For instance, if we have X - Y == 0 and A - B == 0, maybe
+          // (X,B) (Y,A) is a symmetry.
+          //
+          // In order to detect such symmetries, our encoding uses one
+          // constraint node, a positive coefficient node (of color that depends
+          // on the constraint rhs) and a negative coefficient node (of color
+          // that depends on -rhs). All terms are linked to one of these nodes
+          // according to their sign, and only use the magnitude of the
+          // coefficient since the sign is encoded by the connection.
+          int positive_node, negative_node;
+          if (only_positive_coefficients) {
+            // We use no extra node in this case. Just a single constraint node.
+            Append(constraint.linear().domain(), &color);
+            CHECK_EQ(constraint_node, new_node(color));
+            positive_node = constraint_node;
+            negative_node = constraint_node;  // not used.
           } else {
-            DCHECK_LT(coeff, 0);
-            DCHECK(!only_positive_coefficients);
-            all_arcs.emplace_back(get_coefficient_node(variable_node, -coeff),
-                                  negative_node);
+            // We use two extra nodes here.
+            CHECK_EQ(constraint_node, new_node(color));
+            const Domain domain = ReadDomainFromProto(constraint.linear());
+
+            color = {DOMAIN_NODE};
+            for (const int64_t value : domain.FlattenedIntervals()) {
+              color.push_back(value);
+            }
+            positive_node = new_node(color);
+            all_arcs.emplace_back(positive_node, constraint_node);
+
+            color = {DOMAIN_NODE};
+            for (const int64_t value : domain.Negation().FlattenedIntervals()) {
+              color.push_back(value);
+            }
+            negative_node = new_node(color);
+            all_arcs.emplace_back(negative_node, constraint_node);
           }
-        }
-        break;
-      }
-      case ConstraintProto::kAllDiff: {
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const LinearExpressionProto& expr :
-             constraint.all_diff().exprs()) {
-          all_arcs.emplace_back(shared_linear_expr_node(expr), constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kBoolOr: {
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const int ref : constraint.bool_or().literals()) {
-          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kAtMostOne: {
-        if (constraint.at_most_one().literals().size() == 2 &&
-            constraint.enforcement_literal().empty()) {
-          // Treat it as an implication to avoid creating a node.
-          add_implication(constraint.at_most_one().literals(0),
-                          NegatedRef(constraint.at_most_one().literals(1)));
+
+          // TODO(user): We can use the same trick as for the implications to
+          // encode relations of the form coeff * var_a <= coeff * var_b without
+          // creating a constraint node by directly adding an arc between the
+          // two var coefficient nodes. And encoding both the relation and its
+          // negation.
+          for (int i = 0; i < constraint.linear().vars_size(); ++i) {
+            const int variable_node = constraint.linear().vars(i);
+            const int64_t coeff = constraint.linear().coeffs(i);
+            if (coeff > 0) {
+              all_arcs.emplace_back(get_coefficient_node(variable_node, coeff),
+                                    positive_node);
+            } else {
+              DCHECK_LT(coeff, 0);
+              DCHECK(!only_positive_coefficients);
+              all_arcs.emplace_back(get_coefficient_node(variable_node, -coeff),
+                                    negative_node);
+            }
+          }
           break;
         }
-
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const int ref : constraint.at_most_one().literals()) {
-          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kExactlyOne: {
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const int ref : constraint.exactly_one().literals()) {
-          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kBoolXor: {
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const int ref : constraint.bool_xor().literals()) {
-          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kBoolAnd: {
-        if (constraint.enforcement_literal_size() > 1) {
+        case ConstraintProto::kAllDiff: {
           CHECK_EQ(constraint_node, new_node(color));
-          for (const int ref : constraint.bool_and().literals()) {
+          for (const LinearExpressionProto& expr :
+               constraint.all_diff().exprs()) {
+            all_arcs.emplace_back(shared_linear_expr_node(expr),
+                                  constraint_node);
+          }
+          break;
+        }
+        case ConstraintProto::kBoolOr: {
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.bool_or().literals()) {
             all_arcs.emplace_back(get_literal_node(ref), constraint_node);
           }
           break;
         }
+        case ConstraintProto::kAtMostOne: {
+          if (constraint.at_most_one().literals().size() == 2 &&
+              constraint.enforcement_literal().empty()) {
+            // Treat it as an implication to avoid creating a node.
+            add_implication(constraint.at_most_one().literals(0),
+                            NegatedRef(constraint.at_most_one().literals(1)));
+            break;
+          }
 
-        CHECK_EQ(constraint.enforcement_literal_size(), 1);
-        const int ref_a = constraint.enforcement_literal(0);
-        for (const int ref_b : constraint.bool_and().literals()) {
-          add_implication(ref_a, ref_b);
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.at_most_one().literals()) {
+            all_arcs.emplace_back(get_literal_node(ref), constraint_node);
+          }
+          break;
         }
-        break;
-      }
-      case ConstraintProto::kLinMax:
-        add_unordered_linear_argument_node(constraint.lin_max(), color);
-        break;
-      case ConstraintProto::kIntProd:
-        add_unordered_linear_argument_node(constraint.int_prod(), color);
-        break;
-      case ConstraintProto::kIntDiv:
-        add_ordered_linear_argument2_node(constraint.int_div(), color);
-        break;
-      case ConstraintProto::kIntMod:
-        add_ordered_linear_argument2_node(constraint.int_mod(), color);
-        break;
-      case ConstraintProto::kInterval: {
-        static constexpr int kFixedIntervalColor = 0;
-        static constexpr int kNonFixedIntervalColor = 1;
-        if (IsIntervalFixedSize(constraint.interval())) {
-          std::vector<int64_t> local_color = color;
-          local_color.push_back(kFixedIntervalColor);
-          local_color.push_back(constraint.interval().size().offset());
-          const int full_node =
-              make_linear_expr_node(constraint.interval().start(), local_color);
-          CHECK_EQ(full_node, constraint_node);
-        } else {
-          // We create 3 constraint nodes (for start, size and end) including
-          // the offset. We connect these to their terms like for a linear
-          // constraint.
-          std::vector<int64_t> local_color = color;
-          local_color.push_back(kNonFixedIntervalColor);
+        case ConstraintProto::kExactlyOne: {
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.exactly_one().literals()) {
+            all_arcs.emplace_back(get_literal_node(ref), constraint_node);
+          }
+          break;
+        }
+        case ConstraintProto::kBoolXor: {
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.bool_xor().literals()) {
+            all_arcs.emplace_back(get_literal_node(ref), constraint_node);
+          }
+          break;
+        }
+        case ConstraintProto::kBoolAnd: {
+          if (constraint.enforcement_literal_size() > 1) {
+            CHECK_EQ(constraint_node, new_node(color));
+            for (const int ref : constraint.bool_and().literals()) {
+              all_arcs.emplace_back(get_literal_node(ref), constraint_node);
+            }
+            break;
+          }
 
+          CHECK_EQ(constraint.enforcement_literal_size(), 1);
+          const int ref_a = constraint.enforcement_literal(0);
+          for (const int ref_b : constraint.bool_and().literals()) {
+            add_implication(ref_a, ref_b);
+          }
+          break;
+        }
+        case ConstraintProto::kLinMax:
+          add_unordered_linear_argument_node(constraint.lin_max(), color);
+          break;
+        case ConstraintProto::kIntProd:
+          add_unordered_linear_argument_node(constraint.int_prod(), color);
+          break;
+        case ConstraintProto::kIntDiv:
+          add_ordered_linear_argument2_node(constraint.int_div(), color);
+          break;
+        case ConstraintProto::kIntMod:
+          add_ordered_linear_argument2_node(constraint.int_mod(), color);
+          break;
+        case ConstraintProto::kInterval: {
+          static constexpr int kFixedIntervalColor = 0;
+          static constexpr int kNonFixedIntervalColor = 1;
+          if (IsIntervalFixedSize(constraint.interval())) {
+            std::vector<int64_t> local_color = color;
+            local_color.push_back(kFixedIntervalColor);
+            local_color.push_back(constraint.interval().size().offset());
+            const int full_node = make_linear_expr_node(
+                constraint.interval().start(), local_color);
+            CHECK_EQ(full_node, constraint_node);
+          } else {
+            // We create 3 constraint nodes (for start, size and end) including
+            // the offset. We connect these to their terms like for a linear
+            // constraint.
+            std::vector<int64_t> local_color = color;
+            local_color.push_back(kNonFixedIntervalColor);
+
+            local_color.push_back(0);
+            const int start_node = make_linear_expr_node(
+                constraint.interval().start(), local_color);
+            local_color.pop_back();
+            CHECK_EQ(start_node, constraint_node);
+
+            // We can use a shared node for one of the three. Let's use the size
+            // since it has the most chance of being reused.
+            const int size_node =
+                shared_linear_expr_node(constraint.interval().size());
+
+            local_color.push_back(1);
+            const int end_node =
+                make_linear_expr_node(constraint.interval().end(), local_color);
+            local_color.pop_back();
+
+            // Make sure that if one node is mapped to another one, its other
+            // two components are the same.
+            all_arcs.emplace_back(start_node, end_node);
+            all_arcs.emplace_back(end_node, size_node);
+          }
+          interval_constraint_index_to_node[constraint_index] = constraint_node;
+          break;
+        }
+        case ConstraintProto::kNoOverlap: {
+          // NOTE(user): This requires that intervals appear before they are
+          // used. We currently enforce this at validation, otherwise we need
+          // two passes here and in a bunch of other places.
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int interval : constraint.no_overlap().intervals()) {
+            all_arcs.emplace_back(
+                interval_constraint_index_to_node.at(interval),
+                constraint_node);
+          }
+          break;
+        }
+        case ConstraintProto::kNoOverlap2D: {
+          // NOTE(user): This requires that intervals appear before they are
+          // used. We currently enforce this at validation, otherwise we need
+          // two passes here and in a bunch of other places.
+          CHECK_EQ(constraint_node, new_node(color));
+          std::vector<int64_t> local_color = color;
           local_color.push_back(0);
-          const int start_node =
-              make_linear_expr_node(constraint.interval().start(), local_color);
+          const int size = constraint.no_overlap_2d().x_intervals().size();
+          const int node_x = new_node(local_color);
+          const int node_y = new_node(local_color);
           local_color.pop_back();
-          CHECK_EQ(start_node, constraint_node);
-
-          // We can use a shared node for one of the three. Let's use the size
-          // since it has the most chance of being reused.
-          const int size_node =
-              shared_linear_expr_node(constraint.interval().size());
-
+          all_arcs.emplace_back(constraint_node, node_x);
+          all_arcs.emplace_back(constraint_node, node_y);
           local_color.push_back(1);
-          const int end_node =
-              make_linear_expr_node(constraint.interval().end(), local_color);
-          local_color.pop_back();
-
-          // Make sure that if one node is mapped to another one, its other two
-          // components are the same.
-          all_arcs.emplace_back(start_node, end_node);
-          all_arcs.emplace_back(end_node, size_node);
+          for (int i = 0; i < size; ++i) {
+            const int box_node = new_node(local_color);
+            all_arcs.emplace_back(box_node, constraint_node);
+            const int x = constraint.no_overlap_2d().x_intervals(i);
+            const int y = constraint.no_overlap_2d().y_intervals(i);
+            all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
+                                  node_x);
+            all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
+                                  box_node);
+            all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
+                                  node_y);
+            all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
+                                  box_node);
+          }
+          break;
         }
-        interval_constraint_index_to_node[constraint_index] = constraint_node;
-        break;
-      }
-      case ConstraintProto::kNoOverlap: {
-        // NOTE(user): This requires that intervals appear before they are used.
-        // We currently enforce this at validation, otherwise we need two passes
-        // here and in a bunch of other places.
-        CHECK_EQ(constraint_node, new_node(color));
-        for (const int interval : constraint.no_overlap().intervals()) {
-          all_arcs.emplace_back(interval_constraint_index_to_node.at(interval),
-                                constraint_node);
-        }
-        break;
-      }
-      case ConstraintProto::kNoOverlap2D: {
-        // NOTE(user): This requires that intervals appear before they are used.
-        // We currently enforce this at validation, otherwise we need two passes
-        // here and in a bunch of other places.
-        CHECK_EQ(constraint_node, new_node(color));
-        std::vector<int64_t> local_color = color;
-        local_color.push_back(0);
-        const int size = constraint.no_overlap_2d().x_intervals().size();
-        const int node_x = new_node(local_color);
-        const int node_y = new_node(local_color);
-        local_color.pop_back();
-        all_arcs.emplace_back(constraint_node, node_x);
-        all_arcs.emplace_back(constraint_node, node_y);
-        local_color.push_back(1);
-        for (int i = 0; i < size; ++i) {
-          const int box_node = new_node(local_color);
-          all_arcs.emplace_back(box_node, constraint_node);
-          const int x = constraint.no_overlap_2d().x_intervals(i);
-          const int y = constraint.no_overlap_2d().y_intervals(i);
-          all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
-                                node_x);
-          all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
-                                box_node);
-          all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
-                                node_y);
-          all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
-                                box_node);
-        }
-        break;
-      }
-      case ConstraintProto::kCumulative: {
-        // NOTE(user): This requires that intervals appear before they are used.
-        // We currently enforce this at validation, otherwise we need two passes
-        // here and in a bunch of other places.
-        const CumulativeConstraintProto& ct = constraint.cumulative();
-        std::vector<int64_t> capacity_color = color;
-        capacity_color.push_back(0);
-        CHECK_EQ(constraint_node, new_node(capacity_color));
-        all_arcs.emplace_back(
-            constraint_node,
-            make_linear_expr_node(ct.capacity(), capacity_color));
-
-        std::vector<int64_t> task_color = color;
-        task_color.push_back(1);
-        for (int i = 0; i < ct.intervals().size(); ++i) {
-          const int task_node =
-              make_linear_expr_node(ct.demands(i), task_color);
-          all_arcs.emplace_back(task_node, constraint_node);
+        case ConstraintProto::kCumulative: {
+          // NOTE(user): This requires that intervals appear before they are
+          // used. We currently enforce this at validation, otherwise we need
+          // two passes here and in a bunch of other places.
+          const CumulativeConstraintProto& ct = constraint.cumulative();
+          std::vector<int64_t> capacity_color = color;
+          capacity_color.push_back(0);
+          CHECK_EQ(constraint_node, new_node(capacity_color));
           all_arcs.emplace_back(
-              task_node, interval_constraint_index_to_node.at(ct.intervals(i)));
+              constraint_node,
+              make_linear_expr_node(ct.capacity(), capacity_color));
+
+          std::vector<int64_t> task_color = color;
+          task_color.push_back(1);
+          for (int i = 0; i < ct.intervals().size(); ++i) {
+            const int task_node =
+                make_linear_expr_node(ct.demands(i), task_color);
+            all_arcs.emplace_back(task_node, constraint_node);
+            all_arcs.emplace_back(
+                task_node,
+                interval_constraint_index_to_node.at(ct.intervals(i)));
+          }
+          break;
         }
-        break;
-      }
-      case ConstraintProto::kReservoir: {
-        const ReservoirConstraintProto& ct = constraint.reservoir();
+        case ConstraintProto::kReservoir: {
+          const ReservoirConstraintProto& ct = constraint.reservoir();
 
-        std::vector<int64_t> local_color = color;
-        local_color.push_back(ct.min_level());
-        local_color.push_back(ct.max_level());
-        CHECK_EQ(constraint_node, new_node(local_color));
+          std::vector<int64_t> local_color = color;
+          local_color.push_back(ct.min_level());
+          local_color.push_back(ct.max_level());
+          CHECK_EQ(constraint_node, new_node(local_color));
 
-        // Each event is a tuple, modeled as an event node with three subnodes:
-        // - time (VAR_LIN_EXPR_NODE) -> event_node.
-        // - level (VAR_LIN_EXPR_NODE) <- event_node.
-        // - active (VAR_COEFFICIENT_NODE) -> event_node.
-        std::vector<int64_t> event_color = color;
-        event_color.push_back(0);
+          // Each event is a tuple, modeled as an event node with three
+          // subnodes:
+          // - time (VAR_LIN_EXPR_NODE) -> event_node.
+          // - level (VAR_LIN_EXPR_NODE) <- event_node.
+          // - active (VAR_COEFFICIENT_NODE) -> event_node.
+          std::vector<int64_t> event_color = color;
+          event_color.push_back(0);
 
-        const int num_events = ct.time_exprs_size();
-        for (int i = 0; i < num_events; ++i) {
-          const int event_node = new_node(event_color);
-          all_arcs.emplace_back(event_node, constraint_node);
-          all_arcs.emplace_back(shared_linear_expr_node(ct.time_exprs(i)),
-                                event_node);
-          all_arcs.emplace_back(event_node,
-                                shared_linear_expr_node(ct.level_changes(i)));
-
-          if (!ct.active_literals().empty()) {
-            all_arcs.emplace_back(get_literal_node(ct.active_literals(i)),
+          const int num_events = ct.time_exprs_size();
+          for (int i = 0; i < num_events; ++i) {
+            const int event_node = new_node(event_color);
+            all_arcs.emplace_back(event_node, constraint_node);
+            all_arcs.emplace_back(shared_linear_expr_node(ct.time_exprs(i)),
                                   event_node);
-          }
-        }
-        break;
-      }
-      case ConstraintProto::kCircuit: {
-        // Note that this implementation will generate the same graph for a
-        // circuit constraint with two disconnected components and two circuit
-        // constraints with one component each, unless there is an enforcement
-        // literal.
-        const int num_arcs = constraint.circuit().literals().size();
-        absl::flat_hash_map<int, int> circuit_node_to_symmetry_node;
-        if (!constraint.enforcement_literal().empty()) {
-          CHECK_EQ(constraint_node, new_node(color));
-        }
-        std::vector<int64_t> arc_color = color;
-        arc_color.push_back(1);
-        for (int i = 0; i < num_arcs; ++i) {
-          const int literal = constraint.circuit().literals(i);
-          const int tail = constraint.circuit().tails(i);
-          const int head = constraint.circuit().heads(i);
-          const int arc_node = new_node(arc_color);
-          if (!circuit_node_to_symmetry_node.contains(head)) {
-            circuit_node_to_symmetry_node[head] = new_node(color);
-          }
-          const int head_node = circuit_node_to_symmetry_node[head];
-          if (!circuit_node_to_symmetry_node.contains(tail)) {
-            circuit_node_to_symmetry_node[tail] = new_node(color);
-          }
-          const int tail_node = circuit_node_to_symmetry_node[tail];
-          // To make the graph directed, we add two arcs on the head but not on
-          // the tail.
-          if (!constraint.enforcement_literal().empty()) {
-            all_arcs.emplace_back(constraint_node, arc_node);
-          }
-          all_arcs.emplace_back(tail_node, arc_node);
-          all_arcs.emplace_back(arc_node, get_literal_node(literal));
-          all_arcs.emplace_back(arc_node, head_node);
-        }
-        break;
-      }
-      case ConstraintProto::kRoutes: {
-        // Similar to kCircuit, except that node 0 (the depot) has a distinct
-        // role and cannot be permuted with non-depot nodes.
-        // Note that like kCircuit, we do not create a central constraint_node
-        // unless the constraint has enforcement literals, in which case the
-        // enforcement logic after the switch attaches the enforcement literals
-        // to constraint_node and we must link constraint_node to every arc of
-        // this constraint.
-        const int num_arcs = constraint.routes().literals().size();
-        absl::flat_hash_map<int, int> routes_node_to_symmetry_node;
-        if (!constraint.enforcement_literal().empty()) {
-          CHECK_EQ(constraint_node, new_node(color));
-        }
-        std::vector<int64_t> arc_color = color;
-        arc_color.push_back(1);
-        std::vector<int64_t> node_color = color;
-        node_color.push_back(2);
-        std::vector<int64_t> depot_color = color;
-        depot_color.push_back(3);
-        for (int i = 0; i < num_arcs; ++i) {
-          const int literal = constraint.routes().literals(i);
-          const int tail = constraint.routes().tails(i);
-          const int head = constraint.routes().heads(i);
-          const int arc_node = new_node(arc_color);
-          auto [head_it, head_inserted] =
-              routes_node_to_symmetry_node.insert({head, 0});
-          if (head_inserted) {
-            head_it->second = new_node(head == 0 ? depot_color : node_color);
-          }
-          const int head_node = head_it->second;
-          auto [tail_it, tail_inserted] =
-              routes_node_to_symmetry_node.insert({tail, 0});
-          if (tail_inserted) {
-            tail_it->second = new_node(tail == 0 ? depot_color : node_color);
-          }
-          const int tail_node = tail_it->second;
-          // Connect constraint_node (which holds the enforcement literals) to
-          // every arc of the route constraint so that the enforcement literals
-          // apply to the entire route graph, including any disconnected
-          // components or self-loops.
-          if (!constraint.enforcement_literal().empty()) {
-            all_arcs.emplace_back(constraint_node, arc_node);
-          }
-          all_arcs.emplace_back(tail_node, arc_node);
-          all_arcs.emplace_back(get_literal_node(literal), arc_node);
-          all_arcs.emplace_back(arc_node, head_node);
-        }
-        break;
-      }
-      case ConstraintProto::kElement:
-      case ConstraintProto::kTable:
-      case ConstraintProto::kAutomaton:
-      case ConstraintProto::kInverse:
-      case ConstraintProto::kDummyConstraint:
-        // Those constraints should be expanded during presolve, so we will
-        // probably be still able to detect the symmetries of the problem after
-        // this is done.
-        SOLVER_LOG(logger,
-                   "[Symmetry] Aborting symmetry computation because of "
-                   "unsupported constraint type: ",
-                   ConstraintCaseName(constraint.constraint_case()));
-        return nullptr;
-    }
+            all_arcs.emplace_back(event_node,
+                                  shared_linear_expr_node(ct.level_changes(i)));
 
-    // For enforcement, we use a similar trick as for the implications.
-    // Because all our constraint arcs are in the direction var_node to
-    // constraint_node, we just use the reverse direction for the enforcement
-    // part. This way we can reuse the same get_literal_node() function.
-    if (constraint.constraint_case() != ConstraintProto::kBoolAnd ||
-        constraint.enforcement_literal().size() > 1) {
-      if (!constraint.enforcement_literal().empty()) {
-        CHECK_LT(constraint_node, initial_equivalence_classes->size());
+            if (!ct.active_literals().empty()) {
+              all_arcs.emplace_back(get_literal_node(ct.active_literals(i)),
+                                    event_node);
+            }
+          }
+          break;
+        }
+        case ConstraintProto::kCircuit: {
+          // Note that this implementation will generate the same graph for a
+          // circuit constraint with two disconnected components and two circuit
+          // constraints with one component each, unless there is an enforcement
+          // literal.
+          const int num_arcs = constraint.circuit().literals().size();
+          absl::flat_hash_map<int, int> circuit_node_to_symmetry_node;
+          if (!constraint.enforcement_literal().empty()) {
+            CHECK_EQ(constraint_node, new_node(color));
+          }
+          std::vector<int64_t> arc_color = color;
+          arc_color.push_back(1);
+          for (int i = 0; i < num_arcs; ++i) {
+            const int literal = constraint.circuit().literals(i);
+            const int tail = constraint.circuit().tails(i);
+            const int head = constraint.circuit().heads(i);
+            const int arc_node = new_node(arc_color);
+            if (!circuit_node_to_symmetry_node.contains(head)) {
+              circuit_node_to_symmetry_node[head] = new_node(color);
+            }
+            const int head_node = circuit_node_to_symmetry_node[head];
+            if (!circuit_node_to_symmetry_node.contains(tail)) {
+              circuit_node_to_symmetry_node[tail] = new_node(color);
+            }
+            const int tail_node = circuit_node_to_symmetry_node[tail];
+            // To make the graph directed, we add two arcs on the head but not
+            // on the tail.
+            if (!constraint.enforcement_literal().empty()) {
+              all_arcs.emplace_back(constraint_node, arc_node);
+            }
+            all_arcs.emplace_back(tail_node, arc_node);
+            all_arcs.emplace_back(arc_node, get_literal_node(literal));
+            all_arcs.emplace_back(arc_node, head_node);
+          }
+          break;
+        }
+        case ConstraintProto::kRoutes: {
+          // Similar to kCircuit, except that node 0 (the depot) has a distinct
+          // role and cannot be permuted with non-depot nodes.
+          // Note that like kCircuit, we do not create a central
+          // constraint_node unless the constraint has enforcement literals, in
+          // which case the enforcement logic after the switch attaches the
+          // enforcement literals to constraint_node and we must link
+          // constraint_node to every arc of this constraint.
+          const int num_arcs = constraint.routes().literals().size();
+          absl::flat_hash_map<int, int> routes_node_to_symmetry_node;
+          if (!constraint.enforcement_literal().empty()) {
+            CHECK_EQ(constraint_node, new_node(color));
+          }
+          std::vector<int64_t> arc_color = color;
+          arc_color.push_back(1);
+          std::vector<int64_t> node_color = color;
+          node_color.push_back(2);
+          std::vector<int64_t> depot_color = color;
+          depot_color.push_back(3);
+          for (int i = 0; i < num_arcs; ++i) {
+            const int literal = constraint.routes().literals(i);
+            const int tail = constraint.routes().tails(i);
+            const int head = constraint.routes().heads(i);
+            const int arc_node = new_node(arc_color);
+            auto [head_it, head_inserted] =
+                routes_node_to_symmetry_node.insert({head, 0});
+            if (head_inserted) {
+              head_it->second = new_node(head == 0 ? depot_color : node_color);
+            }
+            const int head_node = head_it->second;
+            auto [tail_it, tail_inserted] =
+                routes_node_to_symmetry_node.insert({tail, 0});
+            if (tail_inserted) {
+              tail_it->second = new_node(tail == 0 ? depot_color : node_color);
+            }
+            const int tail_node = tail_it->second;
+            // Connect constraint_node (which holds the enforcement literals)
+            // to every arc of the route constraint so that the enforcement
+            // literals apply to the entire route graph, including any
+            // disconnected components or self-loops.
+            if (!constraint.enforcement_literal().empty()) {
+              all_arcs.emplace_back(constraint_node, arc_node);
+            }
+            all_arcs.emplace_back(tail_node, arc_node);
+            all_arcs.emplace_back(get_literal_node(literal), arc_node);
+            all_arcs.emplace_back(arc_node, head_node);
+          }
+          break;
+        }
+        case ConstraintProto::kElement:
+        case ConstraintProto::kTable:
+        case ConstraintProto::kAutomaton:
+        case ConstraintProto::kInverse:
+        case ConstraintProto::kDummyConstraint:
+          // Those constraints should be expanded during presolve, so we will
+          // probably be still able to detect the symmetries of the problem
+          // after this is done.
+          SOLVER_LOG(logger,
+                     "[Symmetry] Aborting symmetry computation because of "
+                     "unsupported constraint type: ",
+                     ConstraintCaseName(constraint.constraint_case()));
+          timer.Advance(constraint_index + 1, all_arcs.size());
+          return nullptr;
       }
-      for (const int ref : constraint.enforcement_literal()) {
-        all_arcs.emplace_back(constraint_node, get_literal_node(ref));
+
+      // For enforcement, we use a similar trick as for the implications.
+      // Because all our constraint arcs are in the direction var_node to
+      // constraint_node, we just use the reverse direction for the enforcement
+      // part. This way we can reuse the same get_literal_node() function.
+      if (constraint.constraint_case() != ConstraintProto::kBoolAnd ||
+          constraint.enforcement_literal().size() > 1) {
+        if (!constraint.enforcement_literal().empty()) {
+          CHECK_LT(constraint_node, initial_equivalence_classes->size());
+        }
+        for (const int ref : constraint.enforcement_literal()) {
+          all_arcs.emplace_back(constraint_node, get_literal_node(ref));
+        }
       }
     }
+    timer.Advance(problem.constraints_size(), all_arcs.size());
   }
 
   // The symmetry detection code does not support multi-arcs. We can easily
@@ -882,7 +895,8 @@ void FindCpModelSymmetries(
   const int64_t max_num_arcs =
       params.symmetry_level() < 3 ? int64_t{1'000'000} : kint64max;
   std::unique_ptr<Graph> graph(GenerateGraphForSymmetryDetection<Graph>(
-      problem, &equivalence_classes, max_num_nodes, max_num_arcs, logger));
+      problem, &equivalence_classes, max_num_nodes, max_num_arcs, logger,
+      solver_time_limit));
   if (graph == nullptr) return;
 
   SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ",
@@ -893,6 +907,10 @@ void FindCpModelSymmetries(
   std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromDeterministicTime(
       params.symmetry_detection_deterministic_time_limit());
   time_limit->MergeWithGlobalTimeLimit(solver_time_limit);
+  // Count the deterministic time of the symmetry finder in the solver time
+  // limit.
+  ScopedDeterministicTimeAccounting dtime_accounting(solver_time_limit,
+                                                     time_limit.get());
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
   std::vector<int> factorized_automorphism_group_size;
   const absl::Status status = symmetry_finder.FindSymmetries(
@@ -919,12 +937,13 @@ void FindCpModelSymmetries(
     std::vector<int> to_delete;
     for (int j = 0; j < permutation->NumCycles(); ++j) {
       // Because variable nodes are in a separate equivalence class than any
-      // other node, a cycle can either contain only variable nodes or none, so
-      // we just need to check one element of the cycle.
+      // other node, a cycle can either contain only variable nodes or none,
+      // so we just need to check one element of the cycle.
       if (*(permutation->Cycle(j).begin()) >= problem.variables_size()) {
         to_delete.push_back(j);
         if (DEBUG_MODE) {
-          // Verify that the cycle's entire support does not touch any variable.
+          // Verify that the cycle's entire support does not touch any
+          // variable.
           for (const int node : permutation->Cycle(j)) {
             DCHECK_GE(node, problem.variables_size());
           }
@@ -1061,6 +1080,9 @@ FeasibilityStatus OrbitAndPropagation(absl::Span<const int> orbits, int var,
   // be duplicated to all the variables from an orbit! It is also why we just
   // need to propagate one variable here.
   Model model;
+  // Count the deterministic time spent on the local model.
+  ScopedDeterministicTimeAccounting dtime_accounting(
+      context->time_limit(), model.GetOrCreate<TimeLimit>());
   if (LoadModelForProbing(context, &model).unsat()) return kUnsat;
 
   auto* sat_solver = model.GetOrCreate<SatSolver>();
@@ -1149,67 +1171,39 @@ FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
     PresolveContext* context) {
   const SatParameters& params = context->params();
   const CpModelProto& proto = context->WorkingModel();
+  if (!proto.assumptions().empty()) return kOk;
 
-  // We need to make sure the proto is up to date before computing symmetries!
+  // Make sure constraints, objective, and variable domains are canonical and up
+  // to date in the proto before computing symmetries.
+  if (context->CanonicalizeConstraintsLazily().unsat()) return kUnsat;
   if (proto.has_objective()) {
+    if (context->CanonicalizeObjective().unsat()) return kUnsat;
     context->WriteObjectiveToProto();
   }
   context->WriteVariableDomainsToProto();
 
-  // Tricky: the equivalence relations are not part of the proto.
-  // We thus add them temporarily to compute the symmetry, but we can't
-  // use the context functions while doing that though!
-  //
-  // TODO(user): we should be able to always remove all affine relations, so
-  // this complexity can probably be removed now.
+  // Because constraints and the objective are canonicalized and assumptions are
+  // empty, no non-representative affine variable should remain referenced
+  // outside kAffineRelationConstraint (except test-only kDummyConstraint, which
+  // is never canonicalized and aborts symmetry detection below).
   const int num_vars = proto.variables_size();
-  std::vector<std::pair<int, AffineRelation::Relation>> to_add;
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
     if (context->VariableWasRemoved(var)) continue;
     if (context->VariableIsNotUsedAnymore(var)) continue;
+    if (context->GetAffineRelation(var).representative == var) continue;
 
-    const AffineRelation::Relation r = context->GetAffineRelation(var);
-    if (r.representative == var) continue;
-
-    // Skip non-representative variables whose only remaining usage is
-    // kAffineRelationConstraint (appearing nowhere in the working model,
-    // objective, or assumptions). Adding temporary equality constraints for
-    // them attaches dangling leaves to r.representative that can introduce
-    // spurious twin-leaf symmetries and disrupt orbitope extraction.
-    if (context->VariableIsUnique(var)) {
-      DCHECK(
-          context->VarToConstraints(var).contains(kAffineRelationConstraint));
-      continue;
+    for (const int c : context->VarToConstraints(var)) {
+      CHECK(c == kAffineRelationConstraint ||
+            (c >= 0 && context->Constraint(c).constraint_case() ==
+                           ConstraintProto::kDummyConstraint));
     }
-
-    to_add.push_back({var, r});
-  }
-
-  // Temporarily add affine relations still required.
-  int64_t num_added = 0;
-  const int initial_ct_index = proto.constraints().size();
-  CpModelProto* mutable_model = context->UnsafeMutableWorkingModel();
-  for (const auto [var, r] : to_add) {
-    ++num_added;
-    ConstraintProto* ct = mutable_model->add_constraints();
-    auto* arg = ct->mutable_linear();
-    arg->add_vars(var);
-    arg->add_coeffs(1);
-    arg->add_vars(r.representative);
-    arg->add_coeffs(-r.coeff);
-    arg->add_domain(r.offset);
-    arg->add_domain(r.offset);
   }
 
   // Find symmetries.
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, proto, &generators, context->logger(),
                         context->time_limit());
-
-  // Remove temporary affine relations.
-  mutable_model->mutable_constraints()->DeleteSubrange(initial_ct_index,
-                                                       num_added);
   if (generators.empty()) return kOk;
 
   // Collect the at most ones.
@@ -1389,15 +1383,17 @@ FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
         const auto& obj = context->WorkingModel().objective();
         CHECK_EQ(num_objective_terms, obj.vars().size());
         for (int i = 1; i < num_objective_terms; ++i) {
-          ConstraintProto* ct = context->AddConstraint();
-          auto* new_ct = ct->mutable_linear();
-          new_ct->add_vars(obj.vars(i - 1));
-          new_ct->add_vars(obj.vars(i));
-          new_ct->add_coeffs(1);
-          new_ct->add_coeffs(-1);
-          new_ct->add_domain(0);
-          new_ct->add_domain(kint64max);
-          context->CanonicalizeLinearConstraint(ct);
+          const int new_c =
+              context->AddConstraint([&](ConstraintProto* new_ct) {
+                auto* linear = new_ct->mutable_linear();
+                linear->add_vars(obj.vars(i - 1));
+                linear->add_vars(obj.vars(i));
+                linear->add_coeffs(1);
+                linear->add_coeffs(-1);
+                linear->add_domain(0);
+                linear->add_domain(kint64max);
+              });
+          if (context->CanonicalizeConstraint(new_c).unsat()) return kUnsat;
         }
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
         context->solution_crush().SortOrbitopeColumns(orbitope, objective_row);
@@ -1489,15 +1485,16 @@ FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
     if (orbit_sizes[orbit_index] > num_in_orbit + 1) {
       context->UpdateRuleStats(
           "symmetry: added orbit symmetry breaking implications");
-      auto* ct = context->AddConstraint();
-      auto* bool_and = ct->mutable_bool_and();
-      ct->add_enforcement_literal(NegatedRef(distinguished_var));
-      for (int var = 0; var < num_vars; ++var) {
-        if (orbits[var] != orbit_index) continue;
-        if (var == distinguished_var) continue;
-        if (context->IsFixed(var)) continue;
-        bool_and->add_literals(NegatedRef(var));
-      }
+      context->AddConstraint([&](ConstraintProto* new_ct) {
+        auto* bool_and = new_ct->mutable_bool_and();
+        new_ct->add_enforcement_literal(NegatedRef(distinguished_var));
+        for (int var = 0; var < num_vars; ++var) {
+          if (orbits[var] != orbit_index) continue;
+          if (var == distinguished_var) continue;
+          if (context->IsFixed(var)) continue;
+          bool_and->add_literals(NegatedRef(var));
+        }
+      });
     }
     return kOk;
   }
@@ -1781,14 +1778,15 @@ FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
         continue;
       }
 
-      ConstraintProto* ct = context->AddConstraint();
-      ct->mutable_linear()->add_coeffs(1);
-      ct->mutable_linear()->add_vars(orbitope[0][i]);
-      ct->mutable_linear()->add_coeffs(-1);
-      ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
-      ct->mutable_linear()->add_domain(0);
-      ct->mutable_linear()->add_domain(kint64max);
-      context->CanonicalizeLinearConstraint(ct);
+      const int new_c = context->AddConstraint([&](ConstraintProto* new_ct) {
+        new_ct->mutable_linear()->add_coeffs(1);
+        new_ct->mutable_linear()->add_vars(orbitope[0][i]);
+        new_ct->mutable_linear()->add_coeffs(-1);
+        new_ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
+        new_ct->mutable_linear()->add_domain(0);
+        new_ct->mutable_linear()->add_domain(kint64max);
+      });
+      if (context->CanonicalizeConstraint(new_c).unsat()) return kUnsat;
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
   } else if (orbitope.size() > 1) {
@@ -1804,24 +1802,26 @@ FeasibilityStatus DetectAndExploitSymmetriesInPresolve(
     const std::vector<int64_t> coeffs = BuildInequalityCoeffsForOrbitope(
         max_values, (int64_t{1} << kMaxBits), &is_approximated);
     for (int i = 0; i + 1 < orbitope[0].size(); ++i) {
-      ConstraintProto* ct = context->AddConstraint();
-      auto* arg = ct->mutable_linear();
-      for (int j = 0; j < orbitope.size(); ++j) {
-        const int64_t coeff = coeffs[j];
-        arg->add_vars(orbitope[j][i + 1]);
-        arg->add_coeffs(coeff);
-        arg->add_vars(orbitope[j][i]);
-        arg->add_coeffs(-coeff);
-        DCHECK_EQ(context->MaxOf(orbitope[j][i + 1]),
-                  context->MaxOf(orbitope[j][i]));
-        DCHECK_EQ(context->MinOf(orbitope[j][i + 1]),
-                  context->MinOf(orbitope[j][i]));
-      }
-      arg->add_domain(0);
-      arg->add_domain(kint64max);
-      context->CanonicalizeLinearConstraint(ct);
-      DCHECK(!PossibleIntegerOverflow(context->WorkingModel(), arg->vars(),
-                                      arg->coeffs()));
+      const int new_c = context->AddConstraint([&](ConstraintProto* new_ct) {
+        auto* arg = new_ct->mutable_linear();
+        for (int j = 0; j < orbitope.size(); ++j) {
+          const int64_t coeff = coeffs[j];
+          arg->add_vars(orbitope[j][i + 1]);
+          arg->add_coeffs(coeff);
+          arg->add_vars(orbitope[j][i]);
+          arg->add_coeffs(-coeff);
+          DCHECK_EQ(context->MaxOf(orbitope[j][i + 1]),
+                    context->MaxOf(orbitope[j][i]));
+          DCHECK_EQ(context->MinOf(orbitope[j][i + 1]),
+                    context->MinOf(orbitope[j][i]));
+        }
+        arg->add_domain(0);
+        arg->add_domain(kint64max);
+      });
+      if (context->CanonicalizeConstraint(new_c).unsat()) return kUnsat;
+      const LinearConstraintProto& arg = context->Constraint(new_c).linear();
+      DCHECK(!PossibleIntegerOverflow(context->WorkingModel(), arg.vars(),
+                                      arg.coeffs()));
     }
     context->UpdateRuleStats(
         absl::StrCat("symmetry: added linear ",

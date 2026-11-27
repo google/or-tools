@@ -415,7 +415,10 @@ class ViolationLsSolver : public SubSolver {
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_engine_(params_),
-        random_(random_engine_.bit_gen_ref()) {}
+        random_(random_engine_.bit_gen_ref()) {
+    shared_time_limit_->UpdateLocalLimit(&time_limit_);
+    dense_model_.SetTimeLimit(&time_limit_);
+  }
 
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~ViolationLsSolver() override;
@@ -450,6 +453,10 @@ class ViolationLsSolver : public SubSolver {
 
   // Return false if we could not initialize the evaluator in the time limit.
   bool Initialize();
+
+  // Moves the elapsed deterministic time of time_limit_ to dtime_, and updates
+  // the limits of time_limit_ from the shared time limit.
+  void RefreshLocalTimeLimit();
   void ResetCurrentSolution(bool use_hint, bool use_objective,
                             double perturbation_probability);
   void PerturbateCurrentSolution(double perturbation_probability);
@@ -516,9 +523,13 @@ class ViolationLsSolver : public SubSolver {
   // evaluator_->ViolatedConstraints.
   bool SlowCheckNumViolatedConstraints() const;
 
+  // Note that time_limit_ accumulates the deterministic time of the dense model
+  // copy updates, and of some constraint evaluations, since the last call to
+  // RefreshLocalTimeLimit().
   double DeterministicTime() const {
     return (evaluator_ == nullptr ? 0.0 : evaluator_->DeterministicTime()) +
-           dtime_.GetElapsedDeterministicTime();
+           dtime_.GetElapsedDeterministicTime() +
+           time_limit_.GetElapsedDeterministicTime();
   }
 
   const bool find_first_solution_;
@@ -534,6 +545,7 @@ class ViolationLsSolver : public SubSolver {
   const SatParameters params_;
   const std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* const shared_time_limit_;
+  TimeLimit time_limit_;
   SharedResponseManager* const shared_response_;
   SharedLsSolutionRepository* const shared_hints_;
   SharedStatTables* const stat_tables_;
@@ -582,7 +594,7 @@ class ViolationLsSolver : public SubSolver {
   std::vector<int64_t> tmp_breakpoints_;
 
   // Used for tracking the deterministic time only. See DeterministicTime().
-  TimeLimit dtime_;
+  mutable TimeLimit dtime_;
   std::optional<ModelStats> model_stats_;
   double search_dtime_since_rebuild_ = 0.0;
 };

@@ -29,6 +29,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -210,6 +211,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   SchedulingConstraintHelper* helper_;
   SchedulingDemandHelper* demands_;
   IntegerTrail* integer_trail_;
+  TimeLimit* time_limit_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;

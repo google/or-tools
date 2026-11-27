@@ -1442,6 +1442,11 @@ class Solver : public ReversibleEngine {
   /// creates holes in the domain of the variable.
   Constraint* MakeMemberCt(IntExpr* expr, const std::vector<int64_t>& values);
   Constraint* MakeMemberCt(IntExpr* expr, const std::vector<int>& values);
+#if !defined(SWIG)
+  /// expr should be in the list of allowed intervals.
+  Constraint* MakeMemberCt(IntExpr* expr,
+                           const SortedDisjointIntervalList& intervals);
+#endif  // !defined(SWIG)
 
   /// expr not in set.
   Constraint* MakeNotMemberCt(IntExpr* expr,
@@ -2826,9 +2831,6 @@ class Solver : public ReversibleEngine {
       const std::vector<IntVar*>& vars, DecisionBuilder* first_solution,
       DecisionBuilder* first_solution_sub_decision_builder,
       LocalSearchPhaseParameters* parameters);
-  DecisionBuilder* MakeLocalSearchPhase(const std::vector<SequenceVar*>& vars,
-                                        DecisionBuilder* first_solution,
-                                        LocalSearchPhaseParameters* parameters);
 
   /// Experimental: runs a local search on the given initial solution, checking
   /// the feasibility and the objective value of solutions using the filter

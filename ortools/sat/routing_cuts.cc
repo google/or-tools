@@ -66,6 +66,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -2159,6 +2160,7 @@ class RoutingCutHelper {
 
   // Helper to compute bounds on the minimum number of vehicles to serve a
   // subset.
+
   MaxBoundedSubsetSum max_bounded_subset_sum_;
   MaxBoundedSubsetSumExact max_bounded_subset_sum_exact_;
   MinOutgoingFlowHelper min_outgoing_flow_helper_;
@@ -3127,6 +3129,9 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   const int num_nodes = helper.num_nodes();
   if (num_nodes <= 2) return;
 
+  DeterministicTimer<{.scale = 2.7e-07, .offset = 2.8e-06}> timer(
+      helper.time_limit(), helper.ordered_arcs().size());
+
   std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
   GenerateInterestingSubsets(num_nodes, helper.ordered_arcs(),
@@ -3173,7 +3178,11 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   // Exact separation of symmetric Blossom cut. We use the algorithm in the
   // paper: "A Faster Exact Separation Algorithm for Blossom Inequalities", Adam
   // N. Letchford, Gerhard Reinelt, Dirk Oliver Theis, 2004.
-  if (num_added != 0) return;
+  if (num_added != 0) {
+    timer.Advance(static_cast<int64_t>(num_nodes) *
+                  symmetrized_relevant_arcs.size());
+    return;
+  }
   if (helper.time_limit()->LimitReached()) return;
   if (num_nodes <= 2) return;
   std::vector<ArcWithLpValue> for_blossom;
@@ -3185,6 +3194,8 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   }
   parent = ComputeGomoryHuTree(num_nodes, for_blossom, helper.time_limit());
   ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
+  timer.Advance(static_cast<int64_t>(num_nodes) *
+                (symmetrized_relevant_arcs.size() + for_blossom.size()));
   int last_added_start = -1;
   for (const absl::Span<const int> subset : subsets) {
     if (helper.time_limit()->LimitReached()) break;

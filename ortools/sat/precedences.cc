@@ -31,6 +31,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
@@ -48,6 +49,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -88,6 +90,8 @@ LinearExpression2Index Linear2Indices::AddOrGet(
 void Linear2Watcher::NotifyBoundChanged(LinearExpression2 expr) {
   DCHECK(expr.IsCanonicalizedAndGcdReduced());
   ++timestamp_;
+  DeterministicTimer<{.scale = 7.4e-09, .offset = 3.1e-08}> timer(
+      time_limit_, propagator_ids_.size());
   for (const int id : propagator_ids_) {
     watcher_->CallOnNextPropagate(id);
   }
@@ -183,6 +187,7 @@ int RootLevelLinear2Bounds::AugmentSimpleRelations(IntegerVariable var,
 
   // Note that this never touches in_coeff_one_lookup_[var/NegationOf(var)],
   // so it should be safe to iterate on it.
+  DeterministicTimer<{.scale = 8.8e-08, .offset = 4.6e-08}> timer(time_limit_);
   int work_done = 0;
   for (const auto [a, a_index] : coeff_one_var_lookup_[var]) {
     CHECK_NE(PositiveVariable(a), var);
@@ -190,12 +195,16 @@ int RootLevelLinear2Bounds::AugmentSimpleRelations(IntegerVariable var,
     for (const auto [b, b_index] : coeff_one_var_lookup_[NegationOf(var)]) {
       if (PositiveVariable(b) == PositiveVariable(a)) continue;
       CHECK_NE(PositiveVariable(b), var);
-      if (++work_done > work_limit) return work_done;
+      if (++work_done > work_limit) {
+        timer.Advance(work_done);
+        return work_done;
+      }
 
       const LinearExpression2 candidate{a, b, 1, 1};
       AddUpperBound(candidate, a_ub + best_upper_bounds_[b_index]);
     }
   }
+  timer.Advance(work_done);
   return work_done;
 }
 
@@ -254,7 +263,12 @@ RootLevelLinear2Bounds::GetSortedNonTrivialUpperBounds() const {
       result.push_back({expr, ub});
     }
   }
-  std::sort(result.begin(), result.end());
+  {
+    const uint64_t n = result.size();
+    DeterministicTimer<{.scale = 1.0e-08, .offset = 6.3e-08}> timer(
+        time_limit_, n * absl::bit_width(n));
+    std::sort(result.begin(), result.end());
+  }
   return result;
 }
 
@@ -519,70 +533,86 @@ bool TransitivePrecedencesEvaluator::Build() {
   const std::vector<std::pair<LinearExpression2, IntegerValue>>
       root_relations_sorted =
           root_level_bounds_->GetSortedNonTrivialUpperBounds();
-  int max_node = 0;
-  for (const auto [expr, _] : root_relations_sorted) {
-    max_node = std::max(max_node, PositiveVariable(expr.vars[0]).value());
-    max_node = std::max(max_node, PositiveVariable(expr.vars[1]).value());
-  }
-  max_node++;  // For negation.
+  {
+    DeterministicTimer2<{.scale1 = 0.0e+00, .scale2 = 1.7e-07}> timer(
+        time_limit_);
+    int max_node = 0;
+    for (const auto [expr, _] : root_relations_sorted) {
+      max_node = std::max(max_node, PositiveVariable(expr.vars[0]).value());
+      max_node = std::max(max_node, PositiveVariable(expr.vars[1]).value());
+    }
+    max_node++;  // For negation.
 
-  // Is it a DAG?
-  // Get a topological order of the DAG formed by all the arcs that are present.
-  //
-  // TODO(user): This can fail if we don't have a DAG. But in the end we
-  // don't really need a topological order, just something that is close to
-  // one so that we can compute an approximated transitive closure in O(n^2) and
-  // not O(n^3). We could use a heuristic instead, like as long as there are
-  // nodes with an in-degree of zero, add them to the order and update the
-  // in-degrees of the others (by removing outgoing arcs). If there is a cycle
-  // (i.e. no node with no incoming arc), pick one with a small in-degree
-  // randomly.
-  DenseIntStableTopologicalSorter sorter(max_node);
-  for (const auto [expr, negated_offset] : root_relations_sorted) {
-    // Coefficients should be positive.
-    DCHECK_GT(expr.coeffs[0], 0);
-    DCHECK_GT(expr.coeffs[1], 0);
-
-    // TODO(user): Support negative offset?
+    // Is it a DAG?
+    // Get a topological order of the DAG formed by all the arcs that are
+    // present.
     //
-    // Note that if we only have >= 0 ones, if we do have a cycle, we could
-    // make sure all variables are the same, and otherwise, we have a DAG or a
-    // conflict.
-    const IntegerValue offset = -negated_offset;
-    if (offset < 0) continue;
+    // TODO(user): This can fail if we don't have a DAG. But in the end we
+    // don't really need a topological order, just something that is close to
+    // one so that we can compute an approximated transitive closure in O(n^2)
+    // and not O(n^3). We could use a heuristic instead, like as long as there
+    // are nodes with an in-degree of zero, add them to the order and update the
+    // in-degrees of the others (by removing outgoing arcs). If there is a cycle
+    // (i.e. no node with no incoming arc), pick one with a small in-degree
+    // randomly.
+    DenseIntStableTopologicalSorter sorter(max_node);
+    int edges_added = 0;
+    for (const auto [expr, negated_offset] : root_relations_sorted) {
+      // Coefficients should be positive.
+      DCHECK_GT(expr.coeffs[0], 0);
+      DCHECK_GT(expr.coeffs[1], 0);
 
-    if (expr.coeffs[0] != 1 || expr.coeffs[1] != 1) {
-      // TODO(user): Support non-1 coefficients.
-      continue;
-    }
+      // TODO(user): Support negative offset?
+      //
+      // Note that if we only have >= 0 ones, if we do have a cycle, we could
+      // make sure all variables are the same, and otherwise, we have a DAG or a
+      // conflict.
+      const IntegerValue offset = -negated_offset;
+      if (offset < 0) continue;
 
-    // We have two arcs.
-    sorter.AddEdge(expr.vars[0].value(), NegationOf(expr.vars[1]).value());
-    sorter.AddEdge(expr.vars[1].value(), NegationOf(expr.vars[0]).value());
-  }
-  int next;
-  bool graph_has_cycle = false;
-  topological_order_.clear();
-  while (sorter.GetNext(&next, &graph_has_cycle, nullptr)) {
-    topological_order_.push_back(IntegerVariable(next));
-    if (graph_has_cycle) {
-      is_dag_ = false;
-      return true;
+      if (expr.coeffs[0] != 1 || expr.coeffs[1] != 1) {
+        // TODO(user): Support non-1 coefficients.
+        continue;
+      }
+
+      // We have two arcs.
+      ++edges_added;
+      sorter.AddEdge(expr.vars[0].value(), NegationOf(expr.vars[1]).value());
+      sorter.AddEdge(expr.vars[1].value(), NegationOf(expr.vars[0]).value());
     }
+    int next;
+    bool graph_has_cycle = false;
+    topological_order_.clear();
+    while (sorter.GetNext(&next, &graph_has_cycle, nullptr)) {
+      topological_order_.push_back(IntegerVariable(next));
+      if (graph_has_cycle) {
+        is_dag_ = false;
+        timer.Advance(edges_added, topological_order_.size());
+        return true;
+      }
+    }
+    is_dag_ = !graph_has_cycle;
+    timer.Advance(edges_added, topological_order_.size());
   }
-  is_dag_ = !graph_has_cycle;
 
   // Let's get the transitive closure if it is cheap. This is also a way not to
   // add too many relations per call.
   int total_work = 0;
   const int kWorkLimit = params_->transitive_precedences_work_limit();
   if (kWorkLimit > 0) {
-    for (const IntegerVariable var : topological_order_) {
+    DeterministicTimer<{.scale = 1.9e-08, .offset = 4.9e-08}> timer(
+        time_limit_);
+    int i = 0;
+    for (; i < topological_order_.size(); ++i) {
       const int work = root_level_bounds_->AugmentSimpleRelations(
-          var, kWorkLimit - total_work);
+          topological_order_[i], kWorkLimit - total_work);
       total_work += work;
-      if (total_work >= kWorkLimit) break;
+      if (total_work >= kWorkLimit) {
+        ++i;
+        break;
+      }
     }
+    timer.Advance(i);
   }
 
   build_timestamp_ = root_level_bounds_->num_updates();
@@ -1149,20 +1179,26 @@ int GreaterThanAtLeastOneOfDetector::
         absl::MakeSpan(clause_bounds).subspan(start, end - start);
 
     if (bounds.size() <= 1) continue;
-    if (time_limit->LimitReached()) return num_added_constraints;
+    if (time_limit->LimitReached()) {
+      return num_added_constraints;
+    }
 
     // Detect set of incoming arcs for which at least one must be present.
     // TODO(user): Find more than one disjoint set of incoming arcs.
     // TODO(user): call MinimizeCoreWithPropagation() on the clause.
     solver->Backtrack(0);
-    if (solver->ModelIsUnsat()) return num_added_constraints;
+    if (solver->ModelIsUnsat()) {
+      return num_added_constraints;
+    }
     std::vector<Literal> clause;
     for (const VariableConditionalAffineBound& bound : bounds) {
       const Literal literal = bound.enforcement_literal;
       if (solver->Assignment().LiteralIsFalse(literal)) continue;
       const SatSolver::Status status =
           solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
-      if (status == SatSolver::INFEASIBLE) return num_added_constraints;
+      if (status == SatSolver::INFEASIBLE) {
+        return num_added_constraints;
+      }
       if (status == SatSolver::ASSUMPTIONS_UNSAT) {
         // We need to invert it, since a clause is not all false.
         clause = solver->GetLastIncompatibleDecisions();
@@ -1188,7 +1224,6 @@ int GreaterThanAtLeastOneOfDetector::
       ++num_added_constraints;
     }
   }
-
   solver->Backtrack(0);
   return num_added_constraints;
 }
@@ -1235,8 +1270,9 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
     // - The automatic clause detection might be a better approach and it
     //   could be combined with probing.
     for (const SatClause* const clause : clauses->AllClausesInCreationOrder()) {
-      if (time_limit->LimitReached()) return num_added_constraints;
-      if (solver->ModelIsUnsat()) return num_added_constraints;
+      if (time_limit->LimitReached() || solver->ModelIsUnsat()) {
+        return num_added_constraints;
+      }
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(
           clause->AsSpan(), model, implied_bounds_by_literal);
     }
@@ -1248,8 +1284,9 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
     const int num_booleans = solver->NumVariables();
     if (num_booleans < 1e6) {
       for (int i = 0; i < num_booleans; ++i) {
-        if (time_limit->LimitReached()) return num_added_constraints;
-        if (solver->ModelIsUnsat()) return num_added_constraints;
+        if (time_limit->LimitReached() || solver->ModelIsUnsat()) {
+          return num_added_constraints;
+        }
         num_added_constraints +=
             AddGreaterThanAtLeastOneOfConstraintsFromClause(
                 {Literal(BooleanVariable(i), true),

@@ -158,9 +158,13 @@ def _add_enforced_linear_constraint_to_helper(
             helper.set_enforced_constraint_lower_bound(c.index, 0.0)
             helper.set_enforced_constraint_upper_bound(c.index, 0.0)
         else:
-            # constraint that is always infeasible: +oo <= nothing <= -oo
-            helper.set_enforced_constraint_lower_bound(c.index, 1)
-            helper.set_enforced_constraint_upper_bound(c.index, -1)
+            # Always infeasible when the indicator equals `value`. A row with
+            # lower > upper bound is rejected by the model validator, so constrain
+            # the indicator to `1 - value` instead, contradicting `var == value`.
+            bound = 0.0 if value else 1.0
+            helper.add_term_to_enforced_constraint(c.index, var.index, 1.0)
+            helper.set_enforced_constraint_lower_bound(c.index, bound)
+            helper.set_enforced_constraint_upper_bound(c.index, bound)
         return c
     if isinstance(bounded_expr, mbh.BoundedLinearExpression):
         c = EnforcedLinearConstraint(helper)
@@ -992,11 +996,9 @@ class Model:
         model.add_enforced(True, ivar, ivalue) will create a constraint 0 <= empty
         sum <= 0
 
-        model.add_enforced(False, var, value) will create a constraint inf <=
-        empty sum <= -inf
-
-        you can check the if a constraint is always false (lb=inf, ub=-inf) by
-        calling EnforcedLinearConstraint.is_always_false()
+        model.add_enforced(False, var, value) will create the enforced constraint
+        `var == value => 1 - value <= var <= 1 - value`, which forbids
+        `var == value` while leaving the other value of `var` free.
         """
         if isinstance(ct, mbh.BoundedLinearExpression):
             return _add_enforced_linear_constraint_to_helper(

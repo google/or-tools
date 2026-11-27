@@ -226,7 +226,7 @@ class PrimalEdgeNorms {
   // 'a'.
   ScatteredRow direction_left_inverse_;
 
-  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  LinearDeterministicTimer<{.scale = 3.4e-09}> deterministic_timer_;
 
   // Boolean(s) to set to false when the norms are changed outside of the
   // UpdateBeforeBasisPivot() function.

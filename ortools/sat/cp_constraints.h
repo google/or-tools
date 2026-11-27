@@ -28,6 +28,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_trail.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -104,6 +105,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
   std::vector<Literal> selectors_;
   std::vector<AffineExpression> exprs_;
 
+  TimeLimit* time_limit_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
 };

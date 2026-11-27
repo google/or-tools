@@ -25,7 +25,9 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_trail.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -50,6 +52,7 @@ std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
 
 EnforcementPropagator::EnforcementPropagator(Model* model)
     : SatPropagator("EnforcementPropagator"),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       trail_(*model->GetOrCreate<Trail>()),
       assignment_(trail_.Assignment()) {
   // Sentinel - also start of next Register().
@@ -101,6 +104,8 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
   rev_int_repository_.SetLevel(trail_.CurrentDecisionLevel());
   // Simply revert the status change.
   const int size = static_cast<int>(untrail_stack_.size());
+  DeterministicTimer<{.scale = 1.1e-07}> timer(
+      time_limit_, size > rev_stack_size_ ? size - rev_stack_size_ : 0);
   for (int i = size - 1; i >= rev_stack_size_; --i) {
     const auto [id, status] = untrail_stack_[i];
     statuses_[id] = status;
@@ -242,6 +247,7 @@ LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
   const EnforcementStatus status = statuses_[id];
   if (status == EnforcementStatus::IS_FALSE) return kNoLiteralIndex;
 
+  DeterministicTimer<{.scale = 2.5e-09, .offset = 4.7e-07}> timer(time_limit_);
   const auto span = GetSpan(id);
   if (span.size() == 1) {
     CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
@@ -260,15 +266,18 @@ LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
     const Literal l = span[i];
     if (assignment_.LiteralIsFalse(l)) {
       ChangeStatus(id, EnforcementStatus::IS_FALSE);
+      timer.Advance(i - 1);
       return kNoLiteralIndex;
     }
     if (!assignment_.LiteralIsAssigned(l)) {
       // Replace the watched literal. Note that if the other watched literal is
       // true, it should be processed afterwards. We do not change the status.
       std::swap(span[watched_pos], span[i]);
+      timer.Advance(i - 1);
       return span[watched_pos].Index();
     }
   }
+  timer.Advance(span.size() - 2);
 
   // All literals with index > 1 are true. Two cases.
   if (assignment_.LiteralIsTrue(span[watched_pos ^ 1])) {

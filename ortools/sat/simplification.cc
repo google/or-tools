@@ -14,6 +14,7 @@
 #include "ortools/sat/simplification.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <utility>
@@ -23,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue.h"
@@ -36,6 +38,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_status.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -180,9 +183,14 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
       l = Literal(equiv_mapping_[l]);
     }
   }
-  std::sort(clause_ref.begin(), clause_ref.end());
-  clause_ref.erase(std::unique(clause_ref.begin(), clause_ref.end()),
-                   clause_ref.end());
+  {
+    const size_t n = clause_ref.size();
+    DeterministicTimer<{.scale = 7.6e-10, .offset = 2.0e-08}> timer(
+        time_limit_, n * absl::bit_width(n));
+    std::sort(clause_ref.begin(), clause_ref.end());
+    clause_ref.erase(std::unique(clause_ref.begin(), clause_ref.end()),
+                     clause_ref.end());
+  }
 
   // Check for trivial clauses:
   for (int i = 1; i < clause_ref.size(); ++i) {
@@ -208,9 +216,13 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
     literal_to_clauses_.resize(required_size);
     literal_to_clause_sizes_.resize(required_size);
   }
-  for (Literal e : clause_ref) {
-    literal_to_clauses_[e].push_back(ci);
-    literal_to_clause_sizes_[e]++;
+  {
+    DeterministicTimer<{.scale = 4.4e-08}> timer(time_limit_,
+                                                 clause_ref.size());
+    for (Literal e : clause_ref) {
+      literal_to_clauses_[e].push_back(ci);
+      literal_to_clause_sizes_[e]++;
+    }
   }
 }
 
@@ -223,15 +235,19 @@ void SatPresolver::SetNumVariables(int num_variables) {
 }
 
 void SatPresolver::RebuildLiteralToClauses() {
+  DeterministicTimer<{.scale = 3.5e-08}> timer(time_limit_);
   const int size = literal_to_clauses_.size();
+  int64_t work = size;
   literal_to_clauses_.clear();
   literal_to_clauses_.resize(size);
   for (ClauseIndex ci(0); ci < clauses_.size(); ++ci) {
+    work += clauses_[ci].size();
     for (const Literal lit : clauses_[ci]) {
       literal_to_clauses_[lit].push_back(ci);
     }
   }
   num_deleted_literals_since_last_cleanup_ = 0;
+  timer.Advance(work);
 }
 
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
@@ -305,11 +321,19 @@ bool SatPresolver::ProcessAllClauses() {
 
   // Because on large problems we don't have a budget to process all clauses,
   // let's start with the smallest ones first.
-  std::stable_sort(clause_to_process_.begin(), clause_to_process_.end(),
-                   [this](ClauseIndex c1, ClauseIndex c2) {
-                     return clauses_[c1].size() < clauses_[c2].size();
-                   });
+  {
+    const size_t n = clause_to_process_.size();
+    DeterministicTimer<{.scale = 3.5e-09, .offset = 1.2e-09}> timer(
+        time_limit_, n * absl::bit_width(n));
+    std::stable_sort(clause_to_process_.begin(), clause_to_process_.end(),
+                     [this](ClauseIndex c1, ClauseIndex c2) {
+                       return clauses_[c1].size() < clauses_[c2].size();
+                     });
+  }
+  DeterministicTimer<{.scale = 4.5e-08, .offset = 1.4e-07}> timer(time_limit_);
+  int iters = 0;
   while (!clause_to_process_.empty()) {
+    ++iters;
     const ClauseIndex ci = clause_to_process_.front();
     in_clause_to_process_[ci] = false;
     clause_to_process_.pop_front();
@@ -318,12 +342,17 @@ bool SatPresolver::ProcessAllClauses() {
       if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) {
         VLOG(1) << "Aborting ProcessAllClauses() because work limit has been "
                    "reached";
+        timer.Advance(iters);
         return true;
       }
-      if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
+      if (time_limit_ != nullptr && time_limit_->LimitReached()) {
+        timer.Advance(iters);
+        return true;
+      }
       num_skipped_checks = 0;
     }
   }
+  timer.Advance(iters);
   return true;
 }
 
@@ -360,19 +389,31 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
 
   InitializePriorityQueue();
-  while (var_pq_.Size() > 0) {
-    const BooleanVariable var = var_pq_.Top()->variable;
-    var_pq_.Pop();
-    if (!can_be_removed[var.value()]) continue;
-    if (CrossProduct(Literal(var, true)).modified()) {
-      if (!ProcessAllClauses()) return false;
+  {
+    DeterministicTimer<{.scale = 3.0e-07}> dtimer(time_limit_);
+    int iters = 0;
+    while (var_pq_.Size() > 0) {
+      ++iters;
+      const BooleanVariable var = var_pq_.Top()->variable;
+      var_pq_.Pop();
+      if (!can_be_removed[var.value()]) continue;
+      if (CrossProduct(Literal(var, true)).modified()) {
+        if (!ProcessAllClauses()) return false;
 
-      if (num_deleted_literals_since_last_cleanup_ > 1e7) {
-        RebuildLiteralToClauses();
+        if (num_deleted_literals_since_last_cleanup_ > 1e7) {
+          RebuildLiteralToClauses();
+        }
+      }
+      if (time_limit_ != nullptr && time_limit_->LimitReached()) {
+        dtimer.Advance(iters);
+        return true;
+      }
+      if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) {
+        dtimer.Advance(iters);
+        return true;
       }
     }
-    if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
-    if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
+    dtimer.Advance(iters);
   }
   if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
 
@@ -385,15 +426,27 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   return true;
 }
 
-// TODO(user): Put work limit in place !
 void SatPresolver::PresolveWithBva() {
+  // SimpleBva() can be quadratic in the size of the occurrence lists, so we
+  // bound the total deterministic time spent here. Without this, on large
+  // instances (e.g. SAT20 ncc_none_*), BVA alone could take minutes for a
+  // negligible reduction.
+  //
+  // TODO(user): Make this a parameter.
+  constexpr double kBvaDeterministicTimeLimit = 10.0;
+  const double stop_dtime = time_limit_ == nullptr
+                                ? 0.0
+                                : time_limit_->GetElapsedDeterministicTime() +
+                                      kBvaDeterministicTimeLimit;
   var_pq_elements_.clear();  // so we don't update it.
   InitializeBvaPriorityQueue();
   while (bva_pq_.Size() > 0) {
     const LiteralIndex lit = bva_pq_.Top()->literal;
     bva_pq_.Pop();
     SimpleBva(lit);
-    if (time_limit_ != nullptr && time_limit_->LimitReached()) break;
+    if (time_limit_ == nullptr) continue;
+    if (time_limit_->LimitReached()) break;
+    if (time_limit_->GetElapsedDeterministicTime() > stop_dtime) break;
   }
 }
 
@@ -409,74 +462,85 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   m_cls_ = literal_to_clauses_[l];
 
   int reduction = 0;
-  for (int loop = 0; loop < 100; ++loop) {
-    LiteralIndex lmax = kNoLiteralIndex;
-    int max_size = 0;
+  {
+    DeterministicTimer<{.scale = 3.1e-09, .offset = 5.7e-08}> timer(
+        time_limit_);
+    int64_t inner_iters = 0;
+    for (int loop = 0; loop < 100; ++loop) {
+      LiteralIndex lmax = kNoLiteralIndex;
+      int max_size = 0;
 
-    flattened_p_.clear();
-    for (const ClauseIndex c : m_cls_) {
-      const std::vector<Literal>& clause = clauses_[c];
-      if (clause.empty()) continue;  // It has been deleted.
+      flattened_p_.clear();
+      for (const ClauseIndex c : m_cls_) {
+        const std::vector<Literal>& clause = clauses_[c];
+        if (clause.empty()) continue;  // It has been deleted.
 
-      // Find a literal different from l that occurs in the fewest number of
-      // clauses.
-      const LiteralIndex l_min =
-          FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
-      if (l_min == kNoLiteralIndex) continue;
+        // Find a literal different from l that occurs in the fewest number of
+        // clauses.
+        inner_iters += clause.size();
+        const LiteralIndex l_min =
+            FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
+        if (l_min == kNoLiteralIndex) continue;
 
-      // Find all the clauses of the form "clause \ {l} + {l'}", for a literal
-      // l' that is not in the clause.
-      for (const ClauseIndex d : literal_to_clauses_[l_min]) {
-        if (clause.size() != clauses_[d].size()) continue;
-        const LiteralIndex l_diff =
-            DifferAtGivenLiteral(clause, clauses_[d], Literal(l));
-        if (l_diff == kNoLiteralIndex || m_lit_.count(l_diff) > 0) continue;
-        if (l_diff == Literal(l).NegatedIndex()) {
-          // Self-subsumption!
-          //
-          // TODO(user): Not sure this can happen after the presolve we did
-          // before calling SimpleBva().
-          VLOG(1) << "self-subsumption";
-        }
+        // Find all the clauses of the form "clause \ {l} + {l'}", for a literal
+        // l' that is not in the clause.
+        for (const ClauseIndex d : literal_to_clauses_[l_min]) {
+          ++inner_iters;
+          if (clause.size() != clauses_[d].size()) continue;
+          inner_iters += clause.size();
+          const LiteralIndex l_diff =
+              DifferAtGivenLiteral(clause, clauses_[d], Literal(l));
+          if (l_diff == kNoLiteralIndex || m_lit_.count(l_diff) > 0) continue;
+          if (l_diff == Literal(l).NegatedIndex()) {
+            // Self-subsumption!
+            //
+            // TODO(user): Not sure this can happen after the presolve we did
+            // before calling SimpleBva().
+            VLOG(1) << "self-subsumption";
+          }
 
-        flattened_p_.push_back({l_diff, c});
-        const int new_size = ++literal_to_p_size_[l_diff];
-        if (new_size > max_size) {
-          lmax = l_diff;
-          max_size = new_size;
+          flattened_p_.push_back({l_diff, c});
+          const int new_size = ++literal_to_p_size_[l_diff];
+          if (new_size > max_size) {
+            lmax = l_diff;
+            max_size = new_size;
+          }
         }
       }
+
+      if (lmax == kNoLiteralIndex) break;
+      const int new_m_lit_size = m_lit_.size() + 1;
+      const int new_m_cls_size = max_size;
+      const int new_reduction =
+          new_m_lit_size * new_m_cls_size - new_m_cls_size - new_m_lit_size;
+
+      if (new_reduction <= reduction) break;
+      DCHECK_NE(1, new_m_lit_size);
+      DCHECK_NE(1, new_m_cls_size);
+
+      // TODO(user): Instead of looping and recomputing p_ again, we can instead
+      // simply intersect the clause indices in p_. This should be a lot faster.
+      // That said, we loop again only when we have a reduction, so this happens
+      // not that often compared to the initial computation of p.
+      reduction = new_reduction;
+      m_lit_.insert(lmax);
+
+      // Set m_cls_ to p_[lmax].
+      m_cls_.clear();
+      inner_iters += flattened_p_.size();
+      for (const auto& entry : flattened_p_) {
+        literal_to_p_size_[entry.first] = 0;
+        if (entry.first == lmax) m_cls_.push_back(entry.second);
+      }
+      flattened_p_.clear();
     }
 
-    if (lmax == kNoLiteralIndex) break;
-    const int new_m_lit_size = m_lit_.size() + 1;
-    const int new_m_cls_size = max_size;
-    const int new_reduction =
-        new_m_lit_size * new_m_cls_size - new_m_cls_size - new_m_lit_size;
-
-    if (new_reduction <= reduction) break;
-    DCHECK_NE(1, new_m_lit_size);
-    DCHECK_NE(1, new_m_cls_size);
-
-    // TODO(user): Instead of looping and recomputing p_ again, we can instead
-    // simply intersect the clause indices in p_. This should be a lot faster.
-    // That said, we loop again only when we have a reduction, so this happens
-    // not that often compared to the initial computation of p.
-    reduction = new_reduction;
-    m_lit_.insert(lmax);
-
-    // Set m_cls_ to p_[lmax].
-    m_cls_.clear();
-    for (const auto& entry : flattened_p_) {
-      literal_to_p_size_[entry.first] = 0;
-      if (entry.first == lmax) m_cls_.push_back(entry.second);
-    }
+    // Make sure literal_to_p_size_ is all zero.
+    inner_iters += flattened_p_.size();
+    for (const auto& entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
     flattened_p_.clear();
+    timer.Advance(inner_iters);
   }
-
-  // Make sure literal_to_p_size_ is all zero.
-  for (const auto& entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
-  flattened_p_.clear();
 
   // A strictly positive reduction means that applying the BVA transform will
   // reduce the overall number of clauses by that much. Here we can control
@@ -495,51 +559,65 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   bva_pq_elements_[x_false.value()].literal = x_false;
 
   // Add the new clauses.
-  for (const LiteralIndex lit : m_lit_) {
-    tmp_new_clause_ = {Literal(lit), Literal(x_true)};
-    AddClauseInternal(&tmp_new_clause_);
-  }
-  for (const ClauseIndex ci : m_cls_) {
-    tmp_new_clause_ = clauses_[ci];
-    DCHECK(!tmp_new_clause_.empty());
-    for (Literal& ref : tmp_new_clause_) {
-      if (ref.Index() == l) {
-        ref = Literal(x_false);
-        break;
-      }
-    }
-
-    // TODO(user): we can be more efficient here since the clause used to
-    // derive this one is already sorted. We just need to insert x_false in
-    // the correct place and remove l.
-    std::sort(tmp_new_clause_.begin(), tmp_new_clause_.end());
-    AddClauseInternal(&tmp_new_clause_);
-  }
-
-  // Delete the old clauses.
-  //
-  // TODO(user): do that more efficiently? we can simply store the clause d
-  // instead of finding it again. That said, this is executed only when a
-  // reduction occurs, whereas the start of this function occurs all the time,
-  // so we want it to be as fast as possible.
-  for (const ClauseIndex c : m_cls_) {
-    const std::vector<Literal>& clause = clauses_[c];
-    DCHECK(!clause.empty());
-    const LiteralIndex l_min =
-        FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
+  {
+    DeterministicTimer<{.scale = 5.1e-09, .offset = 1.9e-08}> timer(
+        time_limit_);
+    uint64_t inner_work = 2 * m_lit_.size();
     for (const LiteralIndex lit : m_lit_) {
-      if (lit == l) continue;
-      for (const ClauseIndex d : literal_to_clauses_[l_min]) {
-        if (clause.size() != clauses_[d].size()) continue;
-        const LiteralIndex l_diff =
-            DifferAtGivenLiteral(clause, clauses_[d], Literal(l));
-        if (l_diff == lit) {
-          Remove(d);
+      tmp_new_clause_ = {Literal(lit), Literal(x_true)};
+      AddClauseInternal(&tmp_new_clause_);
+    }
+    for (const ClauseIndex ci : m_cls_) {
+      tmp_new_clause_ = clauses_[ci];
+      DCHECK(!tmp_new_clause_.empty());
+      for (Literal& ref : tmp_new_clause_) {
+        ++inner_work;
+        if (ref.Index() == l) {
+          ref = Literal(x_false);
           break;
         }
       }
+
+      // TODO(user): we can be more efficient here since the clause used to
+      // derive this one is already sorted. We just need to insert x_false in
+      // the correct place and remove l.
+      const size_t n = tmp_new_clause_.size();
+      std::sort(tmp_new_clause_.begin(), tmp_new_clause_.end());
+      inner_work += n * absl::bit_width(n);
+      AddClauseInternal(&tmp_new_clause_);
     }
-    Remove(c);
+
+    // Delete the old clauses.
+    //
+    // TODO(user): do that more efficiently? we can simply store the clause d
+    // instead of finding it again. That said, this is executed only when a
+    // reduction occurs, whereas the start of this function occurs all the time,
+    // so we want it to be as fast as possible.
+    for (const ClauseIndex c : m_cls_) {
+      const std::vector<Literal>& clause = clauses_[c];
+      DCHECK(!clause.empty());
+      inner_work += clause.size();
+      const LiteralIndex l_min =
+          FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
+      for (const LiteralIndex lit : m_lit_) {
+        if (lit == l) continue;
+        for (const ClauseIndex d : literal_to_clauses_[l_min]) {
+          ++inner_work;
+          if (clause.size() != clauses_[d].size()) continue;
+          inner_work += clause.size();
+          const LiteralIndex l_diff =
+              DifferAtGivenLiteral(clause, clauses_[d], Literal(l));
+          if (l_diff == lit) {
+            inner_work += clauses_[d].size();
+            Remove(d);
+            break;
+          }
+        }
+      }
+      inner_work += clause.size();
+      Remove(c);
+    }
+    timer.Advance(inner_work);
   }
 
   // Add these elements to the priority queue.
@@ -575,6 +653,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   // trigger a "cleaning" below.
   bool need_cleaning = false;
   num_inspected_signatures_ += literal_to_clauses_[lit].size();
+  const int64_t initial_inspected_literals = num_inspected_literals_;
+  int64_t extra_work = 0;
+  DeterministicTimer<{.scale = 5.9e-10}> timer(time_limit_);
   for (const ClauseIndex ci : literal_to_clauses_[lit]) {
     const uint64_t ci_signature = signatures_[ci];
 
@@ -599,13 +680,17 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
         continue;
       } else {
         DCHECK_NE(opposite_literal, lit.Index());
-        if (clauses_[ci].empty()) return false;  // UNSAT.
+        if (clauses_[ci].empty()) {
+          return false;  // UNSAT.
+        }
 
         // Recompute signature.
+        extra_work += clauses_[ci].size();
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
 
         // Remove ci from the occurrence list. Note that opposite_literal
         // cannot be literal or literal.Negated().
+        extra_work += literal_to_clauses_[opposite_literal].size();
         gtl::STLEraseAllFromSequence(&literal_to_clauses_[opposite_literal],
                                      ci);
         --literal_to_clause_sizes_[opposite_literal];
@@ -622,12 +707,15 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   if (need_cleaning) {
     int new_index = 0;
     auto& occurrence_list_ref = literal_to_clauses_[lit];
+    extra_work += occurrence_list_ref.size();
     for (const ClauseIndex ci : occurrence_list_ref) {
       if (signatures_[ci] != 0) occurrence_list_ref[new_index++] = ci;
     }
     occurrence_list_ref.resize(new_index);
     DCHECK_EQ(literal_to_clause_sizes_[lit], new_index);
   }
+  timer.Advance((num_inspected_literals_ - initial_inspected_literals) +
+                extra_work);
 
   return true;
 }
@@ -661,6 +749,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
     int new_index = 0;
     bool something_removed = false;
     auto& occurrence_list_ref = literal_to_clauses_[lit.NegatedIndex()];
+    const int64_t initial_inspected_literals = num_inspected_literals_;
+    int64_t extra_work = 2 * clause.size();
+    DeterministicTimer<{.scale = 7.0e-10}> timer(time_limit_);
     const uint64_t clause_signature = signatures_[clause_index];
     for (const ClauseIndex ci : occurrence_list_ref) {
       const uint64_t ci_signature = signatures_[ci];
@@ -676,9 +767,12 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
                          &num_inspected_literals_)
               .modified()) {
         DCHECK_EQ(opposite_literal, lit.NegatedIndex());
-        if (clauses_[ci].empty()) return false;  // UNSAT.
+        if (clauses_[ci].empty()) {
+          return false;  // UNSAT.
+        }
 
         // Recompute signature.
+        extra_work += clauses_[ci].size();
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
 
         if (!in_clause_to_process_[ci]) {
@@ -696,6 +790,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
     if (something_removed) {
       UpdatePriorityQueue(Literal(lit.NegatedIndex()).Variable());
     }
+    timer.Advance((num_inspected_literals_ - initial_inspected_literals) +
+                  extra_work);
   }
   return true;
 }
@@ -759,67 +855,83 @@ ModificationStatus SatPresolver::CrossProduct(Literal x) {
 
   // Test whether we should remove the x.Variable().
   int size = 0;
-  for (ClauseIndex i : literal_to_clauses_[x]) {
-    if (clauses_[i].empty()) continue;
-    bool no_resolvant = true;
-    for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
-      if (clauses_[j].empty()) continue;
-      const int rs = ComputeResolvantSize(x, clauses_[i], clauses_[j]);
-      if (rs >= 0) {
-        no_resolvant = false;
-        size += clause_weight + rs;
+  {
+    DeterministicTimer<{.scale = 3.2e-09}> timer(time_limit_);
+    int64_t inner_work = 0;
+    for (ClauseIndex i : literal_to_clauses_[x]) {
+      if (clauses_[i].empty()) continue;
+      bool no_resolvant = true;
+      for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
+        if (clauses_[j].empty()) continue;
+        inner_work += clauses_[i].size() + clauses_[j].size();
+        const int rs = ComputeResolvantSize(x, clauses_[i], clauses_[j]);
+        if (rs >= 0) {
+          no_resolvant = false;
+          size += clause_weight + rs;
 
-        // Abort early if the "size" becomes too big.
-        if (size > threshold) return kUnchanged;
+          // Abort early if the "size" becomes too big.
+          if (size > threshold) {
+            timer.Advance(inner_work);
+            return kUnchanged;
+          }
+        }
+      }
+      if (no_resolvant && parameters_.presolve_blocked_clause()) {
+        // This is an incomplete heuristic for blocked clause detection. Here,
+        // the clause i is "blocked", so we can remove it. Note that the code
+        // below already does that if we decide to eliminate x.
+        //
+        // For more details, see the paper "Blocked clause elimination", Matti
+        // Jarvisalo, Armin Biere, Marijn Heule. TACAS, volume 6015 of Lecture
+        // Notes in Computer Science, pages 129–144. Springer, 2010.
+        //
+        // TODO(user): Choose if we use x or x.Negated() depending on the list
+        // sizes? The function achieves the same if x = x.Negated(), however the
+        // loops are not done in the same order which may change this incomplete
+        // "blocked" clause detection.
+        RemoveAndRegisterForPostsolve(i, x);
       }
     }
-    if (no_resolvant && parameters_.presolve_blocked_clause()) {
-      // This is an incomplete heuristic for blocked clause detection. Here,
-      // the clause i is "blocked", so we can remove it. Note that the code
-      // below already does that if we decide to eliminate x.
-      //
-      // For more details, see the paper "Blocked clause elimination", Matti
-      // Jarvisalo, Armin Biere, Marijn Heule. TACAS, volume 6015 of Lecture
-      // Notes in Computer Science, pages 129–144. Springer, 2010.
-      //
-      // TODO(user): Choose if we use x or x.Negated() depending on the list
-      // sizes? The function achieves the same if x = x.Negated(), however the
-      // loops are not done in the same order which may change this incomplete
-      // "blocked" clause detection.
-      RemoveAndRegisterForPostsolve(i, x);
-    }
+    timer.Advance(inner_work);
   }
 
   // Add all the resolvant clauses.
   // Note that the variable priority queue will only be updated during the
   // deletion.
-  std::vector<Literal> temp;
-  for (ClauseIndex i : literal_to_clauses_[x]) {
-    if (clauses_[i].empty()) continue;
-    for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
-      if (clauses_[j].empty()) continue;
-      if (ComputeResolvant(x, clauses_[i], clauses_[j], &temp)) {
-        AddClauseInternal(&temp);
+  {
+    DeterministicTimer<{.scale = 4.7e-08}> timer(time_limit_);
+    int64_t work = sum_for_x + sum_for_not_x;
+    std::vector<Literal> temp;
+    for (ClauseIndex i : literal_to_clauses_[x]) {
+      if (clauses_[i].empty()) continue;
+      for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
+        if (clauses_[j].empty()) continue;
+        work += clauses_[i].size() + clauses_[j].size();
+        if (ComputeResolvant(x, clauses_[i], clauses_[j], &temp)) {
+          work += temp.size();
+          AddClauseInternal(&temp);
+        }
       }
     }
-  }
 
-  // Deletes the old clauses.
-  //
-  // TODO(user): We could only update the priority queue once for each variable
-  // instead of doing it many times.
-  bool push_x_for_postsolve = true;
-  bool push_not_x_for_postsolve = true;
-  if (parameters_.filter_sat_postsolve_clauses() && sum_for_x > 0 &&
-      sum_for_not_x > 0) {
-    if (sum_for_x <= sum_for_not_x) {
-      push_not_x_for_postsolve = false;
-    } else {
-      push_x_for_postsolve = false;
+    // Deletes the old clauses.
+    //
+    // TODO(user): We could only update the priority queue once for each
+    // variable instead of doing it many times.
+    bool push_x_for_postsolve = true;
+    bool push_not_x_for_postsolve = true;
+    if (parameters_.filter_sat_postsolve_clauses() && sum_for_x > 0 &&
+        sum_for_not_x > 0) {
+      if (sum_for_x <= sum_for_not_x) {
+        push_not_x_for_postsolve = false;
+      } else {
+        push_x_for_postsolve = false;
+      }
     }
+    RemoveAllClauseContaining(x, push_x_for_postsolve);
+    RemoveAllClauseContaining(x.Negated(), push_not_x_for_postsolve);
+    timer.Advance(work);
   }
-  RemoveAllClauseContaining(x, push_x_for_postsolve);
-  RemoveAllClauseContaining(x.Negated(), push_not_x_for_postsolve);
 
   // TODO(user): At this point x.Variable() is added back to the priority queue.
   // Avoid doing that.
@@ -1122,7 +1234,8 @@ class PropagationGraph {
  public:
   PropagationGraph(double deterministic_time_limit, SatSolver* solver)
       : solver_(solver),
-        deterministic_time_limit(solver->deterministic_time() +
+        time_limit_(solver->model()->GetOrCreate<TimeLimit>()),
+        deterministic_time_limit(time_limit_->GetElapsedDeterministicTime() +
                                  deterministic_time_limit) {}
 
   // This type is neither copyable nor movable.
@@ -1141,7 +1254,7 @@ class PropagationGraph {
     // the equivalent literals detection will be incomplete but correct. Note
     // also that thanks to the SCC algorithm, we will explore the connected
     // components first.
-    if (solver_->deterministic_time() > deterministic_time_limit) {
+    if (time_limit_->GetElapsedDeterministicTime() > deterministic_time_limit) {
       return scratchpad_;
     }
 
@@ -1163,6 +1276,7 @@ class PropagationGraph {
  private:
   mutable std::vector<int32_t> scratchpad_;
   SatSolver* const solver_;
+  TimeLimit* const time_limit_;
   const double deterministic_time_limit;
 };
 

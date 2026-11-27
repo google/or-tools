@@ -88,6 +88,10 @@ build:windows --enable_runfiles
 # Stop on first test error.
 build:ci --notest_keep_going
 
+# Disable sandbox directory recycling on CI to avoid `File exists` input-staging
+# collisions across sharded tests (e.g. //ortools/graph:one_tree_lower_bound_test).
+build:ci --noreuse_sandbox_directories
+
 # Show test errors.
 build:ci --test_output=errors
 

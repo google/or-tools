@@ -33,6 +33,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -52,9 +53,11 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -726,6 +729,37 @@ namespace {
 // Minimum amount of violation of the cut constraint by the solution. This
 // is needed to avoid numerical issues and adding cuts with minor effect.
 const double kMinCutViolation = 1e-4;
+constexpr absl::int128 kMaxSafeCutInt128 =
+    absl::MakeInt128(int64_t{1} << 61, 0);
+
+// Largest |coeff| for which f(coeff), GetBumpedCoeff(), and ApplyGubLifting()
+// stay strictly within int64_t bounds without checking inside f().
+IntegerValue MaxSafeCoeffForFunction(IntegerValue divisor,
+                                     IntegerValue f_divisor) {
+  DCHECK_GT(divisor, 0);
+  const int64_t denom = std::max<int64_t>(1, IntTypeAbs(f_divisor).value());
+  const int64_t max_quotient_plus_one =
+      (kMaxIntegerValue.value() / 4) / denom - 2;
+  if (max_quotient_plus_one <= 0) return IntegerValue(0);
+  if (max_quotient_plus_one > kint64max / divisor.value()) {
+    return IntegerValue(kint64max);
+  }
+  return IntegerValue(max_quotient_plus_one * divisor.value() - 1);
+}
+
+bool CanApplyToInt128Safely(IntegerValue divisor, IntegerValue f_divisor,
+                            absl::int128 value) {
+  if (value >= -absl::int128(kint64max) && value <= absl::int128(kint64max)) {
+    return true;
+  }
+  if (f_divisor <= divisor) {
+    return value >= -kMaxSafeCutInt128 && value <= kMaxSafeCutInt128;
+  }
+  if (value == absl::Int128Min()) return false;
+  const absl::int128 abs_val = value >= 0 ? value : -value;
+  const absl::int128 max_q = abs_val / absl::int128(divisor.value()) + 2;
+  return max_q <= kMaxSafeCutInt128 / absl::int128(f_divisor.value());
+}
 
 IntegerValue PositiveRemainder(absl::int128 dividend,
                                IntegerValue positive_divisor) {
@@ -906,49 +940,61 @@ GUBHelper::~GUBHelper() {
 }
 
 void GUBHelper::ExtractAndSortAmoLiterals(const CutData& cut) {
-  literals_.clear();
-  amo_count_.clear();
+  {
+    DeterministicTimer2<{.scale1 = 1.7e-07, .scale2 = 2.1e-08}> timer(
+        time_limit_);
+    literals_.clear();
+    amo_count_.clear();
 
-  // Recover the LiteralIndex corresponding to the simple Boolean terms.
-  const int num_terms = cut.terms.size();
-  const int limit = integer_encoder_->NumVariables();
-  for (int i = 0; i < num_terms; ++i) {
-    const CutTerm& entry = cut.terms[i];
-    if (entry.bound_diff != 1) continue;
-    if (!entry.IsSimple()) continue;
-    if (!VariableIsPositive(entry.expr_vars[0])) continue;
-    if (entry.expr_vars[0] >= limit) continue;
-    if (integer_trail_->LevelZeroLowerBound(entry.expr_vars[0]) != 0) continue;
-    if (integer_trail_->LevelZeroUpperBound(entry.expr_vars[0]) != 1) continue;
+    // Recover the LiteralIndex corresponding to the simple Boolean terms.
+    const int num_terms = cut.terms.size();
+    const int limit = integer_encoder_->NumVariables();
+    uint64_t stage2_work = 0;
+    uint64_t stage3_work = 0;
+    for (int i = 0; i < num_terms; ++i) {
+      const CutTerm& entry = cut.terms[i];
+      if (entry.bound_diff != 1) continue;
+      if (!entry.IsSimple()) continue;
+      if (!VariableIsPositive(entry.expr_vars[0])) continue;
+      if (entry.expr_vars[0] >= limit) continue;
+      if (integer_trail_->LevelZeroLowerBound(entry.expr_vars[0]) != 0)
+        continue;
+      if (integer_trail_->LevelZeroUpperBound(entry.expr_vars[0]) != 1)
+        continue;
 
-    bool complemented;
-    if (entry.expr_offset == 0 && entry.expr_coeffs[0] == 1) {
-      complemented = false;
-    } else if (entry.expr_offset == 1 && entry.expr_coeffs[0] == -1) {
-      complemented = true;
-    } else {
-      continue;
-    }
+      bool complemented;
+      if (entry.expr_offset == 0 && entry.expr_coeffs[0] == 1) {
+        complemented = false;
+      } else if (entry.expr_offset == 1 && entry.expr_coeffs[0] == -1) {
+        complemented = true;
+      } else {
+        continue;
+      }
+      ++stage2_work;
 
-    // TODO(user): Make this faster by keeping a vector in
-    // integer_encoder_.
-    const LiteralIndex literal_index = integer_encoder_->GetAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(entry.expr_vars[0], 1));
-    if (literal_index != -1) {
-      const Literal literal(literal_index);
-      absl::Span<const int> indices = implications_->AtMostOneIndices(literal);
-      if (!indices.empty() ||
-          (complemented &&
-           !implications_->AtMostOneIndices(literal.Negated()).empty())) {
-        literals_.push_back({i, literal, initial_coeffs_[i], complemented});
-        if (!complemented) {
-          // Because we mainly lift uncomplemented terms in an AMO with one
-          // complemented term, as a heuristic we only count the uncomplemented
-          // entries in each AMO.
-          for (const int index : indices) amo_count_[index]++;
+      // TODO(user): Make this faster by keeping a vector in
+      // integer_encoder_.
+      const LiteralIndex literal_index = integer_encoder_->GetAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(entry.expr_vars[0], 1));
+      if (literal_index != -1) {
+        const Literal literal(literal_index);
+        absl::Span<const int> indices =
+            implications_->AtMostOneIndices(literal);
+        if (!indices.empty() ||
+            (complemented &&
+             !implications_->AtMostOneIndices(literal.Negated()).empty())) {
+          literals_.push_back({i, literal, initial_coeffs_[i], complemented});
+          if (!complemented) {
+            // Because we mainly lift uncomplemented terms in an AMO with one
+            // complemented term, as a heuristic we only count the
+            // uncomplemented entries in each AMO.
+            stage3_work += indices.size();
+            for (const int index : indices) amo_count_[index]++;
+          }
         }
       }
     }
+    timer.Advance(stage2_work, stage3_work);
   }
 
   // Sort complemented literals first, then by decreasing coefficient magnitude.
@@ -989,115 +1035,126 @@ void GUBHelper::ApplyGubLifting(
   //
   // TODO(user): If a literal can go into more than one amo, choose in a wiser
   // way :)
-  const int num_literals = literals_.size();
-  for (int i = 0; i < num_literals; ++i) {
-    int best = -1;
-    int64_t best_sum = 0;
-    bool was_lifted = false;
-    LiteralInCut& curr = literals_[i];
+  {
+    DeterministicTimer2<{.scale1 = 1.2e-07, .scale2 = 2.8e-08}> timer(
+        time_limit_);
+    const int num_literals = literals_.size();
+    uint64_t inner_iters = 0;
+    for (int i = 0; i < num_literals; ++i) {
+      int best = -1;
+      int64_t best_sum = 0;
+      bool was_lifted = false;
+      LiteralInCut& curr = literals_[i];
 
-    const IntegerValue uncomplemented_coeff =
-        curr.complemented ? -curr.original_coeff : curr.original_coeff;
-    const IntegerValue x_d = uncomplemented_coeff / divisor;
-    const IntegerValue x_r = uncomplemented_coeff % divisor;
-    for (const int amo_index : implications_->AtMostOneIndices(curr.literal)) {
-      const int64_t count_or_index = amo_count_[amo_index];
+      const IntegerValue uncomplemented_coeff =
+          curr.complemented ? -curr.original_coeff : curr.original_coeff;
+      const IntegerValue x_d = uncomplemented_coeff / divisor;
+      const IntegerValue x_r = uncomplemented_coeff % divisor;
+      for (const int amo_index :
+           implications_->AtMostOneIndices(curr.literal)) {
+        ++inner_iters;
+        const int64_t count_or_index = amo_count_[amo_index];
 
-      // Tricky/Optim: we use negative amo_count_ to indicate if this amo was
-      // already used and encode the index as -1 -count_or_index.
-      if (count_or_index < 0) {
-        // We have a potential simplification!
-        const int rep_index_in_literals = -count_or_index - 1;
-        CHECK_LT(rep_index_in_literals, i);
-        LiteralInCut& rep = literals_[rep_index_in_literals];
-        DCHECK(rep.complemented);
+        // Tricky/Optim: we use negative amo_count_ to indicate if this amo was
+        // already used and encode the index as -1 -count_or_index.
+        if (count_or_index < 0) {
+          // We have a potential simplification!
+          const int rep_index_in_literals = -count_or_index - 1;
+          CHECK_LT(rep_index_in_literals, i);
+          LiteralInCut& rep = literals_[rep_index_in_literals];
+          DCHECK(rep.complemented);
 
-        // We can split the uncomplemented term in "two": one goes with the
-        // at-most-one in the term that is complemented, the rest gets through
-        // f() normally.
-        //
-        // So this replaces f(b) with -f(-a) + f(b - a), which is always
-        // beneficial by super-additivity. To avoid overflow when computing
-        // f(b - a), we use f(k * divisor + rest) = k * f(divisor) + f(rest).
-        const IntegerValue f_rep = cut->terms[rep.index].coeff;
-        IntegerValue y_d = rep.original_coeff / divisor;
-        IntegerValue y_r = rep.original_coeff % divisor;
-        // We never want to apply f() outside [-divisor, divisor].
-        if (x_r > 0 && y_r > 0) {
-          y_r -= divisor;
-          y_d += 1;
-        } else if (x_r < 0 && y_r < 0) {
-          y_r += divisor;
-          y_d -= 1;
-        }
-        const IntegerValue new_coeff =
-            -f_rep + (x_d + y_d) * f_divisor + f(x_r + y_r);
-
-        if (!curr.complemented) {
-          // Note that it is okay if we already lifted this term, we can
-          // lift it further by selecting a different at-most-one.
-          if (new_coeff > cut->terms[curr.index].coeff) {
-            was_lifted = true;
-            rep.can_bump = false;
-            used_in_gub_[rep.index] = true;
-            used_in_gub_[curr.index] = true;
-            ++last_stats_.num_gubs;
-            ++num_improvements_;
-            cut->terms[curr.index].coeff = new_coeff;  // Lifting
-            curr.original_coeff = x_r + y_r;
-            curr.lifted_amo = amo_index;
+          // We can split the uncomplemented term in "two": one goes with the
+          // at-most-one in the term that is complemented, the rest gets through
+          // f() normally.
+          //
+          // So this replaces f(b) with -f(-a) + f(b - a), which is always
+          // beneficial by super-additivity. To avoid overflow when computing
+          // f(b - a), we use f(k * divisor + rest) = k * f(divisor) + f(rest).
+          const IntegerValue f_rep = cut->terms[rep.index].coeff;
+          IntegerValue y_d = rep.original_coeff / divisor;
+          IntegerValue y_r = rep.original_coeff % divisor;
+          // We never want to apply f() outside [-divisor, divisor].
+          if (x_r > 0 && y_r > 0) {
+            y_r -= divisor;
+            y_d += 1;
+          } else if (x_r < 0 && y_r < 0) {
+            y_r += divisor;
+            y_d -= 1;
           }
-        } else if (rep.original_coeff < 0 && uncomplemented_coeff > 0) {
-          // Both rep (1 - X) and curr (1 - Y) are complemented in the same
-          // AMO (X + Y <= 1) with pre-rounded terms -a(1 - X) - b(1 - Y) <= rhs
-          // (a, b > 0). We can uncomplement Y back to +b*Y (shifting
-          // original_rhs by +b) and GUB-lift Y with X:
-          //   -a(1 - X - Y) + (b - a)Y <= rhs + b
-          // Applying f() gives:
-          //   f(-a)(1 - X) + (-f(-a) + f(b - a))Y <= f(rhs + b).
-          ++num_both_complements_;
-          const absl::int128 new_original_rhs =
-              *original_rhs + absl::int128(uncomplemented_coeff.value());
-          const absl::int128 new_cut_rhs =
-              ApplyToInt128(f, divisor, new_original_rhs);
-          const IntegerValue delta_rhs(
-              static_cast<int64_t>(cut->rhs - new_cut_rhs));
-          CutTerm& term = cut->terms[curr.index];
-          const IntegerValue gain_at_y0 = delta_rhs - term.coeff;
-          const IntegerValue gain_at_y1 = delta_rhs + new_coeff;
-          DCHECK_GE(gain_at_y0, 0);
-          if (gain_at_y1 >= 0 && (gain_at_y0 > 0 || gain_at_y1 > 0)) {
-            absl::int128 unused_rhs = 0;
-            term.Complement(&unused_rhs);
-            term.coeff = new_coeff;
-            *original_rhs = new_original_rhs;
-            cut->rhs = new_cut_rhs;
-            curr.complemented = false;
-            curr.original_coeff = x_r + y_r;
-            curr.lifted_amo = amo_index;
-            rep.can_bump = false;
-            used_in_gub_[rep.index] = true;
-            used_in_gub_[curr.index] = true;
-            was_lifted = true;
-            ++last_stats_.num_gubs;
-            ++num_improvements_;
-            break;
+          const IntegerValue new_coeff =
+              -f_rep + (x_d + y_d) * f_divisor + f(x_r + y_r);
+
+          if (!curr.complemented) {
+            // Note that it is okay if we already lifted this term, we can
+            // lift it further by selecting a different at-most-one.
+            if (new_coeff > cut->terms[curr.index].coeff) {
+              was_lifted = true;
+              rep.can_bump = false;
+              used_in_gub_[rep.index] = true;
+              used_in_gub_[curr.index] = true;
+              ++last_stats_.num_gubs;
+              ++num_improvements_;
+              cut->terms[curr.index].coeff = new_coeff;  // Lifting
+              curr.original_coeff = x_r + y_r;
+              curr.lifted_amo = amo_index;
+            }
+          } else if (rep.original_coeff < 0 && uncomplemented_coeff > 0) {
+            // Both rep (1 - X) and curr (1 - Y) are complemented in the same
+            // AMO (X + Y <= 1) with pre-rounded terms -a(1 - X) - b(1 - Y) <=
+            // rhs (a, b > 0). We can uncomplement Y back to +b*Y (shifting
+            // original_rhs by +b) and GUB-lift Y with X:
+            //   -a(1 - X - Y) + (b - a)Y <= rhs + b
+            // Applying f() gives:
+            //   f(-a)(1 - X) + (-f(-a) + f(b - a))Y <= f(rhs + b).
+            ++num_both_complements_;
+            const absl::int128 new_original_rhs =
+                *original_rhs + absl::int128(uncomplemented_coeff.value());
+            if (!CanApplyToInt128Safely(divisor, f_divisor, new_original_rhs)) {
+              continue;
+            }
+            const absl::int128 new_cut_rhs =
+                ApplyToInt128(f, divisor, new_original_rhs);
+            const IntegerValue delta_rhs(
+                static_cast<int64_t>(cut->rhs - new_cut_rhs));
+            CutTerm& term = cut->terms[curr.index];
+            const IntegerValue gain_at_y0 = delta_rhs - term.coeff;
+            const IntegerValue gain_at_y1 = delta_rhs + new_coeff;
+            DCHECK_GE(gain_at_y0, 0);
+            if (gain_at_y1 >= 0 && (gain_at_y0 > 0 || gain_at_y1 > 0)) {
+              absl::int128 unused_rhs = 0;
+              term.Complement(&unused_rhs);
+              term.coeff = new_coeff;
+              *original_rhs = new_original_rhs;
+              cut->rhs = new_cut_rhs;
+              curr.complemented = false;
+              curr.original_coeff = x_r + y_r;
+              curr.lifted_amo = amo_index;
+              rep.can_bump = false;
+              used_in_gub_[rep.index] = true;
+              used_in_gub_[curr.index] = true;
+              was_lifted = true;
+              ++last_stats_.num_gubs;
+              ++num_improvements_;
+              break;
+            }
           }
-        }
-      } else {
-        if (count_or_index > best_sum) {
-          best_sum = count_or_index;
-          best = amo_index;
+        } else {
+          if (count_or_index > best_sum) {
+            best_sum = count_or_index;
+            best = amo_index;
+          }
         }
       }
-    }
-    if (was_lifted) continue;
+      if (was_lifted) continue;
 
-    // Select a new AMO for this term.
-    // All future terms will try "lifting" with this entry on that AMO.
-    if (curr.complemented && best != -1) {
-      amo_count_[best] = -i - 1;
+      // Select a new AMO for this term.
+      // All future terms will try "lifting" with this entry on that AMO.
+      if (curr.complemented && best != -1) {
+        amo_count_[best] = -i - 1;
+      }
     }
+    timer.Advance(num_literals, inner_iters);
   }
 }
 
@@ -1105,6 +1162,7 @@ void GUBHelper::ApplyBump(const std::function<IntegerValue(IntegerValue)>& f,
                           const IntegerValue divisor,
                           const IntegerValue f_divisor,
                           const absl::int128 original_rhs, CutData* cut) {
+  DeterministicTimer<{.scale = 5.9e-08}> timer(time_limit_, cut->terms.size());
   // Bump all Booleans in one AMO simultaneously, or a single Boolean term.
   const IntegerValue remainder = PositiveRemainder(original_rhs, divisor);
   const IntegerValue f_remainder = f(remainder);
@@ -1197,10 +1255,15 @@ bool GUBHelper::ApplyWithPostprocessing(
   // Reset stats.
   last_stats_ = {};
   cut->RemoveZeroTerms();
+  const IntegerValue f_divisor = f(divisor);
+  const IntegerValue max_safe_coeff =
+      MaxSafeCoeffForFunction(divisor, f_divisor);
 
   if (ib_processor != nullptr) {
+    DeterministicTimer<{.scale = 2.4e-08, .offset = 8.3e-07}> ib_timer(
+        time_limit_, cut->terms.size());
     const auto [num_lb, num_ub, num_merges] =
-        ib_processor->PostprocessWithImpliedBound(f, cut);
+        ib_processor->PostprocessWithImpliedBound(f, cut, max_safe_coeff);
     last_stats_.num_lb_ibs = num_lb;
     last_stats_.num_ub_ibs = num_ub;
     last_stats_.num_merges = num_merges;
@@ -1208,23 +1271,32 @@ bool GUBHelper::ApplyWithPostprocessing(
   }
 
   // Keep initial coeffs and apply f().
-  const IntegerValue f_divisor = f(divisor);
   absl::int128 original_rhs = cut->rhs;
-  cut->rhs = ApplyToInt128(f, divisor, original_rhs);
+  if (!CanApplyToInt128Safely(divisor, f_divisor, original_rhs)) return false;
+  double initial_violation = 0.0;
+  {
+    const int num_terms = cut->terms.size();
+    DeterministicTimer<{.scale = 3.4e-08, .offset = 5.7e-08}> timer(time_limit_,
+                                                                    num_terms);
+    cut->rhs = ApplyToInt128(f, divisor, original_rhs);
 
-  const int num_terms = cut->terms.size();
-  initial_coeffs_.resize(num_terms);
-  used_in_gub_.assign(num_terms, false);
-  for (int i = 0; i < num_terms; ++i) {
-    CutTerm& entry = cut->terms[i];
-    initial_coeffs_[i] = entry.coeff;
-    entry.coeff = f(entry.coeff);
-    if (initial_coeffs_[i] > 0 && entry.coeff > 0) ++last_stats_.num_lifts;
+    initial_coeffs_.resize(num_terms);
+    used_in_gub_.assign(num_terms, false);
+    for (int i = 0; i < num_terms; ++i) {
+      CutTerm& entry = cut->terms[i];
+      if (entry.coeff.value() == kint64min ||
+          IntTypeAbs(entry.coeff) > max_safe_coeff) {
+        return false;
+      }
+      initial_coeffs_[i] = entry.coeff;
+      entry.coeff = f(entry.coeff);
+      if (initial_coeffs_[i] > 0 && entry.coeff > 0) ++last_stats_.num_lifts;
+    }
+
+    // Do not spend extra effort if we don't have a violated cut at this stage.
+    initial_violation = cut->ComputeViolation();
+    if (initial_violation <= 1e-6) return false;
   }
-
-  // Do not spend extra effort if we don't have a violated cut at this stage.
-  const double initial_violation = cut->ComputeViolation();
-  if (initial_violation <= 1e-6) return false;
 
   // GUB lifting needs at-most-ones; skip the per-literal lookups otherwise.
   if (implications_->HasAtMostOnes()) {
@@ -1260,7 +1332,8 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   DCHECK_LT(rhs_remainder, divisor);
 
   const IntegerValue size = divisor - rhs_remainder;
-  if (t == 1 && size > 1 && size <= max_scaling) {
+  if (t == 1 && size > 1 && size <= max_scaling &&
+      size <= kMaxIntegerValue / 16) {
     return [size, rhs_remainder, divisor](IntegerValue coeff) {
       const IntegerValue ratio = FloorRatio(coeff, divisor);
       const IntegerValue remainder = PositiveRemainder(coeff, divisor);
@@ -1274,7 +1347,9 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   // Make sure we don't have an integer overflow below. Note that we assume that
   // divisor and the maximum coeff magnitude are not too different (maybe a
   // factor 1000 at most) so that the final result will never overflow.
-  max_scaling = std::min(max_scaling, kint64max / divisor);
+  max_scaling =
+      std::min({max_scaling, IntegerValue(kint64max) / divisor,
+                (kMaxIntegerValue / 16) / std::max(IntegerValue(1), t)});
 
   if (max_scaling == 1 || size == 1) {
     if (t == 1) {
@@ -1556,7 +1631,15 @@ double IntegerRoundingCutHelper::GetScaledViolation(
   // TODO(user): modulo the scaling, we could compute the exact threshold
   // using our current best cut. Note that we also have to account for the
   // change in slack due to the adjust code above.
-  const double scaling = ToDouble(f(divisor)) / ToDouble(divisor);
+  const IntegerValue f_divisor = f(divisor);
+  const IntegerValue max_safe_coeff =
+      MaxSafeCoeffForFunction(divisor, f_divisor);
+  if (max_safe_coeff.value() < kint64max &&
+      cut.max_magnitude > max_safe_coeff - divisor) {
+    return 0.0;
+  }
+  if (!CanApplyToInt128Safely(divisor, f_divisor, rhs)) return 0.0;
+  const double scaling = ToDouble(f_divisor) / ToDouble(divisor);
   double max_violation = scaling * ToDouble(rhs_remainder);
 
   // Apply f() to the cut and compute the cut violation. Note that it is
@@ -1611,6 +1694,8 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should be better except it can mess up the norm and the divisors.
   cut_ = base_ct;
   if (options.use_ib_before_heuristic && ib_processor != nullptr) {
+    DeterministicTimer<{.scale = 1.6e-08, .offset = 1.2e-09}> timer(
+        time_limit_);
     bool some_positive_ib = false;
     std::vector<CutTerm>* new_bool_terms =
         ib_processor->ClearedMutableTempTerms();
@@ -1661,6 +1746,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
         ++total_num_initial_ibs_;
       }
     }
+    timer.Advance(cut_.terms.size());
 
     // TODO(user): We assume that this is called with and without the option
     // use_ib_before_heuristic, so that we can abort if no IB has been applied
@@ -1709,7 +1795,12 @@ bool IntegerRoundingCutHelper::ComputeCut(
     divisors_.push_back(magnitude);
   }
   if (divisors_.empty()) return false;
-  gtl::STLSortAndRemoveDuplicates(&divisors_, std::greater<IntegerValue>());
+  {
+    const uint64_t n = divisors_.size();
+    DeterministicTimer<{.scale = 1.8e-09}> timer(time_limit_,
+                                                 n * absl::bit_width(n));
+    gtl::STLSortAndRemoveDuplicates(&divisors_, std::greater<IntegerValue>());
+  }
   if (divisors_.size() > 50) {
     // Keep the largest distinct magnitudes (such as integer batch / setup
     // capacities) as well as the distinct magnitudes of the highest-LP-value
@@ -1752,16 +1843,19 @@ bool IntegerRoundingCutHelper::ComputeCut(
   IntegerValue best_divisor(0);
   double best_scaled_violation = 1e-3;
   const bool initial_unscaled_neg_slack = has_unscaled_neg_slack();
-  for (const IntegerValue divisor : divisors_) {
-    // Note that the function will abort right away if PositiveRemainder() is
-    // not good enough, so it is quick for a bad divisor.
-    const double violation =
-        GetScaledViolation(divisor, options.max_scaling, remainder_threshold,
-                           initial_unscaled_neg_slack, cut_);
-    if (violation > best_scaled_violation) {
-      best_scaled_violation = violation;
-      best_adjusted_coeffs_ = adjusted_coeffs_;
-      best_divisor = divisor;
+  {
+    DeterministicTimer<{.scale = 5.6e-07}> timer(time_limit_, divisors_.size());
+    for (const IntegerValue divisor : divisors_) {
+      // Note that the function will abort right away if PositiveRemainder() is
+      // not good enough, so it is quick for a bad divisor.
+      const double violation =
+          GetScaledViolation(divisor, options.max_scaling, remainder_threshold,
+                             initial_unscaled_neg_slack, cut_);
+      if (violation > best_scaled_violation) {
+        best_scaled_violation = violation;
+        best_adjusted_coeffs_ = adjusted_coeffs_;
+        best_divisor = divisor;
+      }
     }
   }
   if (best_divisor == 0) return false;
@@ -1891,8 +1985,12 @@ bool IntegerRoundingCutHelper::ComputeCut(
         const IntegerValue d = g(best_divisor);
         for (int i = 0; i < best_rs_.size(); ++i) {
           const IntegerValue temp = g(remainders_[i]);
-          if (temp * best_d < best_rs_[i] * d) break;
-          if (temp * best_d > best_rs_[i] * d) num_strictly_better++;
+          const absl::int128 lhs =
+              absl::int128(temp.value()) * absl::int128(best_d.value());
+          const absl::int128 rhs =
+              absl::int128(best_rs_[i].value()) * absl::int128(d.value());
+          if (lhs < rhs) break;
+          if (lhs > rhs) num_strictly_better++;
           rs_.push_back(temp);
         }
         if (rs_.size() == best_rs_.size() && num_strictly_better > 0) {
@@ -2022,6 +2120,7 @@ struct KnapsackRemove {
 template <class Compare>
 int CoverCutHelper::MinimizeCover(int cover_size, absl::int128 slack) {
   CHECK_GT(slack, 0);
+  DeterministicTimer<{.scale = 4.4e-08}> timer(time_limit_, cover_size);
   absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
   std::sort(terms.begin(), terms.begin() + cover_size, Compare());
   int new_cover_size = 0;
@@ -2043,6 +2142,9 @@ template <class CompareAdd, class CompareRemove>
 int CoverCutHelper::GetCoverSize(int relevant_size,
                                  const ImpliedBoundsProcessor* ib_processor) {
   if (relevant_size == 0) return 0;
+  const int initial_relevant_size = relevant_size;
+  DeterministicTimer2<{.scale1 = 1.3e-08, .scale2 = 1.3e-08, .offset = 1.6e-07}>
+      timer(time_limit_);
   absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
 
   // Take first all variables at upper bound, and ignore the ones at lower
@@ -2071,6 +2173,7 @@ int CoverCutHelper::GetCoverSize(int relevant_size,
       std::swap(term, terms[relevant_size]);
     }
   }
+  const uint64_t sort_size = relevant_size - part1;
   std::sort(terms.begin() + part1, terms.begin() + relevant_size, CompareAdd());
 
   // We subtract the initial rhs to avoid overflow.
@@ -2091,6 +2194,8 @@ int CoverCutHelper::GetCoverSize(int relevant_size,
     shifted_round_up +=
         absl::int128(term.coeff.value()) * absl::int128(rounded_up.value());
   }
+  timer.Advance(initial_relevant_size + cover_size,
+                sort_size * absl::bit_width(sort_size));
 
   DCHECK_GE(cover_size, 0);
   if (shifted_round_up <= 0) {
@@ -2102,6 +2207,7 @@ int CoverCutHelper::GetCoverSize(int relevant_size,
 // Try a simple cover heuristic.
 // Look for violated CUT of the form: sum (UB - X) or (X - LB) >= 1.
 int CoverCutHelper::GetCoverSizeForBooleans() {
+  DeterministicTimer<{.scale = 1.3e-08, .offset = 1.9e-07}> timer(time_limit_);
   absl::Span<CutTerm> terms = absl::MakeSpan(cut_.terms);
 
   // Sorting can be slow, so we start by splitting the vector in 3 parts
@@ -2175,6 +2281,7 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
     slack += absl::int128(term.coeff.value()) *
              absl::int128(term.bound_diff.value());
   }
+  timer.Advance(terms.size() + cover_size);
 
   // If the rhs is now negative, we have a cut.
   //
@@ -2191,6 +2298,8 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
 }
 
 void CoverCutHelper::InitializeCut(const CutData& input_ct) {
+  DeterministicTimer<{.scale = 1.2e-08}> timer(time_limit_,
+                                               input_ct.terms.size());
   cut_ = input_ct;
   num_lifting_ = 0;
 
@@ -2209,6 +2318,8 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
   // Tricky: This only works because the cut absl::int128 rhs is not changed by
   // these operations.
   if (ib_processor != nullptr) {
+    DeterministicTimer<{.scale = 2.2e-08, .offset = 2.5e-07}> ib_timer(
+        time_limit_, cut_.terms.size());
     std::vector<CutTerm>* new_bool_terms =
         ib_processor->ClearedMutableTempTerms();
     for (CutTerm& term : cut_.terms) {
@@ -2223,17 +2334,22 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
         ++cover_stats_.num_initial_ibs;
       }
     }
-
     ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
         absl::MakeSpan(*new_bool_terms), &cut_);
   }
 
   bool has_relevant_int = false;
-  for (const CutTerm& term : cut_.terms) {
-    if (term.HasRelevantLpValue() && term.bound_diff > 1) {
-      has_relevant_int = true;
-      break;
+  {
+    DeterministicTimer<{.scale = 6.3e-09}> scan_timer(time_limit_);
+    int scanned = 0;
+    for (const CutTerm& term : cut_.terms) {
+      ++scanned;
+      if (term.HasRelevantLpValue() && term.bound_diff > 1) {
+        has_relevant_int = true;
+        break;
+      }
     }
+    scan_timer.Advance(scanned);
   }
 
   const int base_size = static_cast<int>(cut_.terms.size());
@@ -2332,13 +2448,19 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
       GetCoverSize<KnapsackAdd, KnapsackRemove>(base_size, ib_processor);
   if (cover_size == 0) return false;
 
+  DeterministicTimer2<{.scale1 = 7.0e-09, .scale2 = 1.9e-08, .offset = 4.0e-07}>
+      timer(time_limit_);
+
   // After complementing the term in the cover, we have
   // sum -ci.X + other_terms <= -slack;
   for (int i = 0; i < cover_size; ++i) {
     cut_.terms[i].Complement(&cut_.rhs);
 
     // We do not support complex terms, but we shouldn't get any.
-    if (cut_.terms[i].expr_coeffs[1] != 0) return false;
+    if (cut_.terms[i].expr_coeffs[1] != 0) {
+      timer.Advance(i + 1, 0);
+      return false;
+    }
   }
 
   // The algorithm goes as follows:
@@ -2355,6 +2477,7 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   // heuristic.
   CHECK_LT(cut_.rhs, 0);
   if (cut_.rhs <= absl::int128(kint64min)) {
+    timer.Advance(cover_size, 0);
     return false;
   }
 
@@ -2406,7 +2529,10 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
       base_period = std::max(base_period, magnitude);
     }
   }
-  if (min_magnitude == kMaxIntegerValue) return false;
+  if (min_magnitude == kMaxIntegerValue) {
+    timer.Advance(2 * cover_size, cut_.terms.size());
+    return false;
+  }
 
   const IntegerValue scaled_cap =
       std::min(IntegerValue(6000), kint64max / positive_rhs);
@@ -2479,6 +2605,8 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
       period = std::max(period, CapProdI(2, positive_rhs) - 2);
     }
   }
+  timer.Advance(2 * cover_size,
+                (ib_processor != nullptr ? 2 : 1) * cut_.terms.size());
   if (AtMinOrMaxInt64I(period)) return false;
   f = ExtendNegativeFunction(f, period);
 
@@ -2509,6 +2637,8 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     //
     // TODO(user): Merge Boolean terms that are complement of each other.
     if (ib_processor != nullptr) {
+      DeterministicTimer<{.scale = 1.9e-08, .offset = 2.8e-07}> ib_timer(
+          time_limit_, cut_.terms.size());
       std::vector<CutTerm>* new_bool_terms =
           ib_processor->ClearedMutableTempTerms();
       for (CutTerm& term : cut_.terms) {
@@ -2518,7 +2648,6 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
           ++ls_stats_.num_initial_ibs;
         }
       }
-
       ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
           absl::MakeSpan(*new_bool_terms), &cut_);
     }
@@ -2753,6 +2882,8 @@ double BoolRLTCutHelper::GetLiteralLpValue(IntegerVariable var) const {
 
 bool BoolRLTCutHelper::TryProduct(IntegerVariable factor,
                                   const CutData& input) {
+  DeterministicTimer<{.scale = 5.3e-08, .offset = 1.3e-06}> timer(
+      time_limit_, input.terms.size());
   cut_.terms.clear();
   cut_.rhs = 0;
   absl::int128 old_rhs = input.rhs;
@@ -3220,9 +3351,11 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedLowerBound(
   // TODO(user): Only do it if coeff_b > 0 ? But again we could still merge
   // B with an existing Boolean for a better cut even if coeff_b == 0.
   if (term.cached_implied_lb < 0) return false;
+  if (term.expr_offset.value() == kint64min) return false;
   const BestImpliedBoundInfo info = cached_data_[term.cached_implied_lb];
   const IntegerValue lb = -term.expr_offset;
-  const IntegerValue bound_diff = info.implied_bound - lb;
+  IntegerValue bound_diff = term.expr_offset;
+  if (!AddTo(info.implied_bound, &bound_diff)) return false;
   if (bound_diff <= 0) return false;
 
   // We have X/-X = info.diff * Boolean + slack.
@@ -3249,8 +3382,15 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedLowerBound(
   slack_term.expr_coeffs[0] = term.expr_coeffs[0];
   slack_term.expr_vars[1] = bool_term.expr_vars[0];
   slack_term.expr_coeffs[1] = -bound_diff * bool_term.expr_coeffs[0];
-  slack_term.expr_offset =
-      term.expr_offset - bound_diff * bool_term.expr_offset;
+  slack_term.expr_offset = term.expr_offset;
+  if (!AddProductTo(-bound_diff, bool_term.expr_offset,
+                    &slack_term.expr_offset)) {
+    return false;
+  }
+  IntegerValue comp_offset = -slack_term.expr_offset;
+  if (!AddTo(term.bound_diff, &comp_offset)) {
+    return false;
+  }
 
   slack_term.lp_value = info.SlackLpValue(lb);
   slack_term.coeff = term.coeff;
@@ -3286,7 +3426,8 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedUpperBound(
 }
 
 std::tuple<int, int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
-    const std::function<IntegerValue(IntegerValue)>& f, CutData* cut) {
+    const std::function<IntegerValue(IntegerValue)>& f, CutData* cut,
+    IntegerValue max_safe_coeff) {
   int num_applied_lb = 0;
   int num_applied_ub = 0;
 
@@ -3299,12 +3440,17 @@ std::tuple<int, int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
   for (CutTerm& term : cut->terms) {
     if (term.bound_diff <= 1) continue;
     if (!term.IsSimple()) continue;
+    if (term.coeff.value() == kint64min ||
+        IntTypeAbs(term.coeff) > max_safe_coeff) {
+      continue;
+    }
 
     // Score is just the final lp value.
     // Higher is better since it is a <= constraint.
     double base_score;
     bool expand = false;
-    if (DecomposeWithImpliedLowerBound(term, bool_term, slack_term)) {
+    if (DecomposeWithImpliedLowerBound(term, bool_term, slack_term) &&
+        IntTypeAbs(bool_term.coeff) <= max_safe_coeff) {
       // This side is always good.
       //   c.X = c.d.B + c.S
       // applying f to the result we have f(c.d).B + f(c).[X - d.B]
@@ -3337,7 +3483,8 @@ std::tuple<int, int, int> ImpliedBoundsProcessor::PostprocessWithImpliedBound(
     // will always increase the violation. So we could potentially do it
     // before our divisor selection heuristic. But the norm of the final cut
     // will increase too.
-    if (DecomposeWithImpliedUpperBound(term, ub_bool_term, ub_slack_term)) {
+    if (DecomposeWithImpliedUpperBound(term, ub_bool_term, ub_slack_term) &&
+        IntTypeAbs(ub_bool_term.coeff) <= max_safe_coeff) {
       const double score =
           AsDouble(f(ub_bool_term.coeff)) * ub_bool_term.lp_value +
           AsDouble(f(ub_slack_term.coeff)) * ub_slack_term.lp_value;
@@ -3651,12 +3798,13 @@ CutGenerator CreateAllDifferentCutGenerator(
           sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
         }
 
-        TopNCuts top_n_cuts(5);
         std::sort(sorted_exprs.begin(), sorted_exprs.end(),
                   [](std::pair<double, AffineExpression>& a,
                      const std::pair<double, AffineExpression>& b) {
                     return a.first < b.first;
                   });
+
+        TopNCuts top_n_cuts(5);
         TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
                                 top_n_cuts, model);
         // Other direction.
@@ -3884,7 +4032,6 @@ bool BuildMaxAffineUpConstraint(
   if (!builder->BuildIntoConstraintAndCheckOverflow(&ct)) return false;
   if (!ValidateLinearConstraintForOverflow(ct, *integer_trail)) {
     VLOG(2) << "Linear constraint can cause overflow: " << ct;
-
     return false;
   }
 
@@ -3925,17 +4072,24 @@ CutGenerator CreateCliqueCutGenerator(
   absl::flat_hash_map<LiteralIndex, IntegerVariable> negative_map;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  for (const IntegerVariable var : base_variables) {
-    if (integer_trail->LowerBound(var) != IntegerValue(0)) continue;
-    if (integer_trail->UpperBound(var) != IntegerValue(1)) continue;
-    const LiteralIndex literal_index = encoder->GetAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(var, IntegerValue(1)));
-    if (literal_index != kNoLiteralIndex) {
-      variables.push_back(var);
-      literals.push_back(Literal(literal_index));
-      positive_map[literal_index] = var;
-      negative_map[Literal(literal_index).NegatedIndex()] = var;
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  {
+    DeterministicTimer<{.scale = 3.7e-07}> timer(time_limit);
+    uint64_t work_done = 0;
+    for (const IntegerVariable var : base_variables) {
+      if (integer_trail->LowerBound(var) != IntegerValue(0)) continue;
+      if (integer_trail->UpperBound(var) != IntegerValue(1)) continue;
+      ++work_done;
+      const LiteralIndex literal_index = encoder->GetAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(var, IntegerValue(1)));
+      if (literal_index != kNoLiteralIndex) {
+        variables.push_back(var);
+        literals.push_back(Literal(literal_index));
+        positive_map[literal_index] = var;
+        negative_map[Literal(literal_index).NegatedIndex()] = var;
+      }
     }
+    timer.Advance(work_done);
   }
   CutGenerator result;
   result.vars = variables;
