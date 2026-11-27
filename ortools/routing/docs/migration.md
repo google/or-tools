@@ -1,9 +1,9 @@
-# Migrating the Routing Solver from v9.15 to v10.0-rc.1
+# Migrating the Routing Solver from v9.15 to v10.0
 
 This guide explains how to migrate Vehicle Routing code from OR-Tools **v9.15**
-to **v10.0-rc.1** across **C++**, **.NET (C#)**, **Java**, and **Python**.
+to **v10.0** across **C++**, **.NET (C#)**, **Java**, and **Python**.
 
-In **v10.0-rc.1**, the Routing library was extracted out of `constraint_solver`
+In **v10.0**, the Routing library was extracted out of `constraint_solver`
 into its own dedicated `routing` module, namespace, and package across all
 languages:
 
@@ -37,7 +37,7 @@ languages:
 
 ## Platform and Toolchain Requirements
 
-| Language | v9.15 | v10.0-rc.1 |
+| Language | v9.15 | v10.0 |
 | :--- | :--- | :--- |
 | **C++** | C++17 (Linux/macOS), CMake >= 3.24 | **C++20 required** (GCC >= 10, MSVC >= 2022); CMake >= 3.25; Bazel 8.7.0 |
 | **.NET** | `.NET 8.0`, `.NET Framework` (`net462`/`net472`) | **`.NET 8.0` LTS** (official NuGet packages drop `net462`/`net472`); `Google.Protobuf` 3.35.1 |
@@ -48,7 +48,7 @@ languages:
 
 ## Quick Comparison Table
 
-| Concept | Language | v9.15 | v10.0-rc.1 |
+| Concept | Language | v9.15 | v10.0 |
 | :--- | :--- | :--- | :--- |
 | **Namespace / Package / Module** | C++ | `operations_research` (`ortools/constraint_solver/routing*.h`) | `operations_research::routing` (`ortools/routing/*.h`) |
 | | .NET | `Google.OrTools.ConstraintSolver` | `Google.OrTools.Routing` (plus `ConstraintSolver` for CP types) |
@@ -75,7 +75,7 @@ These changes apply across all four languages as well as serialized/textproto
 
 ### 1. Moved Protobuf Files and Package Names
 
-| v9.15 | v10.0-rc.1 |
+| v9.15 | v10.0 |
 | :--- | :--- |
 | `ortools/constraint_solver/routing_enums.proto` | `ortools/routing/enums.proto` |
 | `ortools/constraint_solver/routing_parameters.proto` | `ortools/routing/parameters.proto` |
@@ -127,7 +127,7 @@ ils->mutable_reference_solution_acceptance_strategy()
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 RoutingSearchParameters params = DefaultRoutingSearchParameters();
 // Setting iterated_local_search_parameters enables ILS automatically.
 // You can also start from RecommendedIteratedLocalSearchParameters().
@@ -157,7 +157,7 @@ searchParameters.IteratedLocalSearchParameters = new IteratedLocalSearchParamete
 ```
 
 ```csharp
-// v10.0-rc.1
+// v10.0
 RoutingSearchParameters searchParameters =
     RoutingGlobals.DefaultRoutingSearchParameters();
 searchParameters.IteratedLocalSearchParameters = new IteratedLocalSearchParameters {
@@ -189,7 +189,7 @@ RoutingSearchParameters searchParameters =
 ```
 
 ```java
-// v10.0-rc.1
+// v10.0
 RoutingSearchParameters searchParameters =
     Globals.defaultRoutingSearchParameters()
         .toBuilder()
@@ -215,7 +215,7 @@ ils.best_solution_acceptance_strategy.greedy_descent.SetInParent()
 ```
 
 ```python
-# v10.0-rc.1
+# v10.0
 search_parameters = routing.default_routing_search_parameters()
 ils = search_parameters.iterated_local_search_parameters
 ils.best_solution_acceptance_policy.strategies.add().greedy_descent.SetInParent()
@@ -238,7 +238,7 @@ All routing headers moved from `ortools/constraint_solver/routing_*.h` to
     `constraint_solver.h` was split; if you use `IntervalVar` (e.g., for vehicle
     breaks), include `"ortools/constraint_solver/interval.h"`.
 
-| v9.15 Header | v10.0-rc.1 Header |
+| v9.15 Header | v10.0 Header |
 | :--- | :--- |
 | `ortools/constraint_solver/routing.h` | `ortools/routing/routing.h` |
 | `ortools/constraint_solver/routing_index_manager.h` | `ortools/routing/index_manager.h` |
@@ -264,7 +264,7 @@ All routing headers moved from `ortools/constraint_solver/routing_*.h` to
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
@@ -284,7 +284,7 @@ Routing declarations moved from `namespace operations_research` to
 `namespace operations_research::routing`, and core types dropped the `Routing`
 prefix:
 
-| v9.15 (`operations_research::`) | v10.0-rc.1 (`operations_research::routing::`) |
+| v9.15 (`operations_research::`) | v10.0 (`operations_research::routing::`) |
 | :--- | :--- |
 | `RoutingIndexManager` | `IndexManager` |
 | `RoutingIndexManager::NodeIndex` / `RoutingNodeIndex` | `NodeIndex` |
@@ -329,7 +329,7 @@ void Solve() {
 ```
 
 ```cpp
-// v10.0-rc.1 (from ortools/routing/samples/simple_routing_program.cc, vrp_starts_ends.cc)
+// v10.0 (from ortools/routing/samples/simple_routing_program.cc, vrp_starts_ends.cc)
 namespace operations_research::routing {
 
 void Solve() {
@@ -366,7 +366,7 @@ routing.SetPickupAndDeliveryPolicyOfAllVehicles(
 ```
 
 ```cpp
-// v10.0-rc.1 (from ortools/routing/samples/vrp_pickup_delivery_fifo.cc, vrp_time_windows.cc)
+// v10.0 (from ortools/routing/samples/vrp_pickup_delivery_fifo.cc, vrp_time_windows.cc)
 void PrintSolution(const IndexManager& manager, const Model& routing,
                    const Assignment& solution) {
   const Dimension& time_dimension = routing.GetDimensionOrDie("Time");
@@ -393,7 +393,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
@@ -430,7 +430,7 @@ auto behavior = routing.GetDisjunctionPenaltyCostBehavior(disj_index);
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 routing.AddRouteConstraint(
     [](absl::Span<const int64_t> route) -> std::optional<int64_t> {
       return route.size() > 10 ? std::nullopt : std::optional<int64_t>{0};
@@ -464,7 +464,7 @@ cc_binary(
 ```
 
 ```starlark
-# v10.0-rc.1
+# v10.0
 cc_binary(
     name = "my_vrp",
     srcs = ["my_vrp.cc"],
@@ -510,7 +510,7 @@ using Google.OrTools.ConstraintSolver;
 ```
 
 ```csharp
-// v10.0-rc.1
+// v10.0
 using System;
 using Google.OrTools.ConstraintSolver;  // Assignment, Solver, IntVar, IntervalVar
 using Google.OrTools.Routing;           // IndexManager, Model, Dimension, RoutingGlobals, protos
@@ -518,7 +518,7 @@ using Google.OrTools.Routing;           // IndexManager, Model, Dimension, Routi
 
 ### 2. Class and Enum Renames
 
-| v9.15 (`Google.OrTools.ConstraintSolver`) | v10.0-rc.1 (`Google.OrTools.Routing`) |
+| v9.15 (`Google.OrTools.ConstraintSolver`) | v10.0 (`Google.OrTools.Routing`) |
 | :--- | :--- |
 | `RoutingIndexManager` | `IndexManager` |
 | `RoutingModel` | `Model` |
@@ -547,7 +547,7 @@ timeDimension.SetGlobalSpanCostCoefficient(100);
 ```
 
 ```csharp
-// v10.0-rc.1 (from ortools/routing/samples/VrpTimeWindows.cs, VrpStartsEnds.cs)
+// v10.0 (from ortools/routing/samples/VrpTimeWindows.cs, VrpStartsEnds.cs)
 IndexManager manager =
     new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
 Model routing = new Model(manager);
@@ -577,7 +577,7 @@ class SolutionCallback {
 ```
 
 ```csharp
-// v10.0-rc.1 (from ortools/routing/samples/VrpPickupDeliveryFifo.cs, VrpSolutionCallback.cs)
+// v10.0 (from ortools/routing/samples/VrpPickupDeliveryFifo.cs, VrpSolutionCallback.cs)
 routing.SetPickupAndDeliveryPolicyOfAllVehicles(Model.PICKUP_AND_DELIVERY_FIFO);
 
 class SolutionCallback {
@@ -595,7 +595,7 @@ Global routing functions moved from `operations_research_constraint_solver` to
 `RoutingGlobals` (and constraint solver globals moved to
 `ConstraintSolverGlobals`):
 
-| v9.15 | v10.0-rc.1 |
+| v9.15 | v10.0 |
 | :--- | :--- |
 | `operations_research_constraint_solver.DefaultRoutingSearchParameters()` | `RoutingGlobals.DefaultRoutingSearchParameters()` |
 | `operations_research_constraint_solver.DefaultRoutingModelParameters()` | `RoutingGlobals.DefaultRoutingModelParameters()` |
@@ -613,7 +613,7 @@ searchParameters.TimeLimit = new Duration { Seconds = 1 };
 ```
 
 ```csharp
-// v10.0-rc.1 (from ortools/routing/samples/VrpCapacity.cs)
+// v10.0 (from ortools/routing/samples/VrpCapacity.cs)
 RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
 searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 searchParameters.LocalSearchMetaheuristic =
@@ -624,7 +624,7 @@ searchParameters.TimeLimit = new Duration { Seconds = 1 };
 #### Checking Solver Status
 
 ```csharp
-// v10.0-rc.1 (from ortools/routing/samples/Vrp.cs)
+// v10.0 (from ortools/routing/samples/Vrp.cs)
 RoutingSearchStatus.Types.Value status = routing.GetStatus();
 Console.WriteLine("Status: {0}", status);
 if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
@@ -636,7 +636,7 @@ if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
 
 ### 4. Fixed and Newly Exposed .NET APIs
 
-*   **`SetAllowedVehiclesForIndex`** is fixed in v10.0-rc.1 (fixes v9.15 issue
+*   **`SetAllowedVehiclesForIndex`** is fixed in v10.0 (fixes v9.15 issue
     #4982).
 *   **`AddRouteConstraint` and `GetRouteCost`** are newly exposed in C# (#5255),
     supporting both a `Func<long[], long?>` lambda overload (returning `null`
@@ -645,7 +645,7 @@ if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
     **`IndexManager.GetNumberOfUniqueDepots()`** are now exposed.
 
 ```csharp
-// v10.0-rc.1
+// v10.0
 model.SetAllowedVehiclesForIndex(new int[] { 0, 2 }, manager.NodeToIndex(1));
 
 // Route constraint using lambda convenience overload (null = infeasible):
@@ -682,7 +682,7 @@ import com.google.ortools.constraintsolver.main;
 ```
 
 ```java
-// v10.0-rc.1
+// v10.0
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.Solver;
@@ -698,7 +698,7 @@ import com.google.ortools.routing.RoutingSearchStatus;
 
 ### 2. Class and Enum Renames
 
-| v9.15 (`com.google.ortools.constraintsolver`) | v10.0-rc.1 (`com.google.ortools.routing`) |
+| v9.15 (`com.google.ortools.constraintsolver`) | v10.0 (`com.google.ortools.routing`) |
 | :--- | :--- |
 | `RoutingIndexManager` | `IndexManager` |
 | `RoutingModel` | `Model` |
@@ -727,7 +727,7 @@ RoutingDimension timeDimension = routing.getMutableDimension("Time");
 ```
 
 ```java
-// v10.0-rc.1 (from ortools/routing/samples/java/VrpTimeWindows.java, VrpStartsEnds.java)
+// v10.0 (from ortools/routing/samples/java/VrpTimeWindows.java, VrpStartsEnds.java)
 IndexManager manager =
     new IndexManager(data.timeMatrix.length, data.vehicleNumber, data.depot);
 Model routing = new Model(manager);
@@ -760,7 +760,7 @@ static class SolutionCallback implements Runnable {
 ```
 
 ```java
-// v10.0-rc.1 (from ortools/routing/samples/java/VrpPickupDeliveryFifo.java, VrpSolutionCallback.java)
+// v10.0 (from ortools/routing/samples/java/VrpPickupDeliveryFifo.java, VrpSolutionCallback.java)
 routing.setPickupAndDeliveryPolicyOfAllVehicles(Model.PICKUP_AND_DELIVERY_FIFO);
 
 static class SolutionCallback implements Runnable {
@@ -782,7 +782,7 @@ to `com.google.ortools.routing.Globals` (and constraint solver globals moved
 from `com.google.ortools.constraintsolver.main` to
 `com.google.ortools.constraintsolver.Globals`):
 
-| v9.15 | v10.0-rc.1 |
+| v9.15 | v10.0 |
 | :--- | :--- |
 | `main.defaultRoutingSearchParameters()` | `Globals.defaultRoutingSearchParameters()` |
 | `main.defaultRoutingModelParameters()` | `Globals.defaultRoutingModelParameters()` |
@@ -805,7 +805,7 @@ RoutingSearchParameters searchParameters =
 ```
 
 ```java
-// v10.0-rc.1 (from ortools/routing/samples/java/VrpCapacity.java)
+// v10.0 (from ortools/routing/samples/java/VrpCapacity.java)
 RoutingSearchParameters searchParameters =
     Globals.defaultRoutingSearchParameters()
         .toBuilder()
@@ -829,7 +829,7 @@ RoutingSearchParameters searchParameters =
 *   Reminder: **JDK 21+** is required.
 
 ```java
-// v10.0-rc.1
+// v10.0
 model.setAllowedVehiclesForIndex(new int[] {0, 2}, manager.nodeToIndex(1));
 int[] nodes = manager.indicesToNodes(new long[] {0, 1, 2});
 ```
@@ -838,13 +838,13 @@ int[] nodes = manager.indicesToNodes(new long[] {0, 1, 2});
 
 ## Python Migration Guide
 
-Python has the largest set of changes in v10.0-rc.1 because SWIG (`pywrapcp`)
+Python has the largest set of changes in v10.0 because SWIG (`pywrapcp`)
 was completely removed and replaced with native **pybind11** bindings featuring
 PEP 8 `snake_case` naming, Python properties, and native protobuf support.
 
 ### 1. Module and Protobuf Imports
 
-| v9.15 (SWIG) | v10.0-rc.1 (pybind11) |
+| v9.15 (SWIG) | v10.0 (pybind11) |
 | :--- | :--- |
 | `from ortools.constraint_solver import pywrapcp` | `from ortools.routing.python import routing` (and `from ortools.constraint_solver.python import constraint_solver` for CP types) |
 | `from ortools.constraint_solver import routing_enums_pb2` | `from ortools.routing import enums_pb2` |
@@ -858,7 +858,7 @@ from ortools.constraint_solver import routing_enums_pb2
 ```
 
 ```python
-# v10.0-rc.1
+# v10.0
 from ortools.constraint_solver.python import constraint_solver  # For Assignment, Solver, custom LS operators, etc.
 from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing
@@ -875,7 +875,7 @@ methods use PEP 8 `snake_case`.
 
 #### Top-Level Classes and Functions
 
-| v9.15 (`pywrapcp`) | v10.0-rc.1 (`routing`) |
+| v9.15 (`pywrapcp`) | v10.0 (`routing`) |
 | :--- | :--- |
 | `pywrapcp.RoutingIndexManager(...)` | `routing.IndexManager(...)` |
 | `pywrapcp.RoutingModel(manager)` | `routing.Model(manager)` |
@@ -888,7 +888,7 @@ methods use PEP 8 `snake_case`.
 
 Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 
-| v9.15 (`RoutingIndexManager`) | v10.0-rc.1 (`IndexManager`) |
+| v9.15 (`RoutingIndexManager`) | v10.0 (`IndexManager`) |
 | :--- | :--- |
 | `manager.GetNumberOfNodes()` | `manager.num_nodes()` |
 | `manager.GetNumberOfVehicles()` | `manager.num_vehicles()` |
@@ -901,7 +901,7 @@ Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 
 #### Common `Model` Methods
 
-| v9.15 (`RoutingModel`) | v10.0-rc.1 (`Model`) |
+| v9.15 (`RoutingModel`) | v10.0 (`Model`) |
 | :--- | :--- |
 | `RegisterTransitCallback(cb)` / `RegisterUnaryTransitCallback(cb)` | `register_transit_callback(cb)` / `register_unary_transit_callback(cb)` |
 | `RegisterTransitMatrix(m)` / `RegisterUnaryTransitVector(v)` | `register_transit_matrix(m)` / `register_unary_transit_vector(v)` |
@@ -929,7 +929,7 @@ Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 
 #### Common `Dimension` and `Assignment` Methods
 
-| v9.15 | v10.0-rc.1 |
+| v9.15 | v10.0 |
 | :--- | :--- |
 | `dim.CumulVar(i)` / `SlackVar(i)` / `TransitVar(i)` | `dim.cumul_var(i)` / `slack_var(i)` / `transit_var(i)` |
 | `dim.SetGlobalSpanCostCoefficient(c)` | `dim.set_global_span_cost_coefficient(c)` |
@@ -947,7 +947,7 @@ Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 Several zero-argument getters are now Python **properties** (remove the trailing
 `()`):
 
-| v9.15 (Method Call) | v10.0-rc.1 (Property) |
+| v9.15 (Method Call) | v10.0 (Property) |
 | :--- | :--- |
 | `routing.solver()` | `routing_model.solver` |
 | `interval_var.Name()` / `int_var.Name()` | `interval_var.name` / `int_var.name` |
@@ -965,7 +965,7 @@ for i in range(intervals.Size()):
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/vrp_breaks.py)
+# v10.0 (from ortools/routing/samples/vrp_breaks.py)
 solver = routing_model.solver
 intervals = solution.interval_var_container()
 for i in range(intervals.size()):
@@ -987,7 +987,7 @@ time_dimension.SetBreakIntervalsOfVehicle(
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/cvrptw_break.py)
+# v10.0 (from ortools/routing/samples/cvrptw_break.py)
 time_dimension.set_break_intervals_of_vehicle(
     break_intervals[v], v, list(node_visit_transit.values())
 )
@@ -1024,7 +1024,7 @@ print(f"Status: {routing_enums_pb2.RoutingSearchStatus.Value.Name(status)}")
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/tsp.py, vrp_capacity.py, vrp_pickup_delivery_fifo.py)
+# v10.0 (from ortools/routing/samples/tsp.py, vrp_capacity.py, vrp_pickup_delivery_fifo.py)
 from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
@@ -1088,7 +1088,7 @@ solver.Add(solver.Cumulative(intervals, [1] * len(intervals), depot_capacity, "d
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/vrp_breaks_from_start.py, vrp_resources.py)
+# v10.0 (from ortools/routing/samples/vrp_breaks_from_start.py, vrp_resources.py)
 solver = routing_model.solver
 
 # Break relative to start time:
@@ -1128,7 +1128,7 @@ solver.Add(solver.Sum(terms) == target_var)
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/vrp_pickup_delivery.py, vrp_node_max.py)
+# v10.0 (from ortools/routing/samples/vrp_pickup_delivery.py, vrp_node_max.py)
 routing_model.add_pickup_and_delivery(pickup_index, delivery_index)
 routing_model.solver.add(
     routing_model.vehicle_var(pickup_index)
@@ -1161,7 +1161,7 @@ routing_model.AddAtSolutionCallback(solution_callback)
 ```
 
 ```python
-# v10.0-rc.1 (from ortools/routing/samples/vrp_solution_callback.py)
+# v10.0 (from ortools/routing/samples/vrp_solution_callback.py)
 class SolutionCallback:
     def __call__(self) -> None:
         objective = int(self._routing_model_ref().cost_var().value())
@@ -1173,7 +1173,7 @@ routing_model.add_at_solution_callback(solution_callback)
 
 #### Custom `IntVarLocalSearchOperator`
 
-In v10.0-rc.1, custom Python local search operators and filters subclass
+In v10.0, custom Python local search operators and filters subclass
 `constraint_solver.IntVarLocalSearchOperator` / `LocalSearchFilter` using
 `snake_case` overrides, and object lifetimes are safely retained by
 `add_local_search_operator` / `add_local_search_filter` (fixes #5083):
@@ -1201,7 +1201,7 @@ routing.AddLocalSearchOperator(MyOperator(int_vars))
 ```
 
 ```python
-# v10.0-rc.1
+# v10.0
 from ortools.constraint_solver.python import constraint_solver
 
 class MyOperator(constraint_solver.IntVarLocalSearchOperator):
@@ -1270,7 +1270,7 @@ def main():
     print(plan_output)
 ```
 
-#### v10.0-rc.1
+#### v10.0
 
 ```python
 from ortools.routing import enums_pb2
@@ -1323,5 +1323,5 @@ def main() -> None:
 *   Full updated samples in C++, .NET, Java, and Python:
     [`ortools/routing/samples/`](../samples/)
 *   Routing solver overview and modeling recipes: [ROUTING.md](ROUTING.md)
-*   Full v10.0-rc.1 release notes:
+*   Full v10.0 release notes:
     [`docs/CHANGELOG.md`](../../../docs/CHANGELOG.md)

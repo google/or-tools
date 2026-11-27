@@ -1,12 +1,12 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Migration](migration.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
 ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ------------------------- | -----------------------------------------------------------------------------------
-# Migrating the CP-SAT Solver from v9.15 to v10.0-rc.1
+# Migrating the CP-SAT Solver from v9.15 to v10.0
 
 This guide summarizes the major CP-SAT changes since **v9.15** and explains how
-to migrate CP-SAT code from OR-Tools **v9.15** to **v10.0-rc.1** across **C++**,
+to migrate CP-SAT code from OR-Tools **v9.15** to **v10.0** across **C++**,
 **.NET (C#)**, **Java**, and **Python**.
 
-Unlike the Routing library extraction in v10.0-rc.1, the core CP-SAT modeling
+Unlike the Routing library extraction in v10.0, the core CP-SAT modeling
 APIs (`CpModel` / `CpModelBuilder` and `CpSolver`) remain largely
 source-compatible. Migration effort centers on **platform/toolchain upgrades**,
 **Java's move to SWIG-generated CP-SAT protobuf wrappers**, **Python's newly
@@ -132,7 +132,7 @@ enabled `DeprecationWarning` for legacy CamelCase methods**, **C++
 
 ## Platform and Toolchain Requirements
 
-| Language   | v9.15                         | v10.0-rc.1                     |
+| Language   | v9.15                         | v10.0                     |
 | :--------- | :---------------------------- | :----------------------------- |
 | **C++**    | C++17 (Linux/macOS), CMake >= | **C++20 required** (GCC >= 10, |
 :            : 3.24                          : MSVC >= 2022); CMake >= 3.25;  :
@@ -153,7 +153,7 @@ enabled `DeprecationWarning` for legacy CamelCase methods**, **C++
 
 ## Quick Comparison Table
 
-| Concept                      | Language | v9.15                                         | v10.0-rc.1                             |
+| Concept                      | Language | v9.15                                         | v10.0                             |
 | :--------------------------- | :------- | :-------------------------------------------- | :------------------------------------- |
 | **Logging header & init**    | C++      | `#include "ortools/base/logging.h"`           | `#include "absl/log/log.h"`,           |
 :                              :          :                                               : `"absl/log/check.h"`,                  :
@@ -200,7 +200,7 @@ These changes apply across all four languages as well as serialized or textproto
 
 ### 1. Moved and Removed Protobuf Files
 
-| v9.15                                | v10.0-rc.1                           |
+| v9.15                                | v10.0                           |
 | :----------------------------------- | :----------------------------------- |
 | `ortools/sat/boolean_problem.proto`  | `ortools/bop/boolean_problem.proto`  |
 : (`package operations_research.sat;`) : (`package operations_research.bop;`) :
@@ -222,14 +222,14 @@ These changes apply across all four languages as well as serialized or textproto
 
 The following fields were removed from `SatParameters`:
 
-Removed v9.15 Field (Tag)                           | v10.0-rc.1 Replacement
+Removed v9.15 Field (Tag)                           | v10.0 Replacement
 :-------------------------------------------------- | :---------------------
 `check_drat_proof` (346)                            | `check_lrat_proof` (344) / `check_merged_lrat_proof` (352)
 `output_drat_proof` (347)                           | `output_lrat_proof` (345)
 `max_drat_time_in_seconds` (348)                    | *(removed; no LRAT timeout parameter)*
 `inprocessing_minimization_use_all_orderings` (298) | `num_ordering_in_vivification` (356, default `1`; set `> 1` to try multiple orderings)
 
-> **Note on LRAT proofs**: As of v10.0-rc.1, LRAT proof checking/output supports
+> **Note on LRAT proofs**: As of v10.0, LRAT proof checking/output supports
 > pure SAT models (including multi-worker merged proof verification via
 > `check_merged_lrat_proof`). When `cp_model_presolve` is enabled, also set
 > `cp_model_pure_sat_presolve = true`, `linearization_level <= 1`,
@@ -248,7 +248,7 @@ params.set_inprocessing_minimization_use_all_orderings(true);
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 SatParameters params;
 params.set_check_lrat_proof(true);
 params.set_output_lrat_proof(true);
@@ -269,7 +269,7 @@ solver.StringParameters =
 ```
 
 ```csharp
-// v10.0-rc.1
+// v10.0
 CpSolver solver = new CpSolver();
 solver.StringParameters =
     "check_lrat_proof:true output_lrat_proof:true " +
@@ -290,7 +290,7 @@ solver.getParameters()
 ```
 
 ```java
-// v10.0-rc.1
+// v10.0
 CpSolver solver = new CpSolver();
 solver.getParameters()
     .setCheckLratProof(true)
@@ -313,7 +313,7 @@ solver.parameters.inprocessing_minimization_use_all_orderings = True
 ```
 
 ```python
-# v10.0-rc.1
+# v10.0
 solver = cp_model.CpSolver()
 solver.parameters.check_lrat_proof = True
 solver.parameters.output_lrat_proof = True
@@ -328,7 +328,7 @@ solver.parameters.num_ordering_in_vivification = 4
 Even without code changes, note these default value shifts if you rely on exact
 solver trajectories or MIP scaling tolerances:
 
-| Parameter                                      | v9.15   | v10.0-rc.1 | Behavioral Impact   |
+| Parameter                                      | v9.15   | v10.0 | Behavioral Impact   |
 :                                                : Default : Default    :                     :
 | :--------------------------------------------- | :------ | :--------- | :------------------ |
 | `use_new_integer_conflict_resolution`          | `false` | **`true`** | Enables the new     |
@@ -373,7 +373,7 @@ solver trajectories or MIP scaling tolerances:
 ### 5. Notable New `SatParameters`
 
 The table below highlights the most user-relevant new parameters and enum values
-available in v10.0-rc.1:
+available in v10.0:
 
 | Parameter / Enum                                | Default | Purpose                      |
 | :---------------------------------------------- | :------ | :--------------------------- |
@@ -444,7 +444,7 @@ compatibility headers such as `numbers.h`, `commandlineflags.h`,
 `status_macros.h`, and `int_type.h`) was removed. Include Abseil logging headers
 directly and initialize logging in `main()`:
 
-| v9.15 Header                        | v10.0-rc.1 Header                  |
+| v9.15 Header                        | v10.0 Header                  |
 | :---------------------------------- | :--------------------------------- |
 | `ortools/base/logging.h`            | `absl/log/log.h` and               |
 :                                     : `absl/log/check.h`                 :
@@ -470,7 +470,7 @@ directly and initialize logging in `main()`:
 ```
 
 ```cpp
-// v10.0-rc.1 (from ortools/sat/samples/simple_sat_program.cc)
+// v10.0 (from ortools/sat/samples/simple_sat_program.cc)
 #include <stdlib.h>
 
 #include "absl/log/check.h"
@@ -495,7 +495,7 @@ int main(int argc, char* argv[]) {
 
 Because `IntVar`, `BoolVar`, `IntervalVar`, and `Constraint` keep a raw pointer
 to their owning `CpModelBuilder`, copying or moving a `CpModelBuilder` directly
-caused dangling pointers. In v10.0-rc.1, `CpModelBuilder`'s copy and move
+caused dangling pointers. In v10.0, `CpModelBuilder`'s copy and move
 assignment operators are explicitly `= delete`, and its copy and move
 constructors are `private`.
 
@@ -507,12 +507,12 @@ of by value:
 // v9.15 (compiled previously, but risked dangling pointers)
 CpModelBuilder base_model;
 // ... populate base_model ...
-CpModelBuilder copy = base_model;           // Error in v10.0-rc.1
-CpModelBuilder moved = std::move(base_model);  // Error in v10.0-rc.1
+CpModelBuilder copy = base_model;           // Error in v10.0
+CpModelBuilder moved = std::move(base_model);  // Error in v10.0
 ```
 
 ```cpp
-// v10.0-rc.1
+// v10.0
 CpModelBuilder base_model;
 // ... populate base_model ...
 CpModelBuilder copy = base_model.Clone();
@@ -526,7 +526,7 @@ Several `CpModelBuilder` methods now return specialized subclasses of
 `Constraint` (so existing code storing `Constraint ct = ...` continues to
 compile, while `auto` or explicit types can chain incremental additions):
 
-| `CpModelBuilder` Method   | v9.15 Return Type | v10.0-rc.1 Return Type (New |
+| `CpModelBuilder` Method   | v9.15 Return Type | v10.0 Return Type (New |
 :                           :                   : Methods)                    :
 | :------------------------ | :---------------- | :-------------------------- |
 | `AddBoolOr` /             | `Constraint`      | `BoolOrConstraint`          |
@@ -568,7 +568,7 @@ In addition:
     instances into the parallel search portfolio after presolve.
 
 ```cpp
-// v10.0-rc.1: fluent specialized constraint builders and BoolVar helpers
+// v10.0: fluent specialized constraint builders and BoolVar helpers
 CpModelBuilder cp_model;
 const BoolVar b1 = cp_model.NewBoolVar();
 const BoolVar b2 = cp_model.NewBoolVar();
@@ -646,7 +646,7 @@ cc_binary(
 ```
 
 ```starlark
-# v10.0-rc.1 (matches ortools/sat/samples/BUILD.bazel)
+# v10.0 (matches ortools/sat/samples/BUILD.bazel)
 cc_binary(
     name = "my_sat_app",
     srcs = ["my_sat_app.cc"],
@@ -684,7 +684,7 @@ still required; setting `BUILD_TESTING=OFF` forces all four per-language flags
 
 There are **no breaking high-level API changes** to `Google.OrTools.Sat`
 (`CpModel`, `CpSolver`, `IntVar`, `BoolVar`, `IntervalVar`, `LinearExpr`, or
-`Constraint`) between v9.15 and v10.0-rc.1.
+`Constraint`) between v9.15 and v10.0.
 
 ### 1. Target Framework and Package Requirements
 
@@ -711,7 +711,7 @@ There are **no breaking high-level API changes** to `Google.OrTools.Sat`
 ### 3. Example Verification Snippet
 
 ```csharp
-// v10.0-rc.1 (from ortools/sat/samples/SimpleSatProgram.cs)
+// v10.0 (from ortools/sat/samples/SimpleSatProgram.cs)
 using System;
 using Google.OrTools.Sat;
 
@@ -744,7 +744,7 @@ if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible) {
 
 ### 2. CP-SAT Protobufs Migrated to SWIG-Generated C++ Wrappers (#5066)
 
-The largest CP-SAT change in Java for v10.0-rc.1 is that all messages and enums
+The largest CP-SAT change in Java for v10.0 is that all messages and enums
 from `cp_model.proto` (`CpModelProto`, `CpSolverResponse`, `ConstraintProto`,
 `IntegerVariableProto`, `IntervalConstraintProto`, `CpObjectiveProto`,
 `FloatObjectiveProto`, `DecisionStrategyProto`, `CpSolverStatus`, etc.) are now
@@ -771,14 +771,14 @@ immediately on construction, calling `new CpModel()` or
 worked before loading native libraries):
 
 ```java
-// v10.0-rc.1: ALWAYS load native libraries before constructing CpModel or CpModelProto.
+// v10.0: ALWAYS load native libraries before constructing CpModel or CpModelProto.
 Loader.loadNativeLibraries();
 CpModel model = new CpModel();
 ```
 
 #### B. Key Differences From `protobuf-java` (`GeneratedMessage`)
 
-| Behavior                     | v9.15 (`protobuf-java`)                  | v10.0-rc.1 (SWIG C++ Wrapper)  |
+| Behavior                     | v9.15 (`protobuf-java`)                  | v10.0 (SWIG C++ Wrapper)  |
 | :--------------------------- | :--------------------------------------- | :----------------------------- |
 | **Base class / interfaces**  | Extends                                  | Plain SWIG wrapper class (does |
 :                              : `com.google.protobuf.GeneratedMessage`,  : **not** implement              :
@@ -830,7 +830,7 @@ TextFormat.merge(textProtoString, parsed);
 ```
 
 ```java
-// v10.0-rc.1 (SWIG-generated CpModelProto wrapper APIs)
+// v10.0 (SWIG-generated CpModelProto wrapper APIs)
 Loader.loadNativeLibraries();
 
 CpModelProto proto = model.model();
@@ -902,7 +902,7 @@ java_binary(
 ```
 
 ```starlark
-# v10.0-rc.1 (matches ortools/sat/samples/java/BUILD.bazel)
+# v10.0 (matches ortools/sat/samples/java/BUILD.bazel)
 java_binary(
     name = "MySatApp",
     srcs = ["MySatApp.java"],
@@ -931,7 +931,7 @@ java_binary(
 
 In v9.15, pre-PEP 8 CamelCase methods on `CpModel` and `CpSolver` were
 deprecated, but warnings were silenced unless `cp_model.enable_warnings = True`
-was set. In **v10.0-rc.1**, `cp_model.enable_warnings` was **removed** and
+was set. In **v10.0**, `cp_model.enable_warnings` was **removed** and
 **`DeprecationWarning` is emitted by default** on every call to a legacy
 CamelCase method (and `warnings.simplefilter("default", DeprecationWarning)` is
 applied).
@@ -942,7 +942,7 @@ applied).
     methods and properties:
 
 | Legacy CamelCase (Deprecated, Warns  | Recommended PEP 8 (`snake_case` /          |
-: in v10.0-rc.1)                       : Property)                                  :
+: in v10.0)                       : Property)                                  :
 | :----------------------------------- | :----------------------------------------- |
 | `model.NewIntVar(...)` /             | `model.new_int_var(...)` /                 |
 : `NewBoolVar(...)` /                  : `new_bool_var(...)` / `new_constant(...)`  :
@@ -994,7 +994,7 @@ applied).
 : `FromFlatIntervals(...)`             : `from_flat_intervals(...)`                 :
 
 ```python
-# v9.15 (silent by default in v9.15; emits DeprecationWarning in v10.0-rc.1)
+# v9.15 (silent by default in v9.15; emits DeprecationWarning in v10.0)
 model = cp_model.CpModel()
 model.SetName("example")
 x = model.NewIntVar(0, 10, "x")
@@ -1008,7 +1008,7 @@ print(solver.StatusName(status), solver.ObjectiveValue(), solver.Value(x), solve
 ```
 
 ```python
-# v10.0-rc.1 (recommended PEP 8 API)
+# v10.0 (recommended PEP 8 API)
 model = cp_model.CpModel()
 model.name = "example"
 x = model.new_int_var(0, 10, "x")
@@ -1036,7 +1036,7 @@ Previously, invalid reservoir bounds or empty `times` were only caught later
 during model validation or solving (returning `MODEL_INVALID`).
 
 ```python
-# v10.0-rc.1: raises ValueError immediately if min_level > 0, max_level < 0,
+# v10.0: raises ValueError immediately if min_level > 0, max_level < 0,
 # max_level < min_level, or times is empty.
 if times:
     model.add_reservoir_constraint(times, level_changes, min_level=0, max_level=10)
@@ -1058,7 +1058,7 @@ if times:
     (`mypy`, `pyright`, `pyrefly`).
 
 ```python
-# v10.0-rc.1: chaining after list/variadic only_enforce_if now works consistently
+# v10.0: chaining after list/variadic only_enforce_if now works consistently
 ct = model.add(x + y <= 10).only_enforce_if([b1, ~b2]).with_name("cap")
 ```
 
@@ -1087,7 +1087,7 @@ new methods:
     `CpModelProto` into a compact, human-readable string.
 
 ```python
-# v10.0-rc.1
+# v10.0
 from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper as cmh
 
@@ -1102,7 +1102,7 @@ print(cmh.prettyprint_model_proto(model.proto))
 
 ### 6. Fixed v9.15 Regressions
 
-Two v9.15 Python regressions are resolved in v10.0-rc.1:
+Two v9.15 Python regressions are resolved in v10.0:
 
 *   **`CpSolver.status_name()`** (#4985): Calling `solver.status_name()` with no
     arguments now works properly (v9.15 raised `TypeError` because it called
@@ -1145,7 +1145,7 @@ def main():
         print(f"Wall time: {solver.WallTime():.3f}s")
 ```
 
-#### v10.0-rc.1
+#### v10.0
 
 ```python
 from ortools.sat.python import cp_model
@@ -1186,5 +1186,5 @@ def main() -> None:
     [solver.md](solver.md), [troubleshooting.md](troubleshooting.md)
 *   Routing solver migration guide:
     [`ortools/routing/docs/migration.md`](../../routing/docs/migration.md)
-*   Full v10.0-rc.1 release notes:
+*   Full v10.0 release notes:
     [`docs/CHANGELOG.md`](../../../docs/CHANGELOG.md)
