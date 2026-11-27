@@ -422,6 +422,49 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(0, solve(False))
         self.assertEqual(10, solve(True))
 
+    def test_dimension_names(self) -> None:
+        manager = routing.IndexManager(num_nodes=10, num_vehicles=1, depot=0)
+        routing_model = routing.Model(manager)
+        self.assertEqual([], routing_model.get_all_dimension_names())
+        self.assertFalse(routing_model.has_dimension("Time"))
+        transit_idx = routing_model.register_transit_callback(lambda i, j: 1)
+        routing_model.add_dimension(transit_idx, 0, 100, True, "Time")
+        self.assertEqual(["Time"], routing_model.get_all_dimension_names())
+        self.assertTrue(routing_model.has_dimension("Time"))
+        self.assertFalse(routing_model.has_dimension("Capacity"))
+        routing_model.add_dimension(transit_idx, 0, 100, True, "Capacity")
+        # Names are returned sorted.
+        self.assertEqual(["Capacity", "Time"], routing_model.get_all_dimension_names())
+        self.assertTrue(routing_model.has_dimension("Capacity"))
+
+    def test_slack_cost_coefficient_for_all_vehicles(self) -> None:
+        # Two vehicles and two nodes which cannot share a route. Each node must
+        # be reached at time 5 with zero transit, so each vehicle accumulates
+        # 5 units of slack.
+        def solve(set_for_all_vehicles: bool) -> int:
+            manager = routing.IndexManager(num_nodes=3, num_vehicles=2, depot=0)
+            routing_model = routing.Model(manager)
+
+            def transit(i: int, j: int) -> int:
+                nodes = {manager.index_to_node(i), manager.index_to_node(j)}
+                return 100 if nodes == {1, 2} else 0
+
+            transit_idx = routing_model.register_transit_callback(transit)
+            routing_model.add_dimension(transit_idx, 10, 10, True, "Time")
+            dim = routing_model.get_dimension_or_die("Time")
+            for node in (1, 2):
+                dim.set_cumul_var_range(manager.node_to_index(node), 5, 5)
+            if set_for_all_vehicles:
+                dim.set_slack_cost_coefficient_for_all_vehicles(3)
+            else:
+                dim.set_slack_cost_coefficient_for_vehicle(3, 0)
+            assignment = routing_model.solve()
+            self.assertIsNotNone(assignment)
+            return assignment.objective_value()
+
+        self.assertEqual(15, solve(False))
+        self.assertEqual(30, solve(True))
+
     def test_pickup_and_delivery(self) -> None:
         manager = routing.IndexManager(num_nodes=10, num_vehicles=1, depot=0)
         routing_model = routing.Model(manager)

@@ -207,6 +207,11 @@ PYBIND11_MODULE(routing, m) {
            py::arg("coefficient"), py::arg("vehicle"),
            DOC(operations_research, routing, Dimension,
                SetSlackCostCoefficientForVehicle))
+      .def("set_slack_cost_coefficient_for_all_vehicles",
+           &Dimension::SetSlackCostCoefficientForAllVehicles,
+           py::arg("coefficient"),
+           DOC(operations_research, routing, Dimension,
+               SetSlackCostCoefficientForAllVehicles))
       .def("set_cumul_var_soft_upper_bound",
            &Dimension::SetCumulVarSoftUpperBound, py::arg("node"),
            py::arg("limit"), py::arg("coefficient"),
@@ -489,6 +494,10 @@ PYBIND11_MODULE(routing, m) {
          py::arg("capacity"), py::arg("fix_start_cumul_to_zero"),
          py::arg("name"),
          DOC(operations_research, routing, Model, AddMatrixDimension));
+  rm.def("get_all_dimension_names", &Model::GetAllDimensionNames,
+         DOC(operations_research, routing, Model, GetAllDimensionNames));
+  rm.def("has_dimension", &Model::HasDimension, py::arg("dimension_name"),
+         DOC(operations_research, routing, Model, HasDimension));
   rm.def("get_dimension_or_die", &Model::GetDimensionOrDie,
          pybind11::return_value_policy::reference_internal,
          py::arg("dimension_name"),
