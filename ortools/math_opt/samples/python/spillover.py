@@ -50,10 +50,6 @@ The problem is not particularly interesting in isolation, it is more interesting
 to embed this LP inside a larger optimization problem (e.g. consider a two stage
 problem where in stage one, you buy machines, then in stage two, you realize VM
 demand).
-
-MOE:begin_strip
-This example is motivated by the Cloudy problem, see go/fluid-model.
-MOE:end_strip
 """
 
 import dataclasses

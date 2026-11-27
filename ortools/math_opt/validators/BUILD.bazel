@@ -23,6 +23,7 @@ or_cc_library(
         "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt/core:model_summary",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
@@ -39,6 +40,7 @@ or_cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "//ortools/math_opt/core:model_summary",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
@@ -98,7 +100,6 @@ or_cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
         "@protobuf",
     ],
 )

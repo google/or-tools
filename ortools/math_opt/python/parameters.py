@@ -46,11 +46,9 @@ class SolverType(enum.Enum):
     CP_SAT: Google's CP-SAT solver. Supports problems where all variables are
       integer and bounded (or implied to be after presolve). Experimental
       support to rescale and discretize problems with continuous variables.
-    MOE:begin_intracomment_strip
     PDLP: Google's PDLP solver. Supports LP and convex diagonal quadratic
       objectives. Uses first order methods rather than simplex. Can solve very
       large problems.
-    MOE:end_intracomment_strip
     GLPK: GNU Linear Programming Kit (GLPK) (third party). Supports MIP and LP.
       Thread-safety: GLPK use thread-local storage for memory allocations. As a
       consequence when using IncrementalSolver, the user must make sure that

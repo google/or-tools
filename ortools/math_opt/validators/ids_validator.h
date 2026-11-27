@@ -18,6 +18,7 @@
 
 #include <optional>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -46,6 +47,23 @@ absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
                             const IdNameBiMap& universe,
                             absl::string_view ids_description,
                             absl::string_view universe_description);
+
+// Checks that the elements of ids are in universe. Elements of ids do not need
+// to be sorted or distinct. Runs in expected O(|ids|) time.
+absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
+                            const absl::flat_hash_set<int64_t>& universe,
+                            absl::string_view ids_description,
+                            absl::string_view universe_description);
+
+// Checks that the elements of ids are in sorted_universe. Runs in
+// O(|ids| + |sorted_universe|) time. Both must be sorted: ids in nondecreasing
+// order (repeated ids are allowed) and sorted_universe in strictly increasing
+// order. Returns an InvalidArgumentError if ids is not sorted or if
+// sorted_universe is not strictly increasing.
+absl::Status CheckSortedIdsSubset(absl::Span<const int64_t> ids,
+                                  absl::Span<const int64_t> sorted_universe,
+                                  absl::string_view ids_description,
+                                  absl::string_view universe_description);
 
 // first_ids and second_ids must include distinct ids.
 absl::Status CheckIdsIdentical(absl::Span<const int64_t> first_ids,

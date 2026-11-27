@@ -28,27 +28,35 @@ namespace operations_research::math_opt {
 
 absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
                                const bool enforce_upper_triangular) {
-  const int nnz = matrix.row_ids_size();
-  if (nnz != matrix.column_ids_size()) {
+  return SparseMatrixValid(matrix.row_ids(), matrix.column_ids(),
+                           matrix.coefficients(), enforce_upper_triangular);
+}
+
+absl::Status SparseMatrixValid(const absl::Span<const int64_t> row_ids,
+                               const absl::Span<const int64_t> column_ids,
+                               const absl::Span<const double> coefficients,
+                               const bool enforce_upper_triangular) {
+  const int64_t nnz = row_ids.size();
+  if (nnz != column_ids.size()) {
     return ortools::InvalidArgumentErrorBuilder()
            << "Expected row_id.size=" << nnz
-           << " equal to column_ids.size=" << matrix.column_ids_size();
+           << " equal to column_ids.size=" << column_ids.size();
   }
-  if (nnz != matrix.coefficients_size()) {
+  if (nnz != coefficients.size()) {
     return ortools::InvalidArgumentErrorBuilder()
            << "Expected row_id.size=" << nnz
-           << " equal to coefficients.size=" << matrix.coefficients_size();
+           << " equal to coefficients.size=" << coefficients.size();
   }
   int64_t previous_row = -1;
   int64_t previous_col = -1;
-  for (int i = 0; i < nnz; ++i) {
-    const int64_t row = matrix.row_ids(i);
+  for (int64_t i = 0; i < nnz; ++i) {
+    const int64_t row = row_ids[i];
     if (row < 0) {
       return ortools::InvalidArgumentErrorBuilder()
              << "row_ids should be nonnegative, but found id: " << row
              << " (at index: " << i << ")";
     }
-    const int64_t col = matrix.column_ids(i);
+    const int64_t col = column_ids[i];
     if (col < 0) {
       return ortools::InvalidArgumentErrorBuilder()
              << "column_ids should be nonnegative, but found id: " << col
@@ -74,12 +82,12 @@ absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
       }
     }
     // When row > previous_row, we have a new row, nothing to check.
-    if (!std::isfinite(matrix.coefficients(i))) {
+    if (!std::isfinite(coefficients[i])) {
       return ortools::InvalidArgumentErrorBuilder()
              << "Expected finite coefficients without NaN, but at row_id: "
              << row << ", column_id: " << col
-             << " found coefficient: " << matrix.coefficients(i)
-             << " (at index: " << i << ")";
+             << " found coefficient: " << coefficients[i] << " (at index: " << i
+             << ")";
     }
     previous_row = row;
     previous_col = col;
