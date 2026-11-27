@@ -912,7 +912,10 @@ class PruningHamiltonianSolver {
   // Returns the cost of the Hamiltonian path from 0 to end_node.
   CostType HamiltonianCost(int end_node);
 
-  // TODO(user): Add function to return an actual path.
+  // Returns the shortest Hamiltonian path from 0 to end_node, or an empty
+  // vector if no such path exists.
+  std::vector<int> HamiltonianPath(int end_node);
+
   // TODO(user): Add functions for Hamiltonian cycle.
 
  private:
@@ -921,6 +924,9 @@ class PruningHamiltonianSolver {
 
   // Solve and get TSP cost.
   void Solve(int end_node);
+
+  // Reconstructs the path found by Solve() from the memoized costs.
+  std::vector<int> ComputePath(int end_node);
 
   // Compute lower bound for remaining subgraph.
   CostType ComputeFutureLowerBound(NodeSet current_set, int last_visited);
@@ -937,6 +943,9 @@ class PruningHamiltonianSolver {
   // If already solved.
   bool solved_;
 
+  // End node of the solved Hamiltonian path, or -1 if none was found.
+  int solved_end_node_;
+
   // Memoize for dynamic programming.
   LatticeMemoryManager<NodeSet, CostType> mem_;
 };
@@ -952,11 +961,19 @@ PruningHamiltonianSolver<CostType, CostFunction>::PruningHamiltonianSolver(
     : cost_(std::move(cost)),
       num_nodes_(num_nodes),
       tsp_cost_(0),
-      solved_(false) {}
+      solved_(false),
+      solved_end_node_(-1) {}
 
 template <typename CostType, typename CostFunction>
 void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
-  if (solved_ || num_nodes_ == 0) return;
+  if (num_nodes_ == 0) return;
+  if (solved_ && solved_end_node_ == end_node) return;
+  if (solved_) {
+    tsp_cost_ = 0;
+    solved_end_node_ = -1;
+    mem_ = LatticeMemoryManager<NodeSet, CostType>();
+    solved_ = false;
+  }
   // TODO(user): Use an approximate solution as a base target before solving.
 
   // TODO(user): Instead of pure DFS, find out the order of sets to compute
@@ -1003,6 +1020,7 @@ void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
       // If next is the last node to visit, update tsp_cost_ and skip.
       if (next_cardinality == num_nodes_) {
         tsp_cost_ = next_cost;
+        solved_end_node_ = end_node;
         continue;
       }
 
@@ -1020,6 +1038,51 @@ CostType PruningHamiltonianSolver<CostType, CostFunction>::HamiltonianCost(
     int end_node) {
   Solve(end_node);
   return tsp_cost_;
+}
+
+template <typename CostType, typename CostFunction>
+std::vector<int>
+PruningHamiltonianSolver<CostType, CostFunction>::HamiltonianPath(
+    int end_node) {
+  if (num_nodes_ < 2 || end_node <= 0 || end_node >= num_nodes_) return {};
+  Solve(end_node);
+  if (solved_end_node_ != end_node) return {};
+  return ComputePath(end_node);
+}
+
+template <typename CostType, typename CostFunction>
+std::vector<int> PruningHamiltonianSolver<CostType, CostFunction>::ComputePath(
+    int end_node) {
+  std::vector<int> path(num_nodes_, 0);
+  path[num_nodes_ - 1] = end_node;
+  NodeSet state_set = NodeSet::FullSet(num_nodes_).RemoveElement(end_node);
+  NodeSet remaining = state_set.RemoveElement(0);
+  CostType current_cost = tsp_cost_;
+  int dest = end_node;
+  for (int rank = num_nodes_ - 2; rank >= 1; --rank) {
+    bool found = false;
+    for (int src : remaining) {
+      const CostType partial_cost = mem_.Value(state_set, src);
+      const CostType incumbent_cost = partial_cost + Cost(src, dest);
+      // Take precision into account when CostType is float or double.
+      if (std::abs(current_cost - incumbent_cost) <=
+          std::numeric_limits<CostType>::epsilon() * current_cost) {
+        path[rank] = src;
+        remaining = remaining.RemoveElement(src);
+        state_set = state_set.RemoveElement(src);
+        dest = src;
+        current_cost = partial_cost;
+        found = true;
+        break;
+      }
+    }
+    if (!found) return {};
+  }
+  DCHECK_EQ(0, remaining.value());
+  DCHECK_EQ(NodeSet::Singleton(0).value(), state_set.value());
+  DCHECK_LE(std::abs(current_cost - Cost(0, dest)),
+            std::numeric_limits<CostType>::epsilon() * current_cost);
+  return path;
 }
 
 template <typename CostType, typename CostFunction>

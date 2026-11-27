@@ -13,6 +13,7 @@
 
 #include "ortools/graph/hamiltonian_path.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -167,6 +168,21 @@ TEST(HamiltonianPathTest, Gr17) {
   PruningHamiltonianSolver<int, std::vector<std::vector<int>>> prune_solver(
       cost_mat);
   EXPECT_EQ(1707, prune_solver.HamiltonianCost(best_end_node));
+  const std::vector<int> prune_path =
+      prune_solver.HamiltonianPath(best_end_node);
+  ASSERT_EQ(kGr17Size, prune_path.size());
+  EXPECT_EQ(0, prune_path.front());
+  EXPECT_EQ(best_end_node, prune_path.back());
+  std::vector<int> sorted_path = prune_path;
+  std::sort(sorted_path.begin(), sorted_path.end());
+  for (int i = 0; i < kGr17Size; ++i) {
+    EXPECT_EQ(i, sorted_path[i]);
+  }
+  int path_cost = 0;
+  for (int i = 1; i < prune_path.size(); ++i) {
+    path_cost += cost_mat[prune_path[i - 1]][prune_path[i]];
+  }
+  EXPECT_EQ(1707, path_cost);
 }
 
 // Gr24 as taken from TSPLIB:
@@ -399,6 +415,33 @@ TEST(HamiltonianPathTest, EmptyCosts) {
   ham_solver.ChangeCostMatrix(cost);
   path = ham_solver.TravelingSalesmanPath();
   EXPECT_EQ(kSize + 1, path.size());
+}
+
+TEST(HamiltonianPathTest, PruningSolverHamiltonianPath) {
+  const std::vector<std::vector<int>> cost = {
+      {0, 1, 5, 10}, {1, 0, 1, 10}, {5, 1, 0, 1}, {10, 10, 1, 0}};
+  PruningHamiltonianSolver<int, std::vector<std::vector<int>>> solver(cost);
+
+  EXPECT_EQ(3, solver.HamiltonianCost(3));
+  EXPECT_EQ(std::vector<int>({0, 1, 2, 3}), solver.HamiltonianPath(3));
+
+  // A different end node must trigger a fresh solve instead of reusing the
+  // memoized path.
+  EXPECT_EQ(12, solver.HamiltonianCost(2));
+  EXPECT_EQ(std::vector<int>({0, 1, 3, 2}), solver.HamiltonianPath(2));
+
+  EXPECT_TRUE(solver.HamiltonianPath(0).empty());
+  EXPECT_TRUE(solver.HamiltonianPath(4).empty());
+
+  std::vector<std::vector<int>> empty_cost;
+  PruningHamiltonianSolver<int, std::vector<std::vector<int>>> empty_solver(
+      empty_cost);
+  EXPECT_TRUE(empty_solver.HamiltonianPath(0).empty());
+
+  const std::vector<std::vector<int>> single_cost(1, std::vector<int>(1, 0));
+  PruningHamiltonianSolver<int, std::vector<std::vector<int>>> single_solver(
+      1, single_cost);
+  EXPECT_TRUE(single_solver.HamiltonianPath(0).empty());
 }
 
 TEST(HamiltonianPathTest, RectangleCosts) {
