@@ -613,9 +613,6 @@ class RevisedSimplex {
   // See Chvatal's book for more detail (Chapter 7).
   void ComputeDirection(ColIndex col);
 
-  // Computes a - B.d in error_ and return the maximum std::abs() of its coeffs.
-  Fractional ComputeDirectionError(ColIndex col);
-
   // Computes the ratio of the basic variable corresponding to 'row'. A target
   // bound (upper or lower) is chosen depending on the sign of the entering
   // reduced cost and the sign of the direction 'd_[row]'. The ratio is such
@@ -932,7 +929,7 @@ class RevisedSimplex {
   uint64_t num_push_iterations_ = 0;
 
   // Deterministic time for DualPhaseIUpdatePriceOnReducedCostChange().
-  LinearDeterministicTimer<{.scale = 2e-9}> update_price_timer_;
+  LinearDeterministicTimer<{.scale = 2.3e-08}> update_price_timer_;
 
   // Total time spent in Solve().
   double total_time_ = 0.0;

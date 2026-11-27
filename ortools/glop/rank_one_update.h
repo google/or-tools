@@ -256,7 +256,7 @@ class RankOneUpdateFactorization {
   void ResetDeterministicTime() { deterministic_timer_.Reset(); }
 
  private:
-  mutable LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  mutable LinearDeterministicTimer<{.scale = 3.1e-09}> deterministic_timer_;
 
   double hypersparse_ratio_;
   EntryIndex num_entries_;

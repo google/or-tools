@@ -484,7 +484,7 @@ class Markowitz {
   int64_t num_fp_operations_;
 
   // Deterministic time of the last factorization.
-  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  LinearDeterministicTimer<{.scale = 4.4e-09}> deterministic_timer_;
 };
 
 }  // namespace glop

@@ -293,7 +293,7 @@ class ReducedCosts {
   // UpdateBeforeBasisPivot() function.
   std::vector<bool*> watchers_;
 
-  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  LinearDeterministicTimer<{.scale = 5.4e-09}> deterministic_timer_;
 };
 
 // Maintains the list of dual infeasible positions and their associated prices.

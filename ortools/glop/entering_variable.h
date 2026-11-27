@@ -131,7 +131,7 @@ class EnteringVariable {
   // Temporary vector used to hold breakpoints.
   std::vector<ColWithRatio> breakpoints_;
 
-  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
+  LinearDeterministicTimer<{.scale = 4.0e-09}> deterministic_timer_;
 };
 
 }  // namespace glop

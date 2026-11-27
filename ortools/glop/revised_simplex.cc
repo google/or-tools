@@ -2084,16 +2084,6 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
                            static_cast<double>(num_rows_.value())));
 }
 
-Fractional RevisedSimplex::ComputeDirectionError(ColIndex col) {
-  SCOPED_TIME_STAT(&function_stats_);
-  compact_matrix_.ColumnCopyToDenseColumn(col, &error_);
-  for (const auto e : direction_) {
-    compact_matrix_.ColumnAddMultipleToDenseColumn(col, -e.coefficient(),
-                                                   &error_);
-  }
-  return InfinityNorm(error_);
-}
-
 template <bool is_entering_reduced_cost_positive>
 Fractional RevisedSimplex::GetRatio(const DenseRow& lower_bounds,
                                     const DenseRow& upper_bounds,
