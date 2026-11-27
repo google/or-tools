@@ -63,3 +63,30 @@ py_test(
         "@pip_deps//absl_py",
     ],
 )
+
+py_test(
+    name = "linear_sum_assignment_test",
+    srcs = ["linear_sum_assignment_test.py"],
+    deps = [
+        ":linear_sum_assignment",
+        "@pip_deps//absl_py",
+    ],
+)
+
+py_test(
+    name = "max_flow_test",
+    srcs = ["max_flow_test.py"],
+    deps = [
+        ":max_flow",
+        "@pip_deps//absl_py",
+    ],
+)
+
+py_test(
+    name = "min_cost_flow_test",
+    srcs = ["min_cost_flow_test.py"],
+    deps = [
+        ":min_cost_flow",
+        "@pip_deps//absl_py",
+    ],
+)

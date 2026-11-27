@@ -18,6 +18,7 @@ Knapsack solver
 
 Graph and flow algorithms
 
+@li @ref ortools.graph.python.dag_shortest_path,
 @li @ref ortools.graph.python.linear_sum_assignment,
 @li @ref ortools.graph.python.max_flow,
 @li @ref ortools.graph.python.min_cost_flow,
