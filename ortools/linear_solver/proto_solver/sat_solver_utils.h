@@ -37,10 +37,11 @@ namespace operations_research {
 //   two statuses.
 // - ABNORMAL if an error occurred.
 //
-// The presolve is skipped if the model has a solution hint or any enforced
-// constraint. The model is only modified if INIT is returned. In all cases,
-// `num_presolved_constraints` is set to the number of constraints expected by
-// the `for_postsolve` preprocessors when recovering a solution.
+// The presolve is skipped if the model has a solution hint, any enforced
+// constraint, or any non-integer variable with a maximum_distance_to_integer
+// smaller than 0.5. The model is only modified if INIT is returned. In all
+// cases, `num_presolved_constraints` is set to the number of constraints
+// expected by the `for_postsolve` preprocessors when recovering a solution.
 glop::ProblemStatus ApplyMipPresolveSteps(
     const glop::GlopParameters& glop_params, sat::MPModelProtoWrapper* model,
     std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,

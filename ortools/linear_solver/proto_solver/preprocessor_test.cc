@@ -13,12 +13,14 @@
 
 #include "ortools/linear_solver/proto_solver/preprocessor.h"
 
+#include <cmath>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -34,6 +36,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/mip_model.pb.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
@@ -49,7 +52,6 @@ using ::operations_research::glop::kInfinity;
 using ::operations_research::glop::LinearProgram;
 using ::operations_research::glop::Preprocessor;
 using ::operations_research::glop::ProblemSolution;
-using ::operations_research::glop::ProblemStatus;
 using ::operations_research::glop::RowIndex;
 using ::operations_research::glop::StrictITIVector;
 using ::testing::ElementsAre;
@@ -156,6 +158,36 @@ void CheckMipPreprocessorBehavior(
   }
 }
 
+// Returns the model seen by `wrapper` as an MPModelProto. All its constraints
+// must be unenforced.
+MPModelProto ToMPModelProto(const sat::MPModelProtoWrapper& wrapper) {
+  MPModelProto result;
+  if (!wrapper.name().empty()) result.set_name(wrapper.name());
+  if (wrapper.objective_offset() != 0.0) {
+    result.set_objective_offset(wrapper.objective_offset());
+  }
+  for (int v = 0; v < wrapper.num_variables(); ++v) {
+    const sat::MipVariableProto& var = wrapper.variables(v);
+    MPVariableProto* mp_var = result.add_variable();
+    mp_var->set_lower_bound(var.lower_bound());
+    mp_var->set_upper_bound(var.upper_bound());
+    mp_var->set_objective_coefficient(var.objective_coefficient());
+    mp_var->set_is_integer(var.is_integer());
+    if (!var.name().empty()) mp_var->set_name(var.name());
+  }
+  for (int c = 0; c < wrapper.num_constraints(); ++c) {
+    const sat::EnforcedLinearConstraintProto& ct = wrapper.constraints(c);
+    CHECK(ct.enforcement_vars().empty());
+    MPConstraintProto* mp_ct = result.add_constraint();
+    if (!ct.name().empty()) mp_ct->set_name(ct.name());
+    mp_ct->set_lower_bound(ct.lower_bound());
+    mp_ct->set_upper_bound(ct.upper_bound());
+    mp_ct->mutable_var_index()->Add(ct.vars().begin(), ct.vars().end());
+    mp_ct->mutable_coefficient()->Add(ct.coeffs().begin(), ct.coeffs().end());
+  }
+  return result;
+}
+
 bool RunPropagateBounds(sat::MPModelProtoWrapper* wrapper) {
   const int num_variables = wrapper->num_variables();
   std::vector<double> var_lbs(num_variables);
@@ -184,8 +216,7 @@ void CheckBoundPropagationPreprocessorBehavior(
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(RunPropagateBounds(&wrapper));
-  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
-                                    &linear_program);
+  glop::MPModelProtoToLinearProgram(ToMPModelProto(wrapper), &linear_program);
 
   ExpectLinearProgramMatches(linear_program, expected_preprocessed_problem);
 }
@@ -200,8 +231,7 @@ void CheckMakeBoundsIntegerBehavior(
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(MakeBoundsInteger(integer_solution_tolerance, &wrapper));
-  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
-                                    &linear_program);
+  glop::MPModelProtoToLinearProgram(ToMPModelProto(wrapper), &linear_program);
 
   ExpectLinearProgramMatches(linear_program, expected_preprocessed_problem);
 }
@@ -306,8 +336,7 @@ TEST(BoundPropagationPreprocessorTest, AlmostInfeasibleMerge) {
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
-  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
-                                    &linear_program);
+  glop::MPModelProtoToLinearProgram(ToMPModelProto(wrapper), &linear_program);
   ExpectLinearProgramMatches(linear_program, kOutputProgram);
 }
 
@@ -322,7 +351,7 @@ TEST(BoundPropagationPreprocessorTest, ExactPresolveDualRestrictionOnIntegers) {
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
-  wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
+  sat::AddEnforcement(0, 1, wrapper.mutable_constraints(0));
 
   EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
   // 2*x >= 5 is satisfied for x >= 2.5, so dual reasoning restricts the upper
@@ -348,7 +377,8 @@ TEST(BoundPropagationPreprocessorTest, ExactPresolveClearsTrivialConstraints) {
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   // Variables: x = 0, y = 1, z = 2, b = 3.
-  wrapper.mutable_constraints(2)->AddEnforcement(3, 1);
+  sat::AddEnforcement(3, 1, wrapper.mutable_constraints(2));
+  wrapper.mutable_constraints(1)->set_tolerance(1e-5);
 
   ASSERT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
   // Propagation tightens y to [0, 3]. r_tighten remains active (max activity
@@ -358,14 +388,18 @@ TEST(BoundPropagationPreprocessorTest, ExactPresolveClearsTrivialConstraints) {
   EXPECT_EQ(wrapper.variables(1).lower_bound(), 0.0);
   EXPECT_EQ(wrapper.variables(1).upper_bound(), 3.0);
   EXPECT_EQ(wrapper.constraints(0).upper_bound(), 3.0);
-  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+  EXPECT_EQ(wrapper.constraints(0).vars().size(), 2);
   for (const int c : {1, 2}) {
     SCOPED_TRACE(c);
     EXPECT_EQ(wrapper.constraints(c).lower_bound(), -kInfinity);
     EXPECT_EQ(wrapper.constraints(c).upper_bound(), kInfinity);
-    EXPECT_EQ(wrapper.constraints(c).num_terms(), 0);
-    EXPECT_FALSE(wrapper.constraints(c).IsEnforced());
+    EXPECT_THAT(wrapper.constraints(c).vars(), IsEmpty());
+    EXPECT_THAT(wrapper.constraints(c).coeffs(), IsEmpty());
+    EXPECT_THAT(wrapper.constraints(c).enforcement_vars(), IsEmpty());
   }
+  EXPECT_EQ(wrapper.constraints(1).name(), "r_trivial");
+  EXPECT_EQ(wrapper.constraints(1).tolerance(), 1e-5);
+  EXPECT_EQ(wrapper.constraints(2).name(), "r_enforced_trivial");
 
   // Both z and b are now unused and fixed by
   // ShiftToZeroAndMarkAsIntegerUnusedVariables().
@@ -393,13 +427,14 @@ TEST(BoundPropagationPreprocessorTest,
   // Variables: b = 0, x = 1. Enforcing b == 0 => x <= 5 would block dual
   // restriction from decreasing b to 0 unless cleared at the start of
   // ExactPresolve().
-  wrapper.mutable_constraints(0)->AddEnforcement(0, 0);
+  sat::AddEnforcement(0, 0, wrapper.mutable_constraints(0));
 
   ASSERT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
   EXPECT_EQ(wrapper.constraints(0).lower_bound(), -kInfinity);
   EXPECT_EQ(wrapper.constraints(0).upper_bound(), kInfinity);
-  EXPECT_EQ(wrapper.constraints(0).num_terms(), 0);
-  EXPECT_FALSE(wrapper.constraints(0).IsEnforced());
+  EXPECT_THAT(wrapper.constraints(0).vars(), IsEmpty());
+  EXPECT_THAT(wrapper.constraints(0).enforcement_vars(), IsEmpty());
+  EXPECT_EQ(wrapper.constraints(0).name(), "r1");
   EXPECT_EQ(wrapper.variables(0).lower_bound(), 0.0);
   EXPECT_EQ(wrapper.variables(0).upper_bound(), 0.0);
 }
@@ -419,11 +454,11 @@ TEST(ClearTrivialConstraintsTest, RelaxesSingleTrivialSideOfRangedConstraint) {
   ClearTrivialConstraints(&wrapper);
   EXPECT_EQ(wrapper.constraints(0).lower_bound(), -kInfinity);
   EXPECT_EQ(wrapper.constraints(0).upper_bound(), 5.0);
-  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+  EXPECT_EQ(wrapper.constraints(0).vars().size(), 2);
 
   EXPECT_EQ(wrapper.constraints(1).lower_bound(), 1.0);
   EXPECT_EQ(wrapper.constraints(1).upper_bound(), kInfinity);
-  EXPECT_EQ(wrapper.constraints(1).num_terms(), 2);
+  EXPECT_EQ(wrapper.constraints(1).vars().size(), 2);
 }
 
 TEST(ClearTrivialConstraintsTest, KeepsConstraintSideWithUnboundedDirection) {
@@ -440,7 +475,77 @@ TEST(ClearTrivialConstraintsTest, KeepsConstraintSideWithUnboundedDirection) {
   ClearTrivialConstraints(&wrapper);
   EXPECT_EQ(wrapper.constraints(0).lower_bound(), -1.0);
   EXPECT_EQ(wrapper.constraints(0).upper_bound(), kInfinity);
-  EXPECT_EQ(wrapper.constraints(0).num_terms(), 2);
+  EXPECT_EQ(wrapper.constraints(0).vars().size(), 2);
+}
+
+TEST(ClearTrivialConstraintsTest, HandlesEnforcementOnFixedVariables) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("min: x + b1 + b2 + b3;"
+              "0 <= x <= 3;"
+              "1 <= b1 <= 1;"
+              "0 <= b2 <= 0;"
+              "0 <= b3 <= 1;"
+              "int b1, b2, b3;"
+              "r1: x <= 2;"
+              "r2: x <= 2;"
+              "r3: x <= 2;"
+              "r4: x <= 2;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  // Variables: x = 0, b1 = 1, b2 = 2, b3 = 3.
+  ASSERT_EQ(wrapper.variables(1).name(), "b1");
+  ASSERT_EQ(wrapper.variables(3).name(), "b3");
+  sat::AddEnforcement(1, 1, wrapper.mutable_constraints(0));
+  sat::AddEnforcement(3, 1, wrapper.mutable_constraints(0));
+  sat::AddEnforcement(2, 0, wrapper.mutable_constraints(0));
+  sat::AddEnforcement(1, 1, wrapper.mutable_constraints(1));
+  sat::AddEnforcement(3, 1, wrapper.mutable_constraints(2));
+  sat::AddEnforcement(2, 1, wrapper.mutable_constraints(2));
+  sat::AddEnforcement(3, 2, wrapper.mutable_constraints(3));
+
+  ClearTrivialConstraints(&wrapper);
+  // The literals b1 == 1 and b2 == 0 always hold and are removed.
+  EXPECT_THAT(wrapper.constraints(0).enforcement_vars(), ElementsAre(3));
+  EXPECT_THAT(wrapper.constraints(0).enforcement_values(), ElementsAre(1));
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), 2.0);
+  EXPECT_TRUE(wrapper.constraints(1).enforcement_vars().empty());
+  EXPECT_EQ(wrapper.constraints(1).upper_bound(), 2.0);
+  EXPECT_EQ(wrapper.constraints(1).vars().size(), 1);
+
+  // The literals b2 == 1 and b3 == 2 can never hold.
+  for (const int c : {2, 3}) {
+    SCOPED_TRACE(c);
+    EXPECT_EQ(wrapper.constraints(c).lower_bound(), -kInfinity);
+    EXPECT_EQ(wrapper.constraints(c).upper_bound(), kInfinity);
+    EXPECT_EQ(wrapper.constraints(c).vars().size(), 0);
+    EXPECT_TRUE(wrapper.constraints(c).enforcement_vars().empty());
+  }
+}
+
+TEST(BoundPropagationPreprocessorTest,
+     ExactPresolvePropagatesConstraintWithFixedEnforcement) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("min: -x;"
+              "0 <= x <= 10;"
+              "1 <= b <= 1;"
+              "int b, x;"
+              "r1: x <= 3;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  // Variables: x = 0, b = 1.
+  ASSERT_EQ(wrapper.variables(1).name(), "b");
+  sat::AddEnforcement(1, 1, wrapper.mutable_constraints(0));
+
+  ASSERT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
+  // The enforcement b == 1 always holds, so the constraint is propagated.
+  EXPECT_EQ(wrapper.variables(0).upper_bound(), 3.0);
+  EXPECT_TRUE(wrapper.constraints(0).enforcement_vars().empty());
 }
 
 TEST(BoundPropagationPreprocessorTest, BasicPropagation) {
@@ -488,7 +593,7 @@ TEST(BoundPropagationPreprocessorTest, EnforcedConstraintSkipped) {
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   // Constraint 0 (r1: x <= 3) is enforced by b == 1, so it is skipped.
-  wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
+  sat::AddEnforcement(0, 1, wrapper.mutable_constraints(0));
 
   EXPECT_TRUE(RunPropagateBounds(&wrapper));
   // Constraint 1 (r2: x + y <= 7 with y >= 0) propagates x <= 7, while enforced
@@ -794,8 +899,7 @@ TEST(ShiftVariableBoundsTest, BoundShift) {
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
               ElementsAre(2.0, -3.0, 3.0, 0.0));
-  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
-                                    &linear_program);
+  glop::MPModelProtoToLinearProgram(ToMPModelProto(wrapper), &linear_program);
   ExpectLinearProgramMatches(linear_program, kOutputProgram);
 }
 
@@ -818,10 +922,8 @@ TEST(ShiftVariableBoundsTest, UpdatesSolutionHint) {
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
               ElementsAre(2.0, -2.0));
-  EXPECT_THAT(wrapper.mutable_underlying_model()->solution_hint().var_index(),
-              ElementsAre(0, 1));
-  EXPECT_THAT(wrapper.mutable_underlying_model()->solution_hint().var_value(),
-              ElementsAre(2.0, -1.0));
+  EXPECT_THAT(wrapper.solution_hint().vars(), ElementsAre(0, 1));
+  EXPECT_THAT(wrapper.solution_hint().values(), ElementsAre(2.0, -1.0));
 }
 
 TEST(ShiftVariableBoundsTest, ShiftsEnforcementValues) {
@@ -835,8 +937,8 @@ TEST(ShiftVariableBoundsTest, ShiftsEnforcementValues) {
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
-  wrapper.mutable_constraints(0)->AddEnforcement(0, 2);
-  wrapper.mutable_constraints(0)->AddEnforcement(1, -2);
+  sat::AddEnforcement(0, 2, wrapper.mutable_constraints(0));
+  sat::AddEnforcement(1, -2, wrapper.mutable_constraints(0));
 
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
               ElementsAre(2.0, -2.0));
@@ -844,6 +946,31 @@ TEST(ShiftVariableBoundsTest, ShiftsEnforcementValues) {
   // x2 shifted by -2 (to [-4, 0]), so enforcement value -2 becomes 0.
   EXPECT_THAT(wrapper.constraints(0).enforcement_vars(), ElementsAre(0, 1));
   EXPECT_THAT(wrapper.constraints(0).enforcement_values(), ElementsAre(0, 0));
+}
+
+TEST(ShiftVariableBoundsTest, ShiftsFixedVariablesToZero) {
+  const std::string kLinearProgram =
+      "min: x1 + x2 + x3;"
+      "0 <= x1 + x2 + x3 <= 10;"
+      "0.5 <= x1 <= 0.5;"
+      "-2.25 <= x2 <= -2.25;"
+      "3 <= x3 <= 3;"
+      "int x3;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
+              ElementsAre(0.5, -2.25, 3.0));
+  for (int v = 0; v < 3; ++v) {
+    SCOPED_TRACE(v);
+    EXPECT_EQ(wrapper.variables(v).lower_bound(), 0.0);
+    EXPECT_EQ(wrapper.variables(v).upper_bound(), 0.0);
+  }
+  EXPECT_EQ(wrapper.objective_offset(), 1.25);
+  EXPECT_EQ(wrapper.constraints(0).lower_bound(), -1.25);
+  EXPECT_EQ(wrapper.constraints(0).upper_bound(), 8.75);
 }
 
 TEST(ShiftVariableBoundsTest, NoShiftWhenAllDomainsContainZero) {
@@ -857,8 +984,7 @@ TEST(ShiftVariableBoundsTest, NoShiftWhenAllDomainsContainZero) {
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper), IsEmpty());
-  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
-                                    &linear_program);
+  glop::MPModelProtoToLinearProgram(ToMPModelProto(wrapper), &linear_program);
   ExpectLinearProgramMatches(linear_program, kLinearProgram);
 }
 
@@ -889,6 +1015,243 @@ TEST(ShiftToZeroAndMarkAsIntegerUnusedVariablesTest,
   EXPECT_FALSE(wrapper.variables(3).is_integer());
   EXPECT_FALSE(wrapper.variables(4).is_integer());
   EXPECT_DOUBLE_EQ(wrapper.objective_offset(), 2.0 * 1.5 - 3.0 * 4.25);
+}
+
+TEST(MergeExactDuplicateColumnsTest,
+     MergesContinuousDuplicatesAndRecoversSolution) {
+  const std::string linear_program_str =
+      "min: 1.5 u1 + 1.5 u2 + 1.5 u3 + 2 y;"
+      "u1 + u2 + u3 + y <= 15;"
+      "2 u1 + 2 u2 + 2 u3 - y >= 0;"
+      "-1 <= u1 <= 3;"
+      "0 <= u2 <= 4;"
+      "-2 <= u3 <= 5;"
+      "0 <= y <= 10;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_EQ(postsolve.num_classes(), 1);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).lower_bound(), -3.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).upper_bound(), 12.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).objective_coefficient(), 1.5);
+  EXPECT_FALSE(wrapper.variables(0).is_integer());
+  for (int v : {1, 2}) {
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).lower_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).upper_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).objective_coefficient(), 0.0);
+    EXPECT_TRUE(wrapper.variables(v).is_integer());
+  }
+  EXPECT_THAT(wrapper.constraints(0).vars(), ElementsAre(0, 3));
+  EXPECT_THAT(wrapper.constraints(0).coeffs(), ElementsAre(1.0, 1.0));
+  EXPECT_THAT(wrapper.constraints(1).vars(), ElementsAre(0, 3));
+  EXPECT_THAT(wrapper.constraints(1).coeffs(), ElementsAre(2.0, -1.0));
+
+  std::vector<double> pos_solution = {8.0, 0.0, 0.0, 2.0};
+  postsolve.Postsolve(absl::MakeSpan(pos_solution));
+  // Upper capacities from 0.0 are u3: 5.0, u2: 4.0, u1: 3.0.
+  EXPECT_THAT(pos_solution, ElementsAre(0.0, 3.0, 5.0, 2.0));
+
+  std::vector<double> neg_solution = {-2.5, 0.0, 0.0, 2.0};
+  postsolve.Postsolve(absl::MakeSpan(neg_solution));
+  // Lower capacities from 0.0 are u3: 2.0, u1: 1.0, u2: 0.0.
+  EXPECT_THAT(neg_solution, ElementsAre(-0.5, 0.0, -2.0, 2.0));
+}
+
+TEST(MergeExactDuplicateColumnsTest,
+     MergesShiftedAndOppositeSignContinuousDuplicates) {
+  const std::string linear_program_str =
+      "min: 3 u1 + 3 u2 + v1 + v2 + w1 + w2 + w3;"
+      "u1 + u2 + 2 v1 + 2 v2 + 4 w1 + 4 w2 + 4 w3 >= 9;"
+      "2 <= u1 <= 5;"
+      "3 <= u2 <= 8;"
+      "-10 <= v1 <= -1;"
+      "1 <= v2 <= 10;"
+      "0 <= w1 <= 1;"
+      "0 <= w2 <= 1;"
+      "0 <= w3 <= 1;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  // Set w1, w2 upper bounds to 1 + 2^-52 so greedy TightSum subtraction across
+  // 3 members is exercised at the boundary 3 + 2^-51 without rounding loss.
+  const double one_plus_ulp = std::nextafter(1.0, kInfinity);
+  model_proto.mutable_variable(4)->set_upper_bound(one_plus_ulp);
+  model_proto.mutable_variable(5)->set_upper_bound(one_plus_ulp);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_EQ(postsolve.num_classes(), 3);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).lower_bound(), 5.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).upper_bound(), 13.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(2).lower_bound(), -9.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(2).upper_bound(), 9.0);
+  const double expected_w_ub = 2.0 * one_plus_ulp + 1.0;
+  EXPECT_DOUBLE_EQ(wrapper.variables(4).upper_bound(), expected_w_ub);
+  EXPECT_THAT(wrapper.constraints(0).vars(), ElementsAre(0, 2, 4));
+
+  // Base values for {u1, u2} are {2, 3} with capacities {3, 5}, so 12.0 splits
+  // into {4.0, 8.0}; opposite-sign {v1, v2} with base values {-1, 1} splits 0.5
+  // into {-1.0, 1.5}; {w1, w2, w3} at 3 + 2^-51 splits into
+  // {1 + 2^-52, 1 + 2^-52, 1.0} without multi-step subtraction rounding.
+  std::vector<double> solution = {12.0, 0.0, 0.5, 0.0, expected_w_ub, 0.0, 0.0};
+  postsolve.Postsolve(absl::MakeSpan(solution));
+  EXPECT_THAT(solution, ElementsAre(4.0, 8.0, -1.0, 1.5, one_plus_ulp,
+                                    one_plus_ulp, 1.0));
+}
+
+TEST(MergeExactDuplicateColumnsTest,
+     SkipsIneligibleMismatchedAndEnforcedColumns) {
+  // Variables appear in order: p1, p2 (proportional, not equal),
+  // c1, c2 (different costs), m1, m2 (int vs continuous),
+  // f1, f2 (fixed continuous bounds), e1, e2 (e1 is an enforcement variable),
+  // i1, i2 (integer duplicate columns, left to CP-SAT presolve).
+  // Give each pair a distinct constraint coefficient so pairs do not
+  // cross-match each other.
+  const std::string linear_program_str =
+      "min: p1 + p2 + c1 + 2 c2 + m1 + m2 + f1 + f2 + e1 + e2 + i1 + i2;"
+      "p1 + 2 p2 + 3 c1 + 3 c2 + 4 m1 + 4 m2 + 5 f1 + 5 f2 + 6 e1 + 6 e2 + "
+      "7 i1 + 7 i2 <= 100;"
+      "0 <= p1 <= 5;"
+      "0 <= p2 <= 5;"
+      "0 <= c1 <= 5;"
+      "0 <= c2 <= 5;"
+      "0 <= m1 <= 5;"
+      "0 <= m2 <= 5;"
+      "2 <= f1 <= 2;"
+      "2 <= f2 <= 2;"
+      "0 <= e1 <= 1;"
+      "0 <= e2 <= 1;"
+      "0 <= i1 <= 5;"
+      "0 <= i2 <= 5;"
+      "int m1, e1, i1, i2;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  sat::AddEnforcement(8, 1, wrapper.mutable_constraints(0));
+
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_TRUE(postsolve.empty());
+  EXPECT_EQ(wrapper.constraints(0).vars().size(), 12);
+}
+
+TEST(MergeExactDuplicateColumnsTest, RespectsKeepAllFeasibleSolutionsParams) {
+  const std::string linear_program_str =
+      "min: u1 + u2;"
+      "u1 + u2 <= 5;"
+      "0 <= u1 <= 3;"
+      "0 <= u2 <= 4;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+
+  sat::MPModelProtoWrapper wrapper1(model_proto, nullptr);
+  sat::SatParameters keep_all_params;
+  keep_all_params.set_keep_all_feasible_solutions_in_presolve(true);
+  EXPECT_TRUE(MergeExactDuplicateColumns(keep_all_params, &wrapper1).empty());
+
+  sat::MPModelProtoWrapper wrapper2(std::move(model_proto), nullptr);
+  sat::SatParameters enum_params;
+  enum_params.set_enumerate_all_solutions(true);
+  EXPECT_TRUE(MergeExactDuplicateColumns(enum_params, &wrapper2).empty());
+}
+
+TEST(MergeExactDuplicateColumnsTest, UpdatesSolutionHint) {
+  const std::string linear_program_str =
+      "min: u1 + u2;"
+      "u1 + u2 <= 10;"
+      "0 <= u1 <= 4;"
+      "0 <= u2 <= 5;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  // Only hint u2 = 3.5; u1 should receive the merged hint 3.5 and u2 -> 0.0.
+  PartialVariableAssignment* hint = model_proto.mutable_solution_hint();
+  hint->add_var_index(1);
+  hint->add_var_value(3.5);
+
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_EQ(postsolve.num_classes(), 1);
+  EXPECT_THAT(wrapper.solution_hint().vars(), ElementsAre(1, 0));
+  EXPECT_THAT(wrapper.solution_hint().values(), ElementsAre(0.0, 3.5));
+}
+
+TEST(MergeExactDuplicateColumnsTest,
+     MergesFractionalBoundsWithOutwardTightSumRelaxation) {
+  // 5 * double(0.1) is slightly larger than 0.5 in R, so TightSum relaxes the
+  // merged upper bound outward by 1 ULP to nextafter(0.5, +inf) instead of
+  // refusing to merge or cutting feasible solutions.
+  const std::string linear_program_str =
+      "min: u1 + u2 + u3 + u4 + u5;"
+      "u1 + u2 + u3 + u4 + u5 <= 0.4;"
+      "0 <= u1 <= 0.1;"
+      "0 <= u2 <= 0.1;"
+      "0 <= u3 <= 0.1;"
+      "0 <= u4 <= 0.1;"
+      "0 <= u5 <= 0.1;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_EQ(postsolve.num_classes(), 1);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).lower_bound(), 0.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).upper_bound(),
+                   std::nextafter(0.5, kInfinity));
+  EXPECT_THAT(wrapper.constraints(0).vars(), ElementsAre(0));
+
+  std::vector<double> solution = {0.35, 0.0, 0.0, 0.0, 0.0};
+  postsolve.Postsolve(absl::MakeSpan(solution));
+  double sum = 0.0;
+  for (int v = 0; v < 5; ++v) {
+    EXPECT_GE(solution[v], 0.0);
+    EXPECT_LE(solution[v], 0.1);
+    sum += solution[v];
+  }
+  EXPECT_NEAR(sum, 0.35, 1e-15);
+}
+
+TEST(MergeExactDuplicateColumnsTest,
+     SplitsIntoMultipleClassesWhenFiniteBoundSumWouldOverflow) {
+  const std::string linear_program_str =
+      "min: u1 + u2 + u3 + u4 + u5;"
+      "u1 + u2 + u3 + u4 + u5 <= 10;"
+      "0 <= u1 <= 8e307;"
+      "0 <= u2 <= 8e307;"
+      "0 <= u3 <= 8e307;"
+      "0 <= u4 <= 8e307;"
+      "0 <= u5 <= 8e307;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(linear_program_str, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
+
+  const DuplicateColumnsPostsolve postsolve =
+      MergeExactDuplicateColumns(sat::SatParameters(), &wrapper);
+  EXPECT_EQ(postsolve.num_classes(), 2);
+  EXPECT_DOUBLE_EQ(wrapper.variables(0).upper_bound(), 1.6e308);
+  EXPECT_DOUBLE_EQ(wrapper.variables(1).upper_bound(), 0.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(2).upper_bound(), 1.6e308);
+  EXPECT_DOUBLE_EQ(wrapper.variables(3).upper_bound(), 0.0);
+  EXPECT_DOUBLE_EQ(wrapper.variables(4).upper_bound(), 8e307);
+  EXPECT_THAT(wrapper.constraints(0).vars(), ElementsAre(0, 2, 4));
 }
 
 }  // namespace

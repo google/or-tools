@@ -47,19 +47,19 @@ MPSolutionResponse HighsSolveProtoAndClearSolveInfo(
 }
 
 TEST(HighsProtoSolverTest, ReturnsRowDualNotRowActivity) {
-  // max objCoeff * x
+  // max obj_coeff * x
   // (C) x <= 7
-  // Expected values
+  // Expected values:
   // x value = 7
-  // C dual value objCoeff
-  for (const auto& objCoeff : {1., 5.}) {
+  // C dual value = obj_coeff
+  for (const double obj_coeff : {1.0, 5.0}) {
     MPModelRequest request;
     request.set_solver_type(MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
     MPModelProto* const model = request.mutable_model();
     model->set_maximize(true);
 
     MPVariableProto* const variable = model->add_variable();
-    variable->set_objective_coefficient(objCoeff);
+    variable->set_objective_coefficient(obj_coeff);
 
     MPConstraintProto* const constraint = model->add_constraint();
     constraint->set_upper_bound(7.0);
@@ -72,7 +72,7 @@ TEST(HighsProtoSolverTest, ReturnsRowDualNotRowActivity) {
     ASSERT_EQ(response.variable_value_size(), 1);
     ASSERT_EQ(response.dual_value_size(), 1);
     EXPECT_NEAR(response.variable_value(0), 7.0, kHighsTolerance);
-    EXPECT_NEAR(response.dual_value(0), objCoeff, kHighsTolerance);
+    EXPECT_NEAR(response.dual_value(0), obj_coeff, kHighsTolerance);
   }
 }
 
