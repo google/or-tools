@@ -1247,6 +1247,16 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr,
   return MakeMemberCt(expr, ToInt64Vector(values));
 }
 
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const SortedDisjointIntervalList& intervals) {
+  IntVar* const var = expr->Var();
+  int64_t emin;
+  int64_t emax;
+  var->Range(&emin, &emax);
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, var, intervals.BuildComplementOnInterval(emin, emax)));
+}
+
 Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
                                     const std::vector<int64_t>& values) {
   const int64_t coeff = ExtractExprProductCoeff(&expr);
