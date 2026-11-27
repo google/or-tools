@@ -27,6 +27,7 @@ or_pybind_extension(
         "//ortools/pdlp:quadratic_program",
         "//ortools/pdlp:quadratic_program_io",
         "//ortools/pdlp:solvers_cc_proto",
+        "//ortools/pdlp:termination",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",

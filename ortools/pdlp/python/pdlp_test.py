@@ -217,6 +217,81 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
             solve_log_pb2.TERMINATION_REASON_ITERATION_LIMIT,
         )
 
+    def test_iteration_stats_callback(self):
+        params = solvers_pb2.PrimalDualHybridGradientParams()
+        params.termination_criteria.iteration_limit = 2
+        params.termination_check_frequency = 1
+        infos = []
+
+        def callback(info):
+            self.assertIsInstance(info, pdlp.IterationCallbackInfo)
+            self.assertIsInstance(info.iteration_type, pdlp.IterationType)
+            self.assertIsInstance(
+                info.termination_criteria, solvers_pb2.TerminationCriteria
+            )
+            self.assertEqual(info.termination_criteria.iteration_limit, 2)
+            self.assertIsInstance(info.iteration_stats, solve_log_pb2.IterationStats)
+            self.assertIsInstance(
+                info.bound_norms, pdlp.QuadraticProgramBoundNorms
+            )
+            infos.append(info)
+
+        result = pdlp.primal_dual_hybrid_gradient(
+            tiny_lp(), params, iteration_stats_callback=callback
+        )
+        self.assertEqual(
+            result.solve_log.termination_reason,
+            solve_log_pb2.TERMINATION_REASON_ITERATION_LIMIT,
+        )
+        self.assertGreaterEqual(len(infos), 2)
+        self.assertEqual(infos[0].iteration_stats.iteration_number, 0)
+        self.assertIn(
+            infos[-1].iteration_type,
+            [
+                pdlp.IterationType.kNormalTermination,
+                pdlp.IterationType.kPresolveTermination,
+                pdlp.IterationType.kFeasibilityPolishingTermination,
+            ],
+        )
+        self.assertGreaterEqual(infos[-1].iteration_stats.iteration_number, 0)
+
+    def test_iteration_stats_callback_can_interrupt(self):
+        params = solvers_pb2.PrimalDualHybridGradientParams()
+        criteria = params.termination_criteria.simple_optimality_criteria
+        criteria.eps_optimal_absolute = 0.0
+        criteria.eps_optimal_relative = 0.0
+        params.termination_criteria.iteration_limit = 1000
+        params.termination_check_frequency = 1
+        interrupter = pdlp.Interrupter()
+        iterations = []
+
+        def callback(info):
+            iteration_number = info.iteration_stats.iteration_number
+            iterations.append(iteration_number)
+            if iteration_number >= 1:
+                interrupter.interrupt()
+
+        result = pdlp.primal_dual_hybrid_gradient(
+            tiny_lp(),
+            params,
+            interrupter=interrupter,
+            iteration_stats_callback=callback,
+        )
+        self.assertEqual(
+            result.solve_log.termination_reason,
+            solve_log_pb2.TERMINATION_REASON_INTERRUPTED_BY_USER,
+        )
+        self.assertTrue(interrupter.interrupted)
+        self.assertGreaterEqual(max(iterations), 1)
+
+    def test_iteration_stats_callback_rejects_non_callable(self):
+        with self.assertRaises(TypeError):
+            pdlp.primal_dual_hybrid_gradient(
+                tiny_lp(),
+                solvers_pb2.PrimalDualHybridGradientParams(),
+                iteration_stats_callback="not callable",
+            )
+
     def test_solution(self):
         params = solvers_pb2.PrimalDualHybridGradientParams()
         opt_criteria = params.termination_criteria.simple_optimality_criteria
