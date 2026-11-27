@@ -15,6 +15,7 @@
 
 #include <atomic>
 #include <string>
+#include <vector>
 
 #include "absl/strings/substitute.h"
 #include "gtest/gtest.h"
@@ -72,6 +73,32 @@ TEST(SolveProtoTest, SolvesEasyMinimizationLp) {
 
   EXPECT_TRUE(solve_log.has_solution_stats());
   EXPECT_GT(solve_log.iteration_count(), 0);
+}
+
+TEST(SolveProtoTest, ForwardsMessagesToCallback) {
+  const auto request = ParseTextOrDie<MPModelRequest>(R"pb(
+    enable_internal_solver_output: true
+    model {
+      variable { lower_bound: 0 }
+      variable { lower_bound: 0 objective_coefficient: -2.0 }
+      constraint {
+        var_index: 0
+        var_index: 1
+        coefficient: 1.0
+        coefficient: 1.0
+        lower_bound: -inf
+        upper_bound: 1.0
+      }
+    }
+  )pb");
+
+  std::vector<std::string> messages;
+  const MPSolutionResponse response = PdlpSolveProto(
+      request, /*relax_integer_variables=*/false,
+      /*interrupt_solve=*/nullptr,
+      [&messages](const std::string& message) { messages.push_back(message); });
+  EXPECT_EQ(response.status(), MPSOLVER_OPTIMAL);
+  EXPECT_FALSE(messages.empty());
 }
 
 TEST(SolveProtoTest, RespectsInterruptAtStart) {

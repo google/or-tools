@@ -57,7 +57,16 @@ class PywrapModelBuilderHelperTest(absltest.TestCase):
         model.import_from_lp_string("max:")
         self.assertTrue(model.maximize())
 
-    # TODO(user): Add test_import_from_lp_file after the implementation is fixed
+    def test_import_from_lp_file(self):
+        path = os.path.dirname(__file__)
+        lp_path = f"{path}/../testdata/small_model.lp"
+        model = model_builder_helper.ModelBuilderHelper()
+        self.assertTrue(model.import_from_lp_file(lp_path))
+        self.assertEqual(6, model.num_variables())
+        self.assertEqual(3, model.num_constraints())
+        self.assertEqual(1, model.var_lower_bound(0))
+        self.assertEqual(42, model.var_upper_bound(0))
+        self.assertEqual("x", model.var_name(0))
 
     def test_solve_with_glop(self):
         model = linear_solver_pb2.MPModelProto()
@@ -124,7 +133,24 @@ class PywrapModelBuilderHelperTest(absltest.TestCase):
         else:
             print("Solver not supported.")
 
-    # TODO(user): Test the log callback after the implementation is completed.
+    def test_pdlp_log_callback_receives_logs_when_enabled(self):
+        model = model_builder_helper.ModelBuilderHelper()
+        x = model.add_var()
+        model.set_var_lower_bound(x, 0.0)
+        model.set_var_upper_bound(x, 1.0)
+        model.set_var_objective_coefficient(x, 1.0)
+        model.set_maximize(True)
+
+        solver = model_builder_helper.ModelSolverHelper("pdlp")
+        if not solver.solver_is_supported():
+            return
+        log_lines = []
+        solver.set_log_callback(log_lines.append)
+        solver.enable_output(True)
+        self.assertEqual(
+            solver.solve(model), model_builder_helper.SolveStatus.OPTIMAL
+        )
+        self.assertNotEmpty(log_lines, "Log callback should receive output")
 
     def test_interrupt_solve(self):
         # This is an instance that we know Glop won't solve quickly.

@@ -47,6 +47,7 @@ py_test(
     data = [
         "//ortools/linear_solver/testdata:large_model.mps.gz",
         "//ortools/linear_solver/testdata:maximization.mps",
+        "//ortools/linear_solver/testdata:small_model.lp",
     ],
     tags = [
         "not_build:arm",

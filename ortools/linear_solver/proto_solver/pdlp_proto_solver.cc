@@ -14,6 +14,7 @@
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
 
 #include <atomic>
+#include <functional>
 #include <optional>
 #include <string>
 #include <utility>
@@ -32,9 +33,10 @@
 
 namespace operations_research {
 
-MPSolutionResponse PdlpSolveProto(LazyMutableCopy<MPModelRequest> request,
-                                  const bool relax_integer_variables,
-                                  const std::atomic<bool>* interrupt_solve) {
+MPSolutionResponse PdlpSolveProto(
+    LazyMutableCopy<MPModelRequest> request, const bool relax_integer_variables,
+    const std::atomic<bool>* interrupt_solve,
+    std::function<void(const std::string&)> message_callback) {
   pdlp::PrimalDualHybridGradientParams params;
   if (request->enable_internal_solver_output()) {
     params.set_verbosity_level(3);
@@ -76,8 +78,8 @@ MPSolutionResponse PdlpSolveProto(LazyMutableCopy<MPModelRequest> request,
   optional_model.reset();
 
   const double objective_scaling_factor = qp.objective_scaling_factor;
-  pdlp::SolverResult pdhg_result =
-      pdlp::PrimalDualHybridGradient(std::move(qp), params, interrupt_solve);
+  pdlp::SolverResult pdhg_result = pdlp::PrimalDualHybridGradient(
+      std::move(qp), params, interrupt_solve, std::move(message_callback));
 
   // PDLP's statuses don't map very cleanly to MPSolver statuses. Do the best
   // we can for now.
