@@ -26,10 +26,10 @@
 
 namespace py = pybind11;
 
-using ::operations_research::ArcWithLength;
+using ArcWithLength = ::operations_research::ArcWithLength<double>;
 using ::operations_research::KShortestPathsOnDag;
 using ::operations_research::KShortestPathsOnDagWrapper;
-using ::operations_research::PathWithLength;
+using PathWithLength = ::operations_research::PathWithLength<double>;
 using ::operations_research::ShortestPathsOnDag;
 using ::operations_research::ShortestPathsOnDagWrapper;
 using ::util::StaticGraph;

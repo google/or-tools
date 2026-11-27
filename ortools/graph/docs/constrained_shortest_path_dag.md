@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 
   const int source = 0;
   const int destination = 3;
-  const operations_research::PathWithLength path_with_length =
+  const operations_research::PathWithLength<double> path_with_length =
       operations_research::ConstrainedShortestPathsOnDag(
           num_nodes, arcs, source, destination, max_resources);
 

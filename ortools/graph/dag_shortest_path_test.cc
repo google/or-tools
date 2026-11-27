@@ -18,6 +18,7 @@
 #include <limits>
 #include <memory>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -123,10 +124,11 @@ TEST(ShortestPathOnDagTest, SimpleGraph) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  const std::vector<ArcWithLength> arcs_with_length = {{source, a, 5.0},
-                                                       {source, b, 2.0},
-                                                       {a, destination, 3.0},
-                                                       {b, destination, 20.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 5.0},
+      {source, b, 2.0},
+      {a, destination, 3.0},
+      {b, destination, 20.0}};
 
   EXPECT_THAT(
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
@@ -149,7 +151,7 @@ TEST(ShortestPathOnDagTest, SourceIsDestination) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 1.0}};
 
   EXPECT_THAT(ShortestPathsOnDag(num_nodes, arcs_with_length, source, source),
@@ -165,7 +167,7 @@ TEST(ShortestPathOnDagTest, LargerGraphWithNegativeCost) {
   const int c = 1;
   const int destination = 4;
   const int num_nodes = 5;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {a, c, 5.0},      {source, b, 7.0},      {a, b, 1.0},
       {source, a, 3.0}, {c, destination, 5.0}, {b, destination, -2.0}};
 
@@ -180,7 +182,8 @@ TEST(ShortestPathOnDagTest, SetsNotConnected) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {{source, a, 1.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 1.0}};
 
   EXPECT_THAT(
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
@@ -195,7 +198,7 @@ TEST(ShortestPathOnDagTest, TwoConnectedComponents) {
   const int d = 3;
   const int e = 4;
   const int num_nodes = 5;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {a, b, 0.0}, {b, c, 0.0}, {d, e, 0.0}};
 
   EXPECT_THAT(ShortestPathsOnDag(num_nodes, arcs_with_length, /*source=*/a,
@@ -213,8 +216,8 @@ TEST(ShortestPathOnDagTest, SetsNotConnectedDueToInfiniteCost) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {{a, destination, 1.0},
-                                                       {source, a, kInf}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {a, destination, 1.0}, {source, a, kInf}};
 
   EXPECT_THAT(
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
@@ -228,10 +231,11 @@ TEST(ShortestPathOnDagTest, AvoidInfiniteCost) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  const std::vector<ArcWithLength> arcs_with_length = {{a, destination, 1.0},
-                                                       {b, destination, 1.0},
-                                                       {source, a, kInf},
-                                                       {source, b, 3.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {a, destination, 1.0},
+      {b, destination, 1.0},
+      {source, a, kInf},
+      {source, b, 3.0}};
 
   EXPECT_THAT(
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
@@ -243,7 +247,7 @@ TEST(ShortestPathOnDagTest, SourceNotFirst) {
   const int destination = 0;
   const int source = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 1.0}};
 
   EXPECT_THAT(
@@ -256,7 +260,7 @@ TEST(ShortestPathOnDagTest, MultipleArcs) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 4.0}, {source, destination, 2.0}};
 
   EXPECT_THAT(
@@ -271,10 +275,11 @@ TEST(ShortestPathOnDagTest, UpdateCost) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  std::vector<ArcWithLength> arcs_with_length = {{source, a, 5.0},
-                                                 {source, b, 2.0},
-                                                 {a, destination, 3.0},
-                                                 {b, destination, 20.0}};
+  std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 5.0},
+      {source, b, 2.0},
+      {a, destination, 3.0},
+      {b, destination, 20.0}};
 
   EXPECT_THAT(
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
@@ -648,8 +653,8 @@ TEST(KShortestPathOnDagTest, OnlyHasOnePath) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {{source, a, 1.0},
-                                                       {a, destination, 1.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 1.0}, {a, destination, 1.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source,
                                   destination, /*path_count=*/2),
@@ -675,7 +680,7 @@ TEST(KShortestPathOnDagTest, SourceIsDestination) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 1.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source, source,
@@ -690,7 +695,7 @@ TEST(KShortestPathOnDagTest, HasTwoPaths) {
   const int a = 1;
   const int destination = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, a, 1.0}, {source, destination, 30.0}, {a, destination, 1.0}};
 
   EXPECT_THAT(
@@ -711,7 +716,7 @@ TEST(KShortestPathOnDagTest, HasTwoPathsWithLongerPath) {
   const int c = 3;
   const int destination = 4;
   const int num_nodes = 5;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, a, 1.0},
       {source, destination, 30.0},
       {a, b, 1.0},
@@ -733,7 +738,7 @@ TEST(KShortestPathOnDagTest, HeapSizeMustBeLargerThanPathCount) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 2.0},
       {source, destination, 3.0},
       {source, destination, 1.0}};
@@ -756,7 +761,7 @@ TEST(KShortestPathOnDagTest, LargerGraphWithNegativeCost) {
   const int c = 1;
   const int destination = 4;
   const int num_nodes = 5;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {a, c, 5.0},      {source, b, 7.0},      {a, b, 1.0},
       {source, a, 3.0}, {c, destination, 5.0}, {b, destination, -2.0}};
 
@@ -775,7 +780,8 @@ TEST(KShortestPathOnDagTest, SetsNotConnected) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {{source, a, 1.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 1.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source,
                                   destination, /*path_count=*/2),
@@ -790,7 +796,7 @@ TEST(KShortestPathOnDagTest, TwoConnectedComponents) {
   const int d = 3;
   const int e = 4;
   const int num_nodes = 5;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {a, b, 0.0}, {b, c, 0.0}, {d, e, 0.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, /*source=*/a,
@@ -808,8 +814,8 @@ TEST(KShortestPathOnDagTest, SetsNotConnectedDueToInfiniteCost) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  const std::vector<ArcWithLength> arcs_with_length = {{a, destination, 1.0},
-                                                       {source, a, kInf}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {a, destination, 1.0}, {source, a, kInf}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source,
                                   destination, /*path_count=*/2),
@@ -823,10 +829,11 @@ TEST(KShortestPathOnDagTest, AvoidInfiniteCost) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  const std::vector<ArcWithLength> arcs_with_length = {{a, destination, 1.0},
-                                                       {b, destination, 1.0},
-                                                       {source, a, kInf},
-                                                       {source, b, 3.0}};
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
+      {a, destination, 1.0},
+      {b, destination, 1.0},
+      {source, a, kInf},
+      {source, b, 3.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source,
                                   destination, /*path_count=*/2),
@@ -839,7 +846,7 @@ TEST(KShortestPathOnDagTest, SourceNotFirst) {
   const int destination = 0;
   const int source = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 1.0}};
 
   EXPECT_THAT(KShortestPathsOnDag(num_nodes, arcs_with_length, source,
@@ -853,7 +860,7 @@ TEST(KShortestPathOnDagTest, MultipleArcs) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  const std::vector<ArcWithLength> arcs_with_length = {
+  const std::vector<ArcWithLength<double>> arcs_with_length = {
       {source, destination, 4.0},
       {source, destination, 3.0},
       {source, destination, -2.0},
@@ -878,10 +885,11 @@ TEST(KShortestPathOnDagTest, UpdateCost) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  std::vector<ArcWithLength> arcs_with_length = {{source, a, 5.0},
-                                                 {source, b, 2.0},
-                                                 {a, destination, 3.0},
-                                                 {b, destination, 20.0}};
+  std::vector<ArcWithLength<double>> arcs_with_length = {
+      {source, a, 5.0},
+      {source, b, 2.0},
+      {a, destination, 3.0},
+      {b, destination, 20.0}};
 
   EXPECT_THAT(
       KShortestPathsOnDag(num_nodes, arcs_with_length, source, destination,
@@ -1148,6 +1156,317 @@ TEST(ShortestPathOnDagIncrementalTest, ChangeSources) {
   shortest_paths_on_dag.RunShortestPathOnDag({s});
   shortest_paths_on_dag.RunShortestPathOnDag({a});
   EXPECT_THAT(shortest_paths_on_dag.ArcPathTo(t), ElementsAre(at));
+}
+
+template <typename T>
+class TypedDagShortestPathTest : public ::testing::Test {
+ protected:
+  static constexpr T kTypeInf = std::numeric_limits<T>::has_infinity
+                                    ? std::numeric_limits<T>::infinity()
+                                    : std::numeric_limits<T>::max();
+  static constexpr T kTypeMinusInf = std::numeric_limits<T>::has_infinity
+                                         ? -std::numeric_limits<T>::infinity()
+                                         : std::numeric_limits<T>::min();
+};
+
+using LengthTypes = ::testing::Types<double, float, int64_t, int32_t>;
+TYPED_TEST_SUITE(TypedDagShortestPathTest, LengthTypes);
+
+TYPED_TEST(TypedDagShortestPathTest,
+           BasicApiShortestAndKShortestPathsWithZeroAndDisabledArcs) {
+  using T = TypeParam;
+  constexpr T kTypeInf = TestFixture::kTypeInf;
+  const int source = 0;
+  const int a = 1;
+  const int b = 2;
+  const int destination = 3;
+  const int unreachable = 4;
+  const int num_nodes = 5;
+  const std::vector<ArcWithLength<T>> arcs = {
+      {source, a, T{0}},
+      {a, destination, T{4}},
+      {source, b, T{2}},
+      {b, destination, T{5}},
+      {source, destination, kTypeInf},
+      {destination, unreachable, kTypeInf}};
+
+  EXPECT_THAT(ShortestPathsOnDag<T>(num_nodes, arcs, source, destination),
+              FieldsAre(/*length=*/T{4}, /*arc_path=*/ElementsAre(0, 1),
+                        /*node_path=*/ElementsAre(source, a, destination)));
+  EXPECT_THAT(ShortestPathsOnDag<T>(num_nodes, arcs, source, unreachable),
+              FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/IsEmpty()));
+  EXPECT_THAT(
+      KShortestPathsOnDag<T>(num_nodes, arcs, source, destination,
+                             /*path_count=*/3),
+      ElementsAre(
+          FieldsAre(/*length=*/T{4}, /*arc_path=*/ElementsAre(0, 1),
+                    /*node_path=*/ElementsAre(source, a, destination)),
+          FieldsAre(/*length=*/T{7}, /*arc_path=*/ElementsAre(2, 3),
+                    /*node_path=*/ElementsAre(source, b, destination))));
+}
+
+TYPED_TEST(TypedDagShortestPathTest,
+           BasicApiShortestAndKShortestPathsWithNegativeLengths) {
+  using T = TypeParam;
+  const int source = 0;
+  const int a = 3;
+  const int b = 2;
+  const int c = 1;
+  const int destination = 4;
+  const int num_nodes = 5;
+  const std::vector<ArcWithLength<T>> arcs = {
+      {a, c, T{5}},      {source, b, T{7}},      {a, b, T{1}},
+      {source, a, T{3}}, {c, destination, T{5}}, {b, destination, T{-2}}};
+
+  EXPECT_THAT(ShortestPathsOnDag<T>(num_nodes, arcs, source, destination),
+              FieldsAre(/*length=*/T{2}, /*arc_path=*/ElementsAre(3, 2, 5),
+                        /*node_path=*/ElementsAre(source, a, b, destination)));
+  EXPECT_THAT(ShortestPathsOnDag<T>(
+                  /*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, T{4}}},
+                  /*source=*/0, /*destination=*/1),
+              FieldsAre(/*length=*/T{4}, /*arc_path=*/ElementsAre(0),
+                        /*node_path=*/ElementsAre(0, 1)));
+
+  EXPECT_THAT(
+      KShortestPathsOnDag<T>(num_nodes, arcs, source, destination,
+                             /*path_count=*/2),
+      ElementsAre(
+          FieldsAre(/*length=*/T{2}, /*arc_path=*/ElementsAre(3, 2, 5),
+                    /*node_path=*/ElementsAre(source, a, b, destination)),
+          FieldsAre(/*length=*/T{5}, /*arc_path=*/ElementsAre(1, 5),
+                    /*node_path=*/ElementsAre(source, b, destination))));
+}
+
+TYPED_TEST(TypedDagShortestPathTest,
+           InfiniteLengthArcSkippedEvenAfterNegativePrefix) {
+  using T = TypeParam;
+  constexpr T kTypeInf = TestFixture::kTypeInf;
+  // 0 -> 1 has negative length -10, and 1 -> 2 has length kInf (disabled).
+  // Even for integer types where `max() + (-10) < max()`, 1 -> 2 must remain
+  // unusable and node 2 must be unreachable.
+  const std::vector<ArcWithLength<T>> arcs = {
+      {0, 1, T{-10}}, {1, 2, kTypeInf}, {2, 3, T{-5}}};
+
+  EXPECT_THAT(ShortestPathsOnDag<T>(/*num_nodes=*/4, arcs, /*source=*/0,
+                                    /*destination=*/2),
+              FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/IsEmpty()));
+  EXPECT_THAT(ShortestPathsOnDag<T>(/*num_nodes=*/4, arcs, /*source=*/0,
+                                    /*destination=*/3),
+              FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/IsEmpty()));
+  EXPECT_THAT(KShortestPathsOnDag<T>(/*num_nodes=*/4, arcs, /*source=*/0,
+                                     /*destination=*/2, /*path_count=*/2),
+              ElementsAre(FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                                    /*node_path=*/IsEmpty())));
+  EXPECT_THAT(KShortestPathsOnDag<T>(/*num_nodes=*/4, arcs, /*source=*/0,
+                                     /*destination=*/3, /*path_count=*/2),
+              ElementsAre(FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                                    /*node_path=*/IsEmpty())));
+}
+
+TYPED_TEST(TypedDagShortestPathTest, StrongIndicesAndWrapperUpdateCost) {
+  using T = TypeParam;
+  using Graph = util::ListGraph<NodeIndex, ArcIndex>;
+  using ArcLengths = util_intops::StrongVector<ArcIndex, T>;
+
+  const NodeIndex s(0);
+  const NodeIndex a(1);
+  const NodeIndex b(2);
+  const NodeIndex t(3);
+  Graph graph(NodeIndex(4), /*arc_capacity=*/ArcIndex(4));
+  ArcLengths arc_lengths;
+  graph.AddArc(s, a);
+  arc_lengths.push_back(T{5});
+  graph.AddArc(s, b);
+  arc_lengths.push_back(T{2});
+  graph.AddArc(a, t);
+  arc_lengths.push_back(T{3});
+  graph.AddArc(b, t);
+  arc_lengths.push_back(T{20});
+  const std::vector<NodeIndex> topological_order = {s, a, b, t};
+
+  ShortestPathsOnDagWrapper<Graph, ArcLengths> sp(&graph, &arc_lengths,
+                                                  topological_order);
+  KShortestPathsOnDagWrapper<Graph, ArcLengths> ksp(&graph, &arc_lengths,
+                                                    topological_order,
+                                                    /*path_count=*/2);
+  sp.RunShortestPathOnDag({s});
+  ksp.RunKShortestPathOnDag({s});
+
+  EXPECT_EQ(sp.LengthTo(t), T{8});
+  EXPECT_THAT(ksp.LengthsTo(t), ElementsAre(T{8}, T{22}));
+
+  arc_lengths[ArcIndex(3)] = T{1};
+  sp.RunShortestPathOnDag({s});
+  ksp.RunKShortestPathOnDag({s});
+
+  EXPECT_EQ(sp.LengthTo(t), T{3});
+  EXPECT_THAT(sp.ArcPathTo(t), ElementsAre(ArcIndex(1), ArcIndex(3)));
+  EXPECT_THAT(ksp.LengthsTo(t), ElementsAre(T{3}, T{8}));
+
+  arc_lengths[ArcIndex(3)] = T{-4};
+  sp.RunShortestPathOnDag({s});
+  ksp.RunKShortestPathOnDag({s});
+
+  EXPECT_EQ(sp.LengthTo(t), T{-2});
+  EXPECT_THAT(sp.ArcPathTo(t), ElementsAre(ArcIndex(1), ArcIndex(3)));
+  EXPECT_THAT(ksp.LengthsTo(t), ElementsAre(T{-2}, T{8}));
+}
+
+TYPED_TEST(TypedDagShortestPathTest, MinusInfWeightDiesInDebugMode) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
+  using T = TypeParam;
+  constexpr T kTypeMinusInf = TestFixture::kTypeMinusInf;
+  EXPECT_DEATH(
+      ShortestPathsOnDag<T>(/*num_nodes=*/2,
+                            /*arcs_with_length=*/{{0, 1, kTypeMinusInf}},
+                            /*source=*/0, /*destination=*/1),
+      "-inf");
+  EXPECT_DEATH(
+      KShortestPathsOnDag<T>(/*num_nodes=*/2,
+                             /*arcs_with_length=*/{{0, 1, kTypeMinusInf}},
+                             /*source=*/0, /*destination=*/1,
+                             /*path_count=*/2),
+      "-inf");
+}
+
+TYPED_TEST(TypedDagShortestPathTest, RandomizedStressTest) {
+  using T = TypeParam;
+  constexpr T kTypeInf = TestFixture::kTypeInf;
+  absl::BitGen bit_gen;
+  const int kNumTests = 1000;
+  for (int test = 0; test < kNumTests; ++test) {
+    const int num_nodes = absl::Uniform(bit_gen, 2, 10);
+    const int num_arcs = absl::Uniform(
+        bit_gen, 1, std::min(num_nodes * (num_nodes - 1) / 2, 15));
+    const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
+
+    std::vector<T> arc_lengths(num_arcs);
+    for (int a = 0; a < num_arcs; ++a) {
+      arc_lengths[a] = static_cast<T>(absl::Uniform<int>(bit_gen, -5, 10));
+    }
+
+    FlatMatrix<int64_t> ref_dist(num_nodes, num_nodes,
+                                 std::numeric_limits<int64_t>::max());
+    for (int a = 0; a < num_arcs; ++a) {
+      int64_t& d = ref_dist[graph->Tail(a)][graph->Head(a)];
+      d = std::min(d, static_cast<int64_t>(arc_lengths[a]));
+    }
+    for (int node = 0; node < num_nodes; ++node) {
+      ref_dist[node][node] = 0;
+    }
+    for (int k = 0; k < num_nodes; ++k) {
+      for (int i = 0; i < num_nodes; ++i) {
+        if (ref_dist[i][k] == std::numeric_limits<int64_t>::max()) continue;
+        for (int j = 0; j < num_nodes; ++j) {
+          if (ref_dist[k][j] == std::numeric_limits<int64_t>::max()) continue;
+          ref_dist[i][j] =
+              std::min(ref_dist[i][j], ref_dist[i][k] + ref_dist[k][j]);
+        }
+      }
+    }
+
+    ShortestPathsOnDagWrapper<util::StaticGraph<>, std::vector<T>> sp(
+        graph.get(), &arc_lengths, topological_order);
+    KShortestPathsOnDagWrapper<util::StaticGraph<>, std::vector<T>> ksp(
+        graph.get(), &arc_lengths, topological_order, /*path_count=*/3);
+    const int source = absl::Uniform(bit_gen, 0, num_nodes);
+    sp.RunShortestPathOnDag({source});
+    ksp.RunKShortestPathOnDag({source});
+    for (int node = 0; node < num_nodes; ++node) {
+      if (ref_dist[source][node] == std::numeric_limits<int64_t>::max()) {
+        EXPECT_FALSE(sp.IsReachable(node));
+        EXPECT_EQ(sp.LengthTo(node), kTypeInf);
+        EXPECT_FALSE(ksp.IsReachable(node));
+      } else {
+        EXPECT_TRUE(sp.IsReachable(node));
+        EXPECT_EQ(sp.LengthTo(node), static_cast<T>(ref_dist[source][node]));
+        EXPECT_TRUE(ksp.IsReachable(node));
+        EXPECT_EQ(ksp.LengthsTo(node).front(),
+                  static_cast<T>(ref_dist[source][node]));
+      }
+    }
+  }
+}
+
+TYPED_TEST(TypedDagShortestPathTest,
+           SaturatesPositiveOverflowToUnreachableWithoutWraparound) {
+  using T = TypeParam;
+  if constexpr (std::is_integral_v<T>) {
+    constexpr T kHalfMax = std::numeric_limits<T>::max() / 2 + T{10};
+    constexpr T kTypeInf = TestFixture::kTypeInf;
+
+    // Only an overflowing 2-hop path exists (0 -> 1 -> 2): must be unreachable.
+    const std::vector<ArcWithLength<T>> only_overflow_arcs = {{0, 1, kHalfMax},
+                                                              {1, 2, kHalfMax}};
+    EXPECT_THAT(ShortestPathsOnDag<T>(/*num_nodes=*/3, only_overflow_arcs,
+                                      /*source=*/0, /*destination=*/2),
+                FieldsAre(/*length=*/kTypeInf, /*arc_path=*/IsEmpty(),
+                          /*node_path=*/IsEmpty()));
+    EXPECT_THAT(KShortestPathsOnDag<T>(/*num_nodes=*/3, only_overflow_arcs,
+                                       /*source=*/0, /*destination=*/2,
+                                       /*path_count=*/2),
+                ElementsAre(FieldsAre(/*length=*/kTypeInf,
+                                      /*arc_path=*/IsEmpty(),
+                                      /*node_path=*/IsEmpty())));
+
+    // Overflowing path (0 -> 1 -> 2) alongside a valid finite path (0 -> 2,
+    // 100): without saturation, signed overflow would wrap negative and beat
+    // 100.
+    const std::vector<ArcWithLength<T>> mixed_arcs = {
+        {0, 1, kHalfMax}, {1, 2, kHalfMax}, {0, 2, T{100}}};
+    EXPECT_THAT(ShortestPathsOnDag<T>(/*num_nodes=*/3, mixed_arcs, /*source=*/0,
+                                      /*destination=*/2),
+                FieldsAre(/*length=*/T{100}, /*arc_path=*/ElementsAre(2),
+                          /*node_path=*/ElementsAre(0, 2)));
+    EXPECT_THAT(KShortestPathsOnDag<T>(/*num_nodes=*/3, mixed_arcs,
+                                       /*source=*/0, /*destination=*/2,
+                                       /*path_count=*/3),
+                ElementsAre(FieldsAre(/*length=*/T{100},
+                                      /*arc_path=*/ElementsAre(2),
+                                      /*node_path=*/ElementsAre(0, 2))));
+  }
+}
+
+TEST(ShortestPathOnDagTest, ExactNearInt64MaxWithoutPrecisionLoss) {
+  constexpr int64_t kMax = std::numeric_limits<int64_t>::max();  // 2^63 - 1
+  constexpr int64_t kStep = int64_t{1} << 61;
+  constexpr int64_t kLastArc = (int64_t{1} << 61) - (int64_t{1} << 32) + 1;
+  // 3 * 2^61 + (2^61 - 2^32 + 1) = 2^63 - 2^32 + 1 = kMax - 2^32 + 2.
+  constexpr int64_t kExpected = kMax - (int64_t{1} << 32) + 2;
+
+  // Put `kLastArc + 1` before `kLastArc` on 3 -> 4: in `double` (53-bit
+  // significand, ULP = 1024 near 2^62), both paths round to 2^63 - 2^32 and
+  // tie, whereas `int64_t` distinguishes them by 1 up to `kMax - 1`.
+  const std::vector<ArcWithLength<int64_t>> arcs = {
+      {0, 1, kStep},
+      {1, 2, kStep},
+      {2, 3, kStep},
+      {3, 4, kLastArc + 1},            // path length: kExpected + 1
+      {3, 4, kLastArc},                // path length: kExpected (shortest)
+      {3, 4, (int64_t{1} << 61) - 2},  // path length: kMax - 1 (largest finite)
+      {3, 4, (int64_t{1} << 61) - 1},  // path length: kMax (∞, unreachable)
+  };
+
+  EXPECT_THAT(ShortestPathsOnDag<int64_t>(/*num_nodes=*/5, arcs, /*source=*/0,
+                                          /*destination=*/4),
+              FieldsAre(/*length=*/kExpected,
+                        /*arc_path=*/ElementsAre(0, 1, 2, 4),
+                        /*node_path=*/ElementsAre(0, 1, 2, 3, 4)));
+
+  EXPECT_THAT(KShortestPathsOnDag<int64_t>(/*num_nodes=*/5, arcs, /*source=*/0,
+                                           /*destination=*/4, /*path_count=*/4),
+              ElementsAre(FieldsAre(/*length=*/kExpected,
+                                    /*arc_path=*/ElementsAre(0, 1, 2, 4),
+                                    /*node_path=*/ElementsAre(0, 1, 2, 3, 4)),
+                          FieldsAre(/*length=*/kExpected + 1,
+                                    /*arc_path=*/ElementsAre(0, 1, 2, 3),
+                                    /*node_path=*/ElementsAre(0, 1, 2, 3, 4)),
+                          FieldsAre(/*length=*/kMax - 1,
+                                    /*arc_path=*/ElementsAre(0, 1, 2, 5),
+                                    /*node_path=*/ElementsAre(0, 1, 2, 3, 4))));
 }
 
 }  // namespace

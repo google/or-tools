@@ -16,21 +16,27 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/topologicalsorter.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
-// TODO(b/332475231): extend to non-floating lengths.
 // TODO(b/332476147): extend to allow for length functor.
 
 // This library provides a few APIs to compute the shortest path on a given
@@ -42,57 +48,89 @@ namespace operations_research {
 // Note that we use the length formalism here, but the arc lengths can represent
 // any numeric physical quantity. A shortest path will just be a path minimizing
 // this quantity where the length of a path is the sum of the length of its
-// arcs. An arc length can be negative, or +inf (indicating that it should not
-// be used). An arc length cannot be -inf or nan.
+// arcs. An arc length can be negative, or ∞, indicating that it should not be
+// used. An arc length cannot be -∞ nor NaN. Integer length sums saturate at
+// max/min on overflow.
 
 // -----------------------------------------------------------------------------
 // Basic API.
 // -----------------------------------------------------------------------------
 
 // `from` and `to` should both be in [0, num_nodes).
-// If the length is +inf, then the arc should not be used.
+// If the length is ∞ (or max), then the arc should not be used.
+template <typename LengthType = double>
 struct ArcWithLength {
   int from = 0;
   int to = 0;
-  double length = 0.0;
+  LengthType length = LengthType{0};
 };
 
+template <typename LengthType = double>
 struct PathWithLength {
-  double length = 0.0;
+  LengthType length = LengthType{0};
   // The returned arc indices points into the `arcs_with_length` passed to the
   // function below.
   std::vector<int> arc_path;
   std::vector<int> node_path;  // includes the source node.
 };
 
-// Returns {+inf, {}, {}} if there is no path of finite length from the source
-// to the destination. Dies if `arcs_with_length` has a cycle.
-PathWithLength ShortestPathsOnDag(
-    int num_nodes, absl::Span<const ArcWithLength> arcs_with_length, int source,
-    int destination);
+// Returns {∞, {}, {}} (or {max(), {}, {}} for integer types) if there is no
+// path of finite length from the source to the destination. Dies if
+// `arcs_with_length` has a cycle.
+template <typename LengthType = double>
+PathWithLength<LengthType> ShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<LengthType>> arcs_with_length,
+    int source, int destination);
+PathWithLength<double> ShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<double>> arcs_with_length,
+    int source, int destination);
 
 // Returns the k-shortest paths by increasing length. Returns fewer than k paths
 // if there are fewer than k paths from the source to the destination. Returns
-// {{+inf, {}, {}}} if there is no path of finite length from the source to the
-// destination. Dies if `arcs_with_length` has a cycle.
-std::vector<PathWithLength> KShortestPathsOnDag(
-    int num_nodes, absl::Span<const ArcWithLength> arcs_with_length, int source,
-    int destination, int path_count);
+// {{∞, {}, {}}} (or {{max(), {}, {}}} for integer types) if there is no path
+// of finite length from the source to the destination. Dies if
+// `arcs_with_length` has a cycle.
+template <typename LengthType = double>
+std::vector<PathWithLength<LengthType>> KShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<LengthType>> arcs_with_length,
+    int source, int destination, int path_count);
+std::vector<PathWithLength<double>> KShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<double>> arcs_with_length,
+    int source, int destination, int path_count);
 
 // -----------------------------------------------------------------------------
 // Advanced API.
 // -----------------------------------------------------------------------------
+namespace internal {
+template <typename T>
+inline constexpr bool kIsFloatOrInt32Or64 =
+    std::is_floating_point_v<T> || std::is_same_v<T, int32_t> ||
+    std::is_same_v<T, int64_t>;
+
+template <typename T>
+inline constexpr T kInf =
+    std::numeric_limits<T>::has_infinity ? std::numeric_limits<T>::infinity()
+                                         : std::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T kMinusInf =
+    std::numeric_limits<T>::has_infinity ? -std::numeric_limits<T>::infinity()
+                                         : std::numeric_limits<T>::min();
+}  // namespace internal
+
 // A wrapper that holds the memory needed to run many shortest path computations
 // efficiently on the given DAG. One call of `RunShortestPathOnDag()` has time
 // complexity O(|E| + |V|) and space complexity O(|V|).
 // `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
-// `ArcLengthContainer` can be any container of doubles.
+// `ArcLengthContainer` can be any contiguous container of lengths (e.g.
+// `double`, `float`, `int64_t`, `int32_t`).
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class ShortestPathsOnDagWrapper {
  public:
   using NodeIndex = typename GraphType::NodeIndex;
   using ArcIndex = typename GraphType::ArcIndex;
   using ArcLengths = ArcLengthContainer;
+  using LengthType = typename ArcLengthContainer::value_type;
 
   // IMPORTANT: All arguments must outlive the class.
   //
@@ -129,10 +167,12 @@ class ShortestPathsOnDagWrapper {
   const std::vector<NodeIndex>& reached_nodes() const { return reached_nodes_; }
 
   // Returns the length of the shortest path from `node`'s source to `node`.
-  double LengthTo(NodeIndex node) const {
+  LengthType LengthTo(NodeIndex node) const {
     return length_from_sources_[static_cast<size_t>(node)];
   }
-  const std::vector<double>& LengthTo() const { return length_from_sources_; }
+  const std::vector<LengthType>& LengthTo() const {
+    return length_from_sources_;
+  }
 
   // Returns the list of all the arcs in the shortest path from `node`'s
   // source to `node`. CHECKs if the node is reachable.
@@ -147,13 +187,16 @@ class ShortestPathsOnDagWrapper {
   const ArcLengths& arc_lengths() const { return *arc_lengths_; }
 
  private:
-  static constexpr double kInf = std::numeric_limits<double>::infinity();
+  static_assert(internal::kIsFloatOrInt32Or64<LengthType>,
+                "LengthType must be float, double, int32_t, or int64_t");
+  static constexpr LengthType kInf = internal::kInf<LengthType>;
+  static constexpr LengthType kMinusInf = internal::kMinusInf<LengthType>;
   const GraphType* const graph_;
   const ArcLengths* const arc_lengths_;
   absl::Span<const NodeIndex> const topological_order_;
 
   // Data about the last call of the RunShortestPathOnDag() function.
-  std::vector<double> length_from_sources_;
+  std::vector<LengthType> length_from_sources_;
   std::vector<ArcIndex> incoming_shortest_path_arc_;
   std::vector<NodeIndex> reached_nodes_;
 };
@@ -163,6 +206,8 @@ class ShortestPathsOnDagWrapper {
 // `RunKShortestPathOnDag()` has time complexity O(|E| + k|V|log(d)) where d is
 // the mean degree of the graph and space complexity O(k|V|).
 // `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
+// `ArcLengthContainer` can be any contiguous container of lengths (e.g.
+// `double`, `float`, `int64_t`, `int32_t`).
 // IMPORTANT: Only use if `path_count > 1` (k > 1) otherwise use
 // `ShortestPathsOnDagWrapper`.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
@@ -171,6 +216,7 @@ class KShortestPathsOnDagWrapper {
   using NodeIndex = typename GraphType::NodeIndex;
   using ArcIndex = typename GraphType::ArcIndex;
   using ArcLengths = ArcLengthContainer;
+  using LengthType = typename ArcLengthContainer::value_type;
 
   // IMPORTANT: All arguments must outlive the class.
   //
@@ -210,7 +256,7 @@ class KShortestPathsOnDagWrapper {
   // Returns the lengths of the k-shortest paths from `node`'s source to `node`
   // in increasing order. If there are less than k paths, return all path
   // lengths.
-  std::vector<double> LengthsTo(NodeIndex node) const;
+  std::vector<LengthType> LengthsTo(NodeIndex node) const;
 
   // Returns the list of all the arcs of the k-shortest paths from `node`'s
   // source to `node`.
@@ -226,7 +272,10 @@ class KShortestPathsOnDagWrapper {
   int path_count() const { return path_count_; }
 
  private:
-  static constexpr double kInf = std::numeric_limits<double>::infinity();
+  static_assert(internal::kIsFloatOrInt32Or64<LengthType>,
+                "LengthType must be float, double, int32_t, or int64_t");
+  static constexpr LengthType kInf = internal::kInf<LengthType>;
+  static constexpr LengthType kMinusInf = internal::kMinusInf<LengthType>;
 
   const GraphType* const graph_;
   const ArcLengths* const arc_lengths_;
@@ -240,14 +289,14 @@ class KShortestPathsOnDagWrapper {
   // Data about the last call of the `RunKShortestPathOnDag()` function. The
   // first dimension is the index of the path (1st being the shortest). The
   // second dimension are nodes.
-  std::vector<std::vector<double>> lengths_from_sources_;
+  std::vector<std::vector<LengthType>> lengths_from_sources_;
   std::vector<std::vector<ArcIndex>> incoming_shortest_paths_arc_;
   std::vector<std::vector<int>> incoming_shortest_paths_index_;
   std::vector<bool> is_source_;
   std::vector<NodeIndex> reached_nodes_;
 };
 
-template <class GraphType, typename ArcLengths>
+template <class GraphType>
 absl::Status TopologicalOrderIsValid(
     const GraphType& graph,
     absl::Span<const typename GraphType::NodeIndex> topological_order);
@@ -332,15 +381,15 @@ ShortestPathsOnDagWrapper<GraphType, ArcLengths>::ShortestPathsOnDagWrapper(
     : graph_(graph),
       arc_lengths_(arc_lengths),
       topological_order_(topological_order) {
-  const size_t num_nodes = static_cast<size_t>(graph_->num_nodes());
   CHECK(graph_ != nullptr);
   CHECK(arc_lengths_ != nullptr);
+  const size_t num_nodes = static_cast<size_t>(graph_->num_nodes());
   CHECK_GT(num_nodes, 0) << "The graph is empty: it has no nodes";
   if constexpr (DEBUG_MODE) {
     CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
              graph_->num_arcs());
-    for (const double arc_length : *arc_lengths_) {
-      CHECK(arc_length != -kInf && !std::isnan(arc_length))
+    for (const LengthType arc_length : *arc_lengths_) {
+      CHECK(arc_length != kMinusInf && !std::isnan(arc_length))
           << absl::StrFormat("length cannot be -inf nor NaN");
     }
     CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
@@ -358,9 +407,10 @@ template <class GraphType, typename ArcLengths>
 void ShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunShortestPathOnDag(
     absl::Span<const NodeIndex> sources) {
   // Caching the vector addresses allow to not fetch it on each access.
-  const absl::Span<double> length_from_sources =
+  const absl::Span<LengthType> length_from_sources =
       absl::MakeSpan(length_from_sources_);
-  const absl::Span<const double> arc_lengths = *arc_lengths_;
+  const absl::Span<const LengthType> arc_lengths =
+      absl::MakeConstSpan(*arc_lengths_);
 
   // Avoid reassigning `incoming_shortest_path_arc_` at every call for better
   // performance, so it only makes sense for nodes that are reachable from at
@@ -371,7 +421,7 @@ void ShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunShortestPathOnDag(
     incoming_shortest_path_arc_[node_index] = GraphType::kNilArc;
   }
   DCHECK(std::all_of(length_from_sources.begin(), length_from_sources.end(),
-                     [](double l) { return l == kInf; }));
+                     [](LengthType l) { return l == kInf; }));
   DCHECK(std::all_of(incoming_shortest_path_arc_.begin(),
                      incoming_shortest_path_arc_.end(),
                      [](ArcIndex arc) { return arc == GraphType::kNilArc; }));
@@ -379,22 +429,26 @@ void ShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunShortestPathOnDag(
 
   for (const NodeIndex source : sources) {
     CheckNodeIsValid(source, *graph_);
-    length_from_sources[static_cast<size_t>(source)] = 0.0;
+    length_from_sources[static_cast<size_t>(source)] = LengthType{0};
   }
 
   for (const NodeIndex tail : topological_order_) {
-    const double length_to_tail =
+    const LengthType length_to_tail =
         length_from_sources[static_cast<size_t>(tail)];
-    // Stop exploring a node as soon as its length to all sources is +inf.
+    // Stop exploring a node as soon as its length to all sources is ∞.
     if (length_to_tail == kInf) {
       continue;
     }
     reached_nodes_.push_back(tail);
     for (const ArcIndex arc : graph_->OutgoingArcs(tail)) {
       const NodeIndex head = graph_->Head(arc);
-      DCHECK(arc_lengths[static_cast<size_t>(arc)] != -kInf);
-      const double length_to_head =
-          arc_lengths[static_cast<size_t>(arc)] + length_to_tail;
+      const LengthType arc_length = arc_lengths[static_cast<size_t>(arc)];
+      DCHECK(arc_length != kMinusInf && !std::isnan(arc_length));
+      if (arc_length == kInf) {
+        continue;
+      }
+      const LengthType length_to_head =
+          CapOrFloatAdd(length_to_tail, arc_length);
       if (length_to_head < length_from_sources[static_cast<size_t>(head)]) {
         length_from_sources[static_cast<size_t>(head)] = length_to_head;
         incoming_shortest_path_arc_[static_cast<size_t>(head)] = arc;
@@ -438,7 +492,7 @@ ShortestPathsOnDagWrapper<GraphType, ArcLengths>::NodePathTo(
   if (arc_path.empty()) {
     return {node};
   }
-  return NodePathImpliedBy(ArcPathTo(node), *graph_);
+  return NodePathImpliedBy(arc_path, *graph_);
 }
 
 // -----------------------------------------------------------------------------
@@ -460,8 +514,8 @@ KShortestPathsOnDagWrapper<GraphType, ArcLengths>::KShortestPathsOnDagWrapper(
   if constexpr (DEBUG_MODE) {
     CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
              graph_->num_arcs());
-    for (const double arc_length : *arc_lengths_) {
-      CHECK(arc_length != -kInf && !std::isnan(arc_length))
+    for (const LengthType arc_length : *arc_lengths_) {
+      CHECK(arc_length != kMinusInf && !std::isnan(arc_length))
           << absl::StrFormat("length cannot be -inf nor NaN");
     }
     CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
@@ -502,7 +556,8 @@ template <class GraphType, typename ArcLengths>
 void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
     absl::Span<const NodeIndex> sources) {
   // Caching the vector addresses allow to not fetch it on each access.
-  const absl::Span<const double> arc_lengths = *arc_lengths_;
+  const absl::Span<const LengthType> arc_lengths =
+      absl::MakeConstSpan(*arc_lengths_);
   const absl::Span<const ArcIndex> arc_indices = arc_indices_;
 
   // Avoid reassigning `incoming_shortest_path_arc_` at every call for better
@@ -520,7 +575,7 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
     for (int k = 0; k < path_count_; ++k) {
       CHECK(std::all_of(lengths_from_sources_[k].begin(),
                         lengths_from_sources_[k].end(),
-                        [](double l) { return l == kInf; }));
+                        [](LengthType l) { return l == kInf; }));
     }
   }
 
@@ -530,9 +585,9 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
   }
 
   struct IncomingArcPath {
-    double path_length = 0.0;
+    LengthType path_length = LengthType{0};
     ArcIndex arc_index = ArcIndex(0);
-    double arc_length = 0.0;
+    LengthType arc_length = LengthType{0};
     NodeIndex from = NodeIndex(0);
     int path_index = 0;
 
@@ -555,10 +610,14 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
               ? reverse_arc_index
               : arc_indices[static_cast<size_t>(reverse_arc_index)];
       const NodeIndex from = graph_->Tail(arc_index);
-      const double arc_length = arc_lengths[static_cast<size_t>(arc_index)];
-      DCHECK(arc_length != -kInf);
-      const double path_length =
-          lengths_from_sources_.front()[static_cast<size_t>(from)] + arc_length;
+      const LengthType arc_length = arc_lengths[static_cast<size_t>(arc_index)];
+      DCHECK(arc_length != kMinusInf && !std::isnan(arc_length));
+      const LengthType prev_length =
+          lengths_from_sources_.front()[static_cast<size_t>(from)];
+      if (arc_length == kInf || prev_length == kInf) {
+        continue;
+      }
+      const LengthType path_length = CapOrFloatAdd(prev_length, arc_length);
       if (path_length == kInf) {
         continue;
       }
@@ -581,22 +640,29 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
           incoming_arc_path.arc_index;
       incoming_shortest_paths_index_[k][static_cast<size_t>(to)] =
           incoming_arc_path.path_index;
-      if (incoming_arc_path.arc_index != GraphType::kNilArc &&
-          incoming_arc_path.path_index < path_count_ - 1 &&
-          lengths_from_sources_[incoming_arc_path.path_index + 1]
-                               [static_cast<size_t>(incoming_arc_path.from)] <
-              kInf) {
+      // CapAdd()'s saturated arithmetic is not sticky, i.e.,
+      // kint64max - 10 != kint64max. We want sticky, so we need to do it
+      // ourselves step by step here.
+      LengthType next_path_length =
+          (incoming_arc_path.arc_index != GraphType::kNilArc &&
+           incoming_arc_path.path_index < path_count_ - 1)
+              ? lengths_from_sources_[incoming_arc_path.path_index + 1]
+                                     [static_cast<size_t>(
+                                         incoming_arc_path.from)]
+              : kInf;
+      if (next_path_length < kInf) {
+        next_path_length =
+            CapOrFloatAdd(next_path_length, incoming_arc_path.arc_length);
+      }
+      if (next_path_length < kInf) {
         ++incoming_arc_path.path_index;
-        incoming_arc_path.path_length =
-            lengths_from_sources_[incoming_arc_path.path_index]
-                                 [static_cast<size_t>(incoming_arc_path.from)] +
-            incoming_arc_path.arc_length;
+        incoming_arc_path.path_length = next_path_length;
         std::push_heap(min_heap.begin(), min_heap.end(), comp);
-      } else {
-        min_heap.pop_back();
-        if (min_heap.empty()) {
-          break;
-        }
+        continue;
+      }
+      min_heap.pop_back();
+      if (min_heap.empty()) {
+        break;
       }
     }
   }
@@ -610,13 +676,14 @@ bool KShortestPathsOnDagWrapper<GraphType, ArcLengths>::IsReachable(
 }
 
 template <class GraphType, typename ArcLengths>
-std::vector<double>
+std::vector<
+    typename KShortestPathsOnDagWrapper<GraphType, ArcLengths>::LengthType>
 KShortestPathsOnDagWrapper<GraphType, ArcLengths>::LengthsTo(
     NodeIndex node) const {
-  std::vector<double> lengths_to;
+  std::vector<LengthType> lengths_to;
   lengths_to.reserve(path_count_);
   for (int k = 0; k < path_count_; ++k) {
-    const double length_to =
+    const LengthType length_to =
         lengths_from_sources_[k][static_cast<size_t>(node)];
     if (length_to == kInf) {
       break;
@@ -672,6 +739,130 @@ KShortestPathsOnDagWrapper<GraphType, ArcLengths>::NodePathsTo(
     }
   }
   return node_paths;
+}
+
+// -----------------------------------------------------------------------------
+// Basic API implementations.
+// -----------------------------------------------------------------------------
+namespace internal {
+
+template <typename LengthType>
+struct ShortestPathOnDagProblem {
+  using GraphType = util::StaticGraph<>;
+  using NodeIndex = GraphType::NodeIndex;
+  using ArcIndex = GraphType::ArcIndex;
+
+  GraphType graph;
+  std::vector<LengthType> arc_lengths;
+  std::vector<ArcIndex> original_arc_indices;
+  std::vector<NodeIndex> topological_order;
+};
+
+template <typename LengthType>
+ShortestPathOnDagProblem<LengthType> ReadProblem(
+    int num_nodes,
+    absl::Span<const ArcWithLength<LengthType>> arcs_with_length) {
+  using GraphType = util::StaticGraph<>;
+  using NodeIndex = GraphType::NodeIndex;
+  using ArcIndex = GraphType::ArcIndex;
+
+  GraphType::Builder builder(num_nodes, arcs_with_length.size());
+  std::vector<LengthType> arc_lengths;
+  arc_lengths.reserve(arcs_with_length.size());
+  for (const auto& arc : arcs_with_length) {
+    builder.AddArc(arc.from, arc.to);
+    arc_lengths.push_back(arc.length);
+  }
+  std::vector<ArcIndex> permutation;
+  auto graph = std::move(builder).Build(&permutation);
+  util::Permute(permutation, &arc_lengths);
+
+  std::vector<ArcIndex> original_arc_indices(permutation.size());
+  for (ArcIndex i = 0; i < permutation.size(); ++i) {
+    original_arc_indices[permutation[i]] = i;
+  }
+
+  absl::StatusOr<std::vector<NodeIndex>> topological_order =
+      util::graph::FastTopologicalSort(*graph);
+  CHECK_OK(topological_order) << "arcs_with_length form a cycle.";
+
+  return ShortestPathOnDagProblem<LengthType>{
+      .graph = std::move(*graph),
+      .arc_lengths = std::move(arc_lengths),
+      .original_arc_indices = std::move(original_arc_indices),
+      .topological_order = *std::move(topological_order)};
+}
+
+inline void GetOriginalArcPath(absl::Span<const int> original_arc_indices,
+                               std::vector<int>& arc_path) {
+  if (original_arc_indices.empty()) {
+    return;
+  }
+  for (int& arc : arc_path) {
+    arc = original_arc_indices[arc];
+  }
+}
+
+}  // namespace internal
+
+template <typename LengthType>
+PathWithLength<LengthType> ShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<LengthType>> arcs_with_length,
+    int source, int destination) {
+  const internal::ShortestPathOnDagProblem<LengthType> problem =
+      internal::ReadProblem<LengthType>(num_nodes, arcs_with_length);
+
+  ShortestPathsOnDagWrapper<util::StaticGraph<>, std::vector<LengthType>>
+      shortest_path_on_dag(&problem.graph, &problem.arc_lengths,
+                           problem.topological_order);
+  shortest_path_on_dag.RunShortestPathOnDag({source});
+
+  if (!shortest_path_on_dag.IsReachable(destination)) {
+    return PathWithLength<LengthType>{
+        .length = shortest_path_on_dag.LengthTo(destination)};
+  }
+
+  std::vector<int> arc_path = shortest_path_on_dag.ArcPathTo(destination);
+  internal::GetOriginalArcPath(problem.original_arc_indices, arc_path);
+  return PathWithLength<LengthType>{
+      .length = shortest_path_on_dag.LengthTo(destination),
+      .arc_path = std::move(arc_path),
+      .node_path = shortest_path_on_dag.NodePathTo(destination)};
+}
+
+template <typename LengthType>
+std::vector<PathWithLength<LengthType>> KShortestPathsOnDag(
+    int num_nodes, absl::Span<const ArcWithLength<LengthType>> arcs_with_length,
+    int source, int destination, int path_count) {
+  using GraphType = util::StaticGraph<>;
+  const internal::ShortestPathOnDagProblem<LengthType> problem =
+      internal::ReadProblem<LengthType>(num_nodes, arcs_with_length);
+
+  KShortestPathsOnDagWrapper<GraphType, std::vector<LengthType>>
+      shortest_paths_on_dag(&problem.graph, &problem.arc_lengths,
+                            problem.topological_order, path_count);
+  shortest_paths_on_dag.RunKShortestPathOnDag({source});
+
+  if (!shortest_paths_on_dag.IsReachable(destination)) {
+    return {PathWithLength<LengthType>{.length = internal::kInf<LengthType>}};
+  }
+
+  std::vector<LengthType> lengths =
+      shortest_paths_on_dag.LengthsTo(destination);
+  std::vector<std::vector<GraphType::ArcIndex>> arc_paths =
+      shortest_paths_on_dag.ArcPathsTo(destination);
+  std::vector<std::vector<GraphType::NodeIndex>> node_paths =
+      shortest_paths_on_dag.NodePathsTo(destination);
+  std::vector<PathWithLength<LengthType>> paths;
+  paths.reserve(lengths.size());
+  for (int k = 0; k < lengths.size(); ++k) {
+    internal::GetOriginalArcPath(problem.original_arc_indices, arc_paths[k]);
+    paths.push_back(
+        PathWithLength<LengthType>{.length = lengths[k],
+                                   .arc_path = std::move(arc_paths[k]),
+                                   .node_path = std::move(node_paths[k])});
+  }
+  return paths;
 }
 
 }  // namespace operations_research
