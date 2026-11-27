@@ -1413,7 +1413,18 @@ bool LinearProgrammingConstraint::SolveLp() {
         CHECK_NE(var, kNoIntegerVariable);
         solution[i] = std::round(expanded_lp_solution_[var]);
       }
-      if (SolutionIsFeasible(*cp_model_mapping_->ModelProto(), solution)) {
+      // SolutionIsFeasible() does not check assumptions. An integral LP
+      // solution can satisfy the constraints by disabling assumed enforcement
+      // literals.
+      const CpModelProto& model_proto = *cp_model_mapping_->ModelProto();
+      bool meets_assumptions = true;
+      for (const int ref : model_proto.assumptions()) {
+        if (solution[PositiveRef(ref)] != (RefIsPositive(ref) ? 1 : 0)) {
+          meets_assumptions = false;
+          break;
+        }
+      }
+      if (meets_assumptions && SolutionIsFeasible(model_proto, solution)) {
         // TODO(user): Shall we report all such solution? hopefully there
         // shouldn't be too many.
         //
