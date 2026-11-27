@@ -23,6 +23,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -50,7 +51,7 @@ TEST(CreateVariableEncodingLocalModelsTest, TrivialTest) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
@@ -85,7 +86,7 @@ TEST(CreateVariableEncodingLocalModelsTest, BasicTest) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
@@ -145,7 +146,7 @@ TEST(CreateVariableEncodingLocalModelsTest, OneBooleanUsedElsewhere) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
@@ -223,7 +224,7 @@ TEST(CreateVariableEncodingLocalModelsTest, TwoVars) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
@@ -244,9 +245,9 @@ TEST(CreateVariableEncodingLocalModelsTest, TwoVars) {
   EXPECT_EQ(local_models[1].variable_coeff_in_objective, 0);
 
   absl::flat_hash_map<int, Domain> fully_encoded_domains;
-  bool changed = false;
-  CHECK(BasicPresolveAndGetFullyEncodedDomains(
-      &context, local_models[0], &fully_encoded_domains, &changed));
+  CHECK(!BasicPresolveAndGetFullyEncodedDomains(&context, local_models[0],
+                                                &fully_encoded_domains)
+             .unsat());
   EXPECT_THAT(
       fully_encoded_domains,
       UnorderedElementsAre(Pair(0, Domain(0, 0)), Pair(-1, Domain(1, 1))));
@@ -307,15 +308,15 @@ TEST(BasicPresolveAndGetFullyEncodedDomainsTest, EncodingWithBoolOr) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
 
   absl::flat_hash_map<int, Domain> fully_encoded_domains;
-  bool changed = false;
-  CHECK(BasicPresolveAndGetFullyEncodedDomains(
-      &context, local_models[0], &fully_encoded_domains, &changed));
+  CHECK(!BasicPresolveAndGetFullyEncodedDomains(&context, local_models[0],
+                                                &fully_encoded_domains)
+             .unsat());
   EXPECT_THAT(fully_encoded_domains,
               UnorderedElementsAre(Pair(0, Domain(0)), Pair(1, Domain(1)),
                                    Pair(2, Domain(2)),
@@ -393,11 +394,11 @@ TEST(DetectAllEncodedComplexDomainTest, BasicTest) {
   Model model;
   CpModelProto mapping_model;
   PresolveContext context(&model, &model_proto, &mapping_model);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.ReadObjectiveFromProto();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
-  ASSERT_TRUE(DetectAllEncodedComplexDomain(&context, local_models[0]));
+  ASSERT_EQ(DetectAllEncodedComplexDomain(&context, local_models[0]), kOk);
   context.WriteVariableDomainsToProto();
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }

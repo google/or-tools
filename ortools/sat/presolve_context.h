@@ -41,6 +41,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/solution_crush.pb.h"
 #include "ortools/sat/util.h"
@@ -62,20 +63,6 @@ namespace sat {
 constexpr int kObjectiveConstraint = -1;
 constexpr int kAffineRelationConstraint = -2;
 constexpr int kAssumptionsConstraint = -3;
-
-// Returned by presolve helpers that maintain canonicality/graph invariants
-// internally and report whether their target was modified.
-class ModificationStatus {
- public:
-  explicit constexpr ModificationStatus(bool modified) : modified_(modified) {}
-  constexpr bool modified() const { return modified_; }
-  constexpr bool operator==(const ModificationStatus&) const = default;
-
- private:
-  bool modified_;
-};
-inline constexpr ModificationStatus kUnchanged{false};
-inline constexpr ModificationStatus kModified{true};
 
 class PresolveContext;
 
@@ -108,8 +95,10 @@ class SavedVariable {
   int ref_ = 0;
 };
 
-// If a floating point objective is present, scale it using the current domains
-// and transform it to an integer_objective.
+// Scales `proto->floating_point_objective()` using the current variable domains
+// and transforms it into `proto->objective()`. Returns true on success, or
+// false if the objective cannot be scaled (e.g., infinite or out-of-range
+// coefficients, making the model invalid).
 [[nodiscard]] bool ScaleFloatingPointObjective(const SatParameters& params,
                                                SolverLogger* logger,
                                                CpModelProto* proto);
@@ -407,6 +396,7 @@ class PresolveContext {
   // Same as AddImplication(), except that this is a no-op and returns false if
   // a == b or if the same implication (or its contrapositive not(b) => not(a))
   // was already added by a previous call since the last ResetAfterCopy().
+  // Returns true if the implication was added.
   //
   // WARNING: Only use this for optional strengthening implications where no
   // existing constraint is deleted or weakened under the assumption that the
@@ -544,30 +534,31 @@ class PresolveContext {
 
   // Canonicalization of linear constraints. This might also be needed when
   // creating new constraints to make sure there are no duplicate variables.
-  // Returns true if the constraint was modified.
   //
   // This uses affine relations and regroups duplicate/fixed terms.
-  bool CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                    bool* is_impossible = nullptr,
-                                    bool* is_trivial = nullptr);
-  bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
-                                    LinearExpressionProto* expr);
+  ModificationStatus CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                                  bool* is_impossible = nullptr,
+                                                  bool* is_trivial = nullptr);
+  ModificationStatus CanonicalizeLinearExpression(
+      absl::Span<const int> enforcements, LinearExpressionProto* expr);
 
-  // Canonicalizes constraint `c` in `working_model_` and, if mutated (or if
-  // `force_variable_usage_update` is true because `c` was already mutated in
-  // place beforehand), marks it for lazy variable-graph update.
-  bool CanonicalizeConstraint(int c, bool force_variable_usage_update = false);
+  // Canonicalizes constraint `c` in `working_model_` and, if mutated, marks it
+  // for lazy variable-graph update.
+  ChangeStatus CanonicalizeConstraint(int c);
+
+  // Canonicalizes constraint `c` after an in-place modification and marks it
+  // for lazy variable-graph update.
+  FeasibilityStatus CanonicalizeModifiedConstraint(int c);
 
   // Lazy pass-entry canonicalization of all dirty constraints, cascading until
   // quiescence or UNSAT.
   bool NeedsCanonicalization() const;
-  void CanonicalizeConstraintsLazily();
+  FeasibilityStatus CanonicalizeConstraintsLazily();
 
   // Marks constraint `c` as potentially non-canonical and needing lazy
   // variable-graph update. Empty (cleared) constraints are already canonical
   // and only update the variable graph.
   void MarkConstraintForCanonicalization(int c) {
-    if (is_unsat_) return;
     graph_.MarkForLazyUpdate(c);
     if (c < canonicalization_.constraints_to_canonicalize.size() &&
         !ConstraintIsEmpty(c)) {
@@ -580,7 +571,6 @@ class PresolveContext {
   // Debug/test wrappers around `canonical_checker_`.
   bool ConstraintIsCanonical(const ConstraintProto& ct,
                              bool check_sorted = true) const {
-    if (ModelIsUnsat()) return true;
     return canonical_checker_.ConstraintIsCanonical(ct, check_sorted);
   }
   bool ConstraintIsCanonical(int c, bool check_sorted = true) const {
@@ -642,43 +632,31 @@ class PresolveContext {
   // variable. This happens on the flatzinc celar problems for instance.
   bool VariableIsOnlyUsedInLinear1AndOneExtraConstraint(int var) const;
 
-  // Returns false if the new domain is empty. Sets 'domain_modified' (if
-  // provided) to true iff the domain is modified otherwise does not change it.
-  [[nodiscard]] bool IntersectDomainWith(int ref, const Domain& domain,
-                                         bool* domain_modified = nullptr);
+  // Returns `kUnsat` if the new domain is empty. Sets 'domain_modified' (if
+  // provided) to true iff the domain is modified, otherwise does not change it.
+  FeasibilityStatus IntersectDomainWith(int ref, const Domain& domain,
+                                        bool* domain_modified = nullptr);
 
-  // Returns false if the 'lit' doesn't have the desired value in the domain.
-  [[nodiscard]] bool SetLiteralToFalse(int lit);
-  [[nodiscard]] bool SetLiteralToTrue(int lit);
+  // Returns `kUnsat` if 'lit' doesn't have the desired value in the domain.
+  FeasibilityStatus SetLiteralToFalse(int lit);
+  FeasibilityStatus SetLiteralToTrue(int lit);
 
   // Same as IntersectDomainWith() but take a linear expression as input.
   // If this expression is of size > 1, this does nothing for now, so it will
   // only propagate for constant and affine expressions.
-  [[nodiscard]] bool IntersectDomainWith(const LinearExpressionProto& expr,
-                                         const Domain& domain,
-                                         bool* domain_modified = nullptr);
+  FeasibilityStatus IntersectDomainWith(const LinearExpressionProto& expr,
+                                        const Domain& domain,
+                                        bool* domain_modified = nullptr);
 
+  // Returns true iff there exist values in the current variable domains of
+  // affine expressions `a` and `b` such that `a == b`.
   [[nodiscard]] bool IntersectionOfAffineExprsIsNotEmpty(
       const LinearExpressionProto& a, const LinearExpressionProto& b);
 
   UnsatStatus NotifyUnsat(absl::string_view message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
-    is_unsat_ = true;
     return kUnsat;
-  }
-
-  // This function always returns false. It is just a way to make a little bit
-  // more sure that we abort right away when infeasibility is detected.
-  // TODO(user): Remove NotifyThatModelIsUnsat() and use NotifyUnsat()
-  // instead (without `(void)` casts). Eventually, remove ModelIsUnsat(),
-  // ModelStatus(), and is_unsat_ as well.
-  [[nodiscard]] bool NotifyThatModelIsUnsat(absl::string_view message = "") {
-    return FeasibilityStatus(NotifyUnsat(message)).unknown();
-  }
-  bool ModelIsUnsat() const { return is_unsat_; }
-  FeasibilityStatus ModelStatus() const {
-    return FeasibilityStatus(!is_unsat_);
   }
 
   // Stores a description of a rule that was just applied to have a summary of
@@ -716,12 +694,12 @@ class PresolveContext {
   //
   // Note that the new variable will have a canonical domain (i.e. min == 0).
   // We also do not create anything if this fixes the given variable or the
-  // relation simplifies. Returns false if the model is infeasible.
-  bool CanonicalizeAffineVariable(int ref, int64_t coeff, int64_t mod,
-                                  int64_t rhs);
+  // relation simplifies. Returns `kUnsat` if the model is infeasible.
+  FeasibilityStatus CanonicalizeAffineVariable(int ref, int64_t coeff,
+                                               int64_t mod, int64_t rhs);
 
   // Adds the relation (var_x = coeff * var_y + offset) to the repository.
-  // Returns false if we detect infeasibility because of this.
+  // Returns `kUnsat` if we detect infeasibility because of this.
   //
   // Once the relation is added, it doesn't need to be enforced by a constraint
   // in the model proto, since we will propagate such relations directly and add
@@ -736,12 +714,13 @@ class PresolveContext {
   // All involved variables will be marked to appear in the special
   // kAffineRelationConstraint. This will allow to identify when a variable is
   // no longer needed (only appears there and is not a representative).
-  bool StoreAffineRelation(int var_x, int var_y, int64_t coeff, int64_t offset,
-                           bool debug_no_recursion = false);
+  FeasibilityStatus StoreAffineRelation(int var_x, int var_y, int64_t coeff,
+                                        int64_t offset,
+                                        bool debug_no_recursion = false);
 
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
-  // Returns false if this makes the problem infeasible.
-  bool StoreBooleanEqualityRelation(int ref_a, int ref_b);
+  // Returns `kUnsat` if this makes the problem infeasible.
+  FeasibilityStatus StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
   // Returns the representative of a literal. `ref` and its affine
   // representative must both satisfy `CanBeUsedAsLiteral`, linked with
@@ -766,12 +745,13 @@ class PresolveContext {
   std::string AffineRelationDebugString(int ref) const;
 
   // Makes sure the domain of ref and of its representative (ref = coeff * rep +
-  // offset) are in sync. Returns false on unsat.
-  bool PropagateAffineRelation(int var);
-  bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
+  // offset) are in sync. Returns `kUnsat` on unsat.
+  FeasibilityStatus PropagateAffineRelation(int var);
+  FeasibilityStatus PropagateAffineRelation(int var, int rep, int64_t coeff,
+                                            int64_t offset);
 
   // Creates the internal structure for any new variables in working_model_.
-  void InitializeNewDomains();
+  FeasibilityStatus InitializeNewDomains();
 
   // This is a bit hacky. Clear some fields. See call site.
   //
@@ -790,12 +770,12 @@ class PresolveContext {
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
   //
-  // Returns false if the model becomes UNSAT.
+  // Returns `kUnsat` if the model becomes UNSAT.
   //
   // TODO(user): This function is not always correct if
   // !context->DomainOf(var).contains(value), we could make it correct but it
   // might be a bit expensive to do so. For now we just have a DCHECK().
-  bool InsertVarValueEncoding(int literal, int var, int64_t value);
+  FeasibilityStatus InsertVarValueEncoding(int literal, int var, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and return it.
@@ -811,7 +791,7 @@ class PresolveContext {
   // relations are updated.
   //
   // Note that this might create a new Boolean variable.
-  void CanonicalizeDomainOfSizeTwo(int var);
+  FeasibilityStatus CanonicalizeDomainOfSizeTwo(int var);
 
   // Returns true if a literal attached to ref == value exists.
   // It assigns the corresponding literal to `literal` if non null.
@@ -846,13 +826,17 @@ class PresolveContext {
   // Returns the number of values encoded for the given reference.
   int64_t GetValueEncodingSize(int ref) const;
 
-  // Stores the fact that literal implies var == value.
-  // It returns true if that information is new.
-  bool StoreLiteralImpliesVarEqValue(int literal, int var, int64_t value);
+  // Stores the fact that literal implies var == value. Marks `var` in
+  // `modified_domains` and returns `kModified` if that information is new,
+  // `kUnchanged` if already present or trivial, or `kUnsat` on infeasibility.
+  ChangeStatus StoreLiteralImpliesVarEqValue(int literal, int var,
+                                             int64_t value);
 
-  // Stores the fact that literal implies var != value.
-  // It returns true if that information is new.
-  bool StoreLiteralImpliesVarNeValue(int literal, int var, int64_t value);
+  // Stores the fact that literal implies var != value. Marks `var` in
+  // `modified_domains` and returns `kModified` if that information is new,
+  // `kUnchanged` if already present or trivial, or `kUnsat` on infeasibility.
+  ChangeStatus StoreLiteralImpliesVarNeValue(int literal, int var,
+                                             int64_t value);
 
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
@@ -868,16 +852,22 @@ class PresolveContext {
   // the case, we also have an affine linear constraint, so we can't really do
   // anything with that variable since it appears in at least two constraints.
   void ReadObjectiveFromProto();
+
+  // Adds `delta` to the integer objective offset and shifts
+  // `objective_domain_`. Returns true on success (including when `delta == 0`),
+  // or false without modifying the offset if adding `delta` would overflow
+  // `int64_t`.
   bool AddToObjectiveOffset(int64_t delta);
-  [[nodiscard]] bool RestrictObjectiveDomain(const Domain& domain);
-  [[nodiscard]] bool CanonicalizeOneObjectiveVariable(int var);
-  [[nodiscard]] bool CanonicalizeObjective(bool simplify_domain = true);
+
+  FeasibilityStatus RestrictObjectiveDomain(const Domain& domain);
+  FeasibilityStatus CanonicalizeOneObjectiveVariable(int var);
+  FeasibilityStatus CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
 
   // When the objective is a singleton, we can always restrict the domain of var
-  // so that the current objective domain is non-constraining. Returns false
+  // so that the current objective domain is non-constraining. Returns `kUnsat`
   // on UNSAT.
-  bool RecomputeSingletonObjectiveDomain();
+  FeasibilityStatus RecomputeSingletonObjectiveDomain();
 
   // Some functions need the domain to be up to date in the proto.
   // This makes sure our in-memory domains are written back to the proto.
@@ -886,13 +876,14 @@ class PresolveContext {
   // Checks if the given exactly_one is included in the objective, and simplify
   // the objective by adding a constant value to all the exactly one terms.
   //
-  // Returns true if a simplification was done.
+  // Returns true if every literal appears in the objective and shifting by the
+  // minimum coefficient succeeds without overflow, or false otherwise.
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
 
   // We can always add a multiple of sum X - 1 == 0 to the objective.
-  // However, depending on which multiple we choose, this might break our
-  // overflow preconditions on the objective. So we return false and do nothing
-  // if this happens.
+  // Returns true if shifting by `shift` succeeds (including as a no-op when
+  // `shift == 0`), or false without modifying the objective if the shift would
+  // break our overflow preconditions.
   bool ShiftCostInExactlyOne(absl::Span<const int> exactly_one, int64_t shift);
 
   // Allows manipulating the objective coefficients.
@@ -904,12 +895,13 @@ class PresolveContext {
   // objective, remove it from the objective by transferring its cost to other
   // variables in the equality.
   //
-  // Returns false, if the substitution cannot be done. This is the case if the
-  // model becomes UNSAT or if doing it will result in an objective that does
-  // not satisfy our overflow preconditions. Note that this can only happen if
-  // the substituted variable is not implied free (i.e. if its domain is smaller
-  // than the implied domain from the equality).
-  [[nodiscard]] bool SubstituteVariableInObjective(
+  // Returns `kUnsat` if the model becomes UNSAT, `kUnchanged` if doing the
+  // substitution would result in an objective that does not satisfy our
+  // overflow preconditions, or `kModified` if the substitution was performed.
+  // Note that `kUnsat` can only happen if the substituted variable is not
+  // implied free (i.e. if its domain is smaller than the implied domain from
+  // the equality).
+  ChangeStatus SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
       const ConstraintProto& equality,
       bool substitution_does_not_change_objective_domain = false);
@@ -1018,6 +1010,8 @@ class PresolveContext {
   // This is slow O(problem_size) but can be used to debug presolve, either by
   // pinpointing the transition from feasible to infeasible or the other way
   // around if for some reason the presolve drops constraints that it shouldn't.
+  // Returns true iff the current crushed hint assigns all variables and
+  // satisfies `working_model_`.
   bool DebugTestHintFeasibility();
 
   SolverLogger* logger() const { return logger_; }
@@ -1054,7 +1048,7 @@ class PresolveContext {
   class ClearedConstraintStatus {
    public:
     constexpr operator CanonicalizationStatus() const { return kCanonical; }
-    constexpr operator FeasibilityStatus() const { return kUnknown; }
+    constexpr operator FeasibilityStatus() const { return kOk; }
     friend constexpr bool operator==(ClearedConstraintStatus,
                                      ClearedConstraintStatus) = default;
   };
@@ -1135,29 +1129,34 @@ class PresolveContext {
     ConstraintCanonicalizer(PresolveContext* context, ConstraintProto* ct)
         : context_(context), ct_(ct) {}
 
-    bool Canonicalize();
+    ChangeStatus Canonicalize();
 
    private:
-    void DivideLinearByGcd();
-    void CanonicalizeLinear();
-    void CanonicalizeLinearOfSizeOne();
-    void CanonicalizeBoolOr();
-    void CanonicalizeBoolAnd();
-    void CanonicalizeAtMostOrExactlyOne();
-    void CanonicalizeAtMostOne();
-    void CanonicalizeExactlyOne();
-    void CanonicalizeBoolXor();
+    FeasibilityStatus DivideLinearByGcd();
+    FeasibilityStatus CanonicalizeLinear();
+    FeasibilityStatus CanonicalizeLinearOfSizeOne();
+    FeasibilityStatus CanonicalizeBoolOr();
+    FeasibilityStatus CanonicalizeBoolAnd();
+    FeasibilityStatus CanonicalizeAtMostOrExactlyOne();
+    FeasibilityStatus CanonicalizeAtMostOne();
+    FeasibilityStatus CanonicalizeExactlyOne();
+    FeasibilityStatus CanonicalizeBoolXor();
     void CanonicalizeLinMax();
     template <typename GraphProto>
-    void CanonicalizeGraph(bool is_routes, GraphProto* proto);
-    void CanonicalizeReservoir();
+    FeasibilityStatus CanonicalizeGraph(bool is_routes, GraphProto* proto);
+    FeasibilityStatus CanonicalizeReservoir();
 
     // Shared helpers.
     void ExploitEquivalenceRelations();
+    // Canonicalizes `ct_->enforcement_literal()` (removing true and duplicate
+    // literals, and sorting). Returns true if the constraint remains active and
+    // type-specific canonicalization should proceed, or false if an enforcement
+    // literal is false or contradictory (in which case the constraint is
+    // cleared or marked as an unperformed interval).
     bool CanonicalizeEnforcementLiterals();
     void MarkOptionalIntervalAsFalse();
     void RemoveConstraint();
-    void MarkConstraintAsFalse(absl::string_view reason);
+    FeasibilityStatus MarkConstraintAsFalse(absl::string_view reason);
     void CanonicalizeAllExprs();
     void SortExpressions(
         google::protobuf::RepeatedPtrField<LinearExpressionProto>* exprs);
@@ -1168,12 +1167,16 @@ class PresolveContext {
   };
 
   // Helper to add an affine relation x = c.y + o to the given repository.
+  // Returns true if the relation was added to `repo`, or false if `x` and `y`
+  // were already related in `repo` (or neither representative was allowed).
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
 
   // Graph-free structural canonicalization of a single constraint using
-  // current domains and affine relations. Returns true if `*ct` was mutated in
-  // a way that may change its variable usage or structure.
-  bool CanonicalizeConstraint(ConstraintProto* ct);
+  // current domains and affine relations. Returns `kModified` if `*ct` was
+  // mutated in a way that may change its variable usage or structure.
+  ChangeStatus CanonicalizeConstraint(ConstraintProto* ct);
+  ChangeStatus CanonicalizeConstraintInternal(int c,
+                                              bool force_variable_usage_update);
 
   // Makes sure we only insert encoding about the current representative.
   //
@@ -1182,20 +1185,22 @@ class PresolveContext {
   bool CanonicalizeEncoding(int* ref, int64_t* value) const;
 
   // Inserts a half reified var value encoding (literal => var ==/!= value).
-  // It returns true if the new state is different from the old state.
+  // Returns `kModified` if the new state is different from the old state,
+  // `kUnchanged` if already present, or `kUnsat` on infeasibility.
   // Note that if imply_eq is false, the literal will be stored in its negated
   // form.
   //
   // Thus, if you detect literal <=> var == value, then two calls must be made:
   //     InsertHalfVarValueEncoding(literal, var, value, true);
   //     InsertHalfVarValueEncoding(NegatedRef(literal), var, value, false);
-  bool InsertHalfVarValueEncoding(int literal, int var, int64_t value,
-                                  bool imply_eq);
+  ChangeStatus InsertHalfVarValueEncoding(int literal, int var, int64_t value,
+                                          bool imply_eq);
 
   // Insert fully reified var-value encoding.
-  // Returns false if this makes the problem infeasible.
-  bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
-                                      bool add_constraints);
+  // Returns `kUnsat` if this makes the problem infeasible.
+  FeasibilityStatus InsertVarValueEncodingInternal(int literal, int var,
+                                                   int64_t value,
+                                                   bool add_constraints);
 
   SolverLogger* logger_;
   const SatParameters& params_;
@@ -1207,9 +1212,6 @@ class PresolveContext {
 
   // Constraint-side lazy canonicalization state.
   ConstraintCanonicalizationState canonicalization_;
-
-  // Initially false, and set to true on the first inconsistency.
-  bool is_unsat_ = false;
 
   // The current domain of each variable.
   std::vector<Domain> domains_;
@@ -1286,12 +1288,15 @@ class PresolveContext {
 };
 
 // Utility function to load the current problem into an in-memory representation
-// that will be used for probing. Returns false if UNSAT.
-bool LoadModelForProbing(PresolveContext* context, Model* local_model);
+// that will be used for probing. Returns `kUnsat` if UNSAT.
+FeasibilityStatus LoadModelForProbing(PresolveContext* context,
+                                      Model* local_model);
 
-bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
-                          PresolveContext* context, Model* local_model,
-                          absl::string_view name_for_logging);
+FeasibilityStatus LoadModelForPresolve(const CpModelProto& model_proto,
+                                       SatParameters params,
+                                       PresolveContext* context,
+                                       Model* local_model,
+                                       absl::string_view name_for_logging);
 
 void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
                                           const PresolveContext* context,

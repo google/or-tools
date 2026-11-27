@@ -25,6 +25,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 
 namespace operations_research {
 namespace sat {
@@ -53,7 +54,7 @@ TEST(TableTest, DuplicateVariablesInTable) {
 
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   CanonicalizeTable(&context, model_proto.mutable_constraints(0));
 
@@ -95,7 +96,7 @@ TEST(TableTest, CanonicalizeTableFixedColumns) {
 
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   CanonicalizeTable(&context, model_proto.mutable_constraints(0));
 
@@ -138,7 +139,7 @@ TEST(TableTest, NormalizeNoRemove) {
 
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
 
   CanonicalizeTable(&context, model_proto.mutable_constraints(0));
 

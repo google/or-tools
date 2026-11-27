@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
@@ -55,8 +56,9 @@ TEST(ModelCopyTest, IntervalsAddLinearConstraints) {
 
   Model model;
   CpModelProto new_cp_model;
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ -10, 10 ] }
@@ -107,8 +109,9 @@ TEST(ModelCopyTest, IntervalsWithFixedStartAndEnd) {
 
   Model model;
   CpModelProto new_cp_model;
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 10, 10 ] }
     variables { domain: [ 10, 10 ] }
@@ -142,8 +145,9 @@ TEST(ModelCopyTest, ClearInternalFields) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  EXPECT_TRUE(CopyModel(initial_model, /*clear_internal_fields=*/true,
-                        &new_cp_model, &model));
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/true,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -179,8 +183,9 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -231,8 +236,9 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -256,10 +262,11 @@ TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
       kNoVariableMapping, 1, -3, -3, 1, 0, kNoVariableMapping};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -293,10 +300,11 @@ TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
       kNoVariableMapping, 0, 1, -2, 0, -2};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -327,10 +335,11 @@ TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
       kNoVariableMapping, kNoVariableMapping, 0, 1, 2, 3};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -364,10 +373,11 @@ TEST(ModelCopyTest, RemapVariablesInLinear) {
   const std::vector<int> variable_mapping = {kNoVariableMapping, -1, 1, 2, 2};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -402,10 +412,11 @@ TEST(ModelCopyTest, RemapVariablesInLinear_CanonicalizeSingleBoolInDomain) {
   const std::vector<int> variable_mapping = {0, -1};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   // 5x + 6y \in [6, 7] is remapped to 5x + 6.not(x) = 6 - x \in [6, 7], whose
   // unique solution is x = 0.
@@ -440,10 +451,11 @@ TEST(ModelCopyTest, RemapVariablesInLegacyInverse) {
                                              kNoVariableMapping, 0};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
@@ -483,10 +495,11 @@ TEST(ModelCopyTest, RemapVariablesInInverse) {
   const std::vector<int> variable_mapping = {kNoVariableMapping, 0, 1};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
@@ -529,10 +542,11 @@ TEST(ModelCopyTest, ExpandNonAffineExpressionsInInverse) {
   Model model;
   ModelCopy model_copy(&new_cp_model, &model);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
@@ -575,12 +589,14 @@ TEST(ModelCopyTest, RemapVariablesInObjective) {
   const std::vector<int> variable_mapping = {0, -1};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model, /*clear_internal_fields=*/false));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+                initial_model, /*clear_internal_fields=*/false),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   // 5x + 6y \in [0, 50] is remapped to 5x + 6.not(x) = 6 - x \in [0, 50].
   const CpModelProto expected_model = ParseTestProto(R"pb(
@@ -611,12 +627,14 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
   const std::vector<int> variable_mapping = {0, -1};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
-  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model, /*clear_internal_fields=*/false));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
+  EXPECT_EQ(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+                initial_model, /*clear_internal_fields=*/false),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   // 5.5x + 6.25y + 2.75 is remapped to 5.5x + 6.25 * (1 - x) + 2.75.
   const CpModelProto expected_model = ParseTestProto(R"pb(
@@ -647,13 +665,15 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
   const std::vector<int> variable_mapping = {0, -1};
   ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
-  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
-                                                      /*first_copy=*/true));
+  EXPECT_EQ(model_copy.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/true),
+            kOk);
   model_copy.ImportSolutionHint(initial_model);
-  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model, /*clear_internal_fields=*/false));
-  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+  EXPECT_EQ(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+                initial_model, /*clear_internal_fields=*/false),
+            kOk);
+  EXPECT_EQ(model_copy.FinishCopy(initial_model), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -711,8 +731,9 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -750,8 +771,9 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -790,8 +812,9 @@ TEST(ModelCopyTest, ElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -842,8 +865,9 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
-            &model);
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -913,8 +937,9 @@ TEST(ModelCopyTest, CanonicalizeLinMaxOnCopy) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  EXPECT_TRUE(CopyModel(initial_model, /*clear_internal_fields=*/false,
-                        &new_cp_model, &model));
+  EXPECT_EQ(CopyModel(initial_model, /*clear_internal_fields=*/false,
+                      &new_cp_model, &model),
+            kOk);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -935,8 +960,9 @@ TEST(ModelCopyTest, CopyModelAdvancesDeterministicTime) {
 
   CpModelProto copied_proto;
   Model model;
-  ASSERT_TRUE(
-      CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto, &model));
+  ASSERT_EQ(
+      CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto, &model),
+      kOk);
   EXPECT_DOUBLE_EQ(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
       EstimateCopyDeterministicTime(ComputeModelStats(proto)));
@@ -945,8 +971,9 @@ TEST(ModelCopyTest, CopyModelAdvancesDeterministicTime) {
   // the input model is still recorded.
   proto.add_constraints()->mutable_bool_or();  // Empty clause -> UNSAT.
   Model unsat_model;
-  EXPECT_FALSE(CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto,
-                         &unsat_model));
+  EXPECT_EQ(CopyModel(proto, /*clear_internal_fields=*/true, &copied_proto,
+                      &unsat_model),
+            kUnsat);
   EXPECT_DOUBLE_EQ(
       unsat_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime(),
       EstimateCopyDeterministicTime(ComputeModelStats(proto)));
@@ -985,7 +1012,7 @@ TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
   DenseModelCopy copy("test", proto, &shared_bounds_manager,
                       &shared_clauses_manager);
   bool updated = true;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_EQ(copy.MaybeUpdate(updated), kOk);
   EXPECT_FALSE(updated);
   EXPECT_EQ(&copy.proto(), &proto);
   EXPECT_EQ(copy.bounds_timestamp(), -1);
@@ -996,7 +1023,7 @@ TEST(DenseModelCopyTest, IncrementalBoundUpdatesTightenDomainsWithoutRebuild) {
   shared_bounds_manager.ReportPotentialNewBounds("test", {0}, {2}, {8});
   shared_bounds_manager.Synchronize();
 
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_EQ(copy.MaybeUpdate(updated), kOk);
   EXPECT_FALSE(updated);
   EXPECT_EQ(&copy.proto(), &proto);
   EXPECT_EQ(copy.bounds_timestamp(), -1);
@@ -1039,7 +1066,7 @@ TEST(DenseModelCopyTest, MinVariableReductionRatioGatesRebuilds) {
   EXPECT_GT(initial_estimated_dtime, 1e-6);
 
   bool updated = true;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_EQ(copy.MaybeUpdate(updated), kOk);
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains().size(), 20);
 
@@ -1047,13 +1074,13 @@ TEST(DenseModelCopyTest, MinVariableReductionRatioGatesRebuilds) {
   // min_variable_reduction_ratio = 1/19 (~5.26%), triggered at 1/20.5 (~4.88%).
   shared_bounds_manager.ReportPotentialNewBounds("test", {0}, {5}, {5});
   shared_bounds_manager.Synchronize();
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 19.0));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 1.0 / 19.0), kOk);
   EXPECT_FALSE(updated);
   EXPECT_TRUE(copy.var_domains().IsFixed(0));
   EXPECT_EQ(copy.var_domains()[0].FixedValue(), 5);
   EXPECT_EQ(copy.var_domains().size(), 20);
 
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 20.5));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 1.0 / 20.5), kOk);
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 19);
   EXPECT_EQ(copy.proto().variables_size(), 19);
@@ -1071,11 +1098,11 @@ TEST(DenseModelCopyTest, MinVariableReductionRatioGatesRebuilds) {
       "test", {1, 2, 3, 4, 5, 6, 7, 8, 9}, {6, 3, 4, 2, 2, 2, 3, 4, 5},
       {6, 3, 4, 2, 2, 2, 3, 4, 5});
   shared_bounds_manager.Synchronize();
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 1.5));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 1.0 / 1.5), kOk);
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains().size(), 19);
 
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 1.0 / 2.5));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 1.0 / 2.5), kOk);
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 10);
   EXPECT_LT(EstimateCopyDeterministicTime(ComputeModelStats(copy.proto())),
@@ -1105,7 +1132,7 @@ TEST(DenseModelCopyTest, BinaryEquivalencesAndConflictingBounds) {
   DenseModelCopy copy("test", proto, &shared_bounds_manager,
                       &shared_clauses_manager);
   bool updated = true;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_EQ(copy.MaybeUpdate(updated), kOk);
   EXPECT_FALSE(updated);
 
   // Export x1 == not(x0) via binary clauses (x0 V x1) and (~x0 V ~x1).
@@ -1115,10 +1142,10 @@ TEST(DenseModelCopyTest, BinaryEquivalencesAndConflictingBounds) {
   ASSERT_EQ(shared_clauses_manager.NumEquivalences(), 1);
 
   // Deferred when min_variable_reduction_ratio exceeds 1/10.
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.2));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 0.2), kOk);
   EXPECT_FALSE(updated);
 
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.1));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 0.1), kOk);
   EXPECT_TRUE(updated);
   EXPECT_EQ(copy.var_domains().size(), 9);
   EXPECT_EQ(copy.equivalences_timestamp(), 1);
@@ -1126,15 +1153,15 @@ TEST(DenseModelCopyTest, BinaryEquivalencesAndConflictingBounds) {
   // Fix x0 = 1 incrementally without rebuilding; dense var 0 becomes [1, 1].
   shared_bounds_manager.ReportPotentialNewBounds("sat", {0}, {1}, {1});
   shared_bounds_manager.Synchronize();
-  ASSERT_TRUE(copy.MaybeUpdate(updated, 0.5));
+  ASSERT_EQ(copy.MaybeUpdate(updated, 0.5), kOk);
   EXPECT_FALSE(updated);
   EXPECT_EQ(copy.var_domains()[0], Domain(1));
 
-  // Reporting x1 = 1 conflicts with x1 == not(x0) and must return false
+  // Reporting x1 = 1 conflicts with x1 == not(x0) and must return kUnsat
   // cleanly without crashing.
   shared_bounds_manager.ReportPotentialNewBounds("sat", {1}, {1}, {1});
   shared_bounds_manager.Synchronize();
-  EXPECT_FALSE(copy.MaybeUpdate(updated));
+  EXPECT_EQ(copy.MaybeUpdate(updated), kUnsat);
 }
 
 TEST(DenseModelCopyTest, ComputeModelStatsTracksSchedulingAndLinearReductions) {
@@ -1230,8 +1257,9 @@ TEST(DenseModelCopyTest, ComputeModelStatsTracksSchedulingAndLinearReductions) {
 
   CpModelProto copied_proto;
   Model sat_model;
-  ASSERT_TRUE(CopyModel(proto, /*clear_internal_fields=*/false, &copied_proto,
-                        &sat_model));
+  ASSERT_EQ(CopyModel(proto, /*clear_internal_fields=*/false, &copied_proto,
+                      &sat_model),
+            kOk);
   const ModelStats initial_stats = ComputeModelStats(copied_proto);
   EXPECT_EQ(initial_stats.num_variables, 10);
   EXPECT_EQ(initial_stats.num_intervals, 2);
@@ -1250,7 +1278,7 @@ TEST(DenseModelCopyTest, ComputeModelStatsTracksSchedulingAndLinearReductions) {
   shared_bounds.Synchronize();
 
   bool updated = false;
-  ASSERT_TRUE(copy.MaybeUpdate(updated));
+  ASSERT_EQ(copy.MaybeUpdate(updated), kOk);
   EXPECT_TRUE(updated);
   const ModelStats reduced_stats = ComputeModelStats(copy.proto());
   EXPECT_EQ(reduced_stats.num_variables, 9);
@@ -1286,20 +1314,31 @@ TEST(ModelCopyTest, ImportAndSimplifyConstraintsRespectsTimeLimitOnLnsCopy) {
 
   // When first_copy is false (as in LNS submodel creation) and the time limit
   // is reached, ImportAndSimplifyConstraints must abort promptly and return
-  // false.
+  // kCopyTimeLimitReached (distinct from kUnsat).
   CpModelProto lns_model;
   ModelCopy lns_copier(&lns_model, &model);
-  ASSERT_TRUE(lns_copier.ImportVariables(initial_model));
-  EXPECT_FALSE(lns_copier.ImportAndSimplifyConstraints(initial_model,
-                                                       /*first_copy=*/false));
+  ASSERT_EQ(lns_copier.ImportVariables(initial_model), kOk);
+  EXPECT_EQ(lns_copier.ImportAndSimplifyConstraints(initial_model,
+                                                    /*first_copy=*/false),
+            kCopyTimeLimitReached);
   EXPECT_EQ(lns_model.constraints_size(), 0);
+
+  std::vector<Domain> domains = {Domain(0, 10), Domain(0, 10)};
+  std::vector<int> interval_mapping;
+  EXPECT_EQ(CopyModelAdvanced(initial_model, /*clear_internal_fields=*/false,
+                              domains, /*active_constraints=*/nullptr,
+                              &interval_mapping, &lns_model, &model),
+            kCopyTimeLimitReached);
 
   // When first_copy is true, initial model import still completes.
   CpModelProto first_copy_model;
   ModelCopy first_copier(&first_copy_model, &model);
-  ASSERT_TRUE(first_copier.ImportVariables(initial_model));
-  EXPECT_TRUE(first_copier.ImportAndSimplifyConstraints(initial_model,
-                                                        /*first_copy=*/true));
+  ASSERT_EQ(first_copier.ImportVariables(initial_model), kOk);
+  const CopyStatus first_copy_status =
+      first_copier.ImportAndSimplifyConstraints(initial_model,
+                                                /*first_copy=*/true);
+  EXPECT_TRUE(first_copy_status.ok());
+  EXPECT_EQ(first_copy_status, kOk);
   EXPECT_EQ(first_copy_model.constraints_size(), 1500);
 }
 

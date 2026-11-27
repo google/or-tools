@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_status.h"
 
 namespace operations_research {
 namespace sat {
@@ -249,7 +250,7 @@ class DualBoundStrengthening {
   // blocking in one direction. Currently we only do that for implication, so
   // that if we have two Booleans such that a + b <= 1 we transform that to = 1
   // and we remove one variable since we now have an equivalence relation.
-  bool Strengthen(PresolveContext* context);
+  FeasibilityStatus Strengthen(PresolveContext* context);
 
   // The given ref can always freely decrease until the returned value.
   // Note that this does not take into account the domain of the variable.
@@ -289,10 +290,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 
 // Once detected, exploit the dominance relations that appear in the same
 // constraint. This does a full scan of the model.
-//
-// Returns false if the problem is infeasible.
-bool ExploitDominanceRelations(const VarDomination& var_domination,
-                               PresolveContext* context);
+FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
+                                            PresolveContext* context);
 
 // Scan the model so that dual_bound_strengthening.Strengthen() works.
 void ScanModelForDualBoundStrengthening(

@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstdint>
 #include <iterator>
 #include <optional>
@@ -23,8 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
-#include "absl/base/macros.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"

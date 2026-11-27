@@ -36,6 +36,7 @@
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -44,6 +45,12 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
+
+MPModelProto ClampForTest(const SatParameters& params, MPModelProto mp_model) {
+  SolverLogger logger;
+  CHECK(ClampVariableBounds(params, &mp_model, &logger));
+  return mp_model;
+}
 
 // Runs DetectAndConvertTotallyUnimodularComponent() on all residual continuous
 // components of a model and converts the remaining variables and constraints to
@@ -54,8 +61,8 @@ class ComponentPipeline {
 
   ComponentPipeline(const SatParameters& params, MPModelProto mp_model)
       : params_(params),
-        original_model_(mp_model),
-        wrapper_(std::move(mp_model)),
+        original_model_(ClampForTest(params, std::move(mp_model))),
+        wrapper_(original_model_),
         states_(InitialVariableStates(wrapper_)),
         components_(SplitIntoResidualContinuousComponents(wrapper_)),
         var_to_local_col_(wrapper_.num_variables(), -1) {
@@ -701,6 +708,7 @@ TEST(DetectAndConvertTotallyUnimodularComponentTest,
     EXPECT_THAT(cp_model.constraints(0).linear().domain(),
                 ElementsAre(-15497, -15497));
     EXPECT_LE(scaler.max_unrounding_error, 1e-9);
+    EXPECT_LE(scaler.max_total_unscaling_error, 1e-9);
   }
   {
     const MPModelProto active_cis4_model = ParseTestProto(R"pb(
@@ -734,6 +742,13 @@ TEST(DetectAndConvertTotallyUnimodularComponentTest,
     EXPECT_THAT(cp_model.constraints(0).linear().domain(),
                 ElementsAre(-452628, -452627));
     EXPECT_LE(scaler.max_unrounding_error, 1e-6);
+    EXPECT_LE(scaler.max_total_unscaling_error, 1e-6);
+    for (const int64_t rhs : {int64_t{-452628}, int64_t{-452627}}) {
+      const double x0 = 0.0;
+      const double x1 = static_cast<double>(-rhs) / s20;
+      const double viol = std::abs((x0 - x1) - (-0.43165928571429));
+      EXPECT_LE(viol, scaler.max_total_unscaling_error);
+    }
   }
 
   // An exact half-integer scaled equality `524288 * (x0 - x1) == 0.5` is scaled
@@ -1156,6 +1171,73 @@ TEST(TightenResidualTotallyUnimodularVariableBoundsTest,
   EXPECT_DOUBLE_EQ(mp_model.variable(0).upper_bound(), 100003.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(1).upper_bound(), 100003.0);
   EXPECT_DOUBLE_EQ(mp_model.variable(2).upper_bound(), 100003.0);
+}
+
+TEST(DetectAndConvertTotallyUnimodularComponentTest,
+     TotalUnscalingErrorBoundsShiftedAndClampedRows) {
+  // Shifted continuous variables (`lb > 0` triggers FinalCpSatShiftValue-like
+  // shifting inside ScaleVariables) with non-dyadic rational scaling (`s = 3`)
+  // and `mip_tight_precision`-snapped variable bounds (`clamp_ub > 0`).
+  SatParameters params;
+  params.set_mip_automatically_scale_variables(true);
+  params.set_mip_proper_relaxation(true);
+  params.set_mip_tight_precision(1e-6);
+
+  MPModelProto mp_model;
+  for (int v = 0; v < 2; ++v) {
+    MPVariableProto* var = mp_model.add_variable();
+    var->set_lower_bound(10.0 / 3.0 + (v == 0 ? -4e-7 : 0.0));
+    var->set_upper_bound(16.0 / 3.0);
+    var->set_is_integer(false);
+  }
+  MPConstraintProto* ct = mp_model.add_constraint();
+  ct->add_var_index(0);
+  ct->add_var_index(1);
+  ct->add_coefficient(1.0);
+  ct->add_coefficient(-1.0);
+  ct->set_lower_bound(-1.0 / 3.0);
+  ct->set_upper_bound(1.0 / 3.0);
+
+  ComponentPipeline pipeline(params, mp_model);
+  EXPECT_THAT(pipeline.RunTum(), ElementsAre(3.0, 3.0));
+  CpModelProto cp_model;
+  ConstraintScaler scaler;
+  ASSERT_TRUE(pipeline.ConvertToCpModel(&cp_model, &scaler));
+  EXPECT_EQ(ValidateCpModel(cp_model), "");
+
+  const auto& states = pipeline.states();
+  const int64_t lb0 = cp_model.variables(0).domain(0);
+  const int64_t ub0 = cp_model.variables(0).domain(1);
+  const int64_t lb1 = cp_model.variables(1).domain(0);
+  const int64_t ub1 = cp_model.variables(1).domain(1);
+  ASSERT_TRUE(std::isfinite(scaler.max_total_unscaling_error));
+  constexpr int64_t kScale = 3;
+  ASSERT_EQ(states[0].scaling, static_cast<double>(kScale));
+  ASSERT_EQ(states[1].scaling, static_cast<double>(kScale));
+  for (int64_t y0 = lb0; y0 <= ub0; ++y0) {
+    for (int64_t y1 = lb1; y1 <= ub1; ++y1) {
+      if (!SolutionIsFeasible(cp_model, {y0, y1})) continue;
+      TightSum lb_viol;
+      lb_viol.AddProd(ct->lower_bound(), kScale)
+          .AddProd(-scaler.max_total_unscaling_error, kScale)
+          .Add(-y0)
+          .Add(-states[0].shift)
+          .Add(y1)
+          .Add(states[1].shift);
+      EXPECT_LE(lb_viol.TightUpperBound(), 0.0)
+          << "y=(" << y0 << ", " << y1 << ")";
+
+      TightSum ub_viol;
+      ub_viol.AddProd(-ct->upper_bound(), kScale)
+          .AddProd(-scaler.max_total_unscaling_error, kScale)
+          .Add(y0)
+          .Add(states[0].shift)
+          .Add(-y1)
+          .Add(-states[1].shift);
+      EXPECT_LE(ub_viol.TightUpperBound(), 0.0)
+          << "y=(" << y0 << ", " << y1 << ")";
+    }
+  }
 }
 
 }  // namespace

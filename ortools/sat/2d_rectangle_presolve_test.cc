@@ -42,6 +42,7 @@
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/sat_status.h"
 
 namespace operations_research {
 namespace sat {
@@ -90,7 +91,7 @@ TEST(RectanglePresolve, Basic) {
        .x_size = 5,
        .y_size = 5});
 
-  EXPECT_TRUE(PresolveFixed2dRectangles(input_in_range, &input));
+  EXPECT_EQ(PresolveFixed2dRectangles(input_in_range, &input), kModified);
   EXPECT_EQ(input.size(), 1);
 }
 
@@ -104,7 +105,7 @@ TEST(RectanglePresolve, Trim) {
        .x_size = 5,
        .y_size = 5});
 
-  EXPECT_TRUE(PresolveFixed2dRectangles(input_in_range, &input));
+  EXPECT_EQ(PresolveFixed2dRectangles(input_in_range, &input), kModified);
   EXPECT_THAT(input, ElementsAre(Rectangle{
                          .x_min = 1, .x_max = 5, .y_min = 1, .y_max = 5}));
 }
@@ -119,7 +120,7 @@ TEST(RectanglePresolve, FillBoundingBoxEdge) {
        .x_size = 5,
        .y_size = 5});
 
-  EXPECT_TRUE(PresolveFixed2dRectangles(input_in_range, &input));
+  EXPECT_EQ(PresolveFixed2dRectangles(input_in_range, &input), kModified);
   EXPECT_THAT(input, ElementsAre(Rectangle{
                          .x_min = 0, .x_max = 5, .y_min = 0, .y_max = 5}));
 }
@@ -144,7 +145,7 @@ TEST(RectanglePresolve, UseAreaNotOccupiable) {
        .x_size = 5,
        .y_size = 5});
 
-  EXPECT_TRUE(PresolveFixed2dRectangles(input_in_range, &input));
+  EXPECT_EQ(PresolveFixed2dRectangles(input_in_range, &input), kModified);
   EXPECT_THAT(input, ElementsAre(Rectangle{
                          .x_min = 15, .x_max = 25, .y_min = 0, .y_max = 10}));
 }
@@ -159,7 +160,7 @@ TEST(RectanglePresolve, RemoveOutsideBB) {
        .x_size = 5,
        .y_size = 5});
 
-  EXPECT_TRUE(PresolveFixed2dRectangles(input_in_range, &input));
+  EXPECT_EQ(PresolveFixed2dRectangles(input_in_range, &input), kModified);
   EXPECT_THAT(input, IsEmpty());
 }
 

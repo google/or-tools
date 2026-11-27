@@ -226,6 +226,26 @@ inline void ComputeScalingErrors(const BoundedLinearExpression& expr,
       max_relative_coeff_error, max_scaled_sum_error);
 }
 
+// Outward bounds on the exact unscaled activity `sum_i (a_i / s_i) * y_i` of a
+// constraint over integer domains `[lb_i, ub_i]`, given `[c_lb_i, c_ub_i]`
+// containing each exact coefficient `a_i / s_i`.
+struct ExactActivityBounds {
+  TightSum min_activity;
+  TightSum max_activity;
+  bool min_is_neg_inf = false;
+  bool max_is_pos_inf = false;
+
+  void Clear() {
+    min_activity.Clear();
+    max_activity.Clear();
+    min_is_neg_inf = false;
+    max_is_pos_inf = false;
+  }
+  void AddTerm(double c_lb, double c_ub, int64_t lb, int64_t ub);
+  double MaxLowerViolation(double orig_lb_upper) const;
+  double MaxUpperViolation(double orig_ub_lower) const;
+};
+
 // A constraint that was already scaled to integer coefficients and bounds,
 // see ConstraintScaler::AddAlreadyScaledConstraint().
 struct ScaledLinearConstraint {
@@ -249,6 +269,7 @@ struct ScaledLinearConstraint {
   double discretization_error = 0.0;
   double rounding_error = 0.0;
   double unrounding_error = 0.0;
+  double total_unscaling_error = 0.0;
 };
 
 // Helper to scale linear constraints with floating point coefficients to
@@ -315,6 +336,12 @@ struct ConstraintScaler {
   double max_rounding_error = 0.0;
   double max_unrounding_error = 0.0;
 
+  // Upper bound across all constraints on the exact-unscaling MIP constraint
+  // violation of any CP-SAT feasible integer solution `y` (mapped back via
+  // `x_i = (y_i + shift_i) / scaling_i`), evaluated per row at the emitted
+  // CP-SAT integer bounds.
+  double max_total_unscaling_error = 0.0;
+
   // Helper to compute tight rounding and unrounding error bounds.
   TightScalingErrorHelper tight_error_helper;
 
@@ -351,6 +378,19 @@ struct ConstraintScaler {
   TightSum tmp_discretization_ub;
   TightSum tmp_scaled_lb;
   TightSum tmp_scaled_ub;
+  ExactActivityBounds tmp_exact_activity;
+
+  // Shared implementation of `ScaleAndAddConstraint()` where `orig_lb_upper`
+  // is an upper bound on the exact shifted lower bound (or `-inf` if absent)
+  // and `orig_ub_lower` is a lower bound on the exact shifted upper bound (or
+  // `+inf` if absent), before `tight_precision` and discretization relaxations.
+  absl::Status ScaleAndAddConstraintImpl(
+      absl::Span<const int> vars, absl::Span<const double> coeffs,
+      double ct_lower_bound, double ct_upper_bound, double orig_lb_upper,
+      double orig_ub_lower, absl::string_view name,
+      absl::Span<const IntegerVariableProto* const> var_domains,
+      ConstraintProto* constraint, absl::Span<const double> coeffs_lb,
+      absl::Span<const double> coeffs_ub);
 
   // Private helpers. The first one fills `tmp_enforcement_values` with the
   // enforcement values of `mp_constraint` transformed according to `states`,
@@ -382,6 +422,19 @@ void AddTermErrorBounds(double c_lb, double c_ub, double err_lb, double err_ub,
 void TransformConstraint(const LinearConstraintView& ct,
                          absl::Span<const MipVariableState> states,
                          std::vector<double>* coeffs, double* lb, double* ub);
+
+// Computes an upper bound on the exact-unscaling MIP constraint violation of
+// any integer solution `y` satisfying `final_lb <= sum_i (r_i / gcd) * y_i <=
+// final_ub` (with `final_lb <= final_ub`) within the bounded variable domains
+// loaded in `tight_error_helper`. When `max_unrounding_error` is non-null, also
+// updates it with the unrounding error evaluated at `gcd * final_lb` and `gcd *
+// final_ub`.
+double ComputeBoundedRowTotalUnscalingError(
+    double scaling_factor, int64_t gcd, int64_t final_lb, int64_t final_ub,
+    double orig_lb_upper, double orig_ub_lower,
+    const ExactActivityBounds& activity_bounds,
+    TightScalingErrorHelper* tight_error_helper,
+    double* max_unrounding_error = nullptr);
 
 // Writes back the given states into `mp_model`: variable bounds and
 // integrality, scaled constraint coefficients, shifted constraint bounds,
@@ -728,8 +781,19 @@ bool ConvertVariableToCpVariable(const SatParameters& params, int var_index,
                                  IntegerVariableProto* cp_var,
                                  int* num_small_domains);
 
-// Logs constraint scaling and discretization statistics collected in `scaler`.
+// Computes an upper bound across all variables on the exact-unscaling MIP
+// variable violation of any CP-SAT feasible integer solution `y` (mapped back
+// via `x_v = (y_v + states[v].shift) / (states[v].scaling * pre_scaling_v)`).
+// When `pre_var_scaling` is non-empty, `mp_model` is assumed to have already
+// been scaled by `pre_var_scaling` (as after `DetectImpliedIntegers()`).
+double ComputeMaxVariableUnscalingError(
+    const MPModelProtoWrapper& mp_model,
+    absl::Span<const MipVariableState> states, const CpModelProto& cp_model,
+    absl::Span<const double> pre_var_scaling = {});
+
+// Logs variable and constraint scaling and discretization statistics.
 void DisplayConstraintScalingStats(const SatParameters& params,
+                                   double max_variable_unscaling_error,
                                    const ConstraintScaler& scaler,
                                    int num_clamped, int num_small_domains,
                                    SolverLogger* logger);

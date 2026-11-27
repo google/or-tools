@@ -34,6 +34,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -868,7 +869,7 @@ TEST(IntProdExpandTest, EnforcementLiterals) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { name: "b" domain: 0 domain: 1 }
@@ -1757,7 +1758,7 @@ TEST(AutomatonExpandTest, EverythingZero) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 0 }
@@ -1792,7 +1793,7 @@ TEST(AutomatonExpandTest, EverythingZeroWithEnforcementLiteral) {
   )pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
@@ -2386,8 +2387,8 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
     })pb");
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
-  context.InitializeNewDomains();
-  ExpandCpModel(&context);
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -2591,6 +2592,60 @@ TEST(TableExpandTest, UsedToFail) {
   EXPECT_EQ(INFEASIBLE, response.status());
 }
 
+TEST(TableExpandTest, LargeInt64ValuesInEnforcedTable) {
+  // Value 3000000000 exceeds INT32_MAX; truncating to int32_t falls outside the
+  // variable domain and would falsely forbid the enforced tuple.
+  const CpModelProto out_of_domain_truncation_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 3000000000, 3000000001 ] }
+    constraints {
+      enforcement_literal: -1
+      table {
+        exprs { vars: 1 coeffs: 1 }
+        values: 3000000000
+      }
+    }
+    objective { vars: 0 coeffs: 1 }
+  )pb");
+  const CpSolverResponse out_of_domain_response = SolveWithParameters(
+      out_of_domain_truncation_model, "cp_model_presolve:false");
+  ASSERT_EQ(out_of_domain_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(out_of_domain_response.solution(0), 0);
+  EXPECT_EQ(out_of_domain_response.solution(1), 3000000000);
+
+  // Value -1966646743685194926 truncates to int32_t -1343404206, which lies
+  // inside variable 1's domain and used to produce an infeasible solution when
+  // presolve was disabled.
+  const CpModelProto in_domain_truncation_model = ParseTextProtoOrDie(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables {
+      domain: [
+        -4611686018427387903,
+        1,
+        2862917735133603612,
+        2862917735133603613
+      ]
+    }
+    constraints {
+      enforcement_literal: -1
+      table { vars: 1 values: -1966646743685194926 }
+    }
+    search_strategy {
+      variable_selection_strategy: CHOOSE_LOWEST_MIN
+      exprs { offset: 152611499891835901 }
+    }
+    floating_point_objective { vars: 1 coeffs: 1 offset: 5.2570550136088467 }
+  )pb");
+  EXPECT_EQ(
+      SolveWithParameters(in_domain_truncation_model, "cp_model_presolve:true")
+          .status(),
+      CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(
+      SolveWithParameters(in_domain_truncation_model, "cp_model_presolve:false")
+          .status(),
+      CpSolverStatus::OPTIMAL);
+}
+
 TEST(LinMaxExpansionTest, SimpleEnumeration) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 5 ] }
@@ -2632,7 +2687,7 @@ TEST(LinMaxExpansionTest, GoldenTest) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_max_lin_max_size_for_expansion(4);
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 5 }
@@ -2676,7 +2731,7 @@ TEST(LinMaxExpansionTest, GoldenTestWithEnforcementLiterals) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_max_lin_max_size_for_expansion(4);
   PresolveContext context(&model, &initial_model, nullptr);
-  ExpandCpModel(&context);
+  EXPECT_EQ(ExpandCpModel(&context), kOk);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 5 }
@@ -2765,7 +2820,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
@@ -2836,7 +2891,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansionWithInteger) {
       ->set_encode_complex_linear_constraint_with_integer(true);
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
@@ -2889,7 +2944,7 @@ TEST(FinalExpansionForLinearConstraintTest,
   model.GetOrCreate<SatParameters>()->set_enumerate_all_solutions(true);
   PresolveContext context(&model, &initial_model, nullptr);
 
-  context.InitializeNewDomains();
+  EXPECT_EQ(context.InitializeNewDomains(), kOk);
   context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);

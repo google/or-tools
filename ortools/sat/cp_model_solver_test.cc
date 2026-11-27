@@ -7252,6 +7252,113 @@ TEST(SolveCpModelTest, EnforcedLinMaxRelaxationOverflow) {
   EXPECT_EQ(response_no_presolve.status(), CpSolverStatus::OPTIMAL);
 }
 
+TEST(SolveCpModelTest, EnforcedReservoirEncodingPostsolveNoOverflow) {
+  CpModelProto cp_model;
+  for (int i = 0; i < 5; ++i) {
+    AddVariable(0, 1, &cp_model);
+  }
+  AddVariable(-100, 100, &cp_model);
+
+  ConstraintProto* exo_ct = cp_model.add_constraints();
+  exo_ct->add_enforcement_literal(-2);
+  for (const int lit : {-5, 0, 1, 2, 0, 0}) {
+    exo_ct->mutable_exactly_one()->add_literals(lit);
+  }
+
+  ConstraintProto* res_ct = cp_model.add_constraints();
+  res_ct->add_enforcement_literal(1);
+  ReservoirConstraintProto* reservoir = res_ct->mutable_reservoir();
+  reservoir->set_min_level(int64_t{-354243663943431788});
+  reservoir->set_max_level(int64_t{1498667567261978554});
+  reservoir->add_time_exprs()->set_offset(1);
+  reservoir->add_active_literals(-1);
+  LinearExpressionProto* change = reservoir->add_level_changes();
+  change->add_vars(5);
+  change->add_coeffs(-1);
+  change->set_offset(int64_t{-4611615649683210239});
+
+  cp_model.mutable_floating_point_objective();
+
+  ASSERT_EQ(ValidateCpModel(cp_model), "");
+  SatParameters params;
+  params.set_num_workers(1);
+  const CpSolverResponse response = SolveWithParameters(cp_model, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(cp_model, response.solution()));
+
+  params.set_cp_model_presolve(false);
+  const CpSolverResponse response_no_presolve =
+      SolveWithParameters(cp_model, params);
+  ASSERT_EQ(response_no_presolve.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(cp_model, response_no_presolve.solution()));
+}
+
+TEST(SolveCpModelTest, SchedulingUpperBoundsScalingOverflow) {
+  CpModelProto cp_model;
+  AddVariable(0, 20, &cp_model);
+  AddVariable(0, 20, &cp_model);
+  AddVariable(0, 1, &cp_model);
+  AddVariable(0, 1, &cp_model);
+
+  for (const int v : {0, 1}) {
+    IntervalConstraintProto* interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval->mutable_start()->add_vars(v);
+    interval->mutable_start()->add_coeffs(1);
+    interval->mutable_size()->set_offset(5);
+    interval->mutable_end()->add_vars(v);
+    interval->mutable_end()->add_coeffs(1);
+    interval->mutable_end()->set_offset(5);
+  }
+  {
+    IntervalConstraintProto* interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval->mutable_start()->set_offset(0);
+    interval->mutable_size()->add_vars(2);
+    interval->mutable_size()->add_coeffs(134217729);
+    interval->mutable_size()->set_offset(10);
+    interval->mutable_end()->add_vars(2);
+    interval->mutable_end()->add_coeffs(134217729);
+    interval->mutable_end()->set_offset(10);
+  }
+
+  NoOverlapConstraintProto* m0 =
+      cp_model.add_constraints()->mutable_no_overlap();
+  m0->add_intervals(0);
+  m0->add_intervals(1);
+  NoOverlapConstraintProto* m1 =
+      cp_model.add_constraints()->mutable_no_overlap();
+  m1->add_intervals(2);
+  m1->add_intervals(0);
+
+  {
+    LinearConstraintProto* lin = cp_model.add_constraints()->mutable_linear();
+    lin->add_vars(0);
+    lin->add_coeffs(1);
+    lin->add_vars(1);
+    lin->add_coeffs(-1);
+    lin->add_domain(-100);
+    lin->add_domain(-5);
+  }
+  {
+    LinearConstraintProto* lin = cp_model.add_constraints()->mutable_linear();
+    lin->add_vars(2);
+    lin->add_coeffs(1);
+    lin->add_vars(3);
+    lin->add_coeffs(int64_t{-1868203835195824240});
+    lin->add_domain(int64_t{-1868203835195824240});
+    lin->add_domain(int64_t{100000000000});
+  }
+
+  ASSERT_EQ(ValidateCpModel(cp_model), "");
+  SatParameters params;
+  params.set_num_workers(1);
+  params.set_cp_model_presolve(false);
+  const CpSolverResponse response = SolveWithParameters(cp_model, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_TRUE(SolutionIsFeasible(cp_model, response.solution()));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

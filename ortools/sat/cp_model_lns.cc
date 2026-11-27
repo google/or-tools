@@ -56,6 +56,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -351,23 +352,27 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
 
     // When the model is unsat, we abort any update.
     // This shouldn't matter as it should be dealt with elsewhere.
-    if (!copier.ImportVariables(model_proto_with_only_variables_)) return;
+    if (copier.ImportVariables(model_proto_with_only_variables_).unsat()) {
+      return;
+    }
     if (ignored_constraints.empty()) {
-      if (!copier.ImportAndSimplifyConstraints(model_proto_)) return;
+      if (!copier.ImportAndSimplifyConstraints(model_proto_).ok()) return;
     } else {
       auto active_constraints = [&ignored_constraints](int c) {
         return !ignored_constraints.contains(c);
       };
-      if (!copier.ImportAndSimplifyConstraints(
-              model_proto_, /*first_copy=*/false, active_constraints)) {
+      if (!copier
+               .ImportAndSimplifyConstraints(model_proto_, /*first_copy=*/false,
+                                             active_constraints)
+               .ok()) {
         return;
       }
     }
-    if (!copier.ImportObjective(model_proto_,
-                                /*clear_internal_fields=*/false)) {
+    if (copier.ImportObjective(model_proto_, /*clear_internal_fields=*/false)
+            .unsat()) {
       return;
     }
-    if (!copier.FinishCopy(model_proto_)) return;
+    if (copier.FinishCopy(model_proto_).unsat()) return;
   }
 
   // We copied the model successfully, so commit.

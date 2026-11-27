@@ -43,6 +43,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
@@ -721,7 +722,7 @@ void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
 
 }  // namespace
 
-bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
+FeasibilityStatus DualBoundStrengthening::Strengthen(PresolveContext* context) {
   SolutionCrush& crush = context->solution_crush();
   num_deleted_constraints_ = 0;
   const CpModelProto& cp_model = context->WorkingModel();
@@ -735,7 +736,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(lb)));
+      CHECK_EQ(context->IntersectDomainWith(var, Domain(lb)), kOk);
       continue;
     }
 
@@ -745,7 +746,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
       ++num_fixed_vars;
-      CHECK(context->IntersectDomainWith(var, Domain(ub)));
+      CHECK_EQ(context->IntersectDomainWith(var, Domain(ub)), kOk);
       continue;
     }
 
@@ -763,7 +764,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
         ++num_fixed_vars;
         context->UpdateRuleStats("dual: fix variable with multiple choices");
-        CHECK(context->IntersectDomainWith(var, Domain(value)));
+        CHECK_EQ(context->IntersectDomainWith(var, Domain(value)), kOk);
         continue;
       }
     }
@@ -782,7 +783,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                               .Max()
                         : lb;
       context->UpdateRuleStats("dual: reduced domain");
-      CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
+      CHECK_EQ(context->IntersectDomainWith(var, Domain(new_lb, new_ub)), kOk);
     }
   }
   if (num_fixed_vars > 0) {
@@ -844,9 +845,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                     context->deductions.ImpliedDomain(enf, positive_ref));
         if (implied.IsEmpty()) {
           context->UpdateRuleStats("dual: fix variable");
-          if (!context->SetLiteralToFalse(enf)) return false;
-          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
-            return false;
+          if (context->SetLiteralToFalse(enf).unsat()) return kUnsat;
+          if (context->IntersectDomainWith(positive_ref, Domain(bound))
+                  .unsat()) {
+            return kUnsat;
           }
           CannotMove({enf, positive_ref});
           continue;
@@ -855,8 +857,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Corner case.
           if (implied.FixedValue() == bound) {
             context->UpdateRuleStats("dual: fix variable");
-            if (!context->IntersectDomainWith(positive_ref, implied)) {
-              return false;
+            if (context->IntersectDomainWith(positive_ref, implied).unsat()) {
+              return kUnsat;
             }
             CannotMove({positive_ref});
             continue;
@@ -876,17 +878,21 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           crush.SetVarToValueIf(positive_ref, bound, NegatedRef(enf));
           if (RefIsPositive(enf)) {
             // positive_ref = enf * implied + (1 - enf) * bound.
-            if (!context->StoreAffineRelation(
-                    positive_ref, enf, implied.FixedValue() - bound, bound)) {
-              return false;
+            if (context
+                    ->StoreAffineRelation(positive_ref, enf,
+                                          implied.FixedValue() - bound, bound)
+                    .unsat()) {
+              return kUnsat;
             }
           } else {
             // enf_var = PositiveRef(enf).
             // positive_ref = (1 - enf_var) * implied + enf_var * bound.
-            if (!context->StoreAffineRelation(positive_ref, PositiveRef(enf),
-                                              bound - implied.FixedValue(),
-                                              implied.FixedValue())) {
-              return false;
+            if (context
+                    ->StoreAffineRelation(positive_ref, PositiveRef(enf),
+                                          bound - implied.FixedValue(),
+                                          implied.FixedValue())
+                    .unsat()) {
+              return kUnsat;
             }
           }
           continue;
@@ -931,8 +937,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                                .IntersectionWith(var_domain);
         if (rhs.IsEmpty()) {
           context->UpdateRuleStats("linear1: infeasible");
-          if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
-            return false;
+          if (context->SetLiteralToFalse(ct.enforcement_literal(0)).unsat()) {
+            return kUnsat;
           }
           CannotMove({ref, var});
           context->ClearConstraint(ct_index);
@@ -973,9 +979,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // in this case `ct` is actually not blocking ref from decreasing.
               // We can thus set its hint to 0 to preserve the hint feasibility.
               crush.SetLiteralToValueIf(ref, false, encoding_lit);
-              if (!context->StoreBooleanEqualityRelation(encoding_lit,
-                                                         NegatedRef(ref))) {
-                return false;
+              if (context
+                      ->StoreBooleanEqualityRelation(encoding_lit,
+                                                     NegatedRef(ref))
+                      .unsat()) {
+                return kUnsat;
               }
             } else {
               if (encoding_lit == ref) continue;
@@ -985,8 +993,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // decreasing. We can thus set its hint to 0 to preserve the hint
               // feasibility.
               crush.SetLiteralToValueIf(ref, false, NegatedRef(encoding_lit));
-              if (!context->StoreBooleanEqualityRelation(encoding_lit, ref)) {
-                return false;
+              if (context->StoreBooleanEqualityRelation(encoding_lit, ref)
+                      .unsat()) {
+                return kUnsat;
               }
             }
             context->ClearConstraint(ct_index);
@@ -1014,11 +1023,21 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           FillDomainInProto(complement, new_ct->mutable_linear());
 
           if (rhs.IsFixed()) {
-            context->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value);
-            context->StoreLiteralImpliesVarNeValue(ref, var, value);
+            if (context
+                    ->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value)
+                    .unsat() ||
+                context->StoreLiteralImpliesVarNeValue(ref, var, value)
+                    .unsat()) {
+              return kUnsat;
+            }
           } else if (complement.IsFixed()) {
-            context->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value);
-            context->StoreLiteralImpliesVarEqValue(ref, var, value);
+            if (context
+                    ->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value)
+                    .unsat() ||
+                context->StoreLiteralImpliesVarEqValue(ref, var, value)
+                    .unsat()) {
+              return kUnsat;
+            }
           }
           continue;
         }
@@ -1069,8 +1088,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               if (ref == NegatedRef(other_ref)) {
                 context->UpdateRuleStats(
                     "dual: detected l => ct and not(l) => ct with unused l!");
-                if (!context->IntersectDomainWith(ref, Domain(0))) {
-                  return false;
+                if (context->IntersectDomainWith(ref, Domain(0)).unsat()) {
+                  return kUnsat;
                 }
                 CannotMove({ref});
                 continue;
@@ -1087,8 +1106,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               crush.UpdateLiteralsToFalseIfDifferent(ref, other_ref);
               DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
               DCHECK(!context->VariableWasRemoved(PositiveRef(other_ref)));
-              if (!context->StoreBooleanEqualityRelation(ref, other_ref)) {
-                return false;
+              if (context->StoreBooleanEqualityRelation(ref, other_ref)
+                      .unsat()) {
+                return kUnsat;
               }
 
               // We can delete one of the constraints since they are duplicates
@@ -1154,7 +1174,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             context->UpdateRuleStats(
                 "dual: removed var only blocked by coeff * X + offset");
             crush.SetVarToLinearExpression(a, {{b, -cb}}, offset);
-            if (!context->StoreAffineRelation(a, b, -cb, offset)) return false;
+            if (context->StoreAffineRelation(a, b, -cb, offset).unsat())
+              return kUnsat;
             CannotMove({a, b});
             continue;
           }
@@ -1227,7 +1248,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       // Setting hint(a) to hint(b) is thus always safe. The opposite is true
       // as well.
       crush.MakeLiteralsEqual(a, b);
-      if (!context->StoreBooleanEqualityRelation(a, b)) return false;
+      if (context->StoreBooleanEqualityRelation(a, b).unsat()) return kUnsat;
       context->UpdateRuleStats("dual: enforced equivalence");
     }
   }
@@ -1239,13 +1260,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   }
 
   VLOG(2) << "Num deleted constraints: " << num_deleted_constraints_;
-  return true;
+  return kOk;
 }
 
 void ScanModelForDominanceDetection(PresolveContext& context,
                                     VarDomination* var_domination) {
-  if (context.ModelIsUnsat()) return;
-
   const CpModelProto& cp_model = context.WorkingModel();
   const int num_vars = cp_model.variables().size();
   var_domination->Reset(num_vars);
@@ -1473,7 +1492,6 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 void ScanModelForDualBoundStrengthening(
     const PresolveContext& context,
     DualBoundStrengthening* dual_bound_strengthening) {
-  if (context.ModelIsUnsat()) return;
   const CpModelProto& cp_model = context.WorkingModel();
   const int num_vars = cp_model.variables().size();
   dual_bound_strengthening->Reset(num_vars);
@@ -1611,7 +1629,7 @@ void MaybeUpdateRefHintFromDominance(
       ref, domain.Min(), domain.Max(), dominating_refs);
 }
 
-bool ProcessAtMostOne(
+FeasibilityStatus ProcessAtMostOne(
     absl::Span<const int> literals, absl::string_view message,
     const VarDomination& var_domination,
     util_intops::StrongVector<IntegerVariable, bool>* in_constraints,
@@ -1636,20 +1654,20 @@ bool ProcessAtMostOne(
       // hint value of `ref` is 0 the hint does not need to be updated).
       context->UpdateRuleStats(message);
       context->solution_crush().UpdateLiteralsWithDominance(ref, iref);
-      if (!context->SetLiteralToFalse(ref)) return false;
+      if (context->SetLiteralToFalse(ref).unsat()) return kUnsat;
       break;
     }
   }
   for (const int ref : literals) {
     (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = false;
   }
-  return true;
+  return kOk;
 }
 
 }  // namespace
 
-bool ExploitDominanceRelations(const VarDomination& var_domination,
-                               PresolveContext* context) {
+FeasibilityStatus ExploitDominanceRelations(const VarDomination& var_domination,
+                                            PresolveContext* context) {
   const CpModelProto& cp_model = context->WorkingModel();
   const int num_vars = cp_model.variables_size();
 
@@ -1663,7 +1681,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       break;
     }
   }
-  if (!work_to_do) return true;
+  if (!work_to_do) return kOk;
 
   const int64_t saved_num_operations = context->num_presolve_operations;
 
@@ -1735,7 +1753,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         context->UpdateRuleStats("domination: in implication");
         const int ref = VarDomination::IntegerVariableToRef(ivar);
         crush.UpdateLiteralsWithDominance(a, ref);
-        if (!context->SetLiteralToFalse(a)) return false;
+        if (context->SetLiteralToFalse(a).unsat()) return kUnsat;
         break;
       }
     }
@@ -1760,17 +1778,19 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
     };
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
       add_implications(ct.at_most_one().literals());
-      if (!ProcessAtMostOne(ct.at_most_one().literals(),
-                            "domination: in at most one", var_domination,
-                            &in_constraints, context)) {
-        return false;
+      if (ProcessAtMostOne(ct.at_most_one().literals(),
+                           "domination: in at most one", var_domination,
+                           &in_constraints, context)
+              .unsat()) {
+        return kUnsat;
       }
     } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
       add_implications(ct.exactly_one().literals());
-      if (!ProcessAtMostOne(ct.exactly_one().literals(),
-                            "domination: in exactly one", var_domination,
-                            &in_constraints, context)) {
-        return false;
+      if (ProcessAtMostOne(ct.exactly_one().literals(),
+                           "domination: in exactly one", var_domination,
+                           &in_constraints, context)
+              .unsat()) {
+        return kUnsat;
       }
     }
 
@@ -1807,7 +1827,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
     const int64_t rhs_lb = ct.linear().domain(0);
     const int64_t rhs_ub = ct.linear().domain(ct.linear().domain_size() - 1);
     if (max_activity < rhs_lb || min_activity > rhs_ub) {
-      return context->NotifyThatModelIsUnsat("linear equation unsat.");
+      return context->NotifyUnsat("linear equation unsat.");
     }
 
     // Returns the change magnitude in min-activity (resp. max-activity) if all
@@ -1899,8 +1919,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           const Domain reduced_domain = Domain(lb);
           MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
                                           dominated_by);
-          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
-            return false;
+          if (context->IntersectDomainWith(current_ref, reduced_domain)
+                  .unsat()) {
+            return kUnsat;
           }
 
           // We need to update the precomputed quantities.
@@ -1933,8 +1954,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           const Domain reduced_domain = Domain(lb, new_ub);
           MaybeUpdateRefHintFromDominance(*context, current_ref, reduced_domain,
                                           dominated_by);
-          if (!context->IntersectDomainWith(current_ref, reduced_domain)) {
-            return false;
+          if (context->IntersectDomainWith(current_ref, reduced_domain)
+                  .unsat()) {
+            return kUnsat;
           }
 
           // We need to update the precomputed quantities.
@@ -2046,8 +2068,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             const Domain reduced_domain = Domain(context->MinOf(ref), lb);
             MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
                                             dominating_vars);
-            if (!context->IntersectDomainWith(ref, reduced_domain)) {
-              return false;
+            if (context->IntersectDomainWith(ref, reduced_domain).unsat()) {
+              return kUnsat;
             }
 
             // The rest of the loop only cares about Booleans.
@@ -2097,7 +2119,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
     context->UpdateRuleStats("TODO domination: unexploited dominations");
   }
 
-  return true;
+  return kOk;
 }
 
 }  // namespace sat

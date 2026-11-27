@@ -818,9 +818,9 @@ class ModularComponentConverter {
   struct ValueItem {
     double val;
     double tol;
-    // True for the coefficient of an external variable with a finite domain:
-    // `tol` then bounds the resulting activity error, so any denominator that
-    // satisfies it is accepted.
+    // True for the coefficient of an external variable: `tol` then bounds the
+    // resulting activity error, so any denominator that satisfies it is
+    // accepted.
     bool is_ext_coeff;
   };
 
@@ -983,17 +983,15 @@ bool ModularComponentConverter::Convert() {
   double max_col_scaled_bound = 0.0;
   for (int local_col = 0; local_col < compo_vars.size(); ++local_col) {
     const MipVariableState& state = states_[compo_vars[local_col]];
+    DCHECK(std::isfinite(state.lb));
+    DCHECK(std::isfinite(state.ub));
     const double c_scale = scaling_.col_scale[local_col];
     if (std::abs(c_scale - 1.0) > wanted_tol_ * std::min(1.0, c_scale)) {
       has_col_scaling_ = true;
     }
-    max_col_scaled_bound = std::max(max_col_scaled_bound, c_scale);
-    for (const double b : {state.lb, state.ub}) {
-      if (std::isfinite(b)) {
-        max_col_scaled_bound =
-            std::max(max_col_scaled_bound, std::abs(b * c_scale));
-      }
-    }
+    max_col_scaled_bound =
+        std::max({max_col_scaled_bound, c_scale, std::abs(state.lb * c_scale),
+                  std::abs(state.ub * c_scale)});
   }
   base_col_bound_ = m_ * std::max(1.0, max_col_scaled_bound);
   max_s_ = max_domain_bound_ / base_col_bound_;
@@ -1093,11 +1091,9 @@ void ModularComponentConverter::CollectItems() {
       coeff_items_.push_back({c_scale, col_tol, /*is_ext_coeff=*/false});
       all_items_.push_back({c_scale, col_tol, /*is_ext_coeff=*/false});
     }
-    const bool eq_var = std::isfinite(state.lb) && state.lb == state.ub;
-    if (std::isfinite(state.lb)) {
-      add_bound(state.lb * c_scale, col_tol, wanted_tol_ * c_scale, eq_var);
-    }
-    if (std::isfinite(state.ub) && !eq_var) {
+    const bool eq_var = state.lb == state.ub;
+    add_bound(state.lb * c_scale, col_tol, wanted_tol_ * c_scale, eq_var);
+    if (!eq_var) {
       add_bound(-state.ub * c_scale, col_tol, wanted_tol_ * c_scale, false);
     }
   }
@@ -1118,29 +1114,28 @@ void ModularComponentConverter::CollectItems() {
       if (coeff == 0.0) continue;
       const int var = ct.vars(i);
       const MipVariableState& state = states_[var];
+      DCHECK(std::isfinite(state.lb));
+      DCHECK(std::isfinite(state.ub));
       const int local_col = compo_.var_to_local_col[var];
       const double tol = local_col != -1 ? wanted_tol_ : 0.0;
       const double lb = state.lb - tol;
       const double ub = state.ub + tol;
       if (lb == 0.0 && ub == 0.0) continue;
-      if (lb <= ub && lb < kInfinity && ub > -kInfinity) {
+      if (lb <= ub) {
         min_activity += coeff > 0.0 ? coeff * lb : coeff * ub;
         max_activity += coeff > 0.0 ? coeff * ub : coeff * lb;
       }
       if (local_col != -1) continue;
 
-      // The tolerance on the coefficient of a bounded external variable is the
-      // one that keeps the activity error within `mip_wanted_precision`.
+      // The tolerance on the coefficient of an external variable is the one
+      // that keeps the activity error within `mip_wanted_precision`.
       const double val = std::abs(coeff) / r_scale;
       const double max_dom = std::max(std::abs(state.lb), std::abs(state.ub));
       const double ext_tol =
-          std::isfinite(max_dom)
-              ? std::min(wanted_tol_,
-                         wanted_tol_ / std::max(1.0, r_scale * max_dom))
-              : rational_tol_ * std::min(1.0, val);
-      coeff_items_.push_back({val, ext_tol, std::isfinite(max_dom)});
+          std::min(wanted_tol_, wanted_tol_ / std::max(1.0, r_scale * max_dom));
+      coeff_items_.push_back({val, ext_tol, /*is_ext_coeff=*/true});
       all_items_.push_back(
-          {val, std::max(rational_tol_, ext_tol), std::isfinite(max_dom)});
+          {val, std::max(rational_tol_, ext_tol), /*is_ext_coeff=*/true});
     }
     // Only the constraint sides that are not redundant matter.
     const bool active_lb =
@@ -1355,7 +1350,7 @@ ScalingOutcome ModularComponentConverter::ScaleVariables(
   const double max_var_bound =
       std::nextafter(static_cast<double>(kint64max / 2), 0.0);
   const auto is_too_large = [max_var_bound](double b) {
-    return std::isfinite(b) && std::abs(b) > max_var_bound;
+    return !std::isfinite(b) || std::abs(b) > max_var_bound;
   };
   const double round_tol = attempt.snap_within_tol ? tight_tol_ : 0.0;
 
@@ -1378,7 +1373,6 @@ ScalingOutcome ModularComponentConverter::ScaleVariables(
     // rounded down, or to the nearest integer if it is within `round_tol` (then
     // setting `tightening` to how much the bound was snapped inward).
     const auto round_lb = [&](double lb, double* tightening) {
-      if (!std::isfinite(lb)) return lb;
       const double w =
           RoundScaledLowerBound(ProdBounds(col_s, lb).first, col_s * round_tol);
       const double error =
@@ -1408,23 +1402,20 @@ ScalingOutcome ModularComponentConverter::ScaleVariables(
     new_state.scaling *= m_ * col_s;
     new_state.error_lb = 0.0;
     new_state.error_ub = 0.0;
-    if ((std::isfinite(state.lb) && !std::isfinite(new_state.lb)) ||
-        (std::isfinite(state.ub) && !std::isfinite(new_state.ub)) ||
-        is_too_large(new_state.lb) || is_too_large(new_state.ub) ||
+    if (is_too_large(new_state.lb) || is_too_large(new_state.ub) ||
         !(new_state.scaling <= max_var_bound)) {
       return ScalingOutcome::kOverflow;
     }
-    if (new_state.lb > new_state.ub || new_state.lb == kInfinity ||
-        new_state.ub == -kInfinity) {
+    if (new_state.lb > new_state.ub) {
       return ScalingOutcome::kFailure;
     }
 
     // The constraints are scaled for the final domain of the variable: move the
     // domain as close to zero as possible, like FinalCpSatShiftValue().
     if (new_state.shift == 0.0) {
-      if (std::isfinite(new_state.lb) && new_state.lb > wanted_tol_) {
+      if (new_state.lb > wanted_tol_) {
         new_state.shift = std::ceil(new_state.lb);
-      } else if (std::isfinite(new_state.ub) && new_state.ub < -wanted_tol_) {
+      } else if (new_state.ub < -wanted_tol_) {
         new_state.shift = std::floor(new_state.ub);
       }
       if (new_state.shift != 0.0) {
@@ -1454,6 +1445,7 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
   int_lbs_.clear();
   int_ubs_.clear();
   LinearOverflowChecker checker;
+  ExactActivityBounds exact_activity;
   TightSum neg_offset_lb;
   TightSum neg_offset_ub;
   TightSum disc_lb;
@@ -1500,9 +1492,10 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
         std::ceil(state.lb - std::max(wanted_tol_, -state.error_lb));
     const double ub =
         std::floor(state.ub + std::max(wanted_tol_, state.error_ub));
-    if (lb > ub || lb == kInfinity || ub == -kInfinity) {
-      return ScalingOutcome::kFailure;
+    if (!std::isfinite(lb) || !std::isfinite(ub)) {
+      return ScalingOutcome::kOverflow;
     }
+    if (lb > ub) return ScalingOutcome::kFailure;
     if (lb == 0.0 && ub == 0.0) continue;
     is_constant = false;
 
@@ -1518,39 +1511,29 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
     } else if (std::abs(int_coeff) != 1) {
       return ScalingOutcome::kFailure;
     }
-    if (!std::isfinite(lb) || !std::isfinite(ub)) {
-      // The coefficient of an unbounded variable must be exact.
-      if (!std::isfinite(c_lb) || !std::isfinite(c_ub) ||
-          ProdBounds(c_lb, factor).first != static_cast<double>(int_coeff) ||
-          ProdBounds(c_ub, factor).second != static_cast<double>(int_coeff)) {
-        return is_external ? ScalingOutcome::kNeedMorePrecision
-                           : ScalingOutcome::kFailure;
-      }
-    } else {
-      if (!(lb >= static_cast<double>(kint64min) &&
-            ub < static_cast<double>(kint64max))) {
-        return ScalingOutcome::kOverflow;
-      }
-      const int64_t int_lb = static_cast<int64_t>(lb);
-      const int64_t int_ub = static_cast<int64_t>(ub);
-      if (!checker.AddTerm(int_coeff, int_lb, int_ub) ||
-          -checker.sum_min > scaling_target ||
-          checker.sum_max > scaling_target) {
-        return ScalingOutcome::kOverflow;
-      }
-      bounded_expr_.AddTerm(coeff, lb, ub);
-      coeffs_lb_.push_back(c_lb);
-      coeffs_ub_.push_back(c_ub);
-      int_lbs_.push_back(int_lb);
-      int_ubs_.push_back(int_ub);
+    if (!(lb >= static_cast<double>(kint64min) &&
+          ub < static_cast<double>(kint64max))) {
+      return ScalingOutcome::kOverflow;
     }
+    const int64_t int_lb = static_cast<int64_t>(lb);
+    const int64_t int_ub = static_cast<int64_t>(ub);
+    if (!checker.AddTerm(int_coeff, int_lb, int_ub) ||
+        -checker.sum_min > scaling_target || checker.sum_max > scaling_target) {
+      return ScalingOutcome::kOverflow;
+    }
+    bounded_expr_.AddTerm(coeff, lb, ub);
+    coeffs_lb_.push_back(c_lb);
+    coeffs_ub_.push_back(c_ub);
+    int_lbs_.push_back(int_lb);
+    int_ubs_.push_back(int_ub);
+    exact_activity.AddTerm(c_lb, c_ub, int_lb, int_ub);
     min_activity += coeff > 0.0 ? coeff * lb : coeff * ub;
     max_activity += coeff > 0.0 ? coeff * ub : coeff * lb;
     if (int_coeff == 0) continue;
     row.vars.push_back(var);
     row.coeffs.push_back(int_coeff);
-    row.var_lbs.push_back(SaturatingCastToInt64(lb));
-    row.var_ubs.push_back(SaturatingCastToInt64(ub));
+    row.var_lbs.push_back(int_lb);
+    row.var_ubs.push_back(int_ub);
   }
 
   if (!std::isfinite(clamp_lb.TightLowerBound()) ||
@@ -1562,6 +1545,19 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
   // variables and by `mip_tight_precision`, like in
   // ConstraintScaler::ScaleAndAddConstraint().
   double ct_lb = ct.lower_bound();
+  double ct_ub = ct.upper_bound();
+  const double orig_lb_upper =
+      std::isfinite(ct_lb)
+          ? (neg_offset_ub.IsFinite()
+                 ? TightSum(neg_offset_ub).Add(ct_lb).TightUpperBound()
+                 : kInfinity)
+          : ct_lb;
+  const double orig_ub_lower =
+      std::isfinite(ct_ub)
+          ? (neg_offset_lb.IsFinite()
+                 ? TightSum(neg_offset_lb).Add(ct_ub).TightLowerBound()
+                 : -kInfinity)
+          : ct_ub;
   double pre_tol_lb = ct_lb;
   if (std::isfinite(ct_lb)) {
     const double tol_lb =
@@ -1574,7 +1570,6 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
     ct_lb = neg_offset_lb.Add(-tight_tol_).TightLowerBound();
     if (min_activity >= ct_lb) ct_lb = -kInfinity;
   }
-  double ct_ub = ct.upper_bound();
   double pre_tol_ub = ct_ub;
   if (std::isfinite(ct_ub)) {
     const double tol_ub =
@@ -1593,6 +1588,10 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
     if (ct_lb != -kInfinity || ct_ub != kInfinity) {
       row.lb = 1;
       row.ub = 0;
+    } else {
+      row.total_unscaling_error =
+          std::max(exact_activity.MaxLowerViolation(orig_lb_upper),
+                   exact_activity.MaxUpperViolation(orig_ub_lower));
     }
     return ScalingOutcome::kSuccess;
   }
@@ -1601,7 +1600,12 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
   }
   const bool has_lb = std::isfinite(ct_lb);
   const bool has_ub = std::isfinite(ct_ub);
-  if (!has_lb && !has_ub) return ScalingOutcome::kSuccess;
+  if (!has_lb && !has_ub) {
+    row.total_unscaling_error =
+        std::max(exact_activity.MaxLowerViolation(orig_lb_upper),
+                 exact_activity.MaxUpperViolation(orig_ub_lower));
+    return ScalingOutcome::kSuccess;
+  }
   if ((has_lb && !std::isfinite(pre_tol_lb)) ||
       (has_ub && !std::isfinite(pre_tol_ub))) {
     return ScalingOutcome::kOverflow;
@@ -1730,6 +1734,9 @@ ScalingOutcome ModularComponentConverter::ScaleRow(const Attempt& attempt,
   row.absolute_rhs_error = scaled_sum_error / factor;
   row.lb = SaturatingCastToInt64(scaled_lb);
   row.ub = SaturatingCastToInt64(scaled_ub);
+  row.total_unscaling_error = ComputeBoundedRowTotalUnscalingError(
+      factor, /*gcd=*/1, row.lb, row.ub, orig_lb_upper, orig_ub_lower,
+      exact_activity, &tight_error_helper_);
   return ScalingOutcome::kSuccess;
 }
 

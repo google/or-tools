@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -35,7 +36,7 @@ namespace sat {
 // uses "equivalent" in the sense that a placement of the non-fixed boxes will
 // be non-overlapping with all other boxes if and only if it was with the
 // original set of fixed boxes too.
-bool PresolveFixed2dRectangles(
+ModificationStatus PresolveFixed2dRectangles(
     absl::Span<const RectangleInRange> non_fixed_boxes,
     std::vector<Rectangle>* fixed_boxes);
 
@@ -112,18 +113,19 @@ Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
 //
 // The function updates the vector of `mandatory_rectangles` with `R` and
 // `optional_rectangles` with `optional_rectangles \setdiff R`. It returns
-// true if `mandatory_rectangles` was updated.
+// `kModified` if `mandatory_rectangles` was updated.
 //
 // This function uses a greedy algorithm that merges rectangles that share an
 // edge.
-bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
-                               std::vector<Rectangle>* optional_rectangles);
+ModificationStatus ReduceNumberofBoxesGreedy(
+    std::vector<Rectangle>* mandatory_rectangles,
+    std::vector<Rectangle>* optional_rectangles);
 
 // Same as above, but this implementation returns the optimal solution in
 // minimizing the number of boxes if `optional_rectangles` is empty. On the
 // other hand, its handling of optional boxes is rather limited. It simply fills
 // the holes in the mandatory boxes with optional boxes, if possible.
-bool ReduceNumberOfBoxesExactMandatory(
+ModificationStatus ReduceNumberOfBoxesExactMandatory(
     std::vector<Rectangle>* mandatory_rectangles,
     std::vector<Rectangle>* optional_rectangles);
 

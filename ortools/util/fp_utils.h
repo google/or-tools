@@ -291,18 +291,25 @@ class TightScalingErrorHelper {
   //   (SCALED_TERMS >= constraint_lb)
   // we should have:
   //   (ROUNDED_TERMS >= constraint_lb - rounding_error)
-  // Moreover, if x' is a solution of the above constraint, we have:
-  //   (SCALED_TERMS' >= constraint_lb - rounding_error - unrounding_error)
+  // Moreover, if x' is a solution of `ROUNDED_TERMS >= relaxed_lb` (for
+  // instance `relaxed_lb = ceil(constraint_lb - rounding_error)`), evaluating
+  // `unrounding_error = GetLowerBoundUnroundingError(relaxed_lb)` at that
+  // relaxed bound gives:
+  //   (SCALED_TERMS' >= relaxed_lb - unrounding_error)
   //
   // Note: the final error is returned as a double rounded towards the
   // conservative direction, see the TightSum versions below for full precision.
   //
   // Note: For the upper bound, the sign of the errors are inverted, so
-  // we will have ROUNDED_TERMS <= constraints_ub + rounding_error.
+  // we will have ROUNDED_TERMS <= constraint_ub + rounding_error, and for a
+  // solution of `ROUNDED_TERMS <= relaxed_ub`, `SCALED_TERMS' <= relaxed_ub +
+  // GetUpperBoundUnroundingError(relaxed_ub)`.
   //
-  // Note: The bounds are "monotonous" in the sense that the lower the
-  // constraint lb (resp. the higher the constraint ub), the lower the error
-  // will be.
+  // Note: Relaxing a bound (lowering `constraint_lb` or raising
+  // `constraint_ub`) enlarges the feasible set of the knapsack and therefore
+  // monotonically increases (or keeps equal) the worst-case error, so
+  // unrounding errors must be evaluated at the relaxed bound actually enforced
+  // in the rounded model rather than at the original unrelaxed bound.
   double GetLowerBoundRoundingError(double constraint_lb) {
     slack_.Clear();
     slack_.Add(constraint_lb);
@@ -356,6 +363,29 @@ class TightScalingErrorHelper {
   const TightSum& GetRestrictionUpperBoundError(const TightSum& constraint_ub) {
     return GetRoundingError</*is_ge_constraint=*/false,
                             /*minimize_error=*/true>(constraint_ub);
+  }
+
+  // Assuming ROUNDED_TERMS >= constraint_lb (resp. <= constraint_ub), returns
+  // `err` such that SCALED_TERMS >= constraint_lb + err (resp. <=
+  // constraint_ub + err) for all xi in [lbs[i], ubs[i]]. The returned reference
+  // points to internal storage and is only valid until the next call to a
+  // method of this class.
+  const TightSum& GetUnroundingLowerBoundError(const TightSum& constraint_lb) {
+    slack_ = constraint_lb;
+    total_sum_.Clear();
+    Optimize</*is_ge_constraint=*/true, /*minimize=*/true,
+             /*compute_error=*/true>(RoundedBounds(), ScaledBounds(), slack_,
+                                     total_sum_);
+    return total_sum_;
+  }
+  const TightSum& GetUnroundingUpperBoundError(const TightSum& constraint_ub) {
+    slack_ = constraint_ub;
+    slack_.Negate();
+    total_sum_.Clear();
+    Optimize</*is_ge_constraint=*/false, /*minimize=*/false,
+             /*compute_error=*/true>(RoundedBounds(), ScaledBounds(), slack_,
+                                     total_sum_);
+    return total_sum_;
   }
 
  private:

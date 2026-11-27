@@ -29,6 +29,7 @@
 #include "ortools/base/options.h"
 #include "ortools/base/recordio_test.pb.h"
 #include "ortools/base/temp_file.h"
+#include "ortools/port/attributes.h"
 
 namespace ORTOOLS_RECORDIO_NAMESPACE {
 namespace {
@@ -36,7 +37,7 @@ namespace {
 // Parameters for RecordReaderInvalidPayloadTest.
 struct RecordReaderInvalidPayloadTestParams {
   // Name of the test; must be snake_case.
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // All tests should fail, but we also want to make sure the test code itself
   // is correct enough so that valid data don't fail as well.%

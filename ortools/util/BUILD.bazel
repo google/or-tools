@@ -1167,7 +1167,6 @@ or_cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/base:types",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
@@ -1244,7 +1243,6 @@ or_cc_binary(
     deps = [
         ":bitset",
         ":range_minimum_query",
-        "@abseil-cpp//absl/container:fixed_array",
         "@google_benchmark//:benchmark_main",
     ],
 )

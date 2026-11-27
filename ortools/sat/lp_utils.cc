@@ -166,6 +166,69 @@ void AddTermErrorBounds(double c_lb, double c_ub, double err_lb, double err_ub,
   }
 }
 
+void ExactActivityBounds::AddTerm(double c_lb, double c_ub, int64_t lb,
+                                  int64_t ub) {
+  DCHECK_LE(c_lb, c_ub);
+  DCHECK_LE(lb, ub);
+  const auto add_min = [&](double c, int64_t y) {
+    if (y == 0 || c == 0.0) return;
+    if (!std::isfinite(c)) {
+      min_is_neg_inf = true;
+      return;
+    }
+    min_activity.AddProd(c, y);
+  };
+  const auto add_max = [&](double c, int64_t y) {
+    if (y == 0 || c == 0.0) return;
+    if (!std::isfinite(c)) {
+      max_is_pos_inf = true;
+      return;
+    }
+    max_activity.AddProd(c, y);
+  };
+  if (c_lb >= 0.0) {
+    add_min(lb >= 0 ? c_lb : c_ub, lb);
+    add_max(ub >= 0 ? c_ub : c_lb, ub);
+  } else if (c_ub <= 0.0) {
+    add_min(ub <= 0 ? c_ub : c_lb, ub);
+    add_max(lb <= 0 ? c_lb : c_ub, lb);
+  } else if (ub > 0 && lb < 0) {
+    if (!std::isfinite(c_lb) || !std::isfinite(c_ub)) {
+      min_is_neg_inf = true;
+      max_is_pos_inf = true;
+    } else {
+      const bool min_uses_ub =
+          TightSum().AddProd(c_lb, ub).AddProd(-c_ub, lb) <= 0.0;
+      add_min(min_uses_ub ? c_lb : c_ub, min_uses_ub ? ub : lb);
+      const bool max_uses_ub =
+          TightSum().AddProd(c_ub, ub).AddProd(-c_lb, lb) >= 0.0;
+      add_max(max_uses_ub ? c_ub : c_lb, max_uses_ub ? ub : lb);
+    }
+  } else if (lb >= 0) {
+    add_min(c_lb, ub);
+    add_max(c_ub, ub);
+  } else {
+    add_min(c_ub, lb);
+    add_max(c_lb, lb);
+  }
+}
+
+double ExactActivityBounds::MaxLowerViolation(double orig_lb_upper) const {
+  if (orig_lb_upper == -kInfinity) return 0.0;
+  if (min_is_neg_inf || !std::isfinite(orig_lb_upper)) return kInfinity;
+  TightSum diff = min_activity;
+  diff.Negate().Add(orig_lb_upper);
+  return std::max(0.0, diff.TightUpperBound());
+}
+
+double ExactActivityBounds::MaxUpperViolation(double orig_ub_lower) const {
+  if (orig_ub_lower == kInfinity) return 0.0;
+  if (max_is_pos_inf || !std::isfinite(orig_ub_lower)) return kInfinity;
+  TightSum diff = max_activity;
+  diff.Add(-orig_ub_lower);
+  return std::max(0.0, diff.TightUpperBound());
+}
+
 namespace {
 // Fills the given constraint transformed according to `states`, see the
 // formula in MipVariableState. Terms with a zero coefficient are kept so that
@@ -228,6 +291,66 @@ void TransformConstraint(const LinearConstraintView& ct,
                          std::vector<double>* coeffs, double* lb, double* ub) {
   TransformConstraintWithBounds(ct, states, coeffs, /*coeffs_lb=*/nullptr,
                                 /*coeffs_ub=*/nullptr, lb, ub);
+}
+
+double ComputeBoundedRowTotalUnscalingError(
+    double scaling_factor, int64_t gcd, int64_t final_lb, int64_t final_ub,
+    double orig_lb_upper, double orig_ub_lower,
+    const ExactActivityBounds& activity_bounds,
+    TightScalingErrorHelper* tight_error_helper, double* max_unrounding_error) {
+  DCHECK_GT(scaling_factor, 0.0);
+  DCHECK(std::isfinite(scaling_factor));
+  DCHECK_GT(gcd, 0);
+  DCHECK_LE(final_lb, final_ub);
+
+  double row_lb_total = activity_bounds.MaxLowerViolation(orig_lb_upper);
+  if (final_lb > kint64min) {
+    TightSum cp_scaled_lb;
+    cp_scaled_lb.AddProd(gcd, final_lb);
+    const TightSum& unround_lb =
+        tight_error_helper->GetUnroundingLowerBoundError(cp_scaled_lb);
+    if (max_unrounding_error != nullptr) {
+      const double lb_unround = std::max(
+          0.0, -DivInterval(unround_lb.TightLowerBound(), 0.0, scaling_factor)
+                    .first);
+      *max_unrounding_error = std::max(*max_unrounding_error, lb_unround);
+    }
+    if (std::isfinite(orig_lb_upper) && unround_lb.IsFinite()) {
+      TightSum total_lb;
+      total_lb.AddProd(scaling_factor, orig_lb_upper);
+      total_lb.AddProd(-gcd, final_lb);
+      total_lb.AddProd(unround_lb, /*negate=*/true);
+      const double knapsack_lb_viol = std::max(
+          0.0,
+          DivInterval(0.0, total_lb.TightUpperBound(), scaling_factor).second);
+      row_lb_total = std::min(row_lb_total, knapsack_lb_viol);
+    }
+  }
+
+  double row_ub_total = activity_bounds.MaxUpperViolation(orig_ub_lower);
+  if (final_ub < kint64max) {
+    TightSum cp_scaled_ub;
+    cp_scaled_ub.AddProd(gcd, final_ub);
+    const TightSum& unround_ub =
+        tight_error_helper->GetUnroundingUpperBoundError(cp_scaled_ub);
+    if (max_unrounding_error != nullptr) {
+      const double ub_unround = std::max(
+          0.0, DivInterval(0.0, unround_ub.TightUpperBound(), scaling_factor)
+                   .second);
+      *max_unrounding_error = std::max(*max_unrounding_error, ub_unround);
+    }
+    if (std::isfinite(orig_ub_lower) && unround_ub.IsFinite()) {
+      TightSum total_ub = cp_scaled_ub;
+      total_ub.Add(unround_ub);
+      total_ub.AddProd(-scaling_factor, orig_ub_lower);
+      const double knapsack_ub_viol = std::max(
+          0.0,
+          DivInterval(0.0, total_ub.TightUpperBound(), scaling_factor).second);
+      row_ub_total = std::min(row_ub_total, knapsack_ub_viol);
+    }
+  }
+
+  return std::max(row_lb_total, row_ub_total);
 }
 
 ScopedVarToLocalCol::ScopedVarToLocalCol(ResidualContinuousComponent* compo,
@@ -2635,10 +2758,12 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // variables (they are lazily copied from the states).
   double ct_lower_bound;
   double ct_upper_bound;
-  TransformConstraintWithBounds(mp_constraint, states, &tmp_transformed_coeffs,
-                                &tmp_transformed_coeffs_lb,
-                                &tmp_transformed_coeffs_ub, &ct_lower_bound,
-                                &ct_upper_bound);
+  double ct_lower_bound_upper;
+  double ct_upper_bound_lower;
+  TransformConstraintWithBounds(
+      mp_constraint, states, &tmp_transformed_coeffs,
+      &tmp_transformed_coeffs_lb, &tmp_transformed_coeffs_ub, &ct_lower_bound,
+      &ct_upper_bound, &ct_lower_bound_upper, &ct_upper_bound_lower);
   if (var_discretization_error_lb.size() != states.size()) {
     var_discretization_error_lb.assign(states.size(), 0.0);
     var_discretization_error_ub.assign(states.size(), 0.0);
@@ -2655,10 +2780,11 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   if (!enforcement_status.ok() || is_never_enforced) return enforcement_status;
 
   ConstraintProto* constraint = cp_model->add_constraints();
-  const absl::Status status = ScaleAndAddConstraint(
+  const absl::Status status = ScaleAndAddConstraintImpl(
       mp_constraint.vars(), tmp_transformed_coeffs, ct_lower_bound,
-      ct_upper_bound, mp_constraint.name(), var_domains, constraint,
-      tmp_transformed_coeffs_lb, tmp_transformed_coeffs_ub);
+      ct_upper_bound, ct_lower_bound_upper, ct_upper_bound_lower,
+      mp_constraint.name(), var_domains, constraint, tmp_transformed_coeffs_lb,
+      tmp_transformed_coeffs_ub);
   if (!status.ok()) {
     return absl::Status(
         status.code(),
@@ -2686,6 +2812,10 @@ absl::Status ConstraintScaler::AddAlreadyScaledConstraint(
   LinearConstraintProto* linear = constraint->mutable_linear();
   max_discretization_error =
       std::max(max_discretization_error, scaled.discretization_error);
+  if (scaled.lb <= scaled.ub) {
+    max_total_unscaling_error =
+        std::max(max_total_unscaling_error, scaled.total_unscaling_error);
+  }
   if (scaled.lb == kint64min && scaled.ub == kint64max) {
     ++num_trivial_constraints;
     linear->add_domain(0);
@@ -2892,6 +3022,18 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     absl::Span<const IntegerVariableProto* const> var_domains,
     ConstraintProto* constraint, absl::Span<const double> coeffs_lb,
     absl::Span<const double> coeffs_ub) {
+  return ScaleAndAddConstraintImpl(
+      vars, coeffs, ct_lower_bound, ct_upper_bound, ct_lower_bound,
+      ct_upper_bound, name, var_domains, constraint, coeffs_lb, coeffs_ub);
+}
+
+absl::Status ConstraintScaler::ScaleAndAddConstraintImpl(
+    absl::Span<const int> vars, absl::Span<const double> coeffs,
+    double ct_lower_bound, double ct_upper_bound, double orig_lb_upper,
+    double orig_ub_lower, absl::string_view name,
+    absl::Span<const IntegerVariableProto* const> var_domains,
+    ConstraintProto* constraint, absl::Span<const double> coeffs_lb,
+    absl::Span<const double> coeffs_ub) {
   if (keep_names && !name.empty()) constraint->set_name(name);
   if (coeffs_lb.empty()) coeffs_lb = coeffs;
   if (coeffs_ub.empty()) coeffs_ub = coeffs;
@@ -2911,6 +3053,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   int_upper_bounds.clear();
   tmp_discretization_lb.Clear();
   tmp_discretization_ub.Clear();
+  tmp_exact_activity.Clear();
   const bool has_discretization_errors = !var_discretization_error_lb.empty();
   const int num_coeffs = vars.size();
   for (int i = 0; i < num_coeffs; ++i) {
@@ -2936,6 +3079,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     coefficients_ub.push_back(c_ub);
     int_lower_bounds.push_back(lb);
     int_upper_bounds.push_back(ub);
+    tmp_exact_activity.AddTerm(c_lb, c_ub, lb, ub);
 
     double min_term = coeff * static_cast<double>(lb);
     double max_term = coeff * static_cast<double>(ub);
@@ -2998,6 +3142,10 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   auto* mutable_linear = constraint->mutable_linear();
   if (ct_lower_bound == -kInfinity && ct_upper_bound == kInfinity) {
     ++num_trivial_constraints;
+    max_total_unscaling_error =
+        std::max({max_total_unscaling_error,
+                  tmp_exact_activity.MaxLowerViolation(orig_lb_upper),
+                  tmp_exact_activity.MaxUpperViolation(orig_ub_lower)});
     mutable_linear->add_domain(0);
     mutable_linear->add_domain(0);
     return absl::OkStatus();
@@ -3062,18 +3210,12 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   int_lower_bounds.resize(new_bound_size);
   int_upper_bounds.resize(new_bound_size);
 
-  // Compute tighter rhs errors on the rounding(1)/unrounding(2), and relax the
-  // scaled bounds by the rounding error so that we never lose a feasible
-  // solution of the original problem that is within `bound_tol`. However,
-  // unless `use_proper_relaxation` is set, we don't relax by more than
+  // Compute tighter rhs errors on the rounding, and relax the scaled bounds by
+  // the rounding error so that we never lose a feasible solution of the
+  // original problem that is within `bound_tol`. However, unless
+  // `use_proper_relaxation` is set, we don't relax by more than
   // `wanted_precision` if we are not precise, and just hope for the best.
-  //
-  // Note that the "unrounding" errors are just informative, these are the
-  // worst error we could make when scaling back a feasible solution, but it
-  // might happen than our optimal solution is well within the original bound
-  // when unscaled.
   double lb_error1 = 0.0;
-  double lb_error2 = 0.0;
   if (has_lb) {
     const TightSum& lb_err =
         tight_error_helper.GetRelaxationLowerBoundError(tmp_scaled_lb);
@@ -3083,12 +3225,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     } else {
       tmp_scaled_lb.AddProd(-wanted_precision, scaling_factor);
     }
-    lb_error2 = tight_error_helper.GetLowerBoundUnroundingError(
-                    ct_lower_bound * scaling_factor) /
-                scaling_factor;
   }
   double ub_error1 = 0.0;
-  double ub_error2 = 0.0;
   if (has_ub) {
     const TightSum& ub_err =
         tight_error_helper.GetRelaxationUpperBoundError(tmp_scaled_ub);
@@ -3098,12 +3236,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     } else {
       tmp_scaled_ub.AddProd(wanted_precision, scaling_factor);
     }
-    ub_error2 = tight_error_helper.GetUpperBoundUnroundingError(
-                    ct_upper_bound * scaling_factor) /
-                scaling_factor;
   }
   max_rounding_error = std::max({max_rounding_error, lb_error1, ub_error1});
-  max_unrounding_error = std::max({max_unrounding_error, lb_error2, ub_error2});
 
   // Add the constraint bounds. If a scaled bound does not fit in an int64_t,
   // the constraint is either always true or always false.
@@ -3146,6 +3280,17 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     int_lower_bounds.clear();
     int_upper_bounds.clear();
   } else {
+    // Note that the unrounding and total unscaling errors are evaluated at the
+    // emitted CP-SAT integer bounds `gcd * final_lb` and `gcd * final_ub`:
+    // these bound the worst violation we can make when scaling back a CP-SAT
+    // feasible solution, though an optimal solution might still lie well within
+    // the original bound when unscaled.
+    max_total_unscaling_error =
+        std::max(max_total_unscaling_error,
+                 ComputeBoundedRowTotalUnscalingError(
+                     scaling_factor, gcd, final_lb, final_ub, orig_lb_upper,
+                     orig_ub_lower, tmp_exact_activity, &tight_error_helper,
+                     &max_unrounding_error));
     mutable_linear->add_domain(final_lb);
     mutable_linear->add_domain(final_ub);
   }
@@ -3659,7 +3804,76 @@ bool ConvertVariableToCpVariable(const SatParameters& params, int var_index,
   return true;
 }
 
+double ComputeMaxVariableUnscalingError(
+    const MPModelProtoWrapper& mp_model,
+    absl::Span<const MipVariableState> states, const CpModelProto& cp_model,
+    absl::Span<const double> pre_var_scaling) {
+  const int num_variables = mp_model.num_variables();
+  DCHECK_EQ(states.size(), num_variables);
+  DCHECK_EQ(cp_model.variables_size(), num_variables);
+  DCHECK(pre_var_scaling.empty() || pre_var_scaling.size() == num_variables);
+
+  // If any variable has an empty domain, the CP-SAT model has no feasible
+  // solution, so the maximum unscaling violation over feasible solutions is 0.
+  for (int v = 0; v < num_variables; ++v) {
+    const auto& domain = cp_model.variables(v).domain();
+    if (domain.empty() || domain[0] > domain[domain.size() - 1]) return 0.0;
+  }
+
+  double max_error = 0.0;
+  for (int v = 0; v < num_variables; ++v) {
+    const auto& domain = cp_model.variables(v).domain();
+    const int64_t d_min = domain[0];
+    const int64_t d_max = domain[domain.size() - 1];
+    const MipVariableState& state = states[v];
+    const double s = state.scaling;
+    const double shift = state.shift;
+    const double pre_s = pre_var_scaling.empty() ? 1.0 : pre_var_scaling[v];
+    if (!(s > 0.0) || !std::isfinite(s) || !std::isfinite(shift) ||
+        !(pre_s > 0.0) || !std::isfinite(pre_s)) {
+      return kInfinity;
+    }
+    const double denom = ProdBounds(s, pre_s).first;
+    if (!(denom > 0.0)) return kInfinity;
+
+    const MPVariableProto& mp_var = mp_model.variables(v);
+    if (mp_var.is_integer() && pre_s == 1.0 &&
+        !(s == 1.0 && shift == std::round(shift))) {
+      max_error = std::max(max_error, 0.5);
+    }
+    const double lb = mp_var.lower_bound();
+    if (lb != -kInfinity) {
+      if (!std::isfinite(lb)) return kInfinity;
+      const double lb_num = TightSum()
+                                .AddProd(s, lb)
+                                .AddProd(-1.0, d_min)
+                                .Add(-shift)
+                                .TightUpperBound();
+      if (lb_num > 0.0) {
+        max_error =
+            std::max(max_error, std::isfinite(lb_num)
+                                    ? QuotientBounds(lb_num, denom).second
+                                    : kInfinity);
+      }
+    }
+    const double ub = mp_var.upper_bound();
+    if (ub != kInfinity) {
+      if (!std::isfinite(ub)) return kInfinity;
+      const double ub_num =
+          TightSum().Add(d_max).Add(shift).AddProd(-s, ub).TightUpperBound();
+      if (ub_num > 0.0) {
+        max_error =
+            std::max(max_error, std::isfinite(ub_num)
+                                    ? QuotientBounds(ub_num, denom).second
+                                    : kInfinity);
+      }
+    }
+  }
+  return max_error;
+}
+
 void DisplayConstraintScalingStats(const SatParameters& params,
+                                   double max_variable_unscaling_error,
                                    const ConstraintScaler& scaler,
                                    int num_clamped, int num_small_domains,
                                    SolverLogger* logger) {
@@ -3680,49 +3894,39 @@ void DisplayConstraintScalingStats(const SatParameters& params,
         ").");
   }
 
-  // Display the error/scaling on the constraints.
-  SOLVER_LOG(logger,
-             "[Scaling] Maximum constraint coefficient relative error: ",
-             scaler.max_relative_coeff_error);
-  SOLVER_LOG(logger, "[Scaling] Maximum constraint worst-case activity error: ",
-             scaler.max_absolute_rhs_error,
-             (scaler.max_absolute_rhs_error > params.mip_check_precision()
-                  ? " [Potentially IMPRECISE]"
-                  : ""));
-  {
-    const bool imprecise =
-        scaler.max_rounding_error > params.mip_wanted_precision() ||
-        scaler.max_unrounding_error > params.mip_wanted_precision();
-    SOLVER_LOG(logger, "[Scaling] Tighter worst case rounding_error: ",
-               scaler.max_rounding_error,
-               " unrounding_error: ", scaler.max_unrounding_error,
+  // Display the error/scaling on the variables and constraints.
+  const auto log_error = [&](absl::string_view label, double error) {
+    const bool imprecise = error > params.mip_wanted_precision();
+    SOLVER_LOG(logger, "[Scaling] ", label, ": ", error,
                (imprecise ? " [IMPRECISE]" : ""));
-  }
-  {
-    const bool imprecise =
-        scaler.max_discretization_error > params.mip_wanted_precision();
-    SOLVER_LOG(
-        logger,
-        "[Scaling] Maximum constraint error due to variable discretization: ",
-        scaler.max_discretization_error, (imprecise ? " [IMPRECISE]" : ""));
-  }
+  };
+  log_error("Maximum variable unscaling error", max_variable_unscaling_error);
+  log_error("Maximum constraint rounding error", scaler.max_rounding_error);
+  log_error("Maximum constraint discretization error",
+            scaler.max_discretization_error);
+  log_error("Maximum constraint total unscaling error",
+            scaler.max_total_unscaling_error);
   SOLVER_LOG(logger, "[Scaling] Constraint scaling factor range: [",
              scaler.min_scaling_factor, ", ", scaler.max_scaling_factor, "]");
 
   // Our check precision is pretty large, but this should still be usable in
   // practice. Especially since these are worst case bounds, solution might be
   // good.
-  const double sum_of_errors = scaler.max_rounding_error +
-                               scaler.max_unrounding_error +
-                               scaler.max_discretization_error;
-  if (num_clamped == 0 && sum_of_errors < params.mip_check_precision()) {
+  const double max_constraint_error =
+      params.mip_proper_relaxation()
+          ? scaler.max_total_unscaling_error
+          : std::max(
+                scaler.max_total_unscaling_error,
+                scaler.max_rounding_error + scaler.max_discretization_error);
+  const double max_error =
+      std::max(max_variable_unscaling_error, max_constraint_error);
+  if (num_clamped == 0 && max_error < params.mip_check_precision()) {
     // TODO(user): The objective scaling is not counted here and can be way off
     // though, see for example australia-abs-cta.pb.gz. But we should still
     // report correct lower bound as we correct for the error with
     // params.mip_compute_true_objective_bound().
     SOLVER_LOG(logger, "[Scaling] SUCCESS! No clamped variable and errors <= ",
-               scaler.max_rounding_error + scaler.max_unrounding_error +
-                   scaler.max_discretization_error);
+               max_error);
   }
 }
 
@@ -3855,8 +4059,10 @@ bool ConvertMPModelProtoToCpModelProto(
     }
   }
 
-  DisplayConstraintScalingStats(params, scaler, num_clamped, num_small_domains,
-                                logger);
+  const double max_var_unscaling_error =
+      ComputeMaxVariableUnscalingError(mp_model, states, *cp_model);
+  DisplayConstraintScalingStats(params, max_var_unscaling_error, scaler,
+                                num_clamped, num_small_domains, logger);
   if (!PopulateCpModelFloatingPointObjective(mp_model, states, cp_model)) {
     SOLVER_LOG(logger, "Objective overflow during CP-SAT conversion");
     return false;

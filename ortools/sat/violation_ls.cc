@@ -52,6 +52,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_status.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/deterministic_time.h"
@@ -489,7 +490,7 @@ std::function<void()> ViolationLsSolver::GenerateTask(int64_t /*task_id*/) {
                             search_dtime_since_rebuild_;
     }
     bool updated = false;
-    if (!dense_model_.MaybeUpdate(updated, min_reduction_ratio)) {
+    if (dense_model_.MaybeUpdate(updated, min_reduction_ratio).unsat()) {
       model_is_supported_ = false;
       return;
     }
