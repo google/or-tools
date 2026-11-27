@@ -54,7 +54,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -323,6 +322,16 @@ class GurobiMPCallbackContext : public MPCallbackContext {
       const GurobiInternalCallbackContext& gurobi_internal_context);
 
  private:
+  // Used in AddGeneratedConstraint to tell which Gurobi Callback function to
+  // call to add the constraint.
+  //
+  // We don't use function pointers because of Control Flow Integrity hardening
+  // (see b/590380717).
+  enum GrbCbConstraintFunction {
+    kGrbCbLazy,  // Calls GRBcblazy.
+    kGrbCbCut    // Calls GRBcbcut.
+  };
+
   // Wraps GRBcbget(), used to query the state of the solver.  See
   // http://www.gurobi.com/documentation/8.0/refman/callback_codes.html#sec:CallbackCodes
   // for callback_code values.
@@ -332,9 +341,8 @@ class GurobiMPCallbackContext : public MPCallbackContext {
       int callback_code);
   void CheckedGurobiCall(int gurobi_error_code) const;
 
-  template <typename GRBConstraintFunction>
   void AddGeneratedConstraint(const LinearRange& linear_range,
-                              GRBConstraintFunction grb_constraint_function);
+                              GrbCbConstraintFunction grb_constraint_function);
 
   GRBenv* const env_;
   const std::vector<int>* const mp_var_to_gurobi_var_;
@@ -460,10 +468,9 @@ double GurobiMPCallbackContext::VariableValue(const MPVariable* variable) {
   return gurobi_variable_values_[mp_var_to_gurobi_var_->at(variable->index())];
 }
 
-template <typename GRBConstraintFunction>
 void GurobiMPCallbackContext::AddGeneratedConstraint(
     const LinearRange& linear_range,
-    GRBConstraintFunction grb_constraint_function) {
+    const GrbCbConstraintFunction grb_constraint_function) {
   std::vector<int> variable_indices;
   std::vector<double> variable_coefficients;
   const int num_terms = linear_range.linear_expr().terms().size();
@@ -474,19 +481,30 @@ void GurobiMPCallbackContext::AddGeneratedConstraint(
         mp_var_to_gurobi_var_->at(var_coef_pair.first->index()));
     variable_coefficients.push_back(var_coef_pair.second);
   }
+  const auto call_grb_constraint_function = [&](const char sense,
+                                                const double rhs) {
+    switch (grb_constraint_function) {
+      case GrbCbConstraintFunction::kGrbCbLazy:
+        CheckedGurobiCall(GRBcblazy(current_gurobi_internal_callback_context_
+                                        .gurobi_internal_callback_data,
+                                    variable_indices.size(),
+                                    variable_indices.data(),
+                                    variable_coefficients.data(), sense, rhs));
+        break;
+      case GrbCbConstraintFunction::kGrbCbCut:
+        CheckedGurobiCall(GRBcbcut(current_gurobi_internal_callback_context_
+                                       .gurobi_internal_callback_data,
+                                   variable_indices.size(),
+                                   variable_indices.data(),
+                                   variable_coefficients.data(), sense, rhs));
+        break;
+    }
+  };
   if (std::isfinite(linear_range.upper_bound())) {
-    CheckedGurobiCall(grb_constraint_function(
-        current_gurobi_internal_callback_context_.gurobi_internal_callback_data,
-        variable_indices.size(), variable_indices.data(),
-        variable_coefficients.data(), GRB_LESS_EQUAL,
-        linear_range.upper_bound()));
+    call_grb_constraint_function(GRB_LESS_EQUAL, linear_range.upper_bound());
   }
   if (std::isfinite(linear_range.lower_bound())) {
-    CheckedGurobiCall(grb_constraint_function(
-        current_gurobi_internal_callback_context_.gurobi_internal_callback_data,
-        variable_indices.size(), variable_indices.data(),
-        variable_coefficients.data(), GRB_GREATER_EQUAL,
-        linear_range.lower_bound()));
+    call_grb_constraint_function(GRB_GREATER_EQUAL, linear_range.lower_bound());
   }
 }
 
@@ -496,7 +514,7 @@ void GurobiMPCallbackContext::AddCut(const LinearRange& cutting_plane) {
   CHECK(where == MPCallbackEvent::kMipNode)
       << "Cuts can only be added at MIP_NODE, tried to add cut at: "
       << ToString(where);
-  AddGeneratedConstraint(cutting_plane, GRBcbcut);
+  AddGeneratedConstraint(cutting_plane, GrbCbConstraintFunction::kGrbCbCut);
 }
 
 void GurobiMPCallbackContext::AddLazyConstraint(
@@ -508,7 +526,7 @@ void GurobiMPCallbackContext::AddLazyConstraint(
       << "Lazy constraints can only be added at MIP_NODE or MIP_SOL, tried to "
          "add lazy constraint at: "
       << ToString(where);
-  AddGeneratedConstraint(lazy_constraint, GRBcblazy);
+  AddGeneratedConstraint(lazy_constraint, GrbCbConstraintFunction::kGrbCbLazy);
 }
 
 double GurobiMPCallbackContext::SuggestSolution(
