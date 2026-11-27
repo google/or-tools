@@ -909,6 +909,7 @@ Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 | `AddDimension(...)` / `AddDimensionWithVehicleCapacity(...)` | `add_dimension(...)` / `add_dimension_with_vehicle_capacity(...)` |
 | `AddConstantDimension(...)` / `AddConstantDimensionWithSlack(...)` | `add_constant_dimension(...)` / `add_constant_dimension_with_slack(...)` |
 | `GetDimensionOrDie(name)` | `get_dimension_or_die(name)` |
+| `GetAllDimensionNames()` / `HasDimension(name)` | `get_all_dimension_names()` / `has_dimension(name)` |
 | `AddDisjunction(indices, penalty, ...)` | `add_disjunction(indices, penalty, ...)` |
 | `AddPickupAndDelivery(p, d)` | `add_pickup_and_delivery(p, d)` |
 | `SetPickupAndDeliveryPolicyOfAllVehicles(p)` | `set_pickup_and_delivery_policy_of_all_vehicles(p)` |
@@ -934,6 +935,7 @@ Several `GetNumberOf*` methods on `IndexManager` were shortened to match C++:
 | `dim.CumulVar(i)` / `SlackVar(i)` / `TransitVar(i)` | `dim.cumul_var(i)` / `slack_var(i)` / `transit_var(i)` |
 | `dim.SetGlobalSpanCostCoefficient(c)` | `dim.set_global_span_cost_coefficient(c)` |
 | `dim.SetSpanCostCoefficientForVehicle(c, v)` | `dim.set_span_cost_coefficient_for_vehicle(c, v)` |
+| `dim.SetSlackCostCoefficientForAllVehicles(c)` | `dim.set_slack_cost_coefficient_for_all_vehicles(c)` |
 | `dim.SetCumulVarSoftUpperBound(i, limit, c)` | `dim.set_cumul_var_soft_upper_bound(i, limit, c)` |
 | `dim.GetTransitValue(i, j, v)` | `dim.get_transit_value(i, j, v)` |
 | `dim.SetBreakIntervalsOfVehicle(breaks, v, transits)` | `dim.set_break_intervals_of_vehicle(breaks, v, transits)` |
