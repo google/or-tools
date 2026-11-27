@@ -533,6 +533,57 @@ class NestedTimeLimit {
   TimeLimit time_limit_;
 };
 
+// Adds to a parent time limit, when destroyed, the deterministic time elapsed
+// in a child time limit since the construction of this object. This can be used
+// to make sure that the deterministic time spent on a local time limit (e.g.,
+// the one of a local Model) is accounted for in the parent time limit, on all
+// exit paths. The child time limit must not be reset (e.g., with
+// MergeWithGlobalTimeLimit()) while this object exists.
+//
+// `Parent` can be TimeLimit or SharedTimeLimit (or any class with an
+// AdvanceDeterministicTime(double) method). `parent` can be null, in which case
+// this class does nothing. `child` must not be null.
+template <typename Parent>
+class ScopedDeterministicTimeAccounting {
+ public:
+  ScopedDeterministicTimeAccounting(Parent* parent, const TimeLimit* child)
+      : parent_(parent), child_(child) {
+    DCHECK(child_ != nullptr);
+    accounted_dtime_ = child_->GetElapsedDeterministicTime();
+  }
+
+  // This type is neither copyable nor movable.
+  ScopedDeterministicTimeAccounting(const ScopedDeterministicTimeAccounting&) =
+      delete;
+  ScopedDeterministicTimeAccounting& operator=(
+      const ScopedDeterministicTimeAccounting&) = delete;
+
+  ~ScopedDeterministicTimeAccounting() { AccountNow(); }
+
+  // Adds to the parent time limit the deterministic time elapsed in the child
+  // time limit since the last call to this method (or since the construction
+  // of this object). This can be used to update the parent time limit before
+  // the end of the scope, e.g., to check if it is reached.
+  void AccountNow() {
+    if (parent_ == nullptr) return;
+    const double dtime = child_->GetElapsedDeterministicTime();
+    DCHECK_GE(dtime, accounted_dtime_);
+    if (dtime > accounted_dtime_) {
+      parent_->AdvanceDeterministicTime(dtime - accounted_dtime_);
+      accounted_dtime_ = dtime;
+    }
+  }
+
+ private:
+  Parent* const parent_;
+  const TimeLimit* const child_;
+  double accounted_dtime_;
+};
+
+template <typename Parent>
+ScopedDeterministicTimeAccounting(Parent*, const TimeLimit*)
+    -> ScopedDeterministicTimeAccounting<Parent>;
+
 class TimeLimitCheckEveryNCalls {
  public:
   TimeLimitCheckEveryNCalls(int N, TimeLimit* time_limit)
@@ -582,6 +633,10 @@ inline void TimeLimit::ResetLimitFromParameters(const Parameters& parameters) {
 
 inline void TimeLimit::MergeWithGlobalTimeLimit(const TimeLimit* other) {
   if (other == nullptr) return;
+  // The elapsed deterministic time is reset below, and would thus be lost. Use
+  // this method before using this time limit, or call
+  // ResetLimitFromParameters() first if this is intended.
+  DCHECK_EQ(GetElapsedDeterministicTime(), 0.0);
   ResetTimers(
       std::min(GetTimeLeft(), other->GetTimeLeft()),
       std::min(GetDeterministicTimeLeft(), other->GetDeterministicTimeLeft()));

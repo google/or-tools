@@ -16,8 +16,10 @@
 #include <algorithm>
 #include <cfenv>  // NOLINT(build/c++11)
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -803,6 +805,241 @@ TEST(TightScalingErrorHelperTest,
   lb_relax_sum.Add(0.0);
   lb_relax_sum.Add(helper.GetRelaxationLowerBoundError(lb_relax_sum));
   EXPECT_EQ(lb_relax_sum.Int64Ceil(), 0);
+}
+
+TEST(SafeDoubleToInt64Test, BasicCases) {
+  const int64_t kMax = kint64max;
+  const int64_t kMin = kint64min;
+  const int64_t max53 = (int64_t{1} << 53) - 1;
+
+  // Arbitrary behavior for nans.
+  EXPECT_EQ(SafeDoubleToInt64(std::numeric_limits<double>::quiet_NaN()), 0);
+  EXPECT_EQ(SafeDoubleToInt64(std::numeric_limits<double>::signaling_NaN()), 0);
+
+  EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(kMax)), kMax);
+  EXPECT_EQ(SafeDoubleToInt64(kInfinity), kMax);
+
+  // Transition for max.
+  for (int i = 0; i < 512; ++i) {
+    ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - i)), kMax);
+  }
+  for (int i = 512; i < 1024 + 511; ++i) {
+    ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - i)), kMax - 1023);
+  }
+  ASSERT_EQ(SafeDoubleToInt64(static_cast<double>(kMax - 1024 - 511)),
+            kMax - 2047);
+
+  // Transition for max precision.
+  for (int i = 0; i < 10; ++i) {
+    EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(max53 - i)), max53 - i);
+  }
+  int num_error = 0;
+  for (int i = 0; i < 10; ++i) {
+    if (SafeDoubleToInt64(static_cast<double>(max53 + i)) != max53 + i) {
+      ++num_error;
+    }
+  }
+  EXPECT_EQ(num_error, 4);
+
+  // static_cast just truncates the number.
+  EXPECT_EQ(SafeDoubleToInt64(0.1), 0);
+  EXPECT_EQ(SafeDoubleToInt64(0.9), 0);
+
+  EXPECT_EQ(SafeDoubleToInt64(static_cast<double>(kMin)), kMin);
+  EXPECT_EQ(SafeDoubleToInt64(-kInfinity), kMin);
+}
+
+TEST(RoundScaledBoundTest, LowerAndUpperBounds) {
+  EXPECT_EQ(RoundScaledLowerBound(-kInfinity, 1e-6), -kInfinity);
+  EXPECT_EQ(RoundScaledLowerBound(kInfinity, 1e-6), kInfinity);
+  EXPECT_EQ(RoundScaledUpperBound(-kInfinity, 1e-6), -kInfinity);
+  EXPECT_EQ(RoundScaledUpperBound(kInfinity, 1e-6), kInfinity);
+
+  // Snaps to nearest integer when within tolerance, otherwise rounds outward.
+  EXPECT_DOUBLE_EQ(RoundScaledLowerBound(2.9999995, 1e-6), 3.0);
+  EXPECT_DOUBLE_EQ(RoundScaledLowerBound(2.99999, 1e-6), 2.0);
+  EXPECT_DOUBLE_EQ(RoundScaledLowerBound(3.1, 1e-6), 3.0);
+  EXPECT_DOUBLE_EQ(RoundScaledUpperBound(-2.9999995, 1e-6), -3.0);
+  EXPECT_DOUBLE_EQ(RoundScaledUpperBound(-2.99999, 1e-6), -2.0);
+  EXPECT_DOUBLE_EQ(RoundScaledUpperBound(-3.1, 1e-6), -3.0);
+
+  // Avoids returning -0.0.
+  EXPECT_FALSE(std::signbit(RoundScaledLowerBound(-0.0, 0.0)));
+  EXPECT_FALSE(std::signbit(RoundScaledUpperBound(-0.0, 0.0)));
+  EXPECT_FALSE(std::signbit(RoundScaledUpperBound(-1e-9, 1e-6)));
+}
+
+TEST(FindRationalFactorTest, AllRationalNumberAreRecovered) {
+  for (int64_t p = 1; p < 100; ++p) {
+    for (int64_t q = 1; q < 1000; ++q) {
+      ASSERT_EQ(FindRationalFactor(static_cast<double>(p) / q),
+                q / std::gcd(p, q))
+          << p << " " << q;
+    }
+  }
+}
+
+TEST(FindRationalFactorTest, ComparisonWithTrivialAlgo) {
+  absl::BitGen random;
+  const uint32_t limit = 1000;
+
+  // Note(fdid): If the tolerance is low enough, then because continuous
+  // fractions jump from one rational approximation to the next best one, and we
+  // use "relative tolerance" the results might not match. But with a high
+  // enough tolerance, they will always match.
+  const double tolerance = 1e-7;
+  for (uint32_t i = 0; i < 1000; ++i) {
+    const double x = absl::Uniform<double>(random, 0.0, 100.0);
+    int64_t best = 0;
+    for (uint32_t candidate = 1; candidate < limit; ++candidate) {
+      if (std::abs(x * candidate - std::round(x * candidate)) <
+          candidate * tolerance) {
+        best = candidate;
+        break;
+      }
+    }
+    ASSERT_EQ(best, FindRationalFactor(x, limit, tolerance));
+  }
+}
+
+TEST(FindRationalFactorTest, EdgeCases) {
+  // Leave as much room to FindRationalFactorTest() as possible.
+  constexpr int64_t kLimit = kint64max;
+  // The lowest meaningful tolerance is the maximum precision of a double.
+  constexpr double kTolerance = std::numeric_limits<double>::epsilon();
+
+  // Aggregate a bunch of values to try, especially edge cases.
+  std::vector<int64_t> values_to_test;
+  // Starters
+  for (int64_t v = 1; v < 20; ++v) values_to_test.push_back(v);
+  // Easy to debug
+  for (int64_t v : {1000, 1000000, 1000000000}) values_to_test.push_back(v);
+  // Some primes
+  for (int64_t v : {6359, 6361, 6367, 6373, 6379}) values_to_test.push_back(v);
+  // High-end bucket
+  for (int64_t v = kLimit; v >= kLimit - 200; --v) {
+    values_to_test.push_back(v);
+  }
+
+  const size_t num_factors = values_to_test.size() * values_to_test.size();
+  size_t num_failures = 0;
+  for (int64_t p : values_to_test) {
+    for (int64_t q : values_to_test) {
+      const double x = static_cast<double>(p) / static_cast<double>(q);
+      const double absolute_tolerance = x * kTolerance;
+      const int64_t factor = FindRationalFactor(x, kLimit, absolute_tolerance);
+      if (factor == 0) {
+        // Expect some failures due to fractions made of huge numbers.
+        ++num_failures;
+        continue;
+      }
+      // Assess the precision.
+      ASSERT_LT(std::abs(factor * x - std::round(factor * x)),
+                factor * absolute_tolerance)
+          << p << " " << q;
+    }
+  }
+  // Acceptable percentage of failures.
+  EXPECT_LT(100.0 * num_failures / num_factors, 0.5);
+}
+
+TEST(FindBestScalingAndComputeErrorsTest,
+     RecoversRationalFactorsFromTruncatedDecimalsAndShiftedPowersOfTwo) {
+  double rel_error = 0.0;
+  double sum_error = 0.0;
+
+  // 8-digit MPS decimals for {-1, 1/450, 3/450, 5/450} (as in neos-957143):
+  // odd factor 225 * 2 = 450 gives exact integer coefficients {-450, 1, 3, 5}.
+  {
+    const std::vector<double> coeffs = {-1.0, 0.0022222222, 0.0066666667,
+                                        0.0111111111};
+    const std::vector<double> lbs(4, 0.0);
+    const std::vector<double> ubs(4, 1.0);
+    const double factor = FindBestScalingAndComputeErrors(
+        coeffs, lbs, ubs, /*max_absolute_activity=*/int64_t{1} << 50,
+        /*wanted_absolute_activity_precision=*/1e-4, &rel_error, &sum_error);
+    EXPECT_DOUBLE_EQ(factor, 450.0);
+    EXPECT_LT(sum_error / factor, 1e-6);
+  }
+
+  // 8-digit MPS decimals for {1/1440, 1/6} (as in tbfp-network):
+  // odd factor 45 * 32 = 1440 gives exact integer coefficients {1, 240}.
+  {
+    const std::vector<double> coeffs = {0.00069444444, 0.16666667};
+    const std::vector<double> lbs = {0.0, 0.0};
+    const std::vector<double> ubs = {1.0, 1.0};
+    const double factor = FindBestScalingAndComputeErrors(
+        coeffs, lbs, ubs, /*max_absolute_activity=*/int64_t{1} << 50,
+        /*wanted_absolute_activity_precision=*/1e-4, &rel_error, &sum_error);
+    EXPECT_DOUBLE_EQ(factor, 1440.0);
+    EXPECT_LT(sum_error / factor, 1e-6);
+  }
+
+  // Exact multiples of 1e-6 must still recover odd denominator 15625 (* 64 =
+  // 1e6) rather than accepting an imprecise convergent at 1e-8.
+  {
+    BoundedLinearExpression expr;
+    expr.AddTerm(1e-6, 0.0, 1e6);
+    expr.AddTerm(3e-6, 0.0, 1e6);
+    double max_sf = 0.0;
+    const double factor = FindBestScalingAndComputeErrors(
+        expr, /*max_absolute_activity=*/int64_t{1} << 50,
+        /*wanted_absolute_activity_precision=*/1e-6, &rel_error, &sum_error,
+        &max_sf);
+    EXPECT_DOUBLE_EQ(factor, 1e6);
+    EXPECT_DOUBLE_EQ(sum_error, 0.0);
+    EXPECT_GT(max_sf, factor);
+
+    double check_rel = 0.0;
+    double check_sum = 0.0;
+    ComputeScalingErrors(expr, factor, &check_rel, &check_sum);
+    EXPECT_DOUBLE_EQ(check_rel, rel_error);
+    EXPECT_DOUBLE_EQ(check_sum, sum_error);
+  }
+
+  // Exact rational 35762.8 = 178814 / 5 pre-divided by 2^10 = 1024 on a row
+  // whose max_scaling_factor is 8192: still recovers 5 * 1024 = 5120.
+  {
+    const std::vector<double> coeffs = {35762.8, -1.0 / 1024.0};
+    const std::vector<double> lbs = {0.0, 0.0};
+    const std::vector<double> ubs = {100.0, 1024.0};
+    const double factor = FindBestScalingAndComputeErrors(
+        coeffs, lbs, ubs, /*max_absolute_activity=*/int64_t{1} << 35,
+        /*wanted_absolute_activity_precision=*/1e-6, &rel_error, &sum_error);
+    EXPECT_DOUBLE_EQ(factor, 5120.0);
+    EXPECT_DOUBLE_EQ(sum_error, 0.0);
+  }
+
+  // Exact 7-decimal-place coefficients (as in blp-ic98) where `k - exp` only
+  // strips part of the power-of-two denominator (e.g. `2^2` on `-1031.745096`)
+  // and `FindRationalFactor` supplies an extra factor of 2 (`78125 * 8 =
+  // 625000`).
+  {
+    const std::vector<double> coeffs = {-135.7299648, -1031.745096};
+    const std::vector<double> lbs = {0.0, 0.0};
+    const std::vector<double> ubs = {1000.0, 1000.0};
+    const double factor = FindBestScalingAndComputeErrors(
+        coeffs, lbs, ubs, /*max_absolute_activity=*/int64_t{1} << 50,
+        /*wanted_absolute_activity_precision=*/1e-6, &rel_error, &sum_error);
+    EXPECT_DOUBLE_EQ(factor, 625000.0);
+    EXPECT_LT(sum_error / factor, 1e-9);
+  }
+
+  // Truncated decimal 1000/3 = 333.33333333 after continuous variable scaling
+  // by 2^29 (as in timtab1CUTS): normalizing `< 0.5` coefficients into
+  // `[0.5, 1.0)` still recovers odd factor 3 (`3 * 2^29`) instead of treating
+  // `333.33333333 / 2^29 = 6.2e-7` as near-zero or over-shifting it by `2^k`.
+  {
+    const double s = std::ldexp(1.0, 29);
+    const std::vector<double> coeffs = {227.0 / s, 333.33333333 / s};
+    const std::vector<double> lbs = {0.0, 0.0};
+    const std::vector<double> ubs = {59.0 * s, 59.0 * s};
+    const double factor = FindBestScalingAndComputeErrors(
+        coeffs, lbs, ubs, /*max_absolute_activity=*/int64_t{1} << 47,
+        /*wanted_absolute_activity_precision=*/1e-4, &rel_error, &sum_error);
+    EXPECT_DOUBLE_EQ(factor, 3.0 * s);
+    EXPECT_LT(sum_error / factor, 1e-6);
+  }
 }
 
 }  // namespace

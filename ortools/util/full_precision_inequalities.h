@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 #define ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 
+#include <algorithm>
 #include <bit>
 #include <cmath>
 #include <compare>
@@ -55,6 +56,26 @@ constexpr double FastTwoExp(int exponent);
 // Returns the closest double to `v * 2^exponent` (infinity if overflow).
 // It is truncated if the result is subnormal.
 constexpr double FastLdExp(double v, int exponent);
+
+// Returns true iff `v` is a finite positive exact power of two `2^e`.
+inline bool IsPowerOfTwo(double v);
+
+// Returns the odd integer significand `q` in `[1, 2^53 - 1]` such that
+// `v = q * 2^k` for some integer `k`. Requires finite `v > 0`.
+inline uint64_t OddSignificand(double v);
+
+// Returns the highest exponent `e` such that `2^e <= value` (`int::min()` for
+// `value == 0`, and `int::max()` for `+infinity`). Requires `value >= 0`.
+inline int HighestPowerOfTwoAtOrBelow(double value);
+
+// Returns the lowest exponent `e` such that `value <= 2^e` (`int::min()` for
+// `value == 0`, and `int::max()` for `+infinity`). Requires `value >= 0`.
+inline int LowestPowerOfTwoAtOrAbove(double value);
+
+// Returns the largest exponent `e` such that `magnitude * 2^e <= max_bound` in
+// R (`int::min()` for `max_bound <= 0`, and `int::max()` for `max_bound ==
+// +infinity`). Requires finite `magnitude > 0`.
+inline int MaxPowerOfTwoExponentWithinBound(double magnitude, double max_bound);
 
 // Returns `value` rounded to the nearest multiple of `2^precision_exponent`.
 constexpr double RoundToPrecision(double v, int precision_exponent);
@@ -294,9 +315,10 @@ template <typename Number1, typename Number2>
 TightSum TightDotProduct(absl::Span<const Number1> v,
                          absl::Span<const Number2> w);
 
-// For any combination of int64_t, finite double and PowerOfTwo, ProdBounds(a,
-// b, p) returns a tight pair of bounds [lb, ub] such that lb <= a * b * p <= ub
-// in R.
+// For any combination of int64_t, non-NaN double and PowerOfTwo (excluding 0
+// with +-inf), ProdBounds(a, b, p) returns a tight pair of bounds [lb, ub] such
+// that lb <= a * b * p <= ub in R (or {+-inf, +-inf} if an operand is
+// infinite).
 std::pair<double, double> ProdBounds(int64_t a, int64_t b,
                                      PowerOfTwo p = PowerOfTwo(0));
 std::pair<double, double> ProdBounds(int64_t a, double b,
@@ -319,6 +341,14 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
 std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
     double a, double b, PowerOfTwo p = PowerOfTwo(0));
 
+// For any combination of int64_t and non-NaN double (excluding +inf with -inf),
+// SumBounds(a, b) returns a tight pair of bounds [lb, ub] such that
+// lb <= a + b <= ub in R (or {+-inf, +-inf} if an operand is infinite).
+std::pair<double, double> SumBounds(int64_t a, int64_t b);
+std::pair<double, double> SumBounds(int64_t a, double b);
+std::pair<double, double> SumBounds(double a, int64_t b);
+std::pair<double, double> SumBounds(double a, double b);
+
 // For any combination of int64_t, finite double, SumFloorCeil(a, b) returns
 // Floor(a + b) and Ceil(a + b) as int64_t. If the result is not representable
 // as int64_t, returns {nullopt, int64min} or {int64max, nullopt} depending on
@@ -336,10 +366,49 @@ std::pair<std::optional<int64_t>, std::optional<int64_t>> SumFloorCeil(
 std::pair<double, double> Int64DoubleBounds(int64_t n);
 
 // Tight bounds [lb, ub] containing the exact rational quotient `a / b` for a
-// finite `a` and a finite `b != 0` (`{q, q}` when `q = a / b` is exact, and a
+// non-NaN `a` and a finite `b != 0` (`{q, q}` when `q = a / b` is exact, and a
 // 1-ulp interval otherwise). A quotient that is too large to be representable
-// gives `{max_double, inf}` (or `{-inf, -max_double}`).
+// gives `{max_double, inf}` (or `{-inf, -max_double}`). If `a` is infinite,
+// returns `{a, a}` or `{-a, -a}` depending on the sign of `b`.
 std::pair<double, double> QuotientBounds(double a, double b);
+
+// Outward-rounded bounds for sums, products, and quotients where operands may
+// be infinite.
+//
+// `ExactScaledSumLb` and `ExactScaledSumUb` compute the outward-rounded bound
+// on `x` implied by `a + b <= divisor * x` and `divisor * x <= a + b`,
+// respectively: when `divisor < 0.0`, dividing reverses the inequality so the
+// two functions delegate to each other on `(-a, -b, -divisor)` (producing an
+// upper bound on `(a + b) / divisor` for `ExactScaledSumLb`, and a lower bound
+// for `ExactScaledSumUb`).
+inline double ExactSumLb(double a, double b);
+inline double ExactSumUb(double a, double b);
+inline double ExactScaledSumLb(double a, double b, double divisor);
+inline double ExactScaledSumUb(double a, double b, double divisor);
+inline double ExactProdLb(double a, double b);
+inline double ExactProdUb(double a, double b);
+inline double ExactQuotientLb(double a, double b);
+inline double ExactQuotientUb(double a, double b);
+inline double MaxAbsScaledTightSum(const TightSum& sum,
+                                   double pos_divisor = 1.0);
+
+// Scales an interval `[lb, ub]` by multiplying by a finite `factor` or dividing
+// by a finite non-zero `divisor`, flipping the endpoints when the scalar is
+// negative and rounding finite bounds outward (`[0.0, 0.0]` when `factor == 0`,
+// even for infinite endpoints) so the returned interval encloses every exact
+// `x * factor` or `x / divisor` for `x` in `[lb, ub]`.
+inline std::pair<double, double> RelaxedMulInterval(double lb, double ub,
+                                                    double factor);
+inline std::pair<double, double> RelaxedDivInterval(double lb, double ub,
+                                                    double divisor);
+
+// Tight outward-rounded bounds `[lb, ub]` on `a * b` for `a` in `[a_lb, a_ub]`
+// and `b` in `[b_lb, b_ub]` (treating `0 * +-inf` as `0.0`, as in
+// `RelaxedMulInterval`, so `[0.0, 0.0]` multiplied by an unbounded interval
+// yields `[0.0, 0.0]`). Requires non-NaN bounds with `a_lb <= a_ub` and
+// `b_lb <= b_ub`.
+inline std::pair<double, double> IntervalProdBounds(double a_lb, double a_ub,
+                                                    double b_lb, double b_ub);
 
 constexpr double FastStepUp(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
@@ -448,6 +517,50 @@ constexpr double FastLdExp(const double v, const int exponent) {
   return absl::bit_cast<double>((mantissa & kMantissaMask) |
                                 (new_biased_exp << 52) |
                                 (i & (uint64_t{1} << 63)));
+}
+
+inline bool IsPowerOfTwo(const double v) {
+  return v > 0.0 && std::isfinite(v) && FastTwoExp(FastILogB(v)) == v;
+}
+
+inline uint64_t OddSignificand(const double v) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  DCHECK_GT(v, 0.0);
+  DCHECK(std::isfinite(v));
+
+  const uint64_t bits = absl::bit_cast<uint64_t>(v);
+  const uint64_t biased_exp = (bits >> 52) & 0x7ff;
+  const uint64_t sig = (bits & ((uint64_t{1} << 52) - 1)) |
+                       (biased_exp > 0 ? (uint64_t{1} << 52) : 0);
+  return sig >> std::countr_zero(sig);
+}
+
+inline int HighestPowerOfTwoAtOrBelow(const double value) {
+  CHECK_GE(value, 0.0);
+  return FastILogB(value);
+}
+
+inline int LowestPowerOfTwoAtOrAbove(const double value) {
+  CHECK_GE(value, 0.0);
+  if (value == 0.0) return std::numeric_limits<int>::min();
+  if (!std::isfinite(value)) return std::numeric_limits<int>::max();
+  const int e = FastILogB(value);
+  return FastTwoExp(e) == value ? e : e + 1;
+}
+
+inline int MaxPowerOfTwoExponentWithinBound(const double magnitude,
+                                            const double max_bound) {
+  DCHECK_GT(magnitude, 0.0);
+  DCHECK(std::isfinite(magnitude));
+  if (max_bound <= 0.0) return std::numeric_limits<int>::min();
+  if (!std::isfinite(max_bound)) return std::numeric_limits<int>::max();
+  const int e_mag = FastILogB(magnitude);
+  const int e_bnd = FastILogB(max_bound);
+  const int exp = e_bnd - e_mag;
+  return FastLdExp(magnitude, -e_mag) <= FastLdExp(max_bound, -e_bnd) ? exp
+                                                                      : exp - 1;
 }
 
 constexpr double RoundToPrecision(const double v,
@@ -721,6 +834,97 @@ TightSum TightDotProduct(absl::Span<const Number1> v,
     res.AddProd(v[i], w[i]);
   }
   return res;
+}
+
+inline double ExactSumLb(const double a, const double b) {
+  return SumBounds(a, b).first;
+}
+
+inline double ExactSumUb(const double a, const double b) {
+  return SumBounds(a, b).second;
+}
+
+inline double ExactProdLb(const double a, const double b) {
+  return ProdBounds(a, b).first;
+}
+
+inline double ExactProdUb(const double a, const double b) {
+  return ProdBounds(a, b).second;
+}
+
+inline double ExactQuotientLb(const double a, const double b) {
+  return QuotientBounds(a, b).first;
+}
+
+inline double ExactQuotientUb(const double a, const double b) {
+  return QuotientBounds(a, b).second;
+}
+
+inline double ExactScaledSumLb(const double a, const double b,
+                               const double divisor) {
+  if (divisor < 0.0) return ExactScaledSumUb(-a, -b, -divisor);
+  return ExactQuotientLb(ExactSumLb(a, b), divisor);
+}
+
+inline double ExactScaledSumUb(const double a, const double b,
+                               const double divisor) {
+  if (divisor < 0.0) return ExactScaledSumLb(-a, -b, -divisor);
+  return ExactQuotientUb(ExactSumUb(a, b), divisor);
+}
+
+inline double MaxAbsScaledTightSum(const TightSum& sum,
+                                   const double pos_divisor) {
+  const auto [lb, ub] = sum.TightBounds();
+  const auto [dlb, dub] = RelaxedDivInterval(lb, ub, pos_divisor);
+  return std::max(std::abs(dlb), std::abs(dub));
+}
+
+inline std::pair<double, double> RelaxedMulInterval(const double lb,
+                                                    const double ub,
+                                                    const double factor) {
+  DCHECK(std::isfinite(factor));
+  if (factor == 0.0) return {0.0, 0.0};
+  if (factor < 0.0) return RelaxedMulInterval(-ub, -lb, -factor);
+  return {ExactProdLb(lb, factor), ExactProdUb(ub, factor)};
+}
+
+inline std::pair<double, double> RelaxedDivInterval(const double lb,
+                                                    const double ub,
+                                                    const double divisor) {
+  if (divisor < 0.0) return RelaxedDivInterval(-ub, -lb, -divisor);
+  return {ExactQuotientLb(lb, divisor), ExactQuotientUb(ub, divisor)};
+}
+
+inline std::pair<double, double> IntervalProdBounds(const double a_lb,
+                                                    const double a_ub,
+                                                    const double b_lb,
+                                                    const double b_ub) {
+  DCHECK(!std::isnan(a_lb) && !std::isnan(a_ub));
+  DCHECK(!std::isnan(b_lb) && !std::isnan(b_ub));
+  DCHECK_LE(a_lb, a_ub);
+  DCHECK_LE(b_lb, b_ub);
+  const auto prod_lb = [](double a, double b) {
+    return (a == 0.0 || b == 0.0) ? 0.0 : ExactProdLb(a, b);
+  };
+  const auto prod_ub = [](double a, double b) {
+    return (a == 0.0 || b == 0.0) ? 0.0 : ExactProdUb(a, b);
+  };
+  if (a_lb >= 0.0) {
+    return {prod_lb(b_lb < 0.0 ? a_ub : a_lb, b_lb),
+            prod_ub(b_ub > 0.0 ? a_ub : a_lb, b_ub)};
+  }
+  if (a_ub <= 0.0) {
+    return {prod_lb(b_ub > 0.0 ? a_lb : a_ub, b_ub),
+            prod_ub(b_lb < 0.0 ? a_lb : a_ub, b_lb)};
+  }
+  if (b_lb >= 0.0) {
+    return {prod_lb(a_lb, b_ub), prod_ub(a_ub, b_ub)};
+  }
+  if (b_ub <= 0.0) {
+    return {prod_lb(a_ub, b_lb), prod_ub(a_lb, b_lb)};
+  }
+  return {std::min(ExactProdLb(a_lb, b_ub), ExactProdLb(a_ub, b_lb)),
+          std::max(ExactProdUb(a_lb, b_lb), ExactProdUb(a_ub, b_ub))};
 }
 
 }  // namespace operations_research

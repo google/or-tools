@@ -617,7 +617,7 @@ class SortedDisjointIntervalList {
    * Builds the complement of the interval list on the interval [start, end].
    */
   SortedDisjointIntervalList BuildComplementOnInterval(int64_t start,
-                                                       int64_t end);
+                                                       int64_t end) const;
 
   /**
    * Adds the interval [start..end] to the list, and merges overlapping or

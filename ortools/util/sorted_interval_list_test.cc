@@ -1128,8 +1128,35 @@ TEST(SortedDisjointIntervalListTest, ComplementInterval) {
 }
 
 TEST(SortedDisjointIntervalListTest, ComplementIntervalOnEmptyList) {
-  SortedDisjointIntervalList list;
+  const SortedDisjointIntervalList list;
   ExpectIntervalListEqual(list.BuildComplementOnInterval(0, 50), {0}, {50});
+  ExpectIntervalListEqual(list.BuildComplementOnInterval(kint64min, kint64max),
+                          {kint64min}, {kint64max});
+  ExpectIntervalListEqual(list.BuildComplementOnInterval(10, 5), {}, {});
+}
+
+TEST(SortedDisjointIntervalListTest, ComplementIntervalExtremes) {
+  SortedDisjointIntervalList list;
+  list.InsertInterval(kint64min, 9);
+  list.InsertInterval(21, kint64max);
+  const SortedDisjointIntervalList& const_list = list;
+  ExpectIntervalListEqual(
+      const_list.BuildComplementOnInterval(kint64min, kint64max), {10}, {20});
+  ExpectIntervalListEqual(const_list.BuildComplementOnInterval(0, kint64max),
+                          {10}, {20});
+  ExpectIntervalListEqual(const_list.BuildComplementOnInterval(kint64min, 50),
+                          {10}, {20});
+
+  SortedDisjointIntervalList full;
+  full.InsertInterval(kint64min, kint64max);
+  ExpectIntervalListEqual(full.BuildComplementOnInterval(kint64min, kint64max),
+                          {}, {});
+
+  SortedDisjointIntervalList near_extremes;
+  near_extremes.InsertInterval(kint64min + 1, kint64max - 1);
+  ExpectIntervalListEqual(
+      near_extremes.BuildComplementOnInterval(kint64min, kint64max),
+      {kint64min, kint64max}, {kint64min, kint64max});
 }
 
 TEST(SortedDisjointIntervalListTest, RandomizedStressTest) {

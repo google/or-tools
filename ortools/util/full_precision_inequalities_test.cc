@@ -13,6 +13,7 @@
 
 #include "ortools/util/full_precision_inequalities.h"
 
+#include <algorithm>
 #include <cmath>
 #include <compare>
 #include <cstdint>
@@ -1026,6 +1027,460 @@ INSTANTIATE_TEST_SUITE_P(
             .expected_bounds = {std::nullopt,
                                 std::numeric_limits<int64_t>::min()}}));
 
+struct SumBoundsIntIntTestCase {
+  int64_t a;
+  int64_t b;
+  std::pair<double, double> expected_bounds;
+};
+
+using SumBoundsIntIntTest = testing::TestWithParam<SumBoundsIntIntTestCase>;
+
+TEST_P(SumBoundsIntIntTest, BoundsMatchExpectedAndTightSum) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumBounds(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.b, param.a), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.a, param.b),
+            TightSum().Add(param.a).Add(param.b).TightBounds());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumBoundsIntIntTest,
+    testing::Values(
+        SumBoundsIntIntTestCase{.a = 0, .b = 0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntIntTestCase{.a = 0, .b = 7, .expected_bounds = {7.0, 7.0}},
+        SumBoundsIntIntTestCase{
+            .a = 0, .b = -7, .expected_bounds = {-7.0, -7.0}},
+        SumBoundsIntIntTestCase{.a = 3, .b = 4, .expected_bounds = {7.0, 7.0}},
+        SumBoundsIntIntTestCase{.a = -3, .b = 4, .expected_bounds = {1.0, 1.0}},
+        SumBoundsIntIntTestCase{
+            .a = 3, .b = -4, .expected_bounds = {-1.0, -1.0}},
+        SumBoundsIntIntTestCase{
+            .a = -3, .b = -4, .expected_bounds = {-7.0, -7.0}},
+        SumBoundsIntIntTestCase{
+            .a = 42, .b = -42, .expected_bounds = {0.0, 0.0}},
+        // Precision boundary around 2^53.
+        SumBoundsIntIntTestCase{
+            .a = (int64_t{1} << 53) - 1,
+            .b = 0,
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 53), 0.0),
+                                std::nextafter(std::ldexp(1.0, 53), 0.0)}},
+        SumBoundsIntIntTestCase{
+            .a = int64_t{1} << 53,
+            .b = 1,
+            .expected_bounds = {std::ldexp(1.0, 53),
+                                std::nextafter(std::ldexp(1.0, 53), kInf)}},
+        SumBoundsIntIntTestCase{
+            .a = -(int64_t{1} << 53),
+            .b = -1,
+            .expected_bounds = {std::nextafter(-std::ldexp(1.0, 53), -kInf),
+                                -std::ldexp(1.0, 53)}},
+        SumBoundsIntIntTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 1,
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 53), kInf),
+                                std::nextafter(std::ldexp(1.0, 53), kInf)}},
+        SumBoundsIntIntTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = -1,
+            .expected_bounds = {std::ldexp(1.0, 53), std::ldexp(1.0, 53)}},
+        // Near and past int64_t overflow (exact 65-bit sums in int128).
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 0,
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 63), 0.0),
+                                std::ldexp(1.0, 63)}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 0,
+            .expected_bounds = {-std::ldexp(1.0, 63), -std::ldexp(1.0, 63)}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 1,
+            .expected_bounds = {std::ldexp(1.0, 63), std::ldexp(1.0, 63)}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -1,
+            .expected_bounds = {std::nextafter(-std::ldexp(1.0, 63), -kInf),
+                                -std::ldexp(1.0, 63)}},
+        SumBoundsIntIntTestCase{.a = std::numeric_limits<int64_t>::max(),
+                                .b = -std::numeric_limits<int64_t>::max(),
+                                .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntIntTestCase{.a = std::numeric_limits<int64_t>::min(),
+                                .b = std::numeric_limits<int64_t>::max(),
+                                .expected_bounds = {-1.0, -1.0}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::numeric_limits<int64_t>::max(),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 64), 0.0),
+                                std::ldexp(1.0, 64)}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<int64_t>::min(),
+            .expected_bounds = {-std::ldexp(1.0, 64), -std::ldexp(1.0, 64)}},
+        SumBoundsIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<int64_t>::min() + 1,
+            .expected_bounds = {-std::ldexp(1.0, 64),
+                                std::nextafter(-std::ldexp(1.0, 64), 0.0)}},
+        SumBoundsIntIntTestCase{
+            .a = int64_t{1} << 62,
+            .b = (int64_t{1} << 62) + 1,
+            .expected_bounds = {std::ldexp(1.0, 63),
+                                std::nextafter(std::ldexp(1.0, 63), kInf)}}));
+
+struct SumBoundsIntDoubleTestCase {
+  int64_t a;
+  double b;
+  std::pair<double, double> expected_bounds;
+};
+
+using SumBoundsIntDoubleTest =
+    testing::TestWithParam<SumBoundsIntDoubleTestCase>;
+
+TEST_P(SumBoundsIntDoubleTest, BoundsMatchExpectedAndTightSum) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumBounds(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.b, param.a), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.a, param.b),
+            TightSum().Add(param.a).Add(param.b).TightBounds());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumBoundsIntDoubleTest,
+    testing::Values(
+        // Zeros (+0.0 and -0.0).
+        SumBoundsIntDoubleTestCase{
+            .a = 0, .b = 0.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = 0, .b = -0.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = 7, .b = -0.0, .expected_bounds = {7.0, 7.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = 0, .b = 1.5, .expected_bounds = {1.5, 1.5}},
+        SumBoundsIntDoubleTestCase{
+            .a = 0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<double>::denorm_min(),
+                                std::numeric_limits<double>::denorm_min()}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 0.0,
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 63), 0.0),
+                                std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -0.0,
+            .expected_bounds = {-std::ldexp(1.0, 63), -std::ldexp(1.0, 63)}},
+        // Small exact, fractional, and canceling values.
+        SumBoundsIntDoubleTestCase{
+            .a = 3, .b = 1.5, .expected_bounds = {4.5, 4.5}},
+        SumBoundsIntDoubleTestCase{
+            .a = 5, .b = -5.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = std::ldexp(1.0, -52),
+            .expected_bounds = {std::nextafter(1.0, kInf),
+                                std::nextafter(1.0, kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = std::ldexp(1.0, -53),
+            .expected_bounds = {1.0, std::nextafter(1.0, kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = -std::ldexp(1.0, -53),
+            .expected_bounds = {std::nextafter(1.0, 0.0),
+                                std::nextafter(1.0, 0.0)}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = -std::ldexp(1.0, -54),
+            .expected_bounds = {std::nextafter(1.0, 0.0), 1.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {1.0, std::nextafter(1.0, kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nextafter(1.0, 0.0), 1.0}},
+        // Boundary between b_term.exponent == -52 (|b| == 1.0) and -53
+        // (|b| < 1.0).
+        SumBoundsIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = -1.0,
+            .expected_bounds = {std::ldexp(1.0, 53), std::ldexp(1.0, 53)}},
+        SumBoundsIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 1.0,
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 53), kInf),
+                                std::nextafter(std::ldexp(1.0, 53), kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = -std::nextafter(1.0, 0.0),
+            .expected_bounds = {std::ldexp(1.0, 53),
+                                std::nextafter(std::ldexp(1.0, 53), kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = std::nextafter(1.0, 0.0),
+            .expected_bounds = {std::ldexp(1.0, 53),
+                                std::nextafter(std::ldexp(1.0, 53), kInf)}},
+        SumBoundsIntDoubleTestCase{
+            .a = -(int64_t{1} << 53) - 1,
+            .b = 1.0,
+            .expected_bounds = {-std::ldexp(1.0, 53), -std::ldexp(1.0, 53)}},
+        SumBoundsIntDoubleTestCase{
+            .a = -(int64_t{1} << 53) - 1,
+            .b = std::nextafter(1.0, 0.0),
+            .expected_bounds = {std::nextafter(-std::ldexp(1.0, 53), -kInf),
+                                -std::ldexp(1.0, 53)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 1.0,
+            .expected_bounds = {std::ldexp(1.0, 63), std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::nextafter(1.0, 0.0),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 63), 0.0),
+                                std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 63), 0.0),
+                                std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -1.0,
+            .expected_bounds = {std::nextafter(-std::ldexp(1.0, 63), -kInf),
+                                -std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 1.0,
+            .expected_bounds = {-std::ldexp(1.0, 63),
+                                std::nextafter(-std::ldexp(1.0, 63), 0.0)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nextafter(-std::ldexp(1.0, 63), -kInf),
+                                -std::ldexp(1.0, 63)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-std::ldexp(1.0, 63),
+                                std::nextafter(-std::ldexp(1.0, 63), 0.0)}},
+        // Cancellation at exponent in [0, 64].
+        SumBoundsIntDoubleTestCase{.a = std::numeric_limits<int64_t>::min(),
+                                   .b = std::ldexp(1.0, 63),
+                                   .expected_bounds = {0.0, 0.0}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -std::ldexp(1.0, 63),
+            .expected_bounds = {-std::ldexp(1.0, 64), -std::ldexp(1.0, 64)}},
+        SumBoundsIntDoubleTestCase{.a = std::numeric_limits<int64_t>::max(),
+                                   .b = -std::ldexp(1.0, 63),
+                                   .expected_bounds = {-1.0, -1.0}},
+        // Boundary between b_term.exponent == 64 (2^116) and 65 (2^117).
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::ldexp(1.0, 116),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 116), 0.0),
+                                std::nextafter(std::ldexp(1.0, 116), 0.0)}},
+        SumBoundsIntDoubleTestCase{
+            .a = -std::numeric_limits<int64_t>::max(),
+            .b = std::ldexp(1.0, 116),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 116), 0.0),
+                                std::ldexp(1.0, 116)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::ldexp(1.0, 117),
+            .expected_bounds = {std::nextafter(std::ldexp(1.0, 117), 0.0),
+                                std::ldexp(1.0, 117)}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -std::ldexp(1.0, 117),
+            .expected_bounds = {-std::ldexp(1.0, 117),
+                                std::nextafter(-std::ldexp(1.0, 117), 0.0)}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = std::ldexp(1.0, 117),
+            .expected_bounds = {std::ldexp(1.0, 117),
+                                std::nextafter(std::ldexp(1.0, 117), kInf)}},
+        // Overflow boundaries at +/-DBL_MAX.
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        SumBoundsIntDoubleTestCase{
+            .a = -1,
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::nextafter(
+                                    std::numeric_limits<double>::max(), 0.0),
+                                std::numeric_limits<double>::max()}},
+        SumBoundsIntDoubleTestCase{
+            .a = -1,
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {-kInf, -std::numeric_limits<double>::max()}},
+        SumBoundsIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {-kInf, -std::numeric_limits<double>::max()}},
+        SumBoundsIntDoubleTestCase{
+            .a = 1,
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {
+                -std::numeric_limits<double>::max(),
+                std::nextafter(-std::numeric_limits<double>::max(), 0.0)}}));
+
+struct SumBoundsDoubleDoubleTestCase {
+  double a;
+  double b;
+  std::pair<double, double> expected_bounds;
+};
+
+using SumBoundsDoubleDoubleTest =
+    testing::TestWithParam<SumBoundsDoubleDoubleTestCase>;
+
+TEST_P(SumBoundsDoubleDoubleTest, BoundsMatchExpectedAndTightSum) {
+  const auto param = GetParam();
+  EXPECT_EQ(SumBounds(param.a, param.b), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.b, param.a), param.expected_bounds);
+  EXPECT_EQ(SumBounds(param.a, param.b),
+            TightSum().Add(param.a).Add(param.b).TightBounds());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumBoundsDoubleDoubleTest,
+    testing::Values(
+        // Zeros (+0.0 and -0.0) and exact cancellation.
+        SumBoundsDoubleDoubleTestCase{
+            .a = 0.0, .b = 0.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -0.0, .b = -0.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -0.0, .b = 3.5, .expected_bounds = {3.5, 3.5}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0, .b = -1.0, .expected_bounds = {0.0, 0.0}},
+        SumBoundsDoubleDoubleTestCase{.a = std::numeric_limits<double>::max(),
+                                      .b = -std::numeric_limits<double>::max(),
+                                      .expected_bounds = {0.0, 0.0}},
+        // Subnormals and normal transition.
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {2.0 * std::numeric_limits<double>::denorm_min(),
+                                2.0 *
+                                    std::numeric_limits<double>::denorm_min()}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0.0, 0.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::nextafter(std::numeric_limits<double>::min(), 0.0),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<double>::min(),
+                                std::numeric_limits<double>::min()}},
+        // Exact vs rounded up vs rounded down around binade edges.
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::ldexp(1.0, -52),
+            .expected_bounds = {std::nextafter(1.0, kInf),
+                                std::nextafter(1.0, kInf)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::ldexp(1.0, -53),
+            .expected_bounds = {1.0, std::nextafter(1.0, kInf)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::ldexp(1.0, -53) + std::ldexp(1.0, -54),
+            .expected_bounds = {1.0, std::nextafter(1.0, kInf)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = -std::ldexp(1.0, -53),
+            .expected_bounds = {std::nextafter(1.0, 0.0),
+                                std::nextafter(1.0, 0.0)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = -std::ldexp(1.0, -54),
+            .expected_bounds = {std::nextafter(1.0, 0.0), 1.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {1.0, std::nextafter(1.0, kInf)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nextafter(1.0, 0.0), 1.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0 + std::ldexp(1.0, -52),
+            .b = 1.0 - std::ldexp(1.0, -53),
+            .expected_bounds = {2.0, std::nextafter(2.0, kInf)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 1.0 + std::ldexp(1.0, -52),
+            .b = 1.0 - 3.0 * std::ldexp(1.0, -53),
+            .expected_bounds = {std::nextafter(2.0, 0.0), 2.0}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 53),
+            .b = 0.5,
+            .expected_bounds = {-std::ldexp(1.0, 53),
+                                std::nextafter(-std::ldexp(1.0, 53), 0.0)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = 0.1,
+            .b = 0.2,
+            .expected_bounds = {std::nextafter(0.1 + 0.2, 0.0), 0.1 + 0.2}},
+        // Overflow and near-overflow around +/-DBL_MAX.
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::ldexp(1.0, 970),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = std::numeric_limits<double>::max(),
+            .expected_bounds = {std::numeric_limits<double>::max(), kInf}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {std::nextafter(
+                                    std::numeric_limits<double>::max(), 0.0),
+                                std::numeric_limits<double>::max()}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = -std::ldexp(1.0, 971),
+            .expected_bounds =
+                {std::nextafter(std::numeric_limits<double>::max(), 0.0),
+                 std::nextafter(std::numeric_limits<double>::max(), 0.0)}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::max(),
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-kInf, -std::numeric_limits<double>::max()}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::max(),
+            .b = -std::numeric_limits<double>::max(),
+            .expected_bounds = {-kInf, -std::numeric_limits<double>::max()}},
+        SumBoundsDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::max(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {
+                -std::numeric_limits<double>::max(),
+                std::nextafter(-std::numeric_limits<double>::max(), 0.0)}}));
+
+TEST(SumBoundsTest, NormalizesNegativeZeroToPositiveZero) {
+  for (const auto [lb, ub] :
+       {SumBounds(-0.0, -0.0), SumBounds(-0.0, 0.0), SumBounds(0.0, -0.0),
+        SumBounds(int64_t{0}, -0.0), SumBounds(-0.0, int64_t{0}),
+        SumBounds(1.0, -1.0), SumBounds(int64_t{5}, -5.0)}) {
+    EXPECT_EQ(lb, 0.0);
+    EXPECT_EQ(ub, 0.0);
+    EXPECT_FALSE(std::signbit(lb));
+    EXPECT_FALSE(std::signbit(ub));
+  }
+}
+
 struct SumFloorCeilIntIntTestCase {
   int64_t a;
   int64_t b;
@@ -1759,7 +2214,33 @@ INSTANTIATE_TEST_SUITE_P(
         QuotientBoundsTestCase{.a = std::numeric_limits<double>::min(),
                                .b = 3.0,
                                .expected_bounds = {0x0.5555555555555p-1022,
-                                                   0x0.5555555555556p-1022}}));
+                                                   0x0.5555555555556p-1022}},
+        // Unit divisor (b == +-1.0 fast path).
+        QuotientBoundsTestCase{
+            .a = 0.0, .b = 1.0, .expected_bounds = {0.0, 0.0}},
+        QuotientBoundsTestCase{
+            .a = 3.75, .b = 1.0, .expected_bounds = {3.75, 3.75}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<double>::denorm_min(),
+                                std::numeric_limits<double>::denorm_min()}},
+        QuotientBoundsTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<double>::max(),
+                                std::numeric_limits<double>::max()}},
+        // Infinite dividend.
+        QuotientBoundsTestCase{
+            .a = kInf, .b = 1.0, .expected_bounds = {kInf, kInf}},
+        QuotientBoundsTestCase{
+            .a = kInf, .b = 3.0, .expected_bounds = {kInf, kInf}},
+        QuotientBoundsTestCase{.a = kInf,
+                               .b = std::numeric_limits<double>::denorm_min(),
+                               .expected_bounds = {kInf, kInf}},
+        QuotientBoundsTestCase{.a = kInf,
+                               .b = std::numeric_limits<double>::max(),
+                               .expected_bounds = {kInf, kInf}}));
 
 TEST(TightSumTest, DefaultConstructedIsZero) {
   TightSum sum;
@@ -3076,6 +3557,263 @@ TEST(ToPrecisionTest, SubnormalValuesAndPromotionToNormal) {
                                   kMinNormal);
   ExpectAllFivePrecisionFunctions(-kMaxSubnormal, -1022, -kMinNormal, 0.0,
                                   -kMinNormal);
+}
+
+TEST(IsPowerOfTwoTest, NormalSubnormalAndEdgeCases) {
+  EXPECT_FALSE(IsPowerOfTwo(0.0));
+  EXPECT_FALSE(IsPowerOfTwo(-0.0));
+  EXPECT_FALSE(IsPowerOfTwo(-1.0));
+  EXPECT_FALSE(IsPowerOfTwo(-2.0));
+  EXPECT_FALSE(IsPowerOfTwo(kInf));
+  EXPECT_FALSE(IsPowerOfTwo(-kInf));
+  EXPECT_FALSE(IsPowerOfTwo(std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_FALSE(IsPowerOfTwo(std::numeric_limits<double>::max()));
+  EXPECT_FALSE(IsPowerOfTwo(3.0 * std::numeric_limits<double>::denorm_min()));
+
+  for (int exp = -1074; exp <= 1023; ++exp) {
+    const double p = FastTwoExp(exp);
+    EXPECT_TRUE(IsPowerOfTwo(p)) << exp;
+    EXPECT_FALSE(IsPowerOfTwo(-p)) << exp;
+    // At `exp == -1073`, `FastStepDown(2^-1073) == 2^-1074` is still a power of
+    // two; for all larger exponents, `FastStepDown(2^exp)` has all 1-bits.
+    if (exp > -1073) EXPECT_FALSE(IsPowerOfTwo(FastStepDown(p))) << exp;
+    if (exp < 1023 && exp > -1074) {
+      EXPECT_FALSE(IsPowerOfTwo(FastStepUp(p))) << exp;
+    }
+  }
+}
+
+TEST(OddSignificandTest, NormalAndSubnormalValues) {
+  for (int exp = -1074; exp <= 1023; ++exp) {
+    EXPECT_EQ(OddSignificand(FastTwoExp(exp)), 1) << exp;
+  }
+  EXPECT_EQ(OddSignificand(3.0), 3);
+  EXPECT_EQ(OddSignificand(12.0), 3);
+  EXPECT_EQ(OddSignificand(0.375), 3);
+  EXPECT_EQ(OddSignificand(3.0 * std::numeric_limits<double>::denorm_min()), 3);
+  EXPECT_EQ(OddSignificand(std::ldexp(15625.0, -6)), 15625);
+  EXPECT_EQ(OddSignificand(std::numeric_limits<double>::max()),
+            (uint64_t{1} << 53) - 1);
+}
+
+TEST(HighestPowerOfTwoAtOrBelowTest, BasicTest) {
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(0.0), std::numeric_limits<int>::min());
+  EXPECT_EQ(
+      HighestPowerOfTwoAtOrBelow(std::numeric_limits<double>::denorm_min()),
+      -1074);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(0.25), -2);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(0.3), -2);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(0.5), -1);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(0.9), -1);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(1.0), 0);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(1.9999999), 0);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(2.0 - 1e-15), 0);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(2.0), 1);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(256.0), 8);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(300), 8);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(1e3), 9);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(1e6), 19);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(1e9), 29);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(std::numeric_limits<double>::max()),
+            1023);
+  EXPECT_EQ(HighestPowerOfTwoAtOrBelow(kInf), std::numeric_limits<int>::max());
+}
+
+TEST(LowestPowerOfTwoAtOrAboveTest, BasicTest) {
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(0.0), std::numeric_limits<int>::min());
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(0.25), -2);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(0.3), -1);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(0.5), -1);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(0.9), 0);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(1.0), 0);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(1 + 1e-15), 1);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(2.0), 1);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(2 + 1e-15), 2);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(256.0), 8);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(300.0), 9);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(1e3), 10);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(1e6), 20);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(1e9), 30);
+  EXPECT_EQ(
+      LowestPowerOfTwoAtOrAbove(std::numeric_limits<double>::denorm_min()),
+      -1074);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(std::numeric_limits<double>::max()),
+            1024);
+  EXPECT_EQ(LowestPowerOfTwoAtOrAbove(kInf), std::numeric_limits<int>::max());
+}
+
+TEST(MaxPowerOfTwoExponentWithinBoundTest, BasicAndRoundingBoundaryCases) {
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, 0.0),
+            std::numeric_limits<int>::min());
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, -4.0),
+            std::numeric_limits<int>::min());
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, kInf),
+            std::numeric_limits<int>::max());
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(5.0, 4.0), -1);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(5.0, 2.5), -1);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(5.0, FastStepDown(2.5)), -2);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, 1.0), 0);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, 8.0), 3);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.5, 12.0), 3);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.5, FastStepDown(12.0)), 2);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(1.0, FastStepDown(2.0)), 0);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(FastStepUp(3.0), 6.0), 0);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(FastStepDown(3.0), 6.0), 1);
+  EXPECT_EQ(MaxPowerOfTwoExponentWithinBound(
+                std::numeric_limits<double>::denorm_min(),
+                std::numeric_limits<double>::max()),
+            2097);
+}
+
+TEST(SumAndProdBoundsInfiniteAndDeathTest, NonFiniteOperands) {
+  const double kNaN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_EQ(SumBounds(kInf, 5.0), std::make_pair(kInf, kInf));
+  EXPECT_EQ(SumBounds(-kInf, -kInf), std::make_pair(-kInf, -kInf));
+  EXPECT_EQ(SumBounds(int64_t{-7}, kInf), std::make_pair(kInf, kInf));
+  EXPECT_EQ(SumBounds(-kInf, int64_t{7}), std::make_pair(-kInf, -kInf));
+
+  EXPECT_EQ(ProdBounds(kInf, -2.0, PowerOfTwo(5)),
+            std::make_pair(-kInf, -kInf));
+  EXPECT_EQ(ProdBounds(-kInf, -kInf), std::make_pair(kInf, kInf));
+  EXPECT_EQ(ProdBounds(int64_t{-3}, kInf), std::make_pair(-kInf, -kInf));
+  EXPECT_EQ(ProdBounds(-kInf, int64_t{-3}), std::make_pair(kInf, kInf));
+
+  EXPECT_DEATH(SumBounds(kNaN, 1.0), "NaN not supported");
+  EXPECT_DEATH(SumBounds(int64_t{1}, kNaN), "NaN not supported");
+  EXPECT_DEATH(SumBounds(kInf, -kInf), "Inconsistent infinite values in sum");
+  EXPECT_DEATH(ProdBounds(kNaN, 1.0), "NaN not supported");
+  EXPECT_DEATH(ProdBounds(int64_t{1}, kNaN), "NaN not supported");
+  EXPECT_DEATH(ProdBounds(kInf, 0.0), "inf \\* 0 would give NaN");
+  EXPECT_DEATH(ProdBounds(0.0, -kInf), "inf \\* 0 would give NaN");
+  EXPECT_DEATH(ProdBounds(int64_t{0}, -kInf), "inf \\* 0 would give NaN");
+}
+
+TEST(OutwardIntervalHelpersTest, SumProdQuotientAndIntervals) {
+  EXPECT_EQ(ExactSumLb(-kInf, 5.0), -kInf);
+  EXPECT_EQ(ExactSumUb(5.0, kInf), kInf);
+  EXPECT_EQ(ExactSumLb(1.0, -std::ldexp(1.0, -100)), FastStepDown(1.0));
+  EXPECT_EQ(ExactSumUb(1.0, std::ldexp(1.0, -100)), FastStepUp(1.0));
+
+  EXPECT_EQ(ExactScaledSumLb(1.0, 2.0, 1.0), 3.0);
+  EXPECT_EQ(ExactScaledSumUb(1.0, 2.0, 1.0), 3.0);
+  EXPECT_EQ(ExactScaledSumLb(1.0, 2.0, 2.0), 1.5);
+  EXPECT_EQ(ExactScaledSumUb(1.0, 2.0, 2.0), 1.5);
+  EXPECT_EQ(ExactScaledSumLb(1.0, 2.0, -2.0), -1.5);
+  EXPECT_EQ(ExactScaledSumUb(1.0, 2.0, -2.0), -1.5);
+  EXPECT_EQ(ExactScaledSumLb(1.0, 0.0, 3.0), 1.0 / 3.0);
+  EXPECT_EQ(ExactScaledSumUb(1.0, 0.0, 3.0), FastStepUp(1.0 / 3.0));
+  EXPECT_EQ(ExactScaledSumLb(1.0, 0.0, -3.0), -1.0 / 3.0);
+  EXPECT_EQ(ExactScaledSumUb(1.0, 0.0, -3.0), FastStepDown(-1.0 / 3.0));
+  EXPECT_EQ(ExactScaledSumLb(-kInf, 2.0, 3.0), -kInf);
+  EXPECT_EQ(ExactScaledSumLb(-kInf, 2.0, -3.0), kInf);
+
+  EXPECT_EQ(ExactProdLb(-kInf, 2.0), -kInf);
+  EXPECT_EQ(ExactProdUb(kInf, 2.0), kInf);
+  EXPECT_EQ(RelaxedMulInterval(-kInf, 1.0, 3.0), std::make_pair(-kInf, 3.0));
+  EXPECT_EQ(RelaxedMulInterval(-2.0, kInf, -3.0), std::make_pair(-kInf, 6.0));
+  EXPECT_EQ(RelaxedMulInterval(-kInf, kInf, 0.0), std::make_pair(0.0, 0.0));
+
+  EXPECT_EQ(ExactQuotientLb(1.0, 3.0), 1.0 / 3.0);
+  EXPECT_EQ(ExactQuotientUb(1.0, 3.0), FastStepUp(1.0 / 3.0));
+  EXPECT_EQ(ExactQuotientUb(kInf, 3.0), kInf);
+  EXPECT_EQ(RelaxedDivInterval(-1.0, 1.0, 3.0),
+            std::make_pair(-FastStepUp(1.0 / 3.0), FastStepUp(1.0 / 3.0)));
+  EXPECT_EQ(RelaxedDivInterval(-kInf, 6.0, -2.0), std::make_pair(-3.0, kInf));
+
+  TightSum sum;
+  sum.Add(1.0).Add(-4.0);
+  EXPECT_EQ(MaxAbsScaledTightSum(sum, 2.0), 1.5);
+}
+
+TEST(IntervalProdBoundsTest, QuadrantsRoundingAndInfiniteEndpoints) {
+  EXPECT_EQ(IntervalProdBounds(2.0, 3.0, 4.0, 5.0), std::make_pair(8.0, 15.0));
+  EXPECT_EQ(IntervalProdBounds(-3.0, -2.0, -5.0, -4.0),
+            std::make_pair(8.0, 15.0));
+  EXPECT_EQ(IntervalProdBounds(2.0, 3.0, -5.0, -4.0),
+            std::make_pair(-15.0, -8.0));
+  EXPECT_EQ(IntervalProdBounds(-2.0, 3.0, 4.0, 5.0),
+            std::make_pair(-10.0, 15.0));
+  EXPECT_EQ(IntervalProdBounds(-2.0, 3.0, -5.0, -4.0),
+            std::make_pair(-15.0, 10.0));
+  EXPECT_EQ(IntervalProdBounds(-2.0, 3.0, -4.0, 5.0),
+            std::make_pair(-12.0, 15.0));
+  EXPECT_EQ(IntervalProdBounds(-4.0, 2.0, -5.0, 3.0),
+            std::make_pair(-12.0, 20.0));
+
+  // Products where IEEE-754 round-to-nearest rounds inward:
+  // `(1 + 2^-30)^2 = 1 + 2^-29 + 2^-60`.
+  const double u = 1.0 + std::ldexp(1.0, -30);
+  const double u_sq_ub = FastStepUp(1.0 + std::ldexp(1.0, -29));
+  EXPECT_EQ(IntervalProdBounds(1.0, u, 1.0, u), std::make_pair(1.0, u_sq_ub));
+  EXPECT_EQ(IntervalProdBounds(-u, -1.0, 1.0, u),
+            std::make_pair(-u_sq_ub, -1.0));
+  EXPECT_EQ(IntervalProdBounds(-u, u, -u, u),
+            std::make_pair(-u_sq_ub, u_sq_ub));
+
+  // Subnormal underflow and overflow.
+  const double kDenormMin = std::numeric_limits<double>::denorm_min();
+  const double kMax = std::numeric_limits<double>::max();
+  EXPECT_EQ(IntervalProdBounds(0.5, 0.5, kDenormMin, kDenormMin),
+            std::make_pair(0.0, kDenormMin));
+  EXPECT_EQ(IntervalProdBounds(-0.5, 0.5, kDenormMin, kDenormMin),
+            std::make_pair(-kDenormMin, kDenormMin));
+  EXPECT_EQ(IntervalProdBounds(2.0, 2.0, kMax, kMax),
+            std::make_pair(kMax, kInf));
+  EXPECT_EQ(IntervalProdBounds(-2.0, -1.0, kMax, kMax),
+            std::make_pair(-kInf, -kMax));
+
+  // Zero and infinite endpoint combinations.
+  EXPECT_EQ(IntervalProdBounds(0.0, 0.0, -kInf, kInf),
+            std::make_pair(0.0, 0.0));
+  EXPECT_EQ(IntervalProdBounds(-kInf, kInf, 0.0, 0.0),
+            std::make_pair(0.0, 0.0));
+  EXPECT_EQ(IntervalProdBounds(0.0, kInf, -2.0, 0.0),
+            std::make_pair(-kInf, 0.0));
+  EXPECT_EQ(IntervalProdBounds(0.0, 2.0, -kInf, -3.0),
+            std::make_pair(-kInf, 0.0));
+  EXPECT_EQ(IntervalProdBounds(-kInf, 1.0, -2.0, 3.0),
+            std::make_pair(-kInf, kInf));
+
+  const std::vector<double> values = {-kInf,       -kMax, -3.0, -1.5,
+                                      -kDenormMin, -0.0,  0.0,  kDenormMin,
+                                      1.5,         3.0,   kMax, kInf};
+  const auto corner_bounds = [](double x,
+                                double y) -> std::pair<double, double> {
+    if (x == 0.0 || y == 0.0) return {0.0, 0.0};
+    return ProdBounds(x, y);
+  };
+  for (double a_lb : values) {
+    for (double a_ub : values) {
+      if (a_lb > a_ub) continue;
+      for (double b_lb : values) {
+        for (double b_ub : values) {
+          if (b_lb > b_ub) continue;
+          const auto [lb, ub] = IntervalProdBounds(a_lb, a_ub, b_lb, b_ub);
+          EXPECT_LE(lb, ub);
+          if (lb == 0.0) EXPECT_FALSE(std::signbit(lb));
+          if (ub == 0.0) EXPECT_FALSE(std::signbit(ub));
+          EXPECT_EQ(IntervalProdBounds(b_lb, b_ub, a_lb, a_ub),
+                    std::make_pair(lb, ub));
+          const double neg_lb = ub == 0.0 ? 0.0 : -ub;
+          const double neg_ub = lb == 0.0 ? 0.0 : -lb;
+          EXPECT_EQ(IntervalProdBounds(-a_ub, -a_lb, b_lb, b_ub),
+                    std::make_pair(neg_lb, neg_ub));
+          if (b_lb == b_ub && std::isfinite(b_lb)) {
+            EXPECT_EQ(std::make_pair(lb, ub),
+                      RelaxedMulInterval(a_lb, a_ub, b_lb));
+          }
+          const auto c1 = corner_bounds(a_lb, b_lb);
+          const auto c2 = corner_bounds(a_lb, b_ub);
+          const auto c3 = corner_bounds(a_ub, b_lb);
+          const auto c4 = corner_bounds(a_ub, b_ub);
+          EXPECT_EQ(lb, std::min(std::min(c1.first, c2.first),
+                                 std::min(c3.first, c4.first)));
+          EXPECT_EQ(ub, std::max(std::max(c1.second, c2.second),
+                                 std::max(c3.second, c4.second)));
+        }
+      }
+    }
+  }
 }
 
 }  // namespace

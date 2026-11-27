@@ -29,6 +29,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/mip_model.pb.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/full_precision_inequalities.h"
@@ -60,10 +61,10 @@ class ConstraintChecker {
       const absl::Span<const double> solution ABSL_ATTRIBUTE_LIFETIME_BOUND)
       : add_violation_(add_violation), options_(options), solution_(solution) {}
 
-  absl::Status Check(const sat::EnforcedLinearConstraint& constraint,
+  absl::Status Check(const sat::EnforcedLinearConstraintProto& constraint,
                      const absl::string_view message_prefix) {
     sum_.Clear();
-    for (int j = 0; j < constraint.num_terms(); ++j) {
+    for (int j = 0; j < constraint.vars().size(); ++j) {
       const int var_index = constraint.vars(j);
       if (var_index < 0 || var_index >= solution_.size()) {
         return ortools::InvalidArgumentErrorBuilder()
@@ -170,7 +171,7 @@ absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
                     kInf);
       continue;
     }
-    const MPVariableProto& var = model.variables(i);
+    const sat::MipVariableProto& var = model.variables(i);
     if (TightSum().Add(v).Add(options.variable_tolerance) < var.lower_bound() ||
         TightSum().Add(v).Add(-options.variable_tolerance) >
             var.upper_bound()) {
@@ -195,7 +196,7 @@ absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
 
   ConstraintChecker checker(add_violation, options, solution);
   for (int i = 0; i < model.num_constraints(); ++i) {
-    const sat::EnforcedLinearConstraint& ct = model.constraints(i);
+    const sat::EnforcedLinearConstraintProto& ct = model.constraints(i);
     bool is_active = true;
     for (int k = 0; k < ct.enforcement_vars().size(); ++k) {
       const int enf_var = ct.enforcement_vars()[k];

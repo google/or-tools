@@ -429,5 +429,50 @@ TEST(TimeLimitCheckEveryNCallsTest, StickyTrue) {
   EXPECT_TRUE(checker.LimitReached());
 }
 
+TEST(ScopedDeterministicTimeAccountingTest, AddsChildTimeOnDestruction) {
+  std::unique_ptr<TimeLimit> parent = TimeLimit::Infinite();
+  std::unique_ptr<TimeLimit> child = TimeLimit::Infinite();
+  child->AdvanceDeterministicTime(1.0);  // Before: not accounted.
+  {
+    ScopedDeterministicTimeAccounting accounting(parent.get(), child.get());
+    child->AdvanceDeterministicTime(2.0);
+    EXPECT_EQ(0.0, parent->GetElapsedDeterministicTime());
+  }
+  EXPECT_EQ(2.0, parent->GetElapsedDeterministicTime());
+}
+
+TEST(ScopedDeterministicTimeAccountingTest, AccountNow) {
+  std::unique_ptr<TimeLimit> parent = TimeLimit::Infinite();
+  std::unique_ptr<TimeLimit> child = TimeLimit::Infinite();
+  {
+    ScopedDeterministicTimeAccounting accounting(parent.get(), child.get());
+    child->AdvanceDeterministicTime(2.0);
+    accounting.AccountNow();
+    EXPECT_EQ(2.0, parent->GetElapsedDeterministicTime());
+    accounting.AccountNow();
+    EXPECT_EQ(2.0, parent->GetElapsedDeterministicTime());
+    child->AdvanceDeterministicTime(3.0);
+  }
+  EXPECT_EQ(5.0, parent->GetElapsedDeterministicTime());
+}
+
+TEST(ScopedDeterministicTimeAccountingTest, SharedTimeLimitParent) {
+  std::unique_ptr<TimeLimit> base = TimeLimit::Infinite();
+  SharedTimeLimit parent(base.get());
+  std::unique_ptr<TimeLimit> child = TimeLimit::Infinite();
+  {
+    ScopedDeterministicTimeAccounting accounting(&parent, child.get());
+    child->AdvanceDeterministicTime(2.0);
+  }
+  EXPECT_EQ(2.0, parent.GetElapsedDeterministicTime());
+}
+
+TEST(ScopedDeterministicTimeAccountingTest, NullParent) {
+  std::unique_ptr<TimeLimit> child = TimeLimit::Infinite();
+  ScopedDeterministicTimeAccounting<TimeLimit> accounting(nullptr, child.get());
+  child->AdvanceDeterministicTime(2.0);
+  accounting.AccountNow();
+}
+
 }  // namespace
 }  // namespace operations_research

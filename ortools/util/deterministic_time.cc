@@ -14,6 +14,7 @@
 #include "ortools/util/deterministic_time.h"
 
 #ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -27,7 +28,7 @@
 
 #endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
-namespace operations_research::sat {
+namespace operations_research {
 
 #ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
@@ -65,6 +66,22 @@ AllDeterministicTimeStats::~AllDeterministicTimeStats() {
 thread_local std::stack<AbstractDeterministicTimer*>
     AbstractDeterministicTimer::timers_stack_;
 
+uint64_t AbstractDeterministicTimer::ClockReadDuration() {
+  static thread_local const uint64_t clock_read_duration = [] {
+    constexpr int kNumSamples = 1001;
+    std::vector<int64_t> durations(kNumSamples);
+    for (int i = 0; i < kNumSamples; ++i) {
+      const int64_t start = absl::GetCurrentTimeNanos();
+      durations[i] = absl::GetCurrentTimeNanos() - start;
+    }
+    std::nth_element(durations.begin(), durations.begin() + kNumSamples / 2,
+                     durations.end());
+    return static_cast<uint64_t>(
+        std::max<int64_t>(0, durations[kNumSamples / 2]));
+  }();
+  return clock_read_duration;
+}
+
 #endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
-}  // namespace operations_research::sat
+}  // namespace operations_research
