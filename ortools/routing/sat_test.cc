@@ -118,14 +118,9 @@ TEST(CPSATSearchTest, SolveTSPModelWithDisjointTimeWindows) {
       Dimension* dim = model.GetMutableDimension("dim");
       dim->SetSpanCostCoefficientForAllVehicles(10);
       for (int i = 0; i < 3; ++i) {
-        dim->CumulVar(i)->SetRange(0, 100);
-        Solver* const solver = model.solver();
         // Nodes cannot be reached in [1,2]; since the route starts at 0, there
         // will be extra span cost.
-        const std::vector<int64_t> starts = {1};
-        const std::vector<int64_t> ends = {2};
-        solver->AddConstraint(
-            solver->MakeNotMemberCt(dim->CumulVar(i), starts, ends));
+        dim->SetCumulVarDomain(i, Domain::FromIntervals({{0, 0}, {3, 100}}));
       }
       std::vector<const Assignment*> solutions;
       const Assignment* const assignment =

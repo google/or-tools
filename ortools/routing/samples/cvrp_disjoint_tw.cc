@@ -43,9 +43,11 @@
 #include "ortools/routing/parsers/cvrptw_lib.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
+#include "ortools/util/sorted_interval_list.h"
 
 using operations_research::Assignment;
-using operations_research::Solver;
+using operations_research::ClosedInterval;
+using operations_research::Domain;
 using operations_research::routing::DefaultRoutingSearchParameters;
 using operations_research::routing::Dimension;
 using operations_research::routing::GetSeed;
@@ -135,27 +137,26 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const Dimension& time_dimension = routing.GetDimensionOrDie(kTime);
+  Dimension* const time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding disjoint time windows.
-  Solver* solver = routing.solver();
   std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    std::vector<int64_t> forbid_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
-    for (int i = 0; i < forbid_points.size(); ++i) {
-      forbid_points[i] = absl::Uniform<int32_t>(randomizer, 0, kHorizon);
+    std::vector<int64_t> window_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
+    for (int i = 0; i < window_points.size(); ++i) {
+      window_points[i] = absl::Uniform<int32_t>(randomizer, 0, kHorizon);
     }
-    std::sort(forbid_points.begin(), forbid_points.end());
-    std::vector<int64_t> forbid_starts(1, 0);
-    std::vector<int64_t> forbid_ends;
-    for (int i = 0; i < forbid_points.size(); i += 2) {
-      forbid_ends.push_back(forbid_points[i]);
-      forbid_starts.push_back(forbid_points[i + 1]);
+    std::sort(window_points.begin(), window_points.end());
+    std::vector<ClosedInterval> allowed_intervals;
+    for (int i = 0; i < window_points.size(); i += 2) {
+      if (window_points[i] + 1 <= window_points[i + 1] - 1) {
+        allowed_intervals.emplace_back(window_points[i] + 1,
+                                       window_points[i + 1] - 1);
+      }
     }
-    forbid_ends.push_back(kHorizon);
-    solver->AddConstraint(solver->MakeNotMemberCt(
-        time_dimension.CumulVar(order), forbid_starts, forbid_ends));
+    time_dimension->SetCumulVarDomain(order,
+                                      Domain::FromIntervals(allowed_intervals));
   }
 
   // Adding penalty costs to allow skipping orders.

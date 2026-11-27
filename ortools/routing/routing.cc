@@ -3091,6 +3091,13 @@ class ModelInspector : public operations_research::ModelVisitor {
     constraint_inspectors_[kNotMember] = [this]() {
       std::pair<Dimension*, int> dim_index;
       if (gtl::FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
+        if (!warned_deprecated_not_member_) {
+          LOG(WARNING)
+              << "Using MakeNotMemberCt on cumul variables to enforce multiple "
+                 "time windows is deprecated; please use "
+                 "Dimension::SetCumulVarDomain() instead.";
+          warned_deprecated_not_member_ = true;
+        }
         Dimension* const dimension = dim_index.first;
         const int index = dim_index.second;
         dimension->forbidden_intervals_[index].InsertIntervals(starts_argument_,
@@ -3155,6 +3162,7 @@ class ModelInspector : public operations_research::ModelVisitor {
   const IntExpr* right_ = nullptr;
   std::vector<int64_t> starts_argument_;
   std::vector<int64_t> ends_argument_;
+  bool warned_deprecated_not_member_ = false;
 };
 
 void Model::DetectImplicitPickupAndDeliveries() {
@@ -3434,11 +3442,30 @@ void Model::CloseModelWithParameters(
     }
   }
 
+  // Record cumul forbidden intervals set via Dimension::SetCumulVarDomain()
+  // before running ModelInspector so we can post their NotMember constraints
+  // afterward without triggering the deprecated NotMember inspection warning.
+  std::vector<std::pair<const Dimension*, int>> dimension_cumul_domains_to_post;
+  for (const Dimension* const dimension : dimensions_) {
+    const std::vector<SortedDisjointIntervalList>& forbidden =
+        dimension->forbidden_intervals();
+    for (int i = 0; i < forbidden.size(); ++i) {
+      if (forbidden[i].NumIntervals() > 0) {
+        dimension_cumul_domains_to_post.emplace_back(dimension, i);
+      }
+    }
+  }
+
   // Detect constraints
   enable_deep_serialization_ = false;
   auto inspector = std::make_unique<ModelInspector>(this);
   solver_->Accept(inspector.get());
   enable_deep_serialization_ = true;
+
+  for (const auto& [dimension, i] : dimension_cumul_domains_to_post) {
+    solver_->AddConstraint(solver_->MakeNotMemberCt(
+        dimension->CumulVar(i), dimension->forbidden_intervals()[i]));
+  }
 
   for (const Dimension* const dimension : dimensions_) {
     // Dimension path precedences, discovered by model inspection (which must be
@@ -7888,6 +7915,25 @@ void Dimension::CloseModel(bool use_light_propagation) {
         }
       }
     }
+  }
+}
+
+void Dimension::SetCumulVarDomain(int64_t index, const Domain& domain) {
+  DCHECK(!model_->closed_);
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, cumuls_.size());
+  forbidden_intervals_[index].clear();
+  const Domain current_range(GetCumulVarMin(index), GetCumulVarMax(index));
+  const Domain new_domain = domain.IntersectionWith(current_range);
+  if (new_domain.IsEmpty()) {
+    forbidden_intervals_[index].InsertInterval(GetCumulVarMin(index),
+                                               GetCumulVarMax(index));
+    return;
+  }
+  SetCumulVarRange(index, new_domain.Min(), new_domain.Max());
+  for (int i = 0; i + 1 < new_domain.NumIntervals(); ++i) {
+    forbidden_intervals_[index].InsertInterval(new_domain[i].end + 1,
+                                               new_domain[i + 1].start - 1);
   }
 }
 

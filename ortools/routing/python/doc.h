@@ -350,6 +350,11 @@ static const char *mkd_doc_operations_research_routing_Dimension_SetBreakInterva
 R"doc(Sets whether the break intervals of the given vehicle are ordered. If
 not called, the default is kUnordered.)doc";
 
+static const char *mkd_doc_operations_research_routing_Dimension_SetCumulVarDomain =
+R"doc(Restricts the domain of the cumul variable associated to index to the
+intersection of its current range and `domain`. Overwrites any
+previously set forbidden intervals for `index`.)doc";
+
 static const char *mkd_doc_operations_research_routing_Dimension_SetCumulVarPiecewiseLinearCost =
 R"doc(Sets a piecewise linear cost on the cumul variable of a given variable
 index. If f is a piecewise linear function, the resulting cost at

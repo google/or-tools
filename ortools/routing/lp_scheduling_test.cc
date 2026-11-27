@@ -118,29 +118,21 @@ TEST(PropagateCumulBoundsTest, PropagateBoundsWithForbiddenIntervals) {
   const IndexManager manager(kNodes, kVehicles, NodeIndex(0));
   const std::string kDimName = "time";
 
-  const std::vector<std::pair<int, int>> node_cumul_bounds = {{20, 50},
-                                                              {10, 40}};
-
   for (int offset : {0, 5, 1000000}) {
     Model model(manager);
     model.AddConstantDimensionWithSlack(5, kint64max, kint64max, false,
                                         kDimName);
     Dimension* const dimension = model.GetMutableDimension(kDimName);
 
-    const std::vector<std::pair<std::vector<int64_t>, std::vector<int64_t>>>
-        forbidden_start_ends = {
-            {{offset + 0, offset + 31}, {offset + 19, offset + 39}},
-            {{offset + 0, offset + 21}, {offset + 9, offset + 29}}};
+    const std::vector<Domain> allowed_domains = {
+        Domain::FromIntervals(
+            {{offset + 20, offset + 30}, {offset + 40, offset + 50}}),
+        Domain::FromIntervals(
+            {{offset + 10, offset + 20}, {offset + 30, offset + 40}})};
 
     dimension->CumulVar(model.Start(0))->SetMin(offset);
-    Solver* const solver = model.solver();
-    for (int node = 0; node < node_cumul_bounds.size(); node++) {
-      dimension->SetCumulVarRange(node + 1,
-                                  node_cumul_bounds[node].first + offset,
-                                  node_cumul_bounds[node].second + offset);
-      solver->AddConstraint(solver->MakeNotMemberCt(
-          dimension->CumulVar(node + 1), forbidden_start_ends[node].first,
-          forbidden_start_ends[node].second));
+    for (int node = 0; node < allowed_domains.size(); node++) {
+      dimension->SetCumulVarDomain(node + 1, allowed_domains[node]);
     }
 
     model.CloseModel();

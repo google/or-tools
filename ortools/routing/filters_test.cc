@@ -3469,8 +3469,6 @@ TEST_P(RoutingFilterTestWithSolverType,
        DimensionLowerUpperBoundWithDisjointWindowsFilter) {
   static const int kInitialSolution[] = {1, 2};
   const int64_t kOffset = 10;
-  const std::vector<int64_t> starts = {21 + kOffset};
-  const std::vector<int64_t> ends = {29 + kOffset};
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   parameters.set_continuous_scheduling_solver(GetParam());
   const IndexManager manager(2, 1, NodeIndex(0));
@@ -3483,10 +3481,10 @@ TEST_P(RoutingFilterTestWithSolverType,
   dimension->CumulVar(model.Start(0))->SetMin(kOffset);
   dimension->SetCumulVarSoftLowerBound(1, 25 + kOffset, 1);
   dimension->SetCumulVarSoftUpperBound(1, 25 + kOffset, 1);
-  dimension->CumulVar(1)->SetRange(15 + kOffset, 35 + kOffset);
+  dimension->SetCumulVarDomain(
+      1, Domain::FromIntervals(
+             {{15 + kOffset, 20 + kOffset}, {30 + kOffset, 35 + kOffset}}));
   Solver* const solver = model.solver();
-  solver->AddConstraint(
-      solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
   model.CloseModelWithParameters(parameters);
   LocalSearchFilter* const filter = MakePathCumulFilter(
       *dimension, true, /*filter_objective_cost=*/true, true);
@@ -9270,10 +9268,6 @@ TEST_P(RoutingFilterTestWithUnaryCallbackAndSolverType,
       // 1 on vehicle 2
       {4, 6, 5, 1}};
   const bool kExpectFeasibleDelta[] = {true, true, false};
-  const std::vector<int64_t> starts1 = {10, 30};
-  const std::vector<int64_t> ends1 = {20, 32};
-  const std::vector<int64_t> starts2 = {31};
-  const std::vector<int64_t> ends2 = {40};
 
   const auto [use_unary_callback, solver_type] = GetParam();
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
@@ -9290,12 +9284,10 @@ TEST_P(RoutingFilterTestWithUnaryCallbackAndSolverType,
                      /*fix_start_cumul_to_zero=*/false, kDimension);
   Dimension* const dimension = model.GetMutableDimension(kDimension);
   Solver* solver = model.solver();
-  dimension->CumulVar(1)->SetMax(50);
-  solver->AddConstraint(
-      solver->MakeNotMemberCt(dimension->CumulVar(1), starts1, ends1));
+  // Forbidden intervals [10, 20] and [30, 40] within [0, 50].
+  dimension->SetCumulVarDomain(
+      1, Domain::FromIntervals({{0, 9}, {21, 29}, {41, 50}}));
   dimension->CumulVar(model.Start(0))->SetMin(0);
-  solver->AddConstraint(
-      solver->MakeNotMemberCt(dimension->CumulVar(1), starts2, ends2));
   dimension->CumulVar(model.Start(1))->SetMin(5);
   dimension->CumulVar(model.Start(2))->SetMin(25);
   dimension->CumulVar(model.End(0))->SetMax(50);
@@ -9369,11 +9361,9 @@ TEST_P(RoutingFilterTestWithSolverType, LPAndPathCumulReverseBoundPropagation) {
     Dimension* const dimension = model.GetMutableDimension(kDimension);
     Solver* solver = model.solver();
 
-    dimension->CumulVar(1)->SetMax(cumul_offset + 30);
-    const std::vector<int64_t> starts = {cumul_offset + 0, cumul_offset + 8};
-    const std::vector<int64_t> ends = {cumul_offset + 4, cumul_offset + 16};
-    solver->AddConstraint(
-        solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
+    dimension->SetCumulVarDomain(
+        1, Domain::FromIntervals({{cumul_offset + 5, cumul_offset + 7},
+                                  {cumul_offset + 17, cumul_offset + 30}}));
 
     dimension->CumulVar(model.Start(0))->SetMin(cumul_offset);
     dimension->CumulVar(model.End(0))
@@ -9502,12 +9492,8 @@ TEST(RoutingFilterTest, ValidPathInPathCumulFilter) {
     model.AddDimension(callback, kint64max, kint64max,
                        /*fix_start_cumul_to_zero=*/false, "dim");
     Dimension* const dimension = model.GetMutableDimension("dim");
-    dimension->CumulVar(1)->SetRange(5, 15);
-    const std::vector<int64_t> starts = {10};
-    const std::vector<int64_t> ends = {12};
+    dimension->SetCumulVarDomain(1, Domain::FromIntervals({{5, 9}, {13, 15}}));
     Solver* const solver = model.solver();
-    solver->AddConstraint(
-        solver->MakeNotMemberCt(dimension->CumulVar(1), starts, ends));
     dimension->SetSpanCostCoefficientForAllVehicles(1);
     dimension->SetSoftSpanUpperBoundForVehicle({1, 10}, 0);
     model.CloseModel();

@@ -999,6 +999,7 @@ GlobalCheapestInsertionFilteredHeuristic::
   CHECK_GT(gci_params_.neighbors_ratio(), 0);
   CHECK_LE(gci_params_.neighbors_ratio(), 1);
   CHECK_GE(gci_params_.min_neighbors(), 1);
+  DCHECK_GT(gci_params_.max_memory_usage_bytes(), 0);
 }
 
 bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
@@ -1022,23 +1023,31 @@ bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
   return true;
 }
 
-bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
-  // Get neighbors.
-  double neighbors_ratio_used = 1;
-  const int min_neighbors =
-      std::min(gci_params_.min_neighbors(), static_cast<int>(model()->Size()));
-  node_index_to_neighbors_by_cost_class_ =
-      model()->GetOrCreateNodeNeighborsByCostClass(
-          gci_params_.neighbors_ratio(), min_neighbors, model()->Size(),
-          neighbors_ratio_used);
-  if (neighbors_ratio_used == 1) {
-    gci_params_.set_use_neighbors_ratio_for_initialization(false);
+void GlobalCheapestInsertionFilteredHeuristic::Initialize() {
+  CheapestInsertionFilteredHeuristic::Initialize();
+  if (node_index_to_neighbors_by_cost_class_ == nullptr) {
+    // Setup neighbors.
+    const int max_neighbors = MaxNumNeighborsPerNode();
+    VLOG(0) << "max_neighbors: " << max_neighbors;
+    const int min_neighbors =
+        std::min(gci_params_.min_neighbors(), max_neighbors);
+    double neighbors_ratio_used = 1;
+    node_index_to_neighbors_by_cost_class_ =
+        model()->GetOrCreateNodeNeighborsByCostClass(
+            gci_params_.neighbors_ratio(), min_neighbors, max_neighbors,
+            neighbors_ratio_used);
+    if (neighbors_ratio_used == 1) {
+      gci_params_.set_use_neighbors_ratio_for_initialization(false);
+    }
   }
 
   if (empty_vehicle_type_curator_ == nullptr) {
     empty_vehicle_type_curator_ = std::make_unique<VehicleTypeCurator>(
         model()->GetVehicleTypeContainer());
   }
+}
+
+bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   // Store all empty vehicles in the empty_vehicle_type_curator_.
   empty_vehicle_type_curator_->Reset(
       [this](int vehicle) { return VehicleIsEmpty(vehicle); });
@@ -1103,7 +1112,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
 
   // TODO(user): Adapt the pair insertions to also support seed and
   // sequential insertion.
-  if (!InsertPairs(pairs_to_insert_by_bucket)) {
+  if (!InsertPairs(pairs_to_insert_by_bucket,
+                   /*clear_pair_entry_allocator=*/true)) {
     return unperform_unassigned_and_check();
   }
   std::map<int64_t, std::vector<int>> nodes_by_bucket;
@@ -1129,6 +1139,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::
     InsertPairsAndNodesByRequirementTopologicalOrder() {
   const std::vector<PickupDeliveryPair>& pickup_delivery_pairs =
       model()->GetPickupAndDeliveryPairs();
+  // We don't clear the pair_entry_allocator to keep the memory for subsequent
+  // calls to InsertPairs().
+  const bool clear_pair_entry_allocator = false;
   for (const std::vector<int>& types :
        model()->GetTopologicallySortedVisitTypes()) {
     for (int type : types) {
@@ -1137,7 +1150,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::
         pairs_to_insert_by_bucket[GetBucketOfPair(pickup_delivery_pairs[index])]
             .push_back(index);
       }
-      if (!InsertPairs(pairs_to_insert_by_bucket)) return false;
+      if (!InsertPairs(pairs_to_insert_by_bucket, clear_pair_entry_allocator)) {
+        return false;
+      }
       std::map<int64_t, std::vector<int>> nodes_by_bucket;
       for (int node : model()->GetSingleNodesOfType(type)) {
         nodes_by_bucket[GetBucketOfNode(node)].push_back(node);
@@ -1152,6 +1167,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::
     InsertPairsAndNodesByPrecedenceTopologicalOrder() {
   const std::vector<PickupDeliveryPair>& pickup_delivery_pairs =
       model()->GetPickupAndDeliveryPairs();
+  // We don't clear the pair_entry_allocator to keep the memory for subsequent
+  // calls to InsertPairs().
+  const bool clear_pair_entry_allocator = false;
   for (const std::vector<std::vector<int>>& ordered_nodes :
        model()->GetTopologicallySortedNodePrecedences()) {
     for (const std::vector<int>& nodes : ordered_nodes) {
@@ -1176,7 +1194,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::
               .push_back(index);
         }
       }
-      if (!InsertPairs(pairs_to_insert_by_bucket)) return false;
+      if (!InsertPairs(pairs_to_insert_by_bucket, clear_pair_entry_allocator)) {
+        return false;
+      }
       std::map<int64_t, std::vector<int>> nodes_by_bucket;
       for (int node : nodes) {
         if (Contains(node)) continue;
@@ -1189,7 +1209,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::
 }
 
 bool GlobalCheapestInsertionFilteredHeuristic::InsertPairs(
-    const std::map<int64_t, std::vector<int>>& pair_indices_by_bucket) {
+    const std::map<int64_t, std::vector<int>>& pair_indices_by_bucket,
+    bool clear_pair_entry_allocator) {
   AdjustablePriorityQueue<PairEntry> priority_queue;
   std::vector<PairEntries> pickup_to_entries;
   std::vector<PairEntries> delivery_to_entries;
@@ -1277,6 +1298,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertPairs(
     // Keep uninserted pairs as we move to the next bucket.
     absl::erase_if(pair_indices_to_insert,
                    [&](int p) { return pair_is_performed(p); });
+  }
+  if (clear_pair_entry_allocator) {
+    pair_entry_allocator_.Clear();
   }
   return true;
 }
@@ -1518,6 +1542,74 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
   std::vector<Entries> entries_;
   SparseBitset<int> touched_entries_;
 };
+
+int64_t GlobalCheapestInsertionFilteredHeuristic::MaxNumNeighborsPerNode()
+    const {
+  const int64_t size = model()->Size();
+  const int num_vehicles = model()->vehicles();
+  const int64_t num_non_start_end_nodes = size - num_vehicles;
+  if (num_non_start_end_nodes == 0 || num_vehicles == 0) {
+    return 0;
+  }
+
+  // --- Phase 1: Pickup/delivery pair insertions (InsertPairs) ---
+  int64_t num_pickup_delivery_pairs = 0;
+  for (const PickupDeliveryPair& pair : model()->GetPickupAndDeliveryPairs()) {
+    CapAddTo(
+        pair.pickup_alternatives.size() * pair.delivery_alternatives.size(),
+        &num_pickup_delivery_pairs);
+  }
+
+  // Each active PairEntry is stored in pair_entry_allocator_.entries_
+  // (std::deque<PairEntry>) and pointed to by priority_queue,
+  // pickup_to_entries, and delivery_to_entries (3 std::vector<PairEntry*>s).
+  // NOTE: We consider a factor of 2 for vector<> overhead: since vector<>
+  // grows by allocating a new container with double the capacity, the ratio
+  // of mem used over mem needed oscillates between 1 and 3. 2 is a reasonable
+  // average.
+  static constexpr double kVectorOverheadFactor = 2.0;
+  static constexpr int kBytesPerActivePairEntry =
+      sizeof(PairEntry) + 3.0 * kVectorOverheadFactor * sizeof(PairEntry*);
+
+  // Estimate the longest route length as K * average_nodes_per_route, with
+  // K = min(num_vehicles, 100).
+  // Pickup/delivery pairs store O(num_pickup_delivery_pairs * num_neighbors *
+  // longest_route_length) entries.
+  const double k = std::min(num_vehicles, 100);
+  const double longest_route_length =
+      k * num_non_start_end_nodes / num_vehicles;
+  const double pair_entries_per_neighbor =
+      num_pickup_delivery_pairs * longest_route_length;
+
+  const int64_t max_memory_bytes = gci_params_.max_memory_usage_bytes();
+
+  const int64_t max_neighbors_pair_phase =
+      pair_entries_per_neighbor == 0
+          ? num_non_start_end_nodes
+          : max_memory_bytes /
+                (pair_entries_per_neighbor * kBytesPerActivePairEntry);
+
+  // --- Phase 2: Non-pickup/delivery node insertions (InsertNodesOnRoutes) ---
+  // Non-pickup/delivery nodes create O(num_neighbors *
+  // non_pickup_delivery_nodes) NodeEntryQueue::Entry elements in per-position
+  // std::vector<Entry> containers.
+  static constexpr int kBytesPerNodeEntry =
+      kVectorOverheadFactor * sizeof(NodeEntryQueue::Entry);
+  const int64_t node_entries_per_neighbor = model()->GetNumOfSingletonNodes();
+
+  const int64_t max_neighbors_node_phase =
+      node_entries_per_neighbor == 0
+          ? num_non_start_end_nodes
+          : max_memory_bytes / (node_entries_per_neighbor * kBytesPerNodeEntry);
+
+  // NOTE: The memory used for the pair phase is cleared before starting the
+  // single-node phase, so we computed the max number of neighbors per phase
+  // independently and return the minimum of the two.
+  return std::max<int64_t>(
+      std::min(std::min(max_neighbors_pair_phase, max_neighbors_node_phase),
+               num_non_start_end_nodes),
+      1);
+}
 
 bool GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
     const std::map<int64_t, std::vector<int>>& nodes_by_bucket,
@@ -2630,8 +2722,6 @@ LocalCheapestInsertionFilteredHeuristic::
 }
 
 void LocalCheapestInsertionFilteredHeuristic::Initialize() {
-  // NOTE(user): Keeping the code in a separate function as opposed to
-  // inlining here, to allow for future additions to this function.
   synchronize_insertion_optimizer_ = true;
   hint_next_values_.assign(model()->Size(), -1);
   hint_prev_values_.assign(model()->Size() + model()->vehicles(), -1);

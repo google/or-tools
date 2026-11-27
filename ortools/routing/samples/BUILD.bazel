@@ -82,6 +82,7 @@ or_cc_binary(
         "//ortools/routing:parameters_cc_proto",
         "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",

@@ -58,6 +58,7 @@
 namespace operations_research::routing {
 namespace {
 
+using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAreArray;
 using Attributes = Model::ResourceGroup::Attributes;
 using ResourceGroup = Model::ResourceGroup;
@@ -2208,12 +2209,9 @@ TEST(RoutingFilteredHeuristicTest, BuildSolutionFromRoutes) {
     }
     disjunction_filter->Synchronize(&first_assignment, nullptr);
 
-    GlobalCheapestInsertionParameters gci_parameters;
-    gci_parameters.set_farthest_seeds_ratio(0.0);
-    gci_parameters.set_neighbors_ratio(1.0);
-    gci_parameters.set_min_neighbors(1);
-    gci_parameters.set_use_neighbors_ratio_for_initialization(false);
-    gci_parameters.set_add_unperformed_entries(false);
+    const GlobalCheapestInsertionParameters gci_parameters =
+        DefaultRoutingSearchParameters()
+            .global_cheapest_insertion_first_solution_parameters();
 
     LocalSearchFilterManager filter_manager({disjunction_filter});
     GlobalCheapestInsertionFilteredHeuristic heuristic(
@@ -2284,12 +2282,9 @@ TEST(RoutingFilteredHeuristicTest, BuildSolutionFromRoutes_WithResource) {
         model.GetMutableLocalCumulLPOptimizer(*dimension),
         model.GetMutableLocalCumulMPOptimizer(*dimension), false, false);
 
-    GlobalCheapestInsertionParameters gci_parameters;
-    gci_parameters.set_farthest_seeds_ratio(0.0);
-    gci_parameters.set_neighbors_ratio(1.0);
-    gci_parameters.set_min_neighbors(1);
-    gci_parameters.set_use_neighbors_ratio_for_initialization(false);
-    gci_parameters.set_add_unperformed_entries(false);
+    const GlobalCheapestInsertionParameters gci_parameters =
+        DefaultRoutingSearchParameters()
+            .global_cheapest_insertion_first_solution_parameters();
 
     LocalSearchFilterManager filter_manager({resource_filter});
     GlobalCheapestInsertionFilteredHeuristic heuristic(
@@ -4698,9 +4693,8 @@ TEST_F(GlobalCheapestInsertionSingleNeighborsTest,
   const std::vector<int> kMinNeighbors = {1, 2, 100};
   const int64_t kExpectedCost = 19;
 
-  GlobalCheapestInsertionParameters gci_params;
-  gci_params.set_farthest_seeds_ratio(0);
-  gci_params.set_add_unperformed_entries(false);
+  GlobalCheapestInsertionParameters gci_params =
+      parameters.global_cheapest_insertion_first_solution_parameters();
 
   for (const double ratio : kNeighborhoodRatios) {
     gci_params.set_neighbors_ratio(ratio);
@@ -4733,6 +4727,65 @@ TEST_F(GlobalCheapestInsertionSingleNeighborsTest,
       }
     }
   }
+}
+
+// Verifies that GlobalCheapestInsertion adapts the neighborhood size based on
+// max_memory_usage_bytes.
+// Note: 3 non-start/end nodes (1, 2, 3) are used because with only 2
+// non-start/end nodes in total, each node has at most 1 other non-start/end
+// node, so a 1-node neighborhood would already be the full neighborhood.
+// Here Node 1 is always inserted first from Start (0 -> 1 -> End), leaving
+// Nodes 2 and 3 to be inserted:
+// - With enough memory for the full 2-neighbor neighborhood (>= 2 * 3 * 64 =
+//   384 bytes), Node 3 is inserted after Node 1 and Node 2 after Node 3,
+//   yielding Start -> 1 -> 3 -> 2 -> End (cost 28).
+// - With max_memory_usage_bytes < 384 bytes, MaxNumNeighborsPerNode()
+//   restricts each node to 1 closest outgoing neighbor (1->2, 2->3, 3->1).
+//   Arc 1->3 is no longer considered, so Node 2 is inserted after Node 1 and
+//   Node 3 after Node 2, yielding Start -> 1 -> 2 -> 3 -> End (cost 34).
+TEST(GlobalCheapestInsertionTest, SingleNodesNeighborhoodAdaptedByMaxMemory) {
+  const int kNumNodes = 4;
+  const int kNumVehicles = 1;
+  const IndexManager manager(kNumNodes, kNumVehicles, NodeIndex(0));
+  const std::vector<std::vector<int64_t>> costs = {
+      {0, 1, 100, 100},
+      {20, 0, 2, 5},
+      {20, 40, 0, 30},
+      {1, 1, 2, 0},
+  };
+
+  auto solve_with_max_memory = [&](int64_t max_memory_usage_bytes,
+                                   std::vector<std::vector<int64_t>>* routes) {
+    Model model(manager);
+    model.SetArcCostEvaluatorOfAllVehicles(model.RegisterTransitCallback(
+        absl::bind_front(GetCostFromMatrix, manager, costs)));
+
+    RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+    parameters.set_first_solution_strategy(
+        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION);
+    parameters.set_solution_limit(1);
+    parameters.mutable_global_cheapest_insertion_first_solution_parameters()
+        ->set_max_memory_usage_bytes(max_memory_usage_bytes);
+
+    const Assignment* const assignment = model.SolveWithParameters(parameters);
+    if (assignment == nullptr) return int64_t{-1};
+    model.AssignmentToRoutes(*assignment, routes);
+    return assignment->ObjectiveValue();
+  };
+
+  std::vector<std::vector<int64_t>> routes;
+
+  // Exact threshold for 2 neighbors (full neighborhood) :
+  // 2 * 3 * 64 = 384 bytes
+  // Expected result is Start -> 1 -> 3 -> 2 -> End.
+  const int64_t kMaxMemoryFullNeighborhood = 384;
+  EXPECT_EQ(solve_with_max_memory(kMaxMemoryFullNeighborhood, &routes), 28);
+  EXPECT_THAT(routes, ElementsAre(ElementsAre(1, 3, 2)));
+
+  // Below threshold (< 384 bytes): restricted to 1 neighbor per node, changing
+  // the route to Start -> 1 -> 2 -> 3 -> End.
+  EXPECT_EQ(solve_with_max_memory(kMaxMemoryFullNeighborhood - 1, &routes), 34);
+  EXPECT_THAT(routes, ElementsAre(ElementsAre(1, 2, 3)));
 }
 
 // Same as the previous examples, but with pickup and delivery pairs instead of
@@ -4842,6 +4895,58 @@ TEST_F(GlobalCheapestInsertionPickupDeliveryNeighborsTest,
   }
 }
 
+// Verifies that GlobalCheapestInsertion adapts the neighborhood size for
+// pickup and delivery pairs based on max_memory_usage_bytes:
+// - With the default max_memory_usage_bytes and neighbors_ratio = 1.0, all 5
+//   neighbors per node are considered: pair (2, 5) is inserted on vehicle 0
+//   first, followed by pair (4, 7) on vehicle 0 (filling its capacity of 2
+//   pairs), leaving pair (3, 6) for vehicle 1 with total cost 10 + 2*11 = 32.
+// - With max_memory_usage_bytes = 3500, MaxNumNeighborsPerNode() restricts each
+//   node to 2 neighbors (3 pairs * longest_route_length 6 * 96 bytes = 1728
+//   bytes per neighbor). Arcs to pair (4, 7) are excluded from the 2-neighbor
+//   neighborhood of (2, 5), so pair (3, 6) is inserted on vehicle 0 after
+//   (2, 5) and pair (4, 7) on vehicle 1, yielding total cost 11 + 2*6 = 23.
+TEST_F(GlobalCheapestInsertionPickupDeliveryNeighborsTest,
+       PickupAndDeliveriesNeighborhoodAdaptedByMaxMemory) {
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  parameters.set_first_solution_strategy(
+      FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION);
+  parameters.set_solution_limit(1);
+
+  std::vector<std::vector<int64_t>> routes;
+  // With default max_memory_usage_bytes and neighbors_ratio = 1.0, all 5
+  // neighbors are considered, leading to cost 32.
+  {
+    Model* const model = CreateModel();
+    model->AddConstantDimension(/*value=*/1, /*capacity=*/1 + 2 * 2,
+                                /*fix_start_cumul_to_zero=*/true, "Load");
+    const Assignment* const assignment = model->SolveWithParameters(parameters);
+    ASSERT_NE(assignment, nullptr);
+    EXPECT_EQ(assignment->ObjectiveValue(), 32);
+    model->AssignmentToRoutes(*assignment, &routes);
+    EXPECT_THAT(routes,
+                ElementsAre(ElementsAre(2, 5, 4, 7), ElementsAre(3, 6)));
+  }
+
+  // Restricting max_memory_usage_bytes to 3500 bytes caps
+  // MaxNumNeighborsPerNode() to 2 neighbors
+  // (3 pairs * longest_route_length 6 * 96 bytes = 1728 bytes per neighbor),
+  // changing the solution cost from 32 to 23.
+  {
+    parameters.mutable_global_cheapest_insertion_first_solution_parameters()
+        ->set_max_memory_usage_bytes(3500);
+    Model* const model = CreateModel();
+    model->AddConstantDimension(/*value=*/1, /*capacity=*/1 + 2 * 2,
+                                /*fix_start_cumul_to_zero=*/true, "Load");
+    const Assignment* const assignment = model->SolveWithParameters(parameters);
+    ASSERT_NE(assignment, nullptr);
+    EXPECT_EQ(assignment->ObjectiveValue(), 23);
+    model->AssignmentToRoutes(*assignment, &routes);
+    EXPECT_THAT(routes,
+                ElementsAre(ElementsAre(2, 3, 6, 5), ElementsAre(4, 7)));
+  }
+}
+
 // In this example, the neighborhood is taken into account in the insertion
 // updates and during initialization.
 // When taking a single neighbor into account for initialization, since each
@@ -4866,11 +4971,8 @@ TEST_F(GlobalCheapestInsertionPickupDeliveryNeighborsTest,
   absl::flat_hash_map<int, int> kNumNeighborsToExpectedCost = {
       {1, 120}, {2, 23}, {3, 23}, {4, 12}, {5, 12}};
 
-  GlobalCheapestInsertionParameters gci_params;
-  gci_params.set_farthest_seeds_ratio(0);
-  gci_params.set_add_unperformed_entries(
-      parameters.global_cheapest_insertion_first_solution_parameters()
-          .add_unperformed_entries());
+  GlobalCheapestInsertionParameters gci_params =
+      parameters.global_cheapest_insertion_first_solution_parameters();
 
   for (const double ratio : kNeighborhoodRatios) {
     gci_params.set_neighbors_ratio(ratio);

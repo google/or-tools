@@ -3287,6 +3287,10 @@ class Dimension {
   void SetCumulVarRange(int64_t index, int64_t min, int64_t max) {
     CumulVar(index)->SetRange(min, max);
   }
+  /// Restricts the domain of the cumul variable associated to index to the
+  /// intersection of its current range and `domain`. Overwrites any previously
+  /// set forbidden intervals for `index`.
+  void SetCumulVarDomain(int64_t index, const Domain& domain);
   /// Gets the current minimum of the cumul variable associated to index.
   int64_t GetCumulVarMin(int64_t index) const { return CumulVar(index)->Min(); }
   /// Gets the current maximum of the cumul variable associated to index.
