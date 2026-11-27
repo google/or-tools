@@ -25,11 +25,14 @@
 #define ORTOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -45,13 +48,19 @@ class TspLibParser final {
   // Routing model types (cf. the link above for a description).
   enum Types { TSP, ATSP, SOP, HCP, CVRP, TOUR, UNDEFINED_TYPE };
 
-  TspLibParser();
   // Loads and parses a routing problem from a given file.
-  absl::Status LoadFile(absl::string_view file_name);
-  // Returns the number of nodes in the routing problem stored in a given file.
-  absl::StatusOr<int> SizeFromFile(absl::string_view file_name) const;
+  static absl::StatusOr<TspLibParser> LoadFile(absl::string_view file_name);
+
+  TspLibParser();
+  TspLibParser(const TspLibParser&) = delete;
+  TspLibParser& operator=(const TspLibParser&) = delete;
+  TspLibParser(TspLibParser&&) = default;
+  TspLibParser& operator=(TspLibParser&&) = default;
+
   // Returns a function returning edge weights between nodes.
-  EdgeWeights GetEdgeWeights() const { return distance_function_; }
+  // Note: The returned callback references this TspLibParser instance and must
+  // not outlive it.
+  EdgeWeights GetEdgeWeights() const ABSL_ATTRIBUTE_LIFETIME_BOUND;
   // Returns the index of the depot.
   int depot() const { return depot_; }
   // Returns the number of nodes in the current routing problem.
@@ -64,7 +73,9 @@ class TspLibParser final {
     return coords_;
   }
   // Returns the capacity of the vehicles in the current routing problem.
-  int64_t capacity() const { return capacity_; }
+  int64_t capacity() const {
+    return capacity_.value_or(std::numeric_limits<int64_t>::max());
+  }
   // Returns the maximal distance vehicles can travel.
   int64_t max_distance() const { return max_distance_; }
   // Returns the demands (or quantities picked up) at each node.
@@ -107,7 +118,7 @@ class TspLibParser final {
     END_OF_FILE,
     UNDEFINED_SECTION
   };
-  enum EdgeDataFormat { EDGE_LIST, ADJ_LIST };
+  enum EdgeDataFormat { UNDEFINED_EDGE_DATA_FORMAT, EDGE_LIST, ADJ_LIST };
   enum EdgeWeightTypes {
     EXPLICIT,
     EUC_2D,
@@ -139,38 +150,24 @@ class TspLibParser final {
     UNDEFINED_EDGE_WEIGHT_FORMAT
   };
 
-#ifndef SWIG
-  TspLibParser(const TspLibParser&) = delete;
-  void operator=(const TspLibParser&) = delete;
-#endif
-
-  void ParseExplicitFullMatrix(absl::Span<const std::string> words);
-  void ParseExplicitUpperRow(absl::Span<const std::string> words);
-  void ParseExplicitLowerRow(absl::Span<const std::string> words);
-  void ParseExplicitUpperDiagRow(absl::Span<const std::string> words);
-  void ParseExplicitLowerDiagRow(absl::Span<const std::string> words);
-  void ParseNodeCoord(absl::Span<const std::string> words);
-  void SetUpEdgeWeightSection();
-  void FinalizeEdgeWeights();
-  bool ParseSections(absl::Span<const std::string> words);
-  void ProcessNewLine(const std::string& line);
-  void SetExplicitCost(int from, int to, int64_t cost) {
-    CHECK_GE(from, 0);
-    CHECK_LT(from, size_);
-    CHECK_GE(to, 0);
-    CHECK_LT(to, size_);
-    if (explicit_costs_.size() != size_ * size_) {
-      explicit_costs_.resize(size_ * size_, 0);
-    }
-    explicit_costs_[from * size_ + to] = cost;
-  }
+  absl::Status ParseExplicitFullMatrix(absl::Span<const std::string> words);
+  absl::Status ParseExplicitUpperRow(absl::Span<const std::string> words,
+                                     bool ignore_diagonal);
+  absl::Status ParseExplicitLowerRow(absl::Span<const std::string> words,
+                                     bool ignore_diagonal);
+  absl::Status ParseNodeCoord(absl::Span<const std::string> words);
+  absl::Status SetUpEdgeWeightSection();
+  absl::Status ValidateEdgeWeights() const;
+  void CheckNodeBounds(int from, int to) const;
+  absl::Status ParseSections(absl::Span<const std::string> words);
+  absl::Status ProcessNewLine(absl::string_view line);
+  absl::Status SetExplicitCost(int from, int to, int64_t cost);
 
   // Model data
-  int64_t size_;
-  int64_t capacity_;
+  int size_;
+  std::optional<int64_t> capacity_;
   int64_t max_distance_;
   std::vector<int64_t> demands_;
-  EdgeWeights distance_function_;
   std::vector<int64_t> explicit_costs_;
   std::set<std::pair<int, int>> fixed_edges_;
   int depot_;
@@ -197,6 +194,9 @@ class TspLibParser final {
   std::string comments_;
   int64_t to_read_;
   bool valid_section_found_ = false;
+  bool sop_dimension_read_ = false;
+  bool explicit_edge_weights_complete_ = false;
+  int64_t edge_count_ = 0;
 };
 
 // Class parsing tour (solution) data in TSLIB95 format.
@@ -204,6 +204,8 @@ class TspLibParser final {
 class TspLibTourParser final {
  public:
   TspLibTourParser();
+  TspLibTourParser(const TspLibTourParser&) = delete;
+  TspLibTourParser& operator=(const TspLibTourParser&) = delete;
   // Loads and parses a given tour file.
   absl::Status LoadFile(absl::string_view file_name);
   // Returns a vector corresponding to the sequence of nodes of the tour.
@@ -224,17 +226,12 @@ class TspLibTourParser final {
     UNDEFINED_SECTION
   };
 
-#ifndef SWIG
-  TspLibTourParser(const TspLibTourParser&) = delete;
-  void operator=(const TspLibTourParser&) = delete;
-#endif
-
-  void ProcessNewLine(const std::string& line);
+  absl::Status ProcessNewLine(absl::string_view line);
 
   static const absl::flat_hash_map<std::string, Sections>* const kSections;
   Sections section_;
   std::string comments_;
-  int64_t size_;
+  int size_;
   std::vector<int> tour_;
 };
 
@@ -250,10 +247,11 @@ class CVRPToursParser final {
   int64_t cost() const { return cost_; }
 
  private:
-  void ProcessNewLine(const std::string& line);
+  absl::Status ProcessNewLine(absl::string_view line);
 
   std::vector<std::vector<int>> tours_;
   int64_t cost_;
+  int64_t total_nodes_ = 0;
 };
 }  // namespace operations_research::routing
 

@@ -33,6 +33,8 @@ namespace operations_research::routing {
 class TspTWParser final {
  public:
   TspTWParser();
+  TspTWParser(const TspTWParser&) = delete;
+  TspTWParser& operator=(const TspTWParser&) = delete;
   // Loads and parses a routing problem from a given file.
   bool LoadFile(absl::string_view file_name);
   // Returns a function returning the distance between nodes. On some instances
@@ -65,10 +67,6 @@ class TspTWParser final {
   const std::vector<double>& service_times() const { return service_times_; }
 
  private:
-#ifndef SWIG
-  TspTWParser(const TspTWParser&) = delete;
-  void operator=(const TspTWParser&) = delete;
-#endif
   bool ParseLopezIbanezBlum(absl::string_view file_name);
   bool ParseDaSilvaUrrutia(absl::string_view file_name);
 

@@ -224,7 +224,6 @@ or_cc_library(
     name = "tsplib_parser",
     srcs = ["tsplib_parser.cc"],
     hdrs = ["tsplib_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":simple_graph",
         "//ortools/base:file",
@@ -235,6 +234,7 @@ or_cc_library(
         "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -243,7 +243,6 @@ or_cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@re2",
     ],
 )
 
@@ -258,6 +257,7 @@ or_cc_test(
     ],
     flaky = 1,  # b/132942541
     deps = [
+        ":simple_graph",
         ":tsplib_parser",
         "//ortools/base:file",
         "//ortools/base:gmock_main",

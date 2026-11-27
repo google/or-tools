@@ -59,11 +59,8 @@ namespace operations_research::routing {
 class SolomonParser {
  public:
   SolomonParser();
-
-#ifndef SWIG
   SolomonParser(const SolomonParser&) = delete;
-  const SolomonParser& operator=(const SolomonParser&) = delete;
-#endif
+  SolomonParser& operator=(const SolomonParser&) = delete;
 
   // Loading an instance. Both methods return false in case of failure to read
   // the instance. Loading a new instance clears the previously loaded instance.
@@ -138,11 +135,8 @@ class SolomonParser {
 class SolomonSolutionParser {
  public:
   SolomonSolutionParser();
-
-#ifndef SWIG
   SolomonSolutionParser(const SolomonSolutionParser&) = delete;
-  const SolomonSolutionParser& operator=(const SolomonSolutionParser&) = delete;
-#endif
+  SolomonSolutionParser& operator=(const SolomonSolutionParser&) = delete;
 
   // Loads solution from a file. Returns false in case of failure to read
   // the file. Loading a new solution clears the previously loaded solution.

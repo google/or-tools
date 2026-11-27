@@ -69,11 +69,8 @@ namespace operations_research::routing {
 class CarpParser {
  public:
   CarpParser();
-
-#ifndef SWIG
   CarpParser(const CarpParser&) = delete;
-  const CarpParser& operator=(const CarpParser&) = delete;
-#endif
+  CarpParser& operator=(const CarpParser&) = delete;
 
   // Loads instance from a file into this parser object.
   bool LoadFile(absl::string_view file_name);

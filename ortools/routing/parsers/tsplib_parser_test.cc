@@ -13,8 +13,10 @@
 
 #include "ortools/routing/parsers/tsplib_parser.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,13 +34,25 @@
 #include "ortools/base/path.h"
 #include "ortools/base/temp_file.h"
 #include "ortools/base/zipfile.h"
+#include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
 
-using ::testing::Gt;
-using ::testing::status::IsOkAndHolds;
+using ::testing::ElementsAre;
+using ::testing::status::StatusIs;
+
+std::string WriteTempTspFile(absl::string_view contents) {
+  std::string file_name;
+  [&]() {
+    ASSERT_OK_AND_ASSIGN(
+        file_name,
+        file::MakeTempFilename(::testing::TempDir(), "test_instance.tsp"));
+    ASSERT_OK(file::SetContents(file_name, contents, file::Defaults()));
+  }();
+  return file_name;
+}
 
 TEST(TspLibParserTest, GeneratedDataSets) {
   static const char kName[] = "GoogleTest";
@@ -193,10 +207,9 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                 const std::string file_name,
                 file::MakeTempFilename(::testing::TempDir(), "dummy.tsp"));
             ASSERT_OK(file::SetContents(file_name, data, file::Defaults()));
-            TspLibParser parser;
-            EXPECT_OK(parser.LoadFile(file_name));
-            EXPECT_THAT(parser.SizeFromFile(file_name),
-                        IsOkAndHolds(kDimension));
+            ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                                 TspLibParser::LoadFile(file_name));
+            EXPECT_EQ(parser.size(), kDimension);
           }
         }
       }
@@ -219,9 +232,9 @@ TEST(TspLibParserTest, ParseHCPEdgeList) {
       const std::string file_name,
       file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
   ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
-  TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(file_name));
-  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(file_name));
+  EXPECT_EQ(parser.size(), 3);
   EXPECT_EQ(2, parser.edges()[0].size());
   EXPECT_EQ(1, parser.edges()[0][0]);
   EXPECT_EQ(2, parser.edges()[0][1]);
@@ -243,9 +256,9 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
       const std::string file_name,
       file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
   ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
-  TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(file_name));
-  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(file_name));
+  EXPECT_EQ(parser.size(), 3);
   EXPECT_EQ(1, parser.edges()[0].size());
   EXPECT_EQ(2, parser.edges()[0][0]);
   EXPECT_EQ(1, parser.edges()[1].size());
@@ -258,8 +271,8 @@ TEST(TspLibParserTest, ParseKytojoki33Depot) {
   std::string file_name = ortools::GetDataDependencyFilepath(
       "ortools/routing/parsers/testdata/"
       "tsplib_Kytojoki_33.vrp");
-  TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(file_name));
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(file_name));
   // The depot is a new node, given by its coordinates, instead of an existing
   // node in the graph.
   EXPECT_EQ(2400, parser.depot());
@@ -273,8 +286,7 @@ TEST(TspLibParserTest, ParseKytojoki33Depot) {
 TEST(TspLibParserTest, ReadFailOnInvalidFile) {
   std::string file_name = ortools::GetDataDependencyFilepath(
       "ortools/routing/parsers/testdata/solomon.zip");
-  TspLibParser parser;
-  EXPECT_THAT(parser.LoadFile(file_name),
+  EXPECT_THAT(TspLibParser::LoadFile(file_name),
               testing::status::StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
@@ -365,6 +377,371 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
       file_index++;
     }
   }
+}
+
+TEST(TspLibParserTest, ParseSOPFullMatrixPopulatesEdgeWeights) {
+  const std::string valid_sop = WriteTempTspFile(
+      "NAME: sample.sop\n"
+      "TYPE: SOP\n"
+      "DIMENSION: 3\n"
+      "EDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\n"
+      "EDGE_WEIGHT_SECTION\n"
+      "3\n"
+      "0 7 9\n"
+      "-1 0 2\n"
+      "-1 -1 0\n"
+      "EOF\n");
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(valid_sop));
+  EXPECT_EQ(parser.type(), TspLibParser::Types::SOP);
+  EXPECT_EQ(parser.size(), 3);
+  const EdgeWeights weights = parser.GetEdgeWeights();
+  EXPECT_EQ(weights(0, 1), 7);
+  EXPECT_EQ(weights(0, 2), 9);
+  EXPECT_EQ(weights(1, 0), -1);
+  EXPECT_EQ(weights(1, 2), 2);
+  EXPECT_EQ(weights(2, 2), 0);
+
+  const std::string mismatched_sop = WriteTempTspFile(
+      "NAME: bad.sop\n"
+      "TYPE: SOP\n"
+      "DIMENSION: 3\n"
+      "EDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\n"
+      "EDGE_WEIGHT_SECTION\n"
+      "4\n"
+      "0 7 9\n"
+      "-1 0 2\n"
+      "-1 -1 0\n"
+      "EOF\n");
+  EXPECT_THAT(TspLibParser::LoadFile(mismatched_sop),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
+TEST(TspLibParserTest, MoveParserPreservesStateAndEdgeWeights) {
+  const std::string first_file = WriteTempTspFile(
+      "NAME: first\n"
+      "COMMENT: first comment\n"
+      "TYPE: CVRP\n"
+      "DIMENSION: 3\n"
+      "CAPACITY: 10\n"
+      "DISTANCE: 100\n"
+      "EDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n"
+      "1 0 0\n"
+      "2 3 4\n"
+      "3 6 8\n"
+      "DEMAND_SECTION\n"
+      "1 0\n"
+      "2 4\n"
+      "3 5\n"
+      "DEPOT_SECTION\n"
+      "2\n"
+      "-1\n"
+      "FIXED_EDGES_SECTION\n"
+      "1 2\n"
+      "-1\n"
+      "EOF\n");
+  const std::string second_file = WriteTempTspFile(
+      "NAME: second\n"
+      "TYPE: TSP\n"
+      "DIMENSION: 2\n"
+      "EDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n"
+      "1 0 0\n"
+      "2 10 0\n"
+      "EOF\n");
+
+  ASSERT_OK_AND_ASSIGN(TspLibParser parser, TspLibParser::LoadFile(first_file));
+  EXPECT_EQ(parser.depot(), 1);
+  EXPECT_EQ(parser.capacity(), 10);
+  EXPECT_EQ(parser.max_distance(), 100);
+  EXPECT_FALSE(parser.demands().empty());
+  EXPECT_FALSE(parser.fixed_edges().empty());
+  EXPECT_EQ(parser.comments(), "first comment");
+  EXPECT_EQ(parser.GetEdgeWeights()(0, 1), 5);
+
+  ASSERT_OK_AND_ASSIGN(parser, TspLibParser::LoadFile(second_file));
+  EXPECT_EQ(parser.name(), "second");
+  EXPECT_EQ(parser.type(), TspLibParser::Types::TSP);
+  EXPECT_EQ(parser.size(), 2);
+  EXPECT_EQ(parser.depot(), 0);
+  EXPECT_EQ(parser.capacity(), std::numeric_limits<int64_t>::max());
+  EXPECT_EQ(parser.max_distance(), std::numeric_limits<int64_t>::max());
+  EXPECT_TRUE(parser.demands().empty());
+  EXPECT_TRUE(parser.fixed_edges().empty());
+  EXPECT_TRUE(parser.comments().empty());
+  EXPECT_EQ(parser.GetEdgeWeights()(0, 1), 10);
+}
+
+TEST(TspLibParserTest, GeoDistanceClampsDomain) {
+  const std::string geo_file = WriteTempTspFile(
+      "NAME: geo\n"
+      "TYPE: TSP\n"
+      "DIMENSION: 3\n"
+      "EDGE_WEIGHT_TYPE: GEO\n"
+      "NODE_COORD_SECTION\n"
+      "1 38.24 20.42\n"
+      "2 38.24 20.42\n"
+      "3 -38.24 -159.18\n"
+      "EOF\n");
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(geo_file));
+  const EdgeWeights weights = parser.GetEdgeWeights();
+  EXPECT_GE(weights(0, 1), 0);
+  EXPECT_GT(weights(0, 2), 0);
+}
+
+TEST(TspLibParserTest, SupportsInt64WeightsCapacitiesAndDemands) {
+  const std::string file_name = WriteTempTspFile(
+      "NAME: large_weights\n"
+      "TYPE: CVRP\n"
+      "DIMENSION: 2\n"
+      "CAPACITY: 10000000000\n"
+      "DISTANCE: 20000000000\n"
+      "EDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\n"
+      "EDGE_WEIGHT_SECTION\n"
+      "0 5000000000\n"
+      "5000000000 0\n"
+      "DEMAND_SECTION\n"
+      "1 0\n"
+      "2 3000000000\n"
+      "EOF\n");
+  ASSERT_OK_AND_ASSIGN(const TspLibParser parser,
+                       TspLibParser::LoadFile(file_name));
+  EXPECT_EQ(parser.capacity(), 10'000'000'000LL);
+  EXPECT_EQ(parser.max_distance(), 20'000'000'000LL);
+  EXPECT_EQ(parser.GetEdgeWeights()(0, 1), 5'000'000'000LL);
+  EXPECT_THAT(parser.demands(), ElementsAre(0, 3'000'000'000LL));
+}
+
+TEST(TspLibParserTest, RejectsMalformedDimensionsAndBareKeywords) {
+  static const char* const kInvalidInputs[] = {
+      // Missing DIMENSION.
+      "NAME: test\nTYPE: TSP\nEDGE_WEIGHT_TYPE: EUC_2D\nEOF\n",
+      // Zero, negative, excessive, and int32-overflowing DIMENSION.
+      "TYPE: TSP\nDIMENSION: 0\nEDGE_WEIGHT_TYPE: EUC_2D\nEOF\n",
+      "TYPE: TSP\nDIMENSION: -5\nEDGE_WEIGHT_TYPE: EUC_2D\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 10000001\nEDGE_WEIGHT_TYPE: EUC_2D\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2147483648\nEOF\n",
+      // Duplicate DIMENSION.
+      "TYPE: TSP\nDIMENSION: 2\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\nEOF\n",
+      // Bare section keywords without values.
+      "TYPE\n",
+      "DIMENSION\n",
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY\n",
+      "TYPE: TSP\nDIMENSION: 2\nDISTANCE\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_FORMAT\n",
+  };
+  for (const char* input : kInvalidInputs) {
+    const std::string path = WriteTempTspFile(input);
+    EXPECT_THAT(TspLibParser::LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Input was:\n"
+        << input;
+  }
+}
+
+TEST(TspLibParserTest, RejectsSectionsBeforeDimensionAndMissingDemands) {
+  static const char* const kInvalidInputs[] = {
+      // DEPOT_SECTION with coordinates before DIMENSION (regression for OOB
+      // write at coords_[size_ - 1] when size_ == 0).
+      "TYPE: CVRP\nDEPOT_SECTION\n0.0 0.0\n-1\n",
+      // Other data sections before DIMENSION.
+      "TYPE: TSP\nNODE_COORD_SECTION\n1 0 0\n",
+      "TYPE: CVRP\nDEMAND_SECTION\n1 5\n",
+      "TYPE: TSP\nFIXED_EDGES_SECTION\n1 2\n-1\n",
+      "TYPE: TSP\nDISPLAY_DATA_SECTION\n1 0 0\n",
+      "TYPE: TSP\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\n"
+      "EDGE_WEIGHT_SECTION\n0\n",
+      // HCP EDGE_DATA_SECTION without EDGE_DATA_FORMAT (uninitialized format).
+      "TYPE: HCP\nDIMENSION: 2\nEDGE_DATA_SECTION\n1 2\n-1\nEOF\n",
+      // Capacitated problem without DEMAND_SECTION.
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY: 5\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nCAPACITY: 9223372036854775807\n"
+      "EDGE_WEIGHT_TYPE: EUC_2D\nNODE_COORD_SECTION\n1 0 0\n2 1 1\nEOF\n",
+  };
+  for (const char* input : kInvalidInputs) {
+    const std::string path = WriteTempTspFile(input);
+    EXPECT_THAT(TspLibParser::LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Input was:\n"
+        << input;
+  }
+}
+
+TEST(TspLibParserTest, RejectsInvalidExplicitMatrices) {
+  static const char* const kInvalidInputs[] = {
+      // Missing EDGE_WEIGHT_SECTION for EXPLICIT.
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\nEOF\n",
+      // Truncated FULL_MATRIX (3 entries instead of 4).
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n0 1 1\nEOF\n",
+      // Extra entries in FULL_MATRIX, UPPER_ROW, LOWER_ROW, UPPER_DIAG_ROW,
+      // and LOWER_DIAG_ROW on a single line.
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n0 1 1 0 9\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: UPPER_ROW\nEDGE_WEIGHT_SECTION\n5 6\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: LOWER_ROW\nEDGE_WEIGHT_SECTION\n5 6\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: UPPER_DIAG_ROW\nEDGE_WEIGHT_SECTION\n0 5 0 6\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: LOWER_DIAG_ROW\nEDGE_WEIGHT_SECTION\n0 5 0 6\nEOF\n",
+      // Explicit matrix dimension exceeding maximum matrix entry cap.
+      "TYPE: TSP\nDIMENSION: 20000\nEDGE_WEIGHT_TYPE: EXPLICIT\n"
+      "EDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n0\nEOF\n",
+  };
+  for (const char* input : kInvalidInputs) {
+    const std::string path = WriteTempTspFile(input);
+    EXPECT_THAT(TspLibParser::LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Input was:\n"
+        << input;
+  }
+}
+
+TEST(TspLibParserTest, RejectsOutOfBoundsAndInvalidNodeIndices) {
+  static const char* const kInvalidInputs[] = {
+      // NODE_COORD_SECTION node id 0, > size, INT_MIN, and INT_MAX + 1.
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n0 0 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n3 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n-2147483648 0 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n2147483648 0 0\n2 1 1\nEOF\n",
+      // DEMAND_SECTION out-of-bounds and int32-overflowing node ids.
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY: 5\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\n"
+      "DEMAND_SECTION\n1 1\n3 1\nEOF\n",
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY: 5\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\n"
+      "DEMAND_SECTION\n1 1\n2147483648 1\nEOF\n",
+      // DEPOT_SECTION out-of-bounds depot id.
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY: 5\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\nDEMAND_SECTION\n1 0\n2 1\n"
+      "DEPOT_SECTION\n3\n-1\nEOF\n",
+      "TYPE: CVRP\nDIMENSION: 2\nCAPACITY: 5\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\nDEMAND_SECTION\n1 0\n2 1\n"
+      "DEPOT_SECTION\n0\n-1\nEOF\n",
+      // FIXED_EDGES_SECTION out-of-bounds node id.
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0 0\n2 1 1\n"
+      "FIXED_EDGES_SECTION\n1 3\n-1\nEOF\n",
+      // HCP EDGE_LIST and ADJ_LIST out-of-bounds and int32-overflowing node
+      // ids.
+      "TYPE: HCP\nDIMENSION: 2\nEDGE_DATA_FORMAT: EDGE_LIST\n"
+      "EDGE_DATA_SECTION\n1 3\n-1\nEOF\n",
+      "TYPE: HCP\nDIMENSION: 2\nEDGE_DATA_FORMAT: ADJ_LIST\n"
+      "EDGE_DATA_SECTION\n1 3 -1\n-1\nEOF\n",
+      "TYPE: HCP\nDIMENSION: 2\nEDGE_DATA_FORMAT: ADJ_LIST\n"
+      "EDGE_DATA_SECTION\n1 2147483648 -1\n-1\nEOF\n",
+  };
+  for (const char* input : kInvalidInputs) {
+    const std::string path = WriteTempTspFile(input);
+    EXPECT_THAT(TspLibParser::LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Input was:\n"
+        << input;
+  }
+}
+
+TEST(TspLibParserTest, RejectsInvalidCoordinates) {
+  static const char* const kInvalidInputs[] = {
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 nan 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 inf 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 1e100 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 abc 0\n2 1 1\nEOF\n",
+      "TYPE: TSP\nDIMENSION: 2\nEDGE_WEIGHT_TYPE: EUC_2D\n"
+      "NODE_COORD_SECTION\n1 0\n2 1 1\nEOF\n",
+  };
+  for (const char* input : kInvalidInputs) {
+    const std::string path = WriteTempTspFile(input);
+    EXPECT_THAT(TspLibParser::LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Input was:\n"
+        << input;
+  }
+}
+
+TEST(TspLibTourParserTest, RejectsMalformedInputsAndResetsOnReuse) {
+  static const char* const kInvalidTours[] = {
+      "TYPE : TSP\nDIMENSION : 2\nTOUR_SECTION\n1\n2\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION\n",
+      "TYPE : TOUR\nDIMENSION : 0\nTOUR_SECTION\n1\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 3\nDIMENSION : 2\n"
+      "TOUR_SECTION\n1\n2\n-1\nEOF\n",
+      "TYPE : TOUR\nTOUR_SECTION\n1\n3\n-1\nDIMENSION : 2\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\n0\n2\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\n-2\n2\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\n1\n3\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\n2147483648\n2\n-1\nEOF\n",
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\nabc\n-1\nEOF\n",
+  };
+  for (const char* tour : kInvalidTours) {
+    const std::string path = WriteTempTspFile(tour);
+    TspLibTourParser parser;
+    EXPECT_THAT(parser.LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "Tour input was:\n"
+        << tour;
+  }
+
+  const std::string valid1 = WriteTempTspFile(
+      "COMMENT : first\nTYPE : TOUR\nDIMENSION : 3\n"
+      "TOUR_SECTION\n1\n2\n3\n-1\nEOF\n");
+  const std::string valid2 = WriteTempTspFile(
+      "TYPE : TOUR\nDIMENSION : 2\nTOUR_SECTION\n2\n1\n-1\nEOF\n");
+  TspLibTourParser parser;
+  ASSERT_OK(parser.LoadFile(valid1));
+  EXPECT_EQ(parser.size(), 3);
+  EXPECT_EQ(parser.comments(), ": first");
+  ASSERT_OK(parser.LoadFile(valid2));
+  EXPECT_EQ(parser.size(), 2);
+  EXPECT_TRUE(parser.comments().empty());
+  EXPECT_THAT(parser.tour(), ElementsAre(1, 0));
+}
+
+TEST(CVRPToursParserTest, RejectsMalformedInputsAndResetsOnReuse) {
+  static const char* const kInvalidTours[] = {
+      "Route #1:\nCost 10\n",           "Route #1: -1\nCost 10\n",
+      "Route #1: 10000001\nCost 10\n",  "Route #1: 2147483648\nCost 10\n",
+      "Route #1: node\nCost 10\n",      "Route #1: 1 2\nCost\n",
+      "Route #1: 1 2\nCost 10 extra\n", "Route #1: 1 2\nCost not_an_int\n",
+  };
+  for (const char* tour : kInvalidTours) {
+    const std::string path = WriteTempTspFile(tour);
+    CVRPToursParser parser;
+    EXPECT_THAT(parser.LoadFile(path),
+                StatusIs(absl::StatusCode::kInvalidArgument))
+        << "CVRP tour input was:\n"
+        << tour;
+  }
+
+  const std::string valid1 =
+      WriteTempTspFile("Route #1: 1 2\nCost 5000000000\n");
+  const std::string valid2 = WriteTempTspFile("Route #1: 3\nCost 20\n");
+  CVRPToursParser parser;
+  ASSERT_OK(parser.LoadFile(valid1));
+  EXPECT_EQ(parser.cost(), 5'000'000'000LL);
+  EXPECT_EQ(parser.tours().size(), 1);
+  ASSERT_OK(parser.LoadFile(valid2));
+  EXPECT_EQ(parser.cost(), 20);
+  ASSERT_EQ(parser.tours().size(), 1);
+  EXPECT_THAT(parser.tours()[0], ElementsAre(3));
 }
 }  // namespace
 }  // namespace operations_research::routing
