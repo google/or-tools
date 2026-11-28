@@ -65,6 +65,20 @@ public final class LinearSolverTest {
     solver.delete();
   }
 
+  @Test
+  public void testMPSolver_interruptSolve() {
+    if (!MPSolver.supportsProblemType(
+        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)) {
+      return;
+    }
+    final MPSolver solver =
+        new MPSolver(
+            "testInterruptSolve",
+            MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    // CBC now supports interruption, so interruptSolve() must return true.
+    assertTrue(solver.interruptSolve());
+  }
+
   private void runLinearSolver(
       MPSolver.OptimizationProblemType problemType, boolean integerVariables) {
     if (!MPSolver.supportsProblemType(problemType)) {
