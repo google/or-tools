@@ -594,6 +594,31 @@ ENDATA
 
         self.assertEqual(status, mb.SolveStatus.OPTIMAL)
 
+    def test_add_enforced_false_ct(self):
+        # add_enforced(False, z, v) only forbids z == v.
+        # sum([]) >= 1 is a plain Python False (an empty sum), so it takes the
+        # same path as the literal False.
+        cases = [
+            ("literal_false", lambda m, z, v: m.add_enforced(False, z, v)),
+            ("empty_sum", lambda m, z, v: m.add_enforced(sum([]) >= 1, z, v)),
+        ]
+        for name, add in cases:
+            for value in (False, True):
+                with self.subTest(case=name, value=value):
+                    model = mb.Model()
+                    z = model.new_bool_var("z")
+                    ct = add(model, z, value)
+                    self.assertTrue(ct.is_under_specified)
+                    if value:
+                        model.maximize(z)
+                    else:
+                        model.minimize(z)
+
+                    solver = mb.Solver("sat")
+                    status = solver.solve(model)
+                    self.assertEqual(status, mb.SolveStatus.OPTIMAL)
+                    self.assertEqual(solver.value(z), 0.0 if value else 1.0)
+
 
 class InternalHelperTest(absltest.TestCase):
 
